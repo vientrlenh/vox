@@ -33,16 +33,16 @@ import com.sep.vox.application.query.dto.GradingTurnInfo;
 import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 
 /**
- * Spring GraphQL nối field với property theo TÊN. Lệch một chữ thì field đó trả
- * về {@code null} — không lỗi, không log, FE chỉ thấy ô trống. Test này bắt lệch
- * ngay tại chỗ thay vì để lộ ra ở màn hình.
+ * Spring GraphQL binds a field to a property by NAME. One wrong letter and that field returns
+ * {@code null} — no error, no log, the frontend just sees an empty cell. This test catches the mismatch
+ * right here instead of letting it show up on screen.
  */
 class GradingSchemaBindingTests {
 
     private static final Path SCHEMA =
         Path.of("src", "main", "resources", "graphql", "assessment-grading.graphqls");
 
-    /** Neo vào đầu dòng để {@code extend type Query} không bị nhận là một object type. */
+    /** Anchored at the start of the line so that {@code extend type Query} is not mistaken for an object type. */
     private static final Pattern TYPE_BLOCK = Pattern.compile(
         "^type\\s+(\\w+)\\s*\\{([^}]*)}", Pattern.DOTALL | Pattern.MULTILINE);
     private static final Pattern FIELD = Pattern.compile(
@@ -95,7 +95,7 @@ class GradingSchemaBindingTests {
             .toList();
 
         assertThat(propertyBoundFields)
-            .describedAs("field của %s phải có component cùng tên trên %s", typeName, dto.getSimpleName())
+            .describedAs("the fields of %s must have a component of the same name on %s", typeName, dto.getSimpleName())
             .isNotEmpty()
             .allSatisfy(field -> assertThat(componentNames).contains(field));
     }
@@ -124,10 +124,10 @@ class GradingSchemaBindingTests {
                     .toList();
             }
         }
-        throw new AssertionError("Không tìm thấy type " + typeName + " trong " + SCHEMA);
+        throw new AssertionError("Type " + typeName + " not found in " + SCHEMA);
     }
 
-    /** Docstring có dấu ':' nên phải bỏ trước khi dò field, không thì nhận nhầm. */
+    /** The docstring contains a ':' so it must be stripped before looking up fields, otherwise it is picked up by mistake. */
     private String stripComments(String body) {
         return body.replaceAll("(?s)\"\"\".*?\"\"\"", "")
             .replaceAll("(?m)^\\s*\"[^\"]*\"\\s*$", "")

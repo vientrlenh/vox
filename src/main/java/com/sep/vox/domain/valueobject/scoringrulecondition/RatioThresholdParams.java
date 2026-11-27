@@ -7,7 +7,7 @@ public record RatioThresholdParams(BigDecimal ratio) implements ScoringRuleCondi
         if (ratio == null
                 || ratio.compareTo(BigDecimal.ZERO) < 0
                 || ratio.compareTo(BigDecimal.ONE) > 0) {
-            throw new IllegalArgumentException("Ratio bắt buộc trong khoảng 0 đến 1");
+            throw new IllegalArgumentException("The ratio must be between 0 and 1");
         }
     }
 }

@@ -31,12 +31,12 @@ class AssessmentDirectoryAuthorizationBoundaryTests {
             .toList();
 
         assertThat(resolvers)
-            .as("GraphQLAssessmentDirectoryController phải có đúng 4 query: lớp, niên khóa, học sinh, giám thị")
+            .as("GraphQLAssessmentDirectoryController must have exactly 4 queries: class, school year, student, proctor")
             .hasSize(4);
 
         assertThat(resolvers)
             .allSatisfy(method -> assertThat(preAuthorizeValue(method))
-                .as("%s phải gated SCHOOL_ADMIN + TEACHER", method.getName())
+                .as("%s must be gated to SCHOOL_ADMIN + TEACHER", method.getName())
                 .isEqualTo(EXPECTED));
     }
 
@@ -51,7 +51,7 @@ class AssessmentDirectoryAuthorizationBoundaryTests {
 
         assertThat(adminOnly)
             .allSatisfy(method -> assertThat(preAuthorizeValue(method))
-                .as("%s không được nới quyền cho TEACHER — thêm query vào GraphQLAssessmentDirectoryController thay vì nới ở đây",
+                .as("%s must not widen permission to TEACHER — add the query to GraphQLAssessmentDirectoryController instead of widening it here",
                     method.getName())
                 .isEqualTo("hasRole('SCHOOL_ADMIN')"));
     }
@@ -66,7 +66,7 @@ class AssessmentDirectoryAuthorizationBoundaryTests {
             .filter(method -> method.getName().equals(name))
             .toList();
         assertThat(candidates)
-            .as("GraphQLSchoolController.%s phải tồn tại và không bị nạp chồng", name)
+            .as("GraphQLSchoolController.%s must exist and must not be overloaded", name)
             .hasSize(1);
         return candidates.getFirst();
     }

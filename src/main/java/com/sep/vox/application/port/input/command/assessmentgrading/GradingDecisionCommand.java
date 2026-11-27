@@ -3,15 +3,15 @@ package com.sep.vox.application.port.input.command.assessmentgrading;
 import java.util.UUID;
 
 /**
- * Đầu vào chung của ba hành động không nhập điểm: {@code UPHOLD}, {@code INVALIDATE},
- * {@code CLEAR_INVALID} và {@code DECLINE}.
+ * The common input of the three actions that do not enter a score: {@code UPHOLD}, {@code INVALIDATE},
+ * {@code CLEAR_INVALID} and {@code DECLINE}.
  *
- * <p>Ba hành động đó chỉ khác nhau ở kết luận, không khác ở dữ liệu, nên dùng chung
- * một command. Riêng {@code REGRADE} có {@link SubmitGradingCommand} vì nó mang theo
- * cả bảng điểm.
+ * <p>Those actions differ only in the conclusion, not in the data, so they share
+ * one command. Only {@code REGRADE} has its own {@link SubmitGradingCommand} because it carries
+ * the whole score sheet.
  *
- * @param reason bắt buộc với {@code INVALIDATE} / {@code CLEAR_INVALID} / {@code DECLINE};
- *               tuỳ chọn với {@code UPHOLD} (ghi chú của giáo viên)
+ * @param reason required for {@code INVALIDATE} / {@code CLEAR_INVALID} / {@code DECLINE};
+ *               optional for {@code UPHOLD} (the teacher's note)
  */
 public record GradingDecisionCommand(
     UUID assignmentId,

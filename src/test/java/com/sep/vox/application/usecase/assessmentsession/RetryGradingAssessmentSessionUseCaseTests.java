@@ -31,12 +31,11 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Định mức "trường được nhờ AI chấm lại một lượt".
+ * The quota "a school may ask the AI to re-grade once".
  *
- * <p>Điểm dễ sai nhất KHÔNG phải con số 1, mà là AI TIÊU vào định mức đó: nếu lượt của quản trị hệ
- * thống (và sau này là job tự chạy lại khi có sự cố diện rộng) cũng trừ, thì một lần AI hỏng hàng
- * loạt sẽ âm thầm đốt sạch lượt của mọi trường rồi ép hàng trăm bài sang chấm tay — vì lỗi của chính
- * nền tảng.
+ * <p>The easiest mistake is NOT the number 1, but what the AI SPENDS from that quota: if a system admin's run
+ * (and later a job that re-runs by itself on a wide-scale incident) also deducts, then one mass AI failure would silently
+ * burn every school's attempts and force hundreds of submissions into manual grading -- because of the platform's own fault.
  */
 class RetryGradingAssessmentSessionUseCaseTests {
 
@@ -94,7 +93,7 @@ class RetryGradingAssessmentSessionUseCaseTests {
         verify(submitAssessmentSessionUseCase).execute(any());
     }
 
-    /** Lượt thứ hai hỏng tiếp là bằng chứng nguyên nhân mang tính tất định — đường ra là chấm tay. */
+    /** If the second attempt also fails, that is evidence the cause is deterministic -- the way out is manual grading. */
     @Test
     void shouldRefuseASecondSchoolRegradeAndPointAtHumanGrading() {
         when(userContextPort.isSystemAdmin()).thenReturn(false);
@@ -102,14 +101,14 @@ class RetryGradingAssessmentSessionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new RetryGradingAssessmentSessionCommand(SESSION_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chuyển sang chấm tay");
+            .hasMessageContaining("switch to manual grading");
 
         verify(submitAssessmentSessionUseCase, never()).execute(any());
     }
 
     /**
-     * Lượt của quản trị hệ thống là lượt khắc phục sự cố NỀN TẢNG. Nó không được tiêu định mức của
-     * trường, nếu không một sự cố diện rộng sẽ ép hàng loạt bài sang chấm tay vì lỗi của mình.
+     * A system admin's run is a PLATFORM incident-remediation run. It must not spend the school's
+     * quota, otherwise a wide-scale incident would force many submissions into manual grading because of our own fault.
      */
     @Test
     void shouldNotSpendTheSchoolAllowanceOnASystemAdminRetry() {
@@ -122,7 +121,7 @@ class RetryGradingAssessmentSessionUseCaseTests {
         verify(submitAssessmentSessionUseCase, org.mockito.Mockito.times(2)).execute(any());
     }
 
-    /** Quản trị hệ thống vẫn chấm lại được sau khi trường đã dùng hết lượt của mình. */
+    /** A system admin can still re-grade after the school has used up its own attempts. */
     @Test
     void shouldStillAllowASystemAdminRetryAfterTheSchoolAllowanceIsSpent() {
         when(userContextPort.isSystemAdmin()).thenReturn(true);

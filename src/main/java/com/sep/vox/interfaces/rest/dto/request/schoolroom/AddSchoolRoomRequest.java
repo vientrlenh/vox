@@ -8,12 +8,12 @@ import jakarta.validation.constraints.Size;
 
 public record AddSchoolRoomRequest(
 
-        @NotBlank(message = "Mã phòng không được để trống")
-        @Size(max = 50, message = "Mã phòng không được vượt quá 50 ký tự")
+        @NotBlank(message = "Room code must not be blank")
+        @Size(max = 50, message = "Room code must not exceed 50 characters")
         String code,
 
-        @NotBlank(message = "Tên phòng không được để trống")
-        @Size(max = 100, message = "Tên phòng không được vượt quá 100 ký tự")
+        @NotBlank(message = "Room name must not be blank")
+        @Size(max = 100, message = "Room name must not exceed 100 characters")
         String name,
 
         String description

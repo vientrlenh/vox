@@ -67,10 +67,10 @@ public class GetAssessmentRecordsUseCase implements IUseCase<GetAssessmentRecord
         try {
             type = AssessmentRequiredStreamType.valueOf(filter.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại stream không hợp lệ: " + filter);
+            throw new IllegalArgumentException("Invalid stream type: " + filter);
         }
         if (type ==  AssessmentRequiredStreamType.CAMERA_AND_SCREEN) {
-            throw new IllegalArgumentException("Loại stream yêu cầu cho bản ghi chỉ hỗ trợ màn hình hoặc camera");
+            throw new IllegalArgumentException("The stream type requested for a recording only supports screen or camera");
         }
         return type;
     }

@@ -61,10 +61,10 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
     public AssessmentEntryTicketResponse execute(VerifyAssessmentScheduleOtpCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentCandidate candidate = assessmentCandidateRepository.findByAssessmentIdAndStudentId(input.assessmentId(), studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải thí sinh của kỳ thi này"));
+            .orElseThrow(() -> new ResourceNotFoundException("You are not a candidate of this assessment"));
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         requireStreamingAndOtpRequired(assessment);
 
@@ -91,38 +91,38 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
         }
 
         if (!assessment.isRequiresOtp()) {
-            throw new IllegalArgumentException("Bài kiểm tra này không yêu cầu xác thực OTP, vui lòng dùng luồng bắt đầu trực tiếp");
+            throw new IllegalArgumentException("This assessment does not require OTP verification, please use the direct start flow");
         }
     }
 
     private void requireCandidateMayEnter(AssessmentCandidate candidate, Assessment assessment, Instant now) {
         if (candidate.getBlockedAt() != null) {
-            throw new IllegalArgumentException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
+            throw new IllegalArgumentException("Your attempt at this assessment was force-ended, you cannot re-enter");
         }
         if (AssessmentCandidateStatus.isBlockedForEntry(candidate.getStatus())) {
-            throw new IllegalArgumentException("Bạn không đủ điều kiện tham gia kỳ thi này");
+            throw new IllegalArgumentException("You are not eligible to take this assessment");
         }
         if (!AssessmentCandidateStatus.isAttended(candidate.getStatus())) {
-            throw new IllegalArgumentException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
+            throw new IllegalArgumentException("You have not been marked present, please contact the proctor");
         }
         if (isAssessmentClosedForEntry(assessment, now)) {
-            throw new IllegalArgumentException("Kỳ thi hiện không mở để thi (trạng thái: " + assessment.getStatus() + ")");
+            throw new IllegalArgumentException("The assessment is not open for taking (status: " + assessment.getStatus() + ")");
         }
 
         if (candidate.getScheduleId() == null) {
-            throw new IllegalArgumentException("Bạn chưa được xếp ca thi");
+            throw new IllegalArgumentException("You have not been placed in an assessment schedule");
         }
         if (candidate.getAssignedPaperId() == null) {
-            throw new IllegalArgumentException("Bạn chưa được gán đề thi");
+            throw new IllegalArgumentException("You have not been assigned an assessment paper");
         }
     }
 
     private AssessmentSchedule requireScheduleOfAssessment(AssessmentCandidate candidate, UUID assessmentId, Instant now) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new ResourceNotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("The assessment schedule is invalid or has expired"));
 
         if (!schedule.getAssessmentId().equals(assessmentId)) {
-            throw new IllegalArgumentException("Ca thi không thuộc bài kiểm tra đã chọn");
+            throw new IllegalArgumentException("The assessment schedule does not belong to the selected assessment");
         }
         return schedule;
     }
@@ -130,7 +130,7 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
     private void requireOtpMatches(AssessmentCandidate candidate, String otp) {
         String expectedOtp = cacheManagerPort.get(CacheKey.assessmentScheduleOtpKey(candidate.getScheduleId()));
         if (expectedOtp == null || !expectedOtp.equals(otp)) {
-            throw new UnauthorizedException("Mã OTP không đúng hoặc đã hết hạn");
+            throw new UnauthorizedException("The OTP is incorrect or has expired");
         }
     }
 
@@ -156,7 +156,7 @@ public class VerifyAssessmentScheduleOtpUseCase implements IUseCase<VerifyAssess
         if (assessment.getMaxAttempt() != null) {
             long usedAttempts = countUsedAttempts(candidate.getId());
             if (usedAttempts >= assessment.getMaxAttempt()) {
-                throw new ResourceDuplicatedException("Đã hết số lượt thi cho phép (" + assessment.getMaxAttempt() + " lượt)");
+                throw new ResourceDuplicatedException("The number of allowed attempts has been used up (" + assessment.getMaxAttempt() + " attempts)");
             }
         }
     }

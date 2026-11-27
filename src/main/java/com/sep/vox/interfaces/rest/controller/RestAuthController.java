@@ -90,7 +90,7 @@ public class RestAuthController {
         LoginResponse data = loginUseCase.execute(command);
         httpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
 
-        ApiResponse<LoginResponse> response = ApiResponse.success("Đăng nhập thành công", new LoginResponse(data.accessToken(), null, data.roles()));
+        ApiResponse<LoginResponse> response = ApiResponse.success("Login successful", new LoginResponse(data.accessToken(), null, data.roles()));
 
         return ResponseEntity.ok(response);
     }
@@ -100,7 +100,7 @@ public class RestAuthController {
     public ResponseEntity<ApiResponse<RegisterFromSchoolDirectoryResponse>> registerSchoolDirectory(@Valid @RequestBody RegisterFromSchoolDirectoryRequest request) {
         RegisterFromSchoolDirectoryCommand command = RegisterFromSchoolDirectoryRequest.toCommand(request);
         RegisterFromSchoolDirectoryResponse data = registerFromSchoolDirectoryUseCase.execute(command);
-        ApiResponse<RegisterFromSchoolDirectoryResponse> response = ApiResponse.success("Yêu cầu thành công", data);
+        ApiResponse<RegisterFromSchoolDirectoryResponse> response = ApiResponse.success("Request successful", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -108,7 +108,7 @@ public class RestAuthController {
     public ResponseEntity<ApiResponse<Object>> registerSelfDeclared(@Valid @RequestBody RegisterBySelfDeclaredRequest request) {
         RegisterBySelfDeclaredCommand command = RegisterBySelfDeclaredRequest.toCommand(request);
         registerBySelfDeclaredUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Đơn đăng ký đã được gửi thành công. Vui lòng đợi quản trị viên phê duyệt");
+        ApiResponse<Object> response = ApiResponse.success("Registration form submitted successfully. Please wait for the administrator to approve it");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -117,7 +117,7 @@ public class RestAuthController {
     public ResponseEntity<ApiResponse<Object>> verifyRegistrationOtp(@Valid @RequestBody VerifyRegisterFormOtpRequest request) {
         VerifyRegisterFormOtpCommand command = VerifyRegisterFormOtpRequest.toCommand(request);
         verifyRegisterFormOtpUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Đơn yêu cầu đã được xác thực");
+        ApiResponse<Object> response = ApiResponse.success("Registration request verified");
         return ResponseEntity.ok(response);
     }
 
@@ -126,7 +126,7 @@ public class RestAuthController {
     public ResponseEntity<ApiResponse<Object>> setUpPassword(@Valid @RequestBody SetUpPasswordRequest request) {
         SetUpPasswordCommand command = SetUpPasswordRequest.toCommand(request);
         setUpPasswordUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Mật khẩu đã được thiết lập thành công");
+        ApiResponse<Object> response = ApiResponse.success("Password set successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -135,7 +135,7 @@ public class RestAuthController {
         RefreshCommand command = DeviceIdRequest.toRefreshCommand(request, token);
         RefreshResponse data = refreshUseCase.execute(command);
         httpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
-        ApiResponse<RefreshResponse> response = ApiResponse.success("Yêu cầu thành công", new RefreshResponse(
+        ApiResponse<RefreshResponse> response = ApiResponse.success("Request successful", new RefreshResponse(
             data.accessToken(), null
         ));
         return ResponseEntity.ok(response);
@@ -146,7 +146,7 @@ public class RestAuthController {
     public ResponseEntity<ApiResponse<Object>> sendResetPasswordOtp(@Valid @RequestBody SendResetPasswordOtpRequest request) {
         SendResetPasswordOtpCommand command = SendResetPasswordOtpRequest.toCommand(request);
         sendResetPasswordOtpUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Mã OTP đặt lại mật khẩu đã được gửi");
+        ApiResponse<Object> response = ApiResponse.success("Password reset OTP has been sent");
         return ResponseEntity.ok(response);
     }
 
@@ -154,27 +154,26 @@ public class RestAuthController {
     public ResponseEntity<ApiResponse<Object>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         ResetPasswordCommand command = ResetPasswordRequest.toCommand(request);
         resetPasswordUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Mật khẩu đã thay đổi thành công");
+        ApiResponse<Object> response = ApiResponse.success("Password changed successfully");
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Đăng nhập Google cho ứng dụng NATIVE (Flutter, WPF) -- đối trọng của
-     * {@link #startGoogleLogin} vốn chỉ dùng được từ trình duyệt.
+     * Google login for NATIVE apps (Flutter, WPF) -- the counterpart of
+     * {@link #startGoogleLogin}, which can only be used from a browser.
      *
-     * <p>Vì sao không dùng chung luồng redirect: luồng đó kết thúc bằng một cú chuyển hướng về ĐÚNG
-     * MỘT địa chỉ cấu hình sẵn ({@code app.frontend.oauth2-url}), tức là trang web. Ứng dụng native
-     * không có chỗ nhận cú chuyển hướng đó. Cho phép client tự truyền địa chỉ quay về thì lại mở ra
-     * một open redirect MANG THEO access token trên query string -- thứ nguy hiểm nhất có thể làm
-     * sai. Nên native tự lấy ID token ở máy người dùng (SDK trên mobile, PKCE + loopback trên
-     * desktop) rồi đổi lấy phiên tại đây.
+     * <p>Why the redirect flow is not shared: that flow ends with a redirect to EXACTLY ONE preconfigured address
+     * ({@code app.frontend.oauth2-url}), i.e. the web page. A native app has nowhere to receive that redirect.
+     * Letting the client pass its own return address would open an open redirect that CARRIES the access token
+     * on the query string -- the most dangerous thing that can go wrong. So the native app obtains the ID token on
+     * the user's device itself (SDK on mobile, PKCE + loopback on desktop) and exchanges it for a session here.
      *
-     * <p><b>Trả refresh token ở CẢ HAI nơi</b>: trong body và trong cookie. Không thừa --
-     * {@code POST /api/v1/auth/refresh} đọc refresh token bằng {@code @CookieValue} và KHÔNG có
-     * trường nào trong body để thay thế, nên chỉ trả body thôi là client cầm một chuỗi không dùng
-     * được vào việc gì. Cả hai client đều đã giữ cookie sẵn (Flutter có PersistCookieJar, WPF đọc
-     * tay Set-Cookie), còn bản trong body là để chúng cất vào kho bảo mật của hệ điều hành. Khác
-     * {@link #login}, nơi refreshToken bị ép null vì trình duyệt không được phép đọc tới nó.
+     * <p><b>The refresh token is returned in BOTH places</b>: in the body and in the cookie. This is not redundant --
+     * {@code POST /api/v1/auth/refresh} reads the refresh token with {@code @CookieValue} and has NO
+     * field in the body to replace it, so returning only the body would leave the client holding a string it
+     * cannot use for anything. Both clients already keep the cookie (Flutter has PersistCookieJar, WPF reads
+     * Set-Cookie by hand), while the copy in the body is for storing in the operating system's secure storage.
+     * Unlike {@link #login}, where refreshToken is forced to null because the browser must not be able to read it.
      */
     @PostMapping("/oauth2/google/token")
     public ResponseEntity<ApiResponse<LoginResponse>> googleTokenLogin(
@@ -189,7 +188,7 @@ public class RestAuthController {
         LoginResponse data = googleTokenLoginUseCase.execute(command);
         httpCookieProvider.setCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY, data.refreshToken(), REFRESH_TOKEN_COOKIE_TTL_SECONDS);
 
-        ApiResponse<LoginResponse> response = ApiResponse.success("Đăng nhập thành công", data);
+        ApiResponse<LoginResponse> response = ApiResponse.success("Login successful", data);
 
         return ResponseEntity.ok(response);
     }
@@ -211,20 +210,20 @@ public class RestAuthController {
     }
 
     /**
-     * Thu hồi phiên thiết bị và xoá cookie refresh_token.
+     * Revokes the device session and clears the refresh_token cookie.
      *
-     * <p>Cố ý KHÔNG có {@code @PreAuthorize}, dù nghe ngược đời với một endpoint đăng xuất.
-     * {@code JwtAuthenticationFilter} nuốt mọi lỗi token và cho request đi tiếp dưới danh nghĩa
-     * anonymous, nên access token hết hạn (15 phút) sẽ bị chặn TRƯỚC khi vào tới đây -- mà phiên
-     * bị bỏ quên, đúng thứ cần đăng xuất nhất, luôn ở trạng thái đó. Bằng chứng thật sự để thu
-     * hồi là cookie refresh_token chứ không phải access token; giữ được access token còn hạn thì
-     * {@link LogoutUseCase} dọn thêm các phiên khác của cùng thiết bị.
+     * <p>Deliberately has NO {@code @PreAuthorize}, even though that sounds backwards for a logout endpoint.
+     * {@code JwtAuthenticationFilter} swallows every token error and lets the request continue as anonymous,
+     * so an expired access token (15 minutes) would be blocked BEFORE reaching here -- yet an abandoned session,
+     * exactly the one that most needs logging out, is always in that state. The real proof for revoking is the
+     * refresh_token cookie, not the access token; if a still-valid access token is present,
+     * {@link LogoutUseCase} also cleans up the other sessions of the same device.
      *
-     * <p>{@code required = false} và LUÔN trả 200: client xoá token trong máy ngay sau lời gọi
-     * này, nên mọi cách hỏng ở đây đều để lại client không còn token trong khi server vẫn giữ
-     * phiên sống. Không có cookie cũng là một lần đăng xuất hợp lệ.
+     * <p>{@code required = false} and ALWAYS returns 200: the client deletes its tokens right after this call,
+     * so any way of failing here would leave the client without a token while the server keeps the session
+     * alive. Having no cookie is also a valid logout.
      *
-     * <p>Endpoint này đọc cookie nên BẮT BUỘC nằm trong CSRF matcher -- xem
+     * <p>This endpoint reads a cookie, so it MUST be in the CSRF matcher -- see
      * {@code SecurityConfig#CSRF_PROTECTED_API_PATHS}.
      */
     @PostMapping("/logout")
@@ -233,7 +232,7 @@ public class RestAuthController {
         logoutUseCase.execute(command);
         httpCookieProvider.clearCookie(servletResponse, REFRESH_TOKEN_COOKIE_KEY);
 
-        ApiResponse<Object> response = ApiResponse.success("Đăng xuất thành công");
+        ApiResponse<Object> response = ApiResponse.success("Logout successful");
 
         return ResponseEntity.ok(response);
     }

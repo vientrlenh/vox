@@ -35,16 +35,16 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
         requireCallerMayDeleteRoomsOf(command.schoolId());
 
         SchoolRoom room = schoolRoomRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("No room found with the given ID."));
 
         // SECURITY GUARD 2: the room must really belong to this school
         if (!room.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Phòng học này không thuộc về trường học đã chỉ định.");
+            throw new ForbiddenException("SECURITY: This room does not belong to the specified school.");
         }
 
         // Soft delete
         if (!room.isActive()) {
-            throw new IllegalArgumentException("Phòng học này đã bị xóa (vô hiệu hóa) từ trước rồi.");
+            throw new IllegalArgumentException("This room was already deleted (deactivated).");
         }
 
         room.setActive(false); // Switch the status to false
@@ -58,7 +58,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
         // exists call instead of loading the user, for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("Your account does not exist or has been locked.");
         }
 
         // SECURITY GUARD 1: check the school user's rights
@@ -66,7 +66,7 @@ public class DeleteSchoolRoomUseCase implements IUseCase<DeleteSchoolRoomCommand
         if (schoolUserOpt.isPresent()) {
             SchoolUser schoolUser = schoolUserOpt.get();
             if (!schoolUser.getSchoolId().equals(schoolId)) {
-                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa phòng học của trường khác.");
+                throw new ForbiddenException("SECURITY: You are not allowed to delete another school's room.");
             }
         }
     }

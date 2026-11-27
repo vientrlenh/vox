@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Tiêu chí rubric kèm dải điểm thật. FE dựng ô nhập từ min/max ở đây thay vì
- * hardcode 0-9 — mỗi rubric một thang khác nhau.
+ * A rubric criterion with its real score range. The FE builds the input boxes from the min/max here
+ * instead of hardcoding 0-9 -- every rubric has a different scale.
  */
 public record GradingCriterionMetaInfo(
     UUID id,

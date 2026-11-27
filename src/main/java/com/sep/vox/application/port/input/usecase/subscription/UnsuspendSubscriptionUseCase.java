@@ -20,16 +20,16 @@ import com.sep.vox.domain.repository.SchoolSubscriptionEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Gỡ đình chỉ, trả gói về ACTIVE.
+ * Lifts a suspension and returns the plan to ACTIVE.
  *
- * <p>KHÔNG kéo dài endDate để bù cho quãng bị đình chỉ. Đây là quyết định nghiệp vụ, không phải
- * thiếu sót: đình chỉ là chế tài với trường vi phạm, cộng bù thời gian sẽ biến nó thành hình phạt
- * không mất gì. Trường hợp đình chỉ nhầm thì đường xử lý là System Admin điều chỉnh tay, có actor và
- * lý do, chứ không phải một quy tắc tự động áp cho cả trường vi phạm thật.
+ * <p>Does NOT extend endDate to make up for the suspended time. This is a business decision, not an omission:
+ * suspension is a sanction on a school that broke the rules, and adding the time back would turn it into a
+ * punishment that costs nothing. For a mistaken suspension the remedy is a System Admin adjusting by hand, with
+ * an actor and a reason, not an automatic rule applied to schools that really did violate.
  *
- * <p>Ba cột suspended_* bị xóa về null ở đây -- và chính vì thế lịch sử phải được ghi ở
- * school_subscription_events trước, nếu không sau lệnh này không còn dấu vết nào cho thấy trường
- * từng bị đình chỉ.
+ * <p>The three suspended_* columns are cleared to null here -- and that is exactly why the history must be
+ * written to school_subscription_events first, otherwise after this command nothing would show that the school
+ * was ever suspended.
  */
 @Service
 @RequiredArgsConstructor
@@ -65,9 +65,9 @@ public class UnsuspendSubscriptionUseCase implements IUseCase<UnsuspendSubscript
 
     private SchoolSubscription requireSuspended(UUID subscriptionId) {
         SchoolSubscription subscription = schoolSubscriptionRepository.findById(subscriptionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription not found"));
         if (subscription.getStatus() != SchoolSubscriptionStatus.SUSPENDED) {
-            throw new IllegalArgumentException("Gói đăng ký này hiện không bị đình chỉ");
+            throw new IllegalArgumentException("This subscription is not currently suspended");
         }
         return subscription;
     }

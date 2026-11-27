@@ -82,7 +82,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
     public AssessmentPaperDto execute(CreateAssessmentPaperCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
 
@@ -91,12 +91,12 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
             case "blueprint" -> createFromBlueprint(assessment, currentUserId);
             case "copy" -> createFromCopy(assessment, input.copyFromPaperId(), currentUserId);
             case "questions" -> createFromQuestions(assessment, input.sections(), currentUserId);
-            default -> throw new IllegalArgumentException("Source không hợp lệ, chỉ hỗ trợ blueprint, copy hoặc questions");
+            default -> throw new IllegalArgumentException("Invalid source, only blueprint, copy or questions are supported");
         };
     }
 
     /**
-     * Câu hỏi của bài trên lớp tự mở khoá khi đóng bài; kỳ thi tập trung do người quản lý tự mở.
+     * Questions of a class test unlock themselves when the test closes; for a centralized assessment the manager unlocks them.
      */
     private AssessmentSecurePoolReleaseMode releaseModeFor(Assessment assessment) {
         return assessment.getKind() == AssessmentKind.CLASS_TEST
@@ -131,18 +131,18 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
 
     private AssessmentBlueprintVersion requireFinalizedVersionWithinPlan(Assessment assessment) {
         if (assessment.getBlueprintId() == null) {
-            throw new IllegalArgumentException("Bài kiểm tra chưa gắn blueprint");
+            throw new IllegalArgumentException("The assessment has no blueprint attached");
         }
         if (assessment.getBlueprintVersionId() == null) {
-            throw new IllegalArgumentException("CHAIR chưa chốt version blueprint cho kỳ thi này");
+            throw new IllegalArgumentException("The CHAIR has not locked a blueprint version for this assessment");
         }
 
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(assessment.getBlueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint đã chốt"));
+            .orElseThrow(() -> new ResourceNotFoundException("Locked blueprint version not found"));
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             version.getTotalTimeLimitSeconds(),
-            "Mã đề tạo từ blueprint " + version.getCode()
+            "Paper created from blueprint " + version.getCode()
         );
         return version;
     }
@@ -191,13 +191,13 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
 
     private boolean isFixedQuestionUsable(Assessment assessment, UUID questionId) {
         Question fixedQuestion = questionRepository.findById(questionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong slot"));
+            .orElseThrow(() -> new ResourceNotFoundException("Fixed question not found in the slot"));
         if (fixedQuestion.getStatus() == QuestionStatus.PUBLISHED) {
             return true;
         }
         if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
             throw new IllegalArgumentException(
-                "Câu hỏi " + fixedQuestion.getCode() + " trong khung chưa PUBLISHED, không thể sinh đề thi");
+                "Question " + fixedQuestion.getCode() + " in the framework is not PUBLISHED, so the paper cannot be generated");
         }
         // Class test: the fixed question was archived after the blueprint was published. The caller leaves this
         // slot empty so the CHAIR picks another question through the picker, instead of blocking the paper variant altogether.
@@ -219,7 +219,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         // RecalculateAssessmentTimeDurationService cannot be reused. It must be totalSeconds (which includes media) because this is the
         // LENGTH yardstick of the assessment against the plan, see PaperTimeCalculator.
         int totalSeconds = paperTotalSeconds(questionsBySection.stream().flatMap(l -> l.stream()).toList());
-        assessmentTimeQuotaGuardService.requireWithinPlan(assessment.getSchoolId(), totalSeconds, "Bài kiểm tra trên lớp");
+        assessmentTimeQuotaGuardService.requireWithinPlan(assessment.getSchoolId(), totalSeconds, "Class test");
 
         List<BigDecimal> sectionWeights = ClassTestSectionWeightPolicy.resolveRequestedWeights(sections);
         int variant = assessmentPaperRepository.nextVariant(assessment.getId());
@@ -234,14 +234,14 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
 
     private void requireDirectAuthoringAllowed(Assessment assessment, List<ClassTestSectionCommand> sections) {
         if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
-            throw new ForbiddenException("Chỉ bài kiểm tra trên lớp mới được soạn câu hỏi trực tiếp");
+            throw new ForbiddenException("Only a class test may have its questions authored directly");
         }
         if (assessment.getBlueprintId() != null) {
             throw new IllegalArgumentException(
-                "Bài đang dùng blueprint dùng chung, không thể soạn câu hỏi trực tiếp — tạo mã đề từ blueprint hoặc sao chép mã đề có sẵn");
+                "The assessment uses a shared blueprint, so questions cannot be authored directly: create a paper from the blueprint or copy an existing paper");
         }
         if (sections == null || sections.isEmpty()) {
-            throw new IllegalArgumentException("Phải có ít nhất một phần trong đề");
+            throw new IllegalArgumentException("A paper must have at least one section");
         }
     }
 
@@ -251,12 +251,12 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         List<List<Question>> questionsBySection = new ArrayList<List<Question>>();
         for (ClassTestSectionCommand section : sections) {
             if (section.questions() == null || section.questions().isEmpty()) {
-                throw new IllegalArgumentException("Mỗi phần phải có ít nhất 1 câu hỏi");
+                throw new IllegalArgumentException("Every section must have at least 1 question");
             }
             List<Question> questions = new ArrayList<Question>();
             for (ClassTestQuestionCommand questionCommand : section.questions()) {
                 if (!seenQuestionIds.add(questionCommand.questionId())) {
-                    throw new IllegalArgumentException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 mã đề");
+                    throw new IllegalArgumentException("A question cannot appear more than once in the same paper");
                 }
                 questions.add(loadUsableQuestion(assessment, questionCommand, currentUserId));
             }
@@ -269,7 +269,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         Question question = questionRepository
             .findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
             .orElseThrow(() -> new ForbiddenException(
-                "Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
+                "You are not allowed to use question " + questionCommand.questionId()));
         requireCanUseQuestion(question, currentUserId);
         return question;
     }
@@ -310,7 +310,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         }
     }
 
-    /** Thời gian thật của mã đề, gồm cả thời lượng phát AUDIO/VIDEO -- xem {@link PaperTimeCalculator}. */
+    /** The real duration of the paper, including AUDIO/VIDEO playback time -- see {@link PaperTimeCalculator}. */
     private int paperTotalSeconds(List<Question> questions) {
         Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
             .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
@@ -325,7 +325,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         }
         Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
         if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
-            throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
+            throw new ForbiddenException("The READ_ONLY permission does not allow using questions in an assessment");
         }
     }
 
@@ -337,7 +337,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalArgumentException(
-                "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể sinh đề thi");
+                "The locked blueprint version has an invalid total section weight, so the paper cannot be generated");
         }
         for (AssessmentBlueprintSection section : sections) {
             List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
@@ -346,24 +346,24 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalArgumentException(
-                    "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ, không thể sinh đề thi");
+                    "Section \"" + section.getTitle() + "\" in the blueprint has an invalid total question slot weight, so the paper cannot be generated");
             }
         }
     }
 
     private AssessmentPaperDto createFromCopy(Assessment assessment, UUID copyFromPaperId, UUID currentUserId) {
         if (copyFromPaperId == null) {
-            throw new IllegalArgumentException("Phải cung cấp copyFromPaperId khi source là copy");
+            throw new IllegalArgumentException("copyFromPaperId must be provided when source is copy");
         }
         AssessmentPaper sourcePaper = assessmentPaperRepository.findById(copyFromPaperId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi nguồn để sao chép"));
+            .orElseThrow(() -> new ResourceNotFoundException("Source paper to copy not found"));
         if (!sourcePaper.getAssessmentId().equals(assessment.getId())) {
-            throw new IllegalArgumentException("Đề thi nguồn không thuộc cùng bài kiểm tra");
+            throw new IllegalArgumentException("The source paper does not belong to the same assessment");
         }
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             sourcePaper.getTimeDurationSeconds(),
-            "Mã đề sao chép " + sourcePaper.getCode()
+            "Copied paper " + sourcePaper.getCode()
         );
 
         int variant = assessmentPaperRepository.nextVariant(assessment.getId());

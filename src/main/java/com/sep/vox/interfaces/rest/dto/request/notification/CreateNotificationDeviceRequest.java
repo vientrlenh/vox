@@ -7,13 +7,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateNotificationDeviceRequest(
-    @NotBlank(message = "Id của thiết bị không được để trống")
+    @NotBlank(message = "Device ID must not be blank")
     String deviceId, 
 
-    @NotNull(message = "Nền tảng của thiết bị không được để trống")
+    @NotNull(message = "Device platform must not be blank")
     NotificationDevicePlatform platform, 
 
-    @NotBlank(message = "FID không được để trống")
+    @NotBlank(message = "FID must not be blank")
     String installationId
 ) {
 

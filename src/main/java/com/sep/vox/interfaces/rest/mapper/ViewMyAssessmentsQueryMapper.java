@@ -21,8 +21,8 @@ public final class ViewMyAssessmentsQueryMapper {
     }
 
     /**
-     * {@code page}/{@code size} đã được {@code PageArguments.validate} kiểm ở controller, nên ở đây
-     * không kiểm lại: một luật hai chỗ giữ là cách chắc chắn để hai chỗ trôi khỏi nhau.
+     * {@code page}/{@code size} are already checked by {@code PageArguments.validate} in the controller, so they are
+     * not checked again here: keeping one rule in two places is a sure way to let the two drift apart.
      */
     public static ViewMyAssessmentsQuery fromRequest(AssessmentKind kind, String status, int page, int size, String sort) {
         return new ViewMyAssessmentsQuery(kind, normalizeStatus(status), page, size, parseSortDescending(sort));
@@ -35,7 +35,7 @@ public final class ViewMyAssessmentsQueryMapper {
 
         String normalized = status.trim().toLowerCase(Locale.ROOT);
         if (!ALLOWED_STATUSES.contains(normalized)) {
-            throw new IllegalArgumentException("Trạng thái bài thi không hợp lệ");
+            throw new IllegalArgumentException("Invalid assessment status");
         }
         return normalized;
     }
@@ -47,7 +47,7 @@ public final class ViewMyAssessmentsQueryMapper {
 
         String[] parts = sort.trim().split(",");
         if (parts.length > 2 || !SORT_FIELD.equalsIgnoreCase(parts[0].trim())) {
-            throw new IllegalArgumentException("Tham số sắp xếp không hợp lệ");
+            throw new IllegalArgumentException("Invalid sort parameter");
         }
         if (parts.length == 1) {
             return true;
@@ -60,6 +60,6 @@ public final class ViewMyAssessmentsQueryMapper {
         if ("asc".equals(direction)) {
             return false;
         }
-        throw new IllegalArgumentException("Tham số sắp xếp không hợp lệ");
+        throw new IllegalArgumentException("Invalid sort parameter");
     }
 }

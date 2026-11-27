@@ -30,9 +30,9 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Cảnh báo SỚM (checkUsageWarningTransition) phải chỉ bắn đúng 1 lần lúc used/total CHUYỂN từ dưới
- * ngưỡng sang vượt ngưỡng -- cùng kỹ thuật crossing-detection với checkDebtCapTransition (không có
- * test riêng trong repo, xem javadoc ConsumeQuotaService).
+ * The EARLY warning (checkUsageWarningTransition) must fire exactly once, when used/total CROSSES from
+ * below the threshold to above it -- the same crossing-detection technique as checkDebtCapTransition
+ * (which has no test of its own in the repo, see the javadoc of ConsumeQuotaService).
  */
 class ConsumeQuotaServiceTests {
 
@@ -197,7 +197,7 @@ class ConsumeQuotaServiceTests {
         assertThat(entry.getUserId()).isEqualTo(studentId);
     }
 
-    /** Ràng buộc CHECK từ chối dòng 0 đồng — chặn ở Java thay vì để DB ném giữa luồng chấm bài. */
+    /** The CHECK constraint rejects a 0-VND row -- block it in Java instead of letting the DB throw in the middle of the grading flow. */
     @Test
     void should_not_record_a_zero_charge() {
         givenQuota(BigDecimal.valueOf(100_000), BigDecimal.valueOf(10_000));

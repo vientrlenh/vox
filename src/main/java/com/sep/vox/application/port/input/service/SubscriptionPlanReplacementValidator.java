@@ -14,16 +14,16 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlanStatus;
 import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 
 /**
- * Một gói thay thế có được phép thay cho gói bị lưu trữ hay không.
+ * Whether a replacement plan is allowed to replace an archived plan.
  *
- * <p>Ràng buộc ở đây chặt bất thường, và lý do nằm ở chỗ trường KHÔNG CÓ QUYỀN TỪ CHỐI: lúc gia hạn,
- * SubscriptionPlanResolver tự đi theo replacedByPlanId và trường nhận gói mới mà không được hỏi. Vì
- * vậy mọi thứ quyết định "trường trả bao nhiêu để nhận được gì" đều phải giữ nguyên hoặc tốt lên --
- * nếu không, System Admin có thể đơn phương hạ chất lượng dịch vụ của một trường đang trả tiền.
+ * <p>The constraint here is unusually strict, and the reason is that the school HAS NO RIGHT TO REFUSE: at renewal,
+ * SubscriptionPlanResolver follows replacedByPlanId on its own and the school receives the new plan without being asked. So
+ * everything that decides "what the school gets for what it pays" must stay the same or get better --
+ * otherwise a System Admin could unilaterally lower the service quality of a paying school.
  *
- * <p>Tách khỏi ArchiveSubscriptionPlanUseCase vì có HAI đường vào cùng cần đúng bộ luật này: lúc lưu
- * trữ, và lúc sửa lại gói thay thế sau khi đã lưu trữ (UpdateSubscriptionPlanReplacementUseCase).
- * Để mỗi bên tự kiểm là kiểu hôm nào đó sửa một bên quên bên kia.
+ * <p>Split out of ArchiveSubscriptionPlanUseCase because there are TWO entry paths that both need exactly this rule set: at
+ * archiving time, and when editing the replacement plan after archiving (UpdateSubscriptionPlanReplacementUseCase).
+ * Letting each one check on its own is how one gets fixed some day and the other forgotten.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,21 +33,21 @@ public class SubscriptionPlanReplacementValidator {
 
     public void requireValidReplacement(SubscriptionPlan replacement, SubscriptionPlan replaced) {
         if (replacement.getId().equals(replaced.getId())) {
-            throw new IllegalArgumentException("Gói thay thế không được trùng với chính gói đang lưu trữ");
+            throw new IllegalArgumentException("The replacement plan must not be the same as the plan being archived");
         }
         if (replacement.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new IllegalArgumentException("Gói thay thế phải đang ở trạng thái hoạt động");
+            throw new IllegalArgumentException("The replacement plan must be in active status");
         }
 
         requireCompatibleTerms(replacement, replaced);
     }
 
     /**
-     * Chỉ phần so điều khoản (chu kỳ/giá/thời lượng/hạn mức) -- KHÔNG đòi replacement đang ACTIVE.
+     * Only the terms-comparison part (period/price/duration/quota) -- does NOT require the replacement to be ACTIVE.
      *
-     * <p>Tách riêng cho luồng "tạo gói thay thế" (CreateSubscriptionPlanReplacementUseCase): gói mới
-     * tạo ra còn DRAFT nên requireValidReplacement không gọi được ngay; điều khoản chỉ được chốt lúc
-     * publish (PublishSubscriptionPlanUseCase), thời điểm gói mới thật sự nhận vai trò thay thế.
+     * <p>Split out for the "create replacement plan" flow (CreateSubscriptionPlanReplacementUseCase): the newly
+     * created plan is still DRAFT so requireValidReplacement cannot be called right away; the terms are only settled at
+     * publish time (PublishSubscriptionPlanUseCase), the moment the new plan really takes on the replacement role.
      */
     public void requireCompatibleTerms(SubscriptionPlan replacement, SubscriptionPlan replaced) {
         requireSamePeriod(replacement, replaced);
@@ -57,40 +57,40 @@ public class SubscriptionPlanReplacementValidator {
     }
 
     /**
-     * Cả ĐƠN VỊ lẫn SỐ LƯỢNG chu kỳ. Thiếu vế đơn vị thì một gói "12 DAY" thay được cho gói
-     * "12 MONTH" ở đúng giá cũ -- trường trả nguyên tiền và nhận về 1/30 thời hạn.
+     * Both the UNIT and the COUNT of the period. Without the unit side, a "12 DAY" plan could replace a
+     * "12 MONTH" plan at the old price -- the school pays the full amount and receives 1/30 of the duration.
      */
     private void requireSamePeriod(SubscriptionPlan replacement, SubscriptionPlan replaced) {
-        // equals() chứ không phải !=: periodCount là Integer (bọc), nên != so sánh THAM CHIẾU. Hiện
-        // nó vẫn chạy đúng chỉ vì Java cache các Integer từ -128..127 -- một gói chu kỳ 200 là sai
-        // ngay, mà không có gì báo.
+        // equals() rather than !=: periodCount is an Integer (boxed), so != compares REFERENCES. Right now
+        // it still works only because Java caches Integers from -128..127 -- a plan with period 200 is wrong
+        // immediately, with nothing to warn about it.
         if (replacement.getPeriodType() != replaced.getPeriodType()
                 || !replacement.getPeriodCount().equals(replaced.getPeriodCount())) {
             throw new IllegalArgumentException(
-                "Chu kỳ của gói thay thế phải giống hệt gói cần thay thế ("
+                "The period of the replacement plan must be identical to the plan being replaced ("
                     + replaced.getPeriodCount() + " " + replaced.getPeriodType() + ")");
         }
     }
 
     private void requireSamePrice(SubscriptionPlan replacement, SubscriptionPlan replaced) {
         if (replacement.getPriceVnd().compareTo(replaced.getPriceVnd()) != 0) {
-            throw new IllegalArgumentException("Gói thay thế phải có giá bằng đúng giá gói đang cần được thay thế");
+            throw new IllegalArgumentException("The replacement plan must have exactly the same price as the plan being replaced");
         }
     }
 
-    /** Cho phép NHIỀU hơn: nâng chất lượng cho trường thì không cần ai đồng ý. */
+    /** MORE is allowed: raising quality for the school needs no one's consent. */
     private void requireNotLessAttemptTime(SubscriptionPlan replacement, SubscriptionPlan replaced) {
         if (replacement.getMaxTimePerAttemptMin() < replaced.getMaxTimePerAttemptMin()) {
             throw new IllegalArgumentException(
-                "Thời lượng tối đa mỗi lượt của gói thay thế không được thấp hơn gói cần thay thế ("
-                    + replaced.getMaxTimePerAttemptMin() + " phút)");
+                "The maximum duration per attempt of the replacement plan must not be lower than the plan being replaced ("
+                    + replaced.getMaxTimePerAttemptMin() + " minutes)");
         }
     }
 
     /**
-     * Hạn mức kèm gói là phần GIÁ TRỊ chính của một gói, nên đây là chỗ dễ tụt nhất mà giá vẫn nhìn
-     * y hệt. Soi theo TỪNG QuotaType: thiếu hẳn một loại cũng tính là tụt, vì trường đang dùng loại
-     * đó sẽ mất sạch hạn mức ở kỳ sau.
+     * The quota included in the plan is the main VALUE of a plan, so this is the easiest place to regress while the price still looks
+     * identical. Checked per QuotaType: missing a whole type also counts as a regression, because a school using that
+     * type would lose all its quota next period.
      */
     private void requireNotLessQuota(SubscriptionPlan replacement, SubscriptionPlan replaced) {
         Map<QuotaType, BigDecimal> replacementQuotas = subscriptionPlanQuotaRepository
@@ -101,11 +101,11 @@ public class SubscriptionPlanReplacementValidator {
             BigDecimal replacementAmount = replacementQuotas.get(replacedQuota.getQuotaType());
             if (replacementAmount == null) {
                 throw new IllegalArgumentException(
-                    "Gói thay thế thiếu hạn mức " + replacedQuota.getQuotaType() + " mà gói cũ đang có");
+                    "The replacement plan lacks the quota " + replacedQuota.getQuotaType() + " that the old plan has");
             }
             if (replacementAmount.compareTo(replacedQuota.getIncludedAmountVnd()) < 0) {
                 throw new IllegalArgumentException(
-                    "Hạn mức " + replacedQuota.getQuotaType() + " của gói thay thế thấp hơn gói cần thay thế ("
+                    "Quota " + replacedQuota.getQuotaType() + " of the replacement plan is lower than the plan being replaced ("
                         + replacedQuota.getIncludedAmountVnd() + " VND)");
             }
         }

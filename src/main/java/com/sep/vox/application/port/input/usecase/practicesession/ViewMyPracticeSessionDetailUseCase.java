@@ -15,13 +15,13 @@ import com.sep.vox.application.response.input.practicesession.PracticeSessionRes
 import com.sep.vox.domain.repository.PracticeSessionRepository;
 
 /**
- * HỌC SINH xem lại bài luyện của chính mình -- màn tổng kết ngay sau khi kết thúc phiên, và
- * xem lại từ lịch sử luyện tập.
+ * A STUDENT reviews their own practice -- the summary screen right after the session ends, and the review from the
+ * practice history.
  *
- * Trước đây màn tổng kết gọi nhầm sang {@code studentPracticeSessionDetail}, vốn là endpoint
- * của GIÁO VIÊN xem bài học sinh mình dạy ({@code @PreAuthorize("hasRole('TEACHER')")}), nên
- * học sinh bấm "Hoàn tất" là dính Access Denied. Cùng nội dung nhưng khác luật quyền, nên phải
- * là hai đường riêng.
+ * The summary screen used to call {@code studentPracticeSessionDetail} by mistake, which is the endpoint for a
+ * TEACHER viewing the work of the students they teach ({@code @PreAuthorize("hasRole('TEACHER')")}), so students
+ * who tapped "Done" hit Access Denied. Same content but different permission rules, so they have to be two separate
+ * paths.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,11 +35,11 @@ public class ViewMyPracticeSessionDetailUseCase {
     public TeacherPracticeSessionDetail execute(UUID sessionId) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         PracticeSession session = practiceSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
-        // hasRole('STUDENT') mới chỉ nói người gọi LÀ học sinh, chưa nói phiên này của ai --
-        // thiếu bước dưới thì bất kỳ học sinh nào cũng đọc được bài của bạn cùng lớp qua id.
+            .orElseThrow(() -> new ResourceNotFoundException("Practice session not found."));
+        // hasRole('STUDENT') only says the caller IS a student, not whose session this is -- without the step below any
+        // student could read a classmate's work by id.
         if (!session.getStudentId().equals(studentId)) {
-            throw new ForbiddenException("Bạn không được xem phiên luyện này.");
+            throw new ForbiddenException("You are not allowed to view this practice session.");
         }
         return detailAssemblyService.assemble(sessionId);
     }

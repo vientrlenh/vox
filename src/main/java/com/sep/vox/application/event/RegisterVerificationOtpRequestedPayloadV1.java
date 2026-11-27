@@ -1,11 +1,12 @@
 package com.sep.vox.application.event;
 
 /**
- * Yêu cầu gửi OTP xác thực đăng ký trường.
+ * A request to send the OTP that verifies a school registration.
  *
- * <p>Payload KHÔNG mang mã OTP, cùng lý do với {@link ResetPasswordOtpRequestedPayloadV1}.
- * Consumer sinh mã, ghi bản hash vào dòng cache đăng ký (đã được use case tạo sẵn với
- * {@code otpHash} rỗng) rồi mới gửi mail.
+ * <p>The payload does NOT carry the OTP code, for the same reason as
+ * {@link ResetPasswordOtpRequestedPayloadV1}. The consumer generates the code, writes its hash
+ * into the registration cache row (already created by the use case with an empty
+ * {@code otpHash}) and only then sends the mail.
  */
 public record RegisterVerificationOtpRequestedPayloadV1(
     String to

@@ -3,8 +3,8 @@ package com.sep.vox.domain.valueobject;
 import java.math.BigDecimal;
 
 /**
- * Tín hiệu confidence theo từng case. Mỗi giá trị có thể null khi nhánh đó
- * không áp dụng hoặc không đo được cho câu trả lời hiện tại.
+ * Confidence signals per case. Each value may be null when that branch
+ * does not apply or cannot be measured for the current answer.
  */
 public record ConfidenceCaseSignals(
     BigDecimal cAsrLog,

@@ -86,7 +86,7 @@ public class DistributeQuotaToUsersService {
     private List<UUID> requireEligibleUserIds(UUID schoolId, UUID roleId) {
         List<UUID> eligibleUserIds = fetchEligibleUserIds(schoolId, roleId);
         if (eligibleUserIds.isEmpty()) {
-            throw new IllegalArgumentException("Trường chưa có giáo viên/học sinh phù hợp để phân bổ hạn mức");
+            throw new IllegalArgumentException("The school has no suitable teachers/students to allocate quota to");
         }
         return eligibleUserIds;
     }
@@ -106,10 +106,10 @@ public class DistributeQuotaToUsersService {
     }
 
     /**
-     * Phần ví tự nạp CÓ THỂ ăn thêm ngoài {@code distributableVnd} khi nới trần cá nhân của MỘT
-     * người -- không phải một túi tiền dành riêng, chỉ là trần soft-ceiling giống hệt cách pool đã
-     * vận hành (xem ConsumeQuotaService.chargeOverage, nơi tiền thật sự bị trừ). Kẹp về 0: âm là nợ
-     * của trường, không phải phần chia được thêm.
+     * The part of the self-funded balance that CAN be taken in addition to {@code distributableVnd} when loosening the personal cap of ONE
+     * person -- not a dedicated pocket, only a soft-ceiling cap exactly like how the pool
+     * works (see ConsumeQuotaService.chargeOverage, where the money is actually deducted). Clamped to 0: negative is the
+     * school's debt, not an extra share.
      */
     private BigDecimal walletHeadroomVnd(UUID schoolId) {
         return schoolBalanceRepository.findBySchoolId(schoolId)
@@ -203,24 +203,24 @@ public class DistributeQuotaToUsersService {
     }
 
     /**
-     * Số tiền trường THẬT SỰ còn trả được cho loại hạn mức này = hạn mức kèm gói còn lại + số dư ví
-     * tự nạp (âm kẹp về 0, vì âm là nợ và nợ đã bị chặn ở một cửa riêng).
+     * The amount the school can REALLY still pay for this quota type = remaining plan quota + self-funded balance
+     * (negative clamped to 0, because negative is debt and debt is already blocked at a separate gate).
      *
-     * <p>Sinh ra để trả lời một câu mà trần phân phối KHÔNG trả lời được. Trần tính trên
-     * {@code total_allocated} và không hề nhỏ đi khi ví bị tiêu, nên một trường đã tiêu cạn ví vẫn
-     * chia tiếp được tới hết trần mà không có gì cản -- rồi giáo viên bị chặn lúc bấm mở kỳ thi, học
-     * sinh bị chặn giữa buổi luyện, và cả hai đều vừa được báo là mình còn hạn mức.
+     * <p>Created to answer a question that the distribution cap CANNOT answer. The cap is computed on
+     * {@code total_allocated} and does not shrink when the balance is spent, so a school that has spent its balance down to nothing can still
+     * keep distributing up to the cap with nothing stopping it -- then teachers get blocked when they open an assessment, students
+     * get blocked mid-practice, and both were just told they still have quota.
      *
-     * <p>CỐ Ý chỉ để cảnh báo, không đem chặn ở đây: trần chi cá nhân là một giới hạn nội bộ, ổn định
-     * suốt kỳ, chứ không phải một phép giữ tiền. Nếu lấy nó làm điều kiện chia thì trần của mọi người
-     * sẽ co lại mỗi khi có ai đó tiêu, và quản trị trường phải chia lại liên tục trong kỳ. Việc CHẶN
-     * vẫn nằm đúng chỗ cũ, ngay trước lúc tốn tiền: ClassTestTokenQuotaGuardService cho đường thi,
-     * findPracticeSpendableFundsVnd cho đường luyện.
+     * <p>DELIBERATELY only a warning, not used as a block here: the personal spending cap is an internal limit, stable
+     * throughout the period, not a hold on money. If it were a condition for distributing, everyone's cap
+     * would shrink every time someone spends, and the school admin would have to redistribute constantly during the period. The BLOCKING
+     * stays where it was, right before money is spent: ClassTestTokenQuotaGuardService for the assessment path,
+     * findPracticeSpendableFundsVnd for the practice path.
      *
-     * <p>Công thức phải khớp TỪNG ĐỒNG với {@code ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd}
-     * -- một cảnh báo lệch khỏi cửa chặn thật thì hoặc dọa người dùng về khoản vẫn chi được, hoặc để
-     * họ yên tâm về khoản sắp bị từ chối. Ba nơi đang chép lại cùng công thức này (thêm
-     * {@code SchoolFundingResponse}); gom về một chỗ là việc đáng làm khi có dịp sửa cả ba.
+     * <p>The formula must match {@code ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd} TO THE DONG
+     * -- a warning that deviates from the real blocking gate either scares the user about an amount that can still be spent, or
+     * reassures them about an amount about to be rejected. Three places currently copy this same formula (add
+     * {@code SchoolFundingResponse}); consolidating them into one is worth doing when all three are being edited anyway.
      */
     private BigDecimal spendableFundsVnd(SchoolSubscriptionQuotaRecord pool, UUID schoolId) {
         return orZero(pool.getTotalAllocatedAmountVnd())
@@ -233,22 +233,22 @@ public class DistributeQuotaToUsersService {
     }
 
     /**
-     * Chia đều TOÀN BỘ phần được phép chia cho những người đủ điều kiện, ghi đè mọi phân bổ cũ của họ.
+     * Splits the WHOLE distributable amount evenly among the eligible people, overwriting all their previous allocations.
      *
-     * <p>Không cần trừ đi phần của người KHÔNG còn đủ điều kiện, và đó là hệ quả trực tiếp của việc
-     * sumOthers/distributedAmountVnd chỉ đếm người đủ điều kiện: sau lượt chia này, tổng trên tập
-     * được đếm đúng bằng {@code distributableVnd}, không dư một đồng.
+     * <p>No need to subtract the share of people who are NO LONGER eligible, which is a direct consequence of
+     * sumOthers/distributedAmountVnd counting only eligible people: after this split, the total over the
+     * counted set equals {@code distributableVnd} exactly, with no dong left over.
      *
-     * <p>Trước khi có phép lọc đó thì chính hàm này đẩy trường vượt trần của chính mình -- nó phát
-     * hết phần được phép chia cho người đủ điều kiện, trong khi dòng của người đã nghỉ vẫn được cộng
-     * vào tổng, nên ngay sau một lần "chia đều tự động" là mọi lần sửa tay đều bị từ chối.
+     * <p>Before that filter existed, this very function pushed the school over its own cap -- it handed
+     * out the whole distributable amount to the eligible people while the rows of people who had left were still added
+     * to the total, so right after an "automatic even split" every manual edit was rejected.
      */
     private Map<UUID, BigDecimal> computeAutoSplit(List<UUID> eligibleUserIds, BigDecimal distributableVnd,
             Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing) {
         int count = eligibleUserIds.size();
         BigDecimal base = distributableVnd.divide(BigDecimal.valueOf(count), 6, RoundingMode.DOWN);
-        // Phần dư sau khi chia đều (không hết vì DOWN), quy đổi sang số đơn vị SMALLEST_UNIT để rải
-        // cho count đầu tiên -- giữ đúng tổng phần được chia, không "mất" hay "sinh thêm" tiền do làm tròn.
+        // The remainder after an even split (not exhausted because of rounding DOWN), converted into SMALLEST_UNIT units to spread
+        // over the first count people -- keeps the distributed total exact, no money "lost" or "created" by rounding.
         int remainderUnits = distributableVnd.subtract(base.multiply(BigDecimal.valueOf(count)))
             .divide(SMALLEST_UNIT, 0, RoundingMode.DOWN)
             .intValueExact();
@@ -260,7 +260,7 @@ public class DistributeQuotaToUsersService {
             BigDecimal used = usedQuantityOrZero(existing.get(userId));
             if (amount.compareTo(used) < 0) {
                 throw new IllegalArgumentException(
-                    "Không thể chia đều vì có người dùng đã sử dụng vượt mức chia mới, hãy dùng chế độ thủ công");
+                    "Cannot split evenly because some users have already used more than the new share; use manual mode");
             }
             result.put(userId, amount);
         }
@@ -271,7 +271,7 @@ public class DistributeQuotaToUsersService {
             Map<UUID, SchoolSubscriptionQuotaUserAllocation> existing, BigDecimal distributableVnd,
             BigDecimal walletHeadroomVnd, boolean confirmWalletDraw) {
         if (allocations == null || allocations.isEmpty()) {
-            throw new IllegalArgumentException("Danh sách phân bổ không được để trống");
+            throw new IllegalArgumentException("The allocation list must not be empty");
         }
 
         Set<UUID> eligibleSet = new HashSet<>(eligibleUserIds);
@@ -292,17 +292,17 @@ public class DistributeQuotaToUsersService {
 
         for (AllocateUserQuotaAmountCommand item : allocations) {
             if (item.userId() == null || !eligibleSet.contains(item.userId())) {
-                throw new IllegalArgumentException("Người dùng không thuộc trường hoặc không đúng vai trò: " + item.userId());
+                throw new IllegalArgumentException("The user does not belong to the school or does not have the right role: " + item.userId());
             }
             if (result.containsKey(item.userId())) {
-                throw new IllegalArgumentException("Danh sách phân bổ chứa userId trùng lặp: " + item.userId());
+                throw new IllegalArgumentException("The allocation list contains a duplicate userId: " + item.userId());
             }
             if (item.amountVnd() == null || item.amountVnd().compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("Số lượng phân bổ không hợp lệ");
+                throw new IllegalArgumentException("The allocation amount is invalid");
             }
             BigDecimal used = usedQuantityOrZero(existing.get(item.userId()));
             if (item.amountVnd().compareTo(used) < 0) {
-                throw new IllegalArgumentException("Không thể đặt hạn mức nhỏ hơn số lượng đã sử dụng");
+                throw new IllegalArgumentException("Cannot set a quota lower than the amount already used");
             }
             result.put(item.userId(), item.amountVnd());
         }
@@ -335,7 +335,7 @@ public class DistributeQuotaToUsersService {
         if (overDistributableVnd.signum() > 0) {
             if (overDistributableVnd.compareTo(walletHeadroomVnd) > 0) {
                 throw new IllegalArgumentException(
-                    "Tổng hạn mức phân bổ vượt quá phần được phép chia của trường lẫn số dư ví tự nạp");
+                    "The total allocated quota exceeds the distributable share of the school and the self-funded balance");
             }
             if (!confirmWalletDraw) {
                 throw new BusinessRuleViolationException(
@@ -346,13 +346,13 @@ public class DistributeQuotaToUsersService {
 
     private static String walletDrawConfirmationMessage(BigDecimal walletDrawVnd, BigDecimal walletBalanceVnd) {
         return String.format(
-            "Phân bổ này vượt phần chia từ gói, sẽ trích thêm %s từ ví tự nạp của trường (đang còn %s). "
-                + "Xác nhận để tiếp tục.",
+            "This allocation exceeds the share from the plan and will draw an extra %s from the school's self-funded balance (%s remaining). "
+                + "Confirm to continue.",
             formatVnd(walletDrawVnd), formatVnd(walletBalanceVnd));
     }
 
     private static String formatVnd(BigDecimal amountVnd) {
-        return amountVnd.toPlainString() + "đ";
+        return amountVnd.toPlainString() + " VND";
     }
 
     private static BigDecimal usedQuantityOrZero(SchoolSubscriptionQuotaUserAllocation allocation) {
@@ -394,22 +394,22 @@ public class DistributeQuotaToUsersService {
 
     private void requireSchoolAdminAccess(UUID schoolId) {
         if (!userContextPort.isSystemAdmin() && !schoolId.equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
     private SchoolSubscription findActiveSubscription(UUID schoolId) {
         return schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
+            .orElseThrow(() -> new ResourceNotFoundException("The school has no active subscription"));
     }
 
     private SchoolSubscriptionQuotaRecord findPool(UUID subscriptionId, QuotaType quotaType) {
         return subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription quota not found"));
     }
 
     private Role findRole(String roleCode) {
         return roleRepository.findByCode(roleCode)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + roleCode));
+            .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleCode));
     }
 }

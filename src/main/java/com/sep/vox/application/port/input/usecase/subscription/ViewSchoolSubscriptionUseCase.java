@@ -11,15 +11,15 @@ import com.sep.vox.domain.dto.SchoolSubscriptionDto;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Kỳ đăng ký ĐANG CHẠY của một trường, hoặc null nếu trường chưa mua/đã hết hạn.
+ * The RUNNING subscription period of a school, or null if the school has not bought one or it has expired.
  *
- * <p>"Đang chạy" = status ACTIVE và hôm nay nằm trong khoảng hiệu lực (findActiveBySchoolId), tức
- * đúng cái kỳ mà mọi cửa chặn hạn mức đang soi. Một trường có thể có nhiều dòng chưa kết thúc -- kỳ
- * đang chạy cộng kỳ đã trả tiền đang xếp hàng -- nên trả "dòng mới nhất" sẽ cho ra kỳ chưa tới lượt
- * và nói sai về hạn mức hiện hành. Muốn nhìn cả dây thì dùng schoolSubscriptionHistory.
+ * <p>"Running" = status ACTIVE and today inside the validity range (findActiveBySchoolId), i.e. exactly the
+ * period that every quota gate looks at. A school may have several unfinished rows -- the running period plus a
+ * paid period waiting in the queue -- so returning "the newest row" would give a period whose turn has not come
+ * and misstate the current quota. To see the whole chain use schoolSubscriptionHistory.
  *
- * <p>Cùng luật phân quyền với {@link ViewSchoolSubscriptionHistoryUseCase}: System Admin xem được mọi
- * trường, còn lại chỉ xem được trường của chính mình.
+ * <p>Same authorization rule as {@link ViewSchoolSubscriptionHistoryUseCase}: a System Admin may see every
+ * school, everyone else only their own.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,7 +31,7 @@ public class ViewSchoolSubscriptionUseCase implements IUseCase<ViewSchoolSubscri
     @Override
     public SchoolSubscriptionDto execute(ViewSchoolSubscriptionQuery input) {
         if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())
             .map(SchoolSubscriptionDto::toDto)

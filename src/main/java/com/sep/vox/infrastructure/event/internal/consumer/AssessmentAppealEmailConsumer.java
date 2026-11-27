@@ -33,12 +33,12 @@ import com.sep.vox.domain.repository.UserRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Mail báo học sinh mọi mốc trong vòng đời một đơn phúc khảo.
+ * Emails the student about every milestone in the lifecycle of an appeal.
  *
- * <p>Ba eventType dùng chung một topic vì cùng người nhận và cùng khuôn xử lý: giải
- * {@code studentId} thành email rồi render template. Phân nhánh bằng header
- * {@code eventType} thay vì nhét cờ phân loại vào payload, nhờ vậy mỗi loại vẫn giữ
- * được record riêng không có field thừa.
+ * <p>The three eventTypes share one topic because they have the same recipient and the same handling mould: resolve
+ * {@code studentId} to an email and then render the template. Branching is by the
+ * {@code eventType} header instead of stuffing a classification flag into the payload, so each type keeps
+ * its own record with no extra fields.
  */
 @Component
 @RequiredArgsConstructor
@@ -47,9 +47,9 @@ public class AssessmentAppealEmailConsumer {
 
     private static final String CONSUMER_GROUP = "assessment-appeal-email";
 
-    private static final String SUBJECT_PUBLISHED = "Kết quả phúc khảo đã được công bố";
-    private static final String SUBJECT_REJECTED = "Đơn phúc khảo không được chấp nhận";
-    private static final String SUBJECT_APPROVED = "Đơn phúc khảo của bạn đã được duyệt";
+    private static final String SUBJECT_PUBLISHED = "Appeal result published";
+    private static final String SUBJECT_REJECTED = "Appeal not accepted";
+    private static final String SUBJECT_APPROVED = "Your appeal has been approved";
 
     /** {@code withZone} is mandatory: without it the email prints the container's UTC time. */
     private static final DateTimeFormatter DEADLINE_FORMAT =
@@ -119,7 +119,7 @@ public class AssessmentAppealEmailConsumer {
             mailSendingPort.sendHtml(mail.to(), mail.subject(), mail.html());
         } catch (Exception e) {
             log.error("Send mail error: eventId={}, to={}", eventId, mail.to(), e);
-            throw new IllegalStateException("Gửi mail phúc khảo thất bại: eventId=" + eventId, e);
+            throw new IllegalStateException("Failed to send the appeal email: eventId=" + eventId, e);
         }
     }
 
@@ -142,7 +142,7 @@ public class AssessmentAppealEmailConsumer {
                     payload.assessmentName(), formatDeadline(payload.deadline())));
             }
             default -> throw new IllegalStateException(
-                "eventType không hợp lệ: " + eventType + ", eventId=" + eventId);
+                "Invalid eventType: " + eventType + ", eventId=" + eventId);
         };
     }
 
@@ -164,7 +164,7 @@ public class AssessmentAppealEmailConsumer {
         } catch (Exception e) {
             log.error("Invalid payload: eventId={}, eventType={}, value={}", eventId, eventType, value, e);
             throw new IllegalStateException(
-                "Payload " + eventType + " không hợp lệ, eventId=" + eventId, e);
+                "Payload " + eventType + " is invalid, eventId=" + eventId, e);
         }
     }
 
@@ -173,7 +173,7 @@ public class AssessmentAppealEmailConsumer {
     }
 
     private String formatDeadline(Instant deadline) {
-        return deadline == null ? "chưa đặt" : DEADLINE_FORMAT.format(deadline);
+        return deadline == null ? "not set" : DEADLINE_FORMAT.format(deadline);
     }
 
     @DltHandler

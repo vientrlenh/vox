@@ -12,7 +12,7 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.valueobject.ConfidenceCaseSignals;
 
 /**
- * Kết hợp confidence theo severity, không dùng weighted average.
+ * Combines confidence by severity, not a weighted average.
  */
 @Service
 public class ConfidenceReviewCalculator {
@@ -21,21 +21,21 @@ public class ConfidenceReviewCalculator {
     private static final BigDecimal C_REF_SOFT_CODESWITCH = decimal(0.85);
     private static final BigDecimal C_REF_HARD = decimal(0.80);
     // DISABLED 2026-08-11 together with Group D -- see the javadoc of evaluateAsrAndReferenceSignals().
-    // Case (4) -- 3 ngưỡng RIÊNG cho accuracy(1-m)/coverage(c)/timing(1-j), theo ĐÚNG spec
-    // (không phải 1 ngưỡng chung áp lên composite min() như bản trước). Áp ngưỡng chung 0.90 lên
-    // composite sẽ vô tình ép accuracy phải đạt 0.90 mới qua, xoá mất biên nới Vietnam-adjusted
-    // 0.80/0.70 dành riêng cho accuracy (rụng phụ âm cuối) -- xem AlignmentConfidence ở Python.
-    // private static final BigDecimal C_ALIGN_ACCURACY_SOFT = decimal(0.80); // 1 - m, m soft > 0.20 (nới từ 0.10)
-    // private static final BigDecimal C_ALIGN_ACCURACY_HARD = decimal(0.70); // m hard > 0.30 (nới từ 0.20)
-    // private static final BigDecimal C_ALIGN_COVERAGE_SOFT = decimal(0.90); // c soft < 0.90 (giữ nguyên)
-    // private static final BigDecimal C_ALIGN_COVERAGE_HARD = decimal(0.80); // c hard < 0.80 (giữ nguyên)
-    // private static final BigDecimal C_ALIGN_TIMING_SOFT = decimal(0.85); // 1 - j, j soft > 0.15 (giữ nguyên)
-    // private static final BigDecimal C_ALIGN_TIMING_HARD = decimal(0.70); // j hard > 0.30 (giữ nguyên)
-    // Coherence có trần đồng thuận NGƯỜI-NGƯỜI thấp hơn hẳn Grammar/Vocabulary
-    // (kappa .653-.68 trong literature review correctness/03-bo-sung-con-thieu.md, vì bản
-    // thân construct không có 1 cách tổ chức ý "đúng duy nhất") -- dao động Δc giữa 3 lần
-    // chấm độc lập vì vậy ít đáng báo động hơn cho coherence so với grammar, nới thêm ngưỡng
-    // soft riêng cho coherence thay vì dùng chung LLM_SOFT_LONG/SHORT với 2 tiêu chí kia.
+    // Case (4) -- 3 SEPARATE thresholds for accuracy(1-m)/coverage(c)/timing(1-j), EXACTLY per spec
+    // (not 1 shared threshold applied to the composite min() as in the previous version). Applying a shared 0.90 threshold to the
+    // composite would inadvertently force accuracy to reach 0.90 to pass, wiping out the Vietnam-adjusted
+    // 0.80/0.70 slack reserved for accuracy (dropped final consonants) -- see AlignmentConfidence in Python.
+    // private static final BigDecimal C_ALIGN_ACCURACY_SOFT = decimal(0.80); // 1 - m, m soft > 0.20 (relaxed from 0.10)
+    // private static final BigDecimal C_ALIGN_ACCURACY_HARD = decimal(0.70); // m hard > 0.30 (relaxed from 0.20)
+    // private static final BigDecimal C_ALIGN_COVERAGE_SOFT = decimal(0.90); // c soft < 0.90 (unchanged)
+    // private static final BigDecimal C_ALIGN_COVERAGE_HARD = decimal(0.80); // c hard < 0.80 (unchanged)
+    // private static final BigDecimal C_ALIGN_TIMING_SOFT = decimal(0.85); // 1 - j, j soft > 0.15 (unchanged)
+    // private static final BigDecimal C_ALIGN_TIMING_HARD = decimal(0.70); // j hard > 0.30 (unchanged)
+    // Coherence has a much lower HUMAN-HUMAN agreement ceiling than Grammar/Vocabulary
+    // (kappa .653-.68 in literature review correctness/03-bo-sung-con-thieu.md, because the
+    // construct itself has no single "correct" way to organize ideas) -- so the Δc fluctuation across 3 independent
+    // grading runs is less alarming for coherence than for grammar, so a separate soft threshold is relaxed for coherence
+    // instead of sharing LLM_SOFT_LONG/SHORT with the other 2 criteria.
     private static final BigDecimal LLM_COHERENCE_SOFT_RELAXATION = decimal(0.10);
     private static final BigDecimal LLM_COHERENCE_DELTA_SOFT_RELAXATION = decimal(0.20);
     public enum ConfidenceMode {

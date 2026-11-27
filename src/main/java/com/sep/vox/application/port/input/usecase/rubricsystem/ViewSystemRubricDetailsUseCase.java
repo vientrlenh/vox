@@ -29,22 +29,19 @@ public class ViewSystemRubricDetailsUseCase implements IUseCase<ViewSystemRubric
     @Override
     @Transactional(readOnly = true)
     public RubricDto execute(ViewSystemRubricDetailsQuery query) {
-        // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
 
-        // 2. Lấy bộ Rubric
         Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Rubric was not found."));
 
-        // 3. Đảm bảo đây là Rubric của Hệ thống
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Rubric này không thuộc về Hệ thống.");
+            throw new ForbiddenException("This Rubric does not belong to the System.");
         }
 
         // 4. Map sang Domain DTO

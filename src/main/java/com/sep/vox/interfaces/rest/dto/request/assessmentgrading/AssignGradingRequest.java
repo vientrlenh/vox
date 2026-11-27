@@ -18,20 +18,20 @@ import com.sep.vox.domain.model.assessment.GradingRoundType;
  * the submissions are ticked afterwards, and mixing rounds in one batch makes the status check rules ambiguous.
  */
 public record AssignGradingRequest(
-    @NotNull(message = "Phải chọn vòng chấm")
+    @NotNull(message = "A grading round must be selected")
     GradingRoundType roundType,
 
     Instant deadlineAt,
 
-    @NotEmpty(message = "Phải chọn ít nhất một bài thi để phân công")
+    @NotEmpty(message = "At least one result must be selected for assignment")
     @Valid
     List<AssignmentItemRequest> assignments
 ) {
     public record AssignmentItemRequest(
-        @NotNull(message = "Thiếu bài thi cần phân công")
+        @NotNull(message = "The result to assign is missing")
         UUID candidateResultId,
 
-        @NotNull(message = "Thiếu giáo viên cần phân công")
+        @NotNull(message = "The teacher to assign is missing")
         UUID teacherId
     ) {
     }

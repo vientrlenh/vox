@@ -8,73 +8,73 @@ import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionStatus;
 
 /**
- * Quy tắc chuyển trạng thái câu hỏi — kiểm tra quyền và trạng thái hợp lệ cho từng action.
+ * Question status transition rules — checks permission and valid status for each action.
  *
- * <p>Cố ý là class thuần static, không dependency, KHÔNG ném exception: mọi lý do từ chối được
- * <em>trả về</em> dưới dạng {@link Rejection}. Đây là điểm mấu chốt chứ không phải sở thích code.
- * Đường đi cập nhật hàng loạt phải xử lý được từng câu hỏi lỗi rồi đi tiếp; nếu quy tắc này nằm
- * trong một bean được Spring proxy và ném exception, transaction interceptor sẽ đánh dấu
- * transaction của use case bulk là rollback-only ngay lần đầu có câu lỗi — vòng lặp bắt được
- * exception và chạy tiếp bình thường, nhưng đến lúc commit thì nổ {@code UnexpectedRollbackException}
- * (HTTP 500) và cuốn theo cả những câu đã cập nhật thành công. Không có proxy thì không thể tái
- * phát sinh lỗi đó.
+ * <p>Deliberately a pure static class, no dependencies, and it does NOT throw: every reason for rejection is
+ * <em>returned</em> as a {@link Rejection}. This is the crux, not a coding preference.
+ * The bulk update path must handle each faulty question and move on; if this rule lived
+ * in a Spring-proxied bean and threw, the transaction interceptor would mark the
+ * bulk use case's transaction rollback-only at the first faulty question — the loop catches the
+ * exception and carries on normally, but at commit time {@code UnexpectedRollbackException} blows up
+ * (HTTP 500) and drags down the questions that were updated successfully. Without a proxy that failure cannot
+ * occur.
  *
- * <p>Chuỗi thông báo ở đây là văn bản hướng tới người dùng: chúng được trả thẳng cho client trong
- * {@code failed[].reason} của response bulk. Vì màn hình duyệt hàng loạt hay từ chối hàng chục câu
- * cùng lúc, mỗi lý do phải tự nó nói được <em>vì sao câu này bị bỏ qua</em> (đang ở trạng thái nào,
- * cần trạng thái nào) chứ không chỉ "không hợp lệ" — nếu không người dùng không biết phải sửa gì.
- * Kèm theo là {@link RejectionCode} để client gom nhóm các câu cùng lý do mà không phải so khớp
- * chuỗi tiếng Việt.
+ * <p>The message strings here are user-facing text: they are returned straight to the client in
+ * {@code failed[].reason} of the bulk response. Because the bulk review screen often rejects dozens of questions
+ * at once, each reason must say on its own <em>why this question was skipped</em> (which status it is in,
+ * which status is needed) and not just "invalid" — otherwise the user does not know what to fix.
+ * Accompanied by {@link RejectionCode} so the client can group questions with the same reason without matching
+ * strings.
  */
 public final class QuestionStatusTransition {
 
     /**
-     * Thông báo cho dữ liệu không tồn tại — dùng chung để endpoint đơn và endpoint hàng loạt nói
-     * cùng một câu, dù một bên ném exception còn bên kia gom vào {@code failed[]}.
+     * Message for data that does not exist — shared so the single endpoint and the bulk endpoint say
+     * the same sentence, even though one throws an exception and the other collects it into {@code failed[]}.
      */
-    public static final String QUESTION_NOT_FOUND = "Không tìm thấy câu hỏi";
-    public static final String QUESTION_BANK_NOT_FOUND = "Không tìm thấy ngân hàng câu hỏi";
+    public static final String QUESTION_NOT_FOUND = "Question not found";
+    public static final String QUESTION_BANK_NOT_FOUND = "Question bank not found";
 
     private QuestionStatusTransition() {
     }
 
     /**
-     * Bối cảnh của người thực hiện, đã resolve sẵn một lần cho cả batch.
+     * Context of the actor, already resolved once for the whole batch.
      *
-     * @param schoolAdmin đã loại trừ system admin (giống hệt cách use case tính trước đây)
+     * @param schoolAdmin excludes system admin (exactly the way the use case computed it before)
      */
     public record Actor(UUID userId, UUID schoolId, boolean systemAdmin, boolean schoolAdmin) {
     }
 
-    /** Phân loại lý do từ chối để tầng application map ra đúng HTTP status cho endpoint đơn. */
+    /** Classification of the rejection reason so the application layer maps it to the right HTTP status for the single endpoint. */
     public enum RejectionKind {
         FORBIDDEN, INVALID_STATE
     }
 
     /**
-     * Mã lý do ổn định cho client. Dùng để gom nhóm / dịch lại phía UI; text tiếng Việt trong
-     * {@link Rejection#reason()} có thể đổi mà không làm hỏng client.
+     * Stable reason code for clients. Used to group / re-translate on the UI side; the text in
+     * {@link Rejection#reason()} can change without breaking clients.
      */
     public enum RejectionCode {
-        /** Không tìm thấy câu hỏi (chỉ dùng ở đường đi hàng loạt). */
+        /** Question not found (only used on the bulk path). */
         QUESTION_NOT_FOUND,
-        /** Không tìm thấy ngân hàng câu hỏi của câu này. */
+        /** The question bank of this question was not found. */
         QUESTION_BANK_NOT_FOUND,
-        /** Action gửi lên không nằm trong danh sách hỗ trợ. */
+        /** The action sent is not in the supported list. */
         INVALID_ACTION,
-        /** Không đủ quyền trên ngân hàng / câu hỏi. */
+        /** Not enough permission on the bank / question. */
         NO_PERMISSION,
-        /** Tác giả tự duyệt bài của chính mình. */
+        /** The author reviewing their own work. */
         SELF_REVIEW,
-        /** Action chỉ dành cho quản trị viên của ngân hàng câu hỏi. */
+        /** The action is only for the admin of the question bank. */
         ADMIN_ONLY,
-        /** Trạng thái hiện tại không cho phép action. */
+        /** The current status does not allow the action. */
         INVALID_STATUS,
-        /** Action bắt buộc phải có lý do đi kèm. */
+        /** The action requires an accompanying reason. */
         NOTE_REQUIRED,
-        /** Khóa một câu đã bị khóa. */
+        /** Locking a question that is already locked. */
         ALREADY_LOCKED,
-        /** Mở khóa một câu chưa bị khóa. */
+        /** Unlocking a question that is not locked. */
         NOT_LOCKED
     }
 
@@ -139,7 +139,7 @@ public final class QuestionStatusTransition {
             standing.owner() || standing.editorCollaborator()
                 ? null
                 : forbidden(RejectionCode.NO_PERMISSION, action,
-                    "bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này"),
+                    "you are not the creator or a collaborator with edit rights on this question"),
             requireStatus(question.getStatus(), action,
                 QuestionStatus.DRAFT, QuestionStatus.REVISION_REQUESTED));
     }
@@ -170,7 +170,7 @@ public final class QuestionStatusTransition {
         return standing.owner() || standing.editorCollaborator()
                 || standing.systemAdminOnSystemBank() || standing.schoolAdminOnSchoolBank()
             ? null
-            : forbidden(RejectionCode.NO_PERMISSION, action, "bạn không có quyền xuất bản câu hỏi này");
+            : forbidden(RejectionCode.NO_PERMISSION, action, "you do not have permission to publish this question");
     }
 
     private static Rejection lockRejection(Question question, Standing standing, String action) {
@@ -180,7 +180,7 @@ public final class QuestionStatusTransition {
         }
         return question.isLocked()
             ? new Rejection(RejectionKind.INVALID_STATE, RejectionCode.ALREADY_LOCKED,
-                prefix(action) + "câu hỏi đã bị khóa")
+                prefix(action) + "the question is locked")
             : null;
     }
 
@@ -192,12 +192,12 @@ public final class QuestionStatusTransition {
         return question.isLocked()
             ? null
             : new Rejection(RejectionKind.INVALID_STATE, RejectionCode.NOT_LOCKED,
-                prefix(action) + "câu hỏi chưa bị khóa");
+                prefix(action) + "the question is not locked");
     }
 
     /**
-     * Áp dụng action lên câu hỏi. Chỉ gọi khi {@link #rejectionFor} đã trả {@code null} —
-     * hàm này không kiểm tra lại quyền hay trạng thái.
+     * Applies the action to the question. Only call when {@link #rejectionFor} has returned {@code null} —
+     * this function does not re-check permission or status.
      */
     public static void apply(Question question, String action) {
         switch (action) {
@@ -210,20 +210,20 @@ public final class QuestionStatusTransition {
             case "REOPEN" -> question.setStatus(QuestionStatus.DRAFT);
             case "LOCK" -> question.setLocked(true);
             case "UNLOCK" -> question.setLocked(false);
-            default -> throw new IllegalArgumentException("Action không hợp lệ: " + action);
+            default -> throw new IllegalArgumentException("Invalid action: " + action);
         }
     }
 
-    /** Nhãn tiếng Việt của trạng thái — khớp với nhãn trên UI để hai bên không nói khác nhau. */
+    /** English label of the status — matches the label on the UI so the two sides do not say different things. */
     public static String statusLabel(QuestionStatus status) {
         return switch (status) {
-            case DRAFT -> "Bản nháp";
-            case SUBMITTED_FOR_REVIEW -> "Chờ duyệt";
-            case REVISION_REQUESTED -> "Yêu cầu sửa";
-            case APPROVED -> "Đã duyệt";
-            case REJECTED -> "Bị từ chối";
-            case PUBLISHED -> "Đã xuất bản";
-            case ARCHIVED -> "Lưu trữ";
+            case DRAFT -> "Draft";
+            case SUBMITTED_FOR_REVIEW -> "Awaiting review";
+            case REVISION_REQUESTED -> "Revision requested";
+            case APPROVED -> "Approved";
+            case REJECTED -> "Rejected";
+            case PUBLISHED -> "Published";
+            case ARCHIVED -> "Archived";
         };
     }
 
@@ -240,7 +240,7 @@ public final class QuestionStatusTransition {
         return standing.systemAdminOnSystemBank() || standing.schoolAdminOnSchoolBank()
             ? null
             : forbidden(RejectionCode.ADMIN_ONLY, action,
-                "chỉ quản trị viên của ngân hàng câu hỏi mới thực hiện được");
+                "only an admin of the question bank can do this");
     }
 
     /**
@@ -257,8 +257,8 @@ public final class QuestionStatusTransition {
         // The author reviewing their own question is a separate case: it is the most common rejection
         // reason on the bulk review screen, and "you have no permission" makes users think a role is missing.
         return standing.owner()
-            ? forbidden(RejectionCode.SELF_REVIEW, action, "bạn là người tạo câu hỏi này, cần người khác duyệt")
-            : forbidden(RejectionCode.NO_PERMISSION, action, "bạn không có quyền duyệt câu hỏi trong ngân hàng này");
+            ? forbidden(RejectionCode.SELF_REVIEW, action, "you are the creator of this question, someone else must review it")
+            : forbidden(RejectionCode.NO_PERMISSION, action, "you do not have permission to review questions in this question bank");
     }
 
     private static Rejection requireStatus(QuestionStatus actual, String action, QuestionStatus... allowed) {
@@ -268,14 +268,14 @@ public final class QuestionStatusTransition {
             }
         }
         return new Rejection(RejectionKind.INVALID_STATE, RejectionCode.INVALID_STATUS,
-            prefix(action) + "câu hỏi đang ở trạng thái \"" + statusLabel(actual)
-                + "\", thao tác này chỉ áp dụng cho câu hỏi ở trạng thái " + allowedLabels(allowed));
+            prefix(action) + "the question is in status \"" + statusLabel(actual)
+                + "\", this action only applies to questions in status " + allowedLabels(allowed));
     }
 
     private static Rejection requireNote(String note, String action) {
         return note == null || note.isBlank()
             ? new Rejection(RejectionKind.INVALID_STATE, RejectionCode.NOTE_REQUIRED,
-                prefix(action) + "thao tác này bắt buộc phải nhập lý do")
+                prefix(action) + "this action requires a reason")
             : null;
     }
 
@@ -284,24 +284,24 @@ public final class QuestionStatusTransition {
     }
 
     private static Rejection invalidAction() {
-        return new Rejection(RejectionKind.INVALID_STATE, RejectionCode.INVALID_ACTION, "Action không hợp lệ");
+        return new Rejection(RejectionKind.INVALID_STATE, RejectionCode.INVALID_ACTION, "Invalid action");
     }
 
     private static String prefix(String action) {
-        return "Không thể " + actionLabel(action) + ": ";
+        return "Cannot " + actionLabel(action) + ": ";
     }
 
     private static String actionLabel(String action) {
         return switch (action) {
-            case "SUBMIT" -> "gửi duyệt";
-            case "APPROVE" -> "duyệt";
-            case "REJECT" -> "từ chối";
-            case "REQUEST_REVISION" -> "yêu cầu chỉnh sửa";
-            case "PUBLISH" -> "xuất bản";
-            case "ARCHIVE" -> "lưu trữ";
-            case "REOPEN" -> "mở lại";
-            case "LOCK" -> "khóa";
-            case "UNLOCK" -> "mở khóa";
+            case "SUBMIT" -> "submit for review";
+            case "APPROVE" -> "approve";
+            case "REJECT" -> "reject";
+            case "REQUEST_REVISION" -> "request revision";
+            case "PUBLISH" -> "publish";
+            case "ARCHIVE" -> "archive";
+            case "REOPEN" -> "reopen";
+            case "LOCK" -> "lock";
+            case "UNLOCK" -> "unlock";
             default -> action;
         };
     }
@@ -310,7 +310,7 @@ public final class QuestionStatusTransition {
         StringBuilder labels = new StringBuilder();
         for (int index = 0; index < allowed.length; index++) {
             if (index > 0) {
-                labels.append(index == allowed.length - 1 ? " hoặc " : ", ");
+                labels.append(index == allowed.length - 1 ? " or " : ", ");
             }
             labels.append('"').append(statusLabel(allowed[index])).append('"');
         }

@@ -16,10 +16,10 @@ import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Danh sách giáo viên có thể nhận chấm phúc khảo cho một đơn.
+ * The teachers who can take the appeal grading for one appeal.
  *
- * <p>Người xung đột lợi ích vẫn nằm trong danh sách nhưng mang cờ {@code conflicted}
- * — xem {@link AppealReviewerLiteInfo} để biết vì sao không lọc bỏ.
+ * <p>A person with a conflict of interest stays in the list but carries the {@code conflicted} flag
+ * -- see {@link AppealReviewerLiteInfo} for why they are not filtered out.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,10 +36,10 @@ public class ViewAssignableReviewersUseCase
         UUID currentUserId = assessmentAppealAccessService.requireActiveUserId();
         UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
+            .orElseThrow(() -> new ForbiddenException("The account does not belong to any school."));
 
-        // Đơn phải thuộc trường của người gọi — nếu không, cờ xung đột sẽ rò rỉ thông
-        // tin về bài thi của trường khác.
+        // The appeal must belong to the caller's school -- otherwise the conflict flag would leak information
+        // about another school's assessment.
         if (input.appealId() != null) {
             AssessmentAppealAccessService.AppealContext context = assessmentAppealAccessService.load(input.appealId());
             assessmentAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);

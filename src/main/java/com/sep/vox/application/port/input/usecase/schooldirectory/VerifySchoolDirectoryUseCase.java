@@ -22,10 +22,10 @@ public class VerifySchoolDirectoryUseCase implements IUseCase<VerifySchoolDirect
     @Transactional
     public UUID execute(VerifySchoolDirectoryCommand input) {
         SchoolDirectory directory = schoolDirectoryRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục truờng"));
+            .orElseThrow(() -> new ResourceNotFoundException("School directory entry not found"));
 
         if (directory.isVerified()) {
-            throw new IllegalArgumentException("Danh mục truờng đã được kiểm duyệt");
+            throw new IllegalArgumentException("The school directory entry has already been verified");
         }
 
         directory.verify();

@@ -35,7 +35,7 @@ public class GlobalExceptionResolver extends DataFetcherExceptionResolverAdapter
         ErrorType errorType = errorTypeOf(ex);
         GraphQLError.Builder<?> error = GraphQLError.newError()
             .errorType(errorType)
-            .message(errorType == ErrorType.INTERNAL_ERROR ? "Có lỗi xảy ra" : ex.getMessage())
+            .message(errorType == ErrorType.INTERNAL_ERROR ? "An error occurred" : ex.getMessage())
             .path(env.getExecutionStepInfo().getPath())
             .location(env.getField().getSourceLocation());
         if (ex instanceof BusinessRuleViolationException) {

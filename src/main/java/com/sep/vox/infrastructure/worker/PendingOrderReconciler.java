@@ -19,25 +19,25 @@ import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 /**
- * Lưới an toàn cho các đơn còn PENDING: đi hỏi thẳng cổng thanh toán thay vì ngồi đợi callback.
+ * Safety net for orders still PENDING: asks the payment gateway directly instead of waiting for the callback.
  *
- * <p>Cần thiết vì callback KHÔNG được đảm bảo: trường đóng tab giữa chừng, webhook trượt lúc mình
- * đang deploy, hoặc cổng đơn giản là gọi hụt. Không có job này thì tiền đã vào tài khoản mà đơn vẫn
- * treo, trường không nhận được hàng và cũng không đặt lại được (uq_orders_one_open_subscription_order
- * chặn đơn đăng ký thứ hai).
+ * <p>Needed because the callback is NOT guaranteed: the school closes the tab midway, the webhook misses while we
+ * are deploying, or the gateway simply fails to call. Without this job the money is already in the account but the order stays
+ * hanging, the school gets no goods and cannot order again (uq_orders_one_open_subscription_order
+ * blocks a second subscription order).
  *
- * <p>Thay cho PendingInvoiceReconciler cũ. Khác biệt về bản chất: bản cũ quét HÓA ĐƠN vì hóa đơn
- * mang luôn trạng thái thanh toán; giờ hóa đơn chỉ phát sau khi tiền về, nên thứ phải quét là ĐƠN,
- * còn thứ đem đi hỏi cổng là LẦN THỬ gắn với đơn đó.
+ * <p>Replaces the old PendingInvoiceReconciler. The essential difference: the old one scanned INVOICES because an invoice
+ * carried the payment status; now an invoice is only issued after the money arrives, so what must be scanned is the ORDER,
+ * and what is sent to ask the gateway is the ATTEMPT attached to that order.
  *
- * <p>Hai việc trong CÙNG một lượt và đúng thứ tự này -- đối soát trước, hết hạn sau -- vì chúng phụ
- * thuộc nhau: một đơn vừa quá hạn vừa còn lần thử treo thì rất có thể trường vừa trả ở phút chót.
- * Đóng đơn trước khi hỏi cổng là tự tạo ra ca "đã thu tiền nhưng không còn đơn để giao".
+ * <p>Two jobs in the SAME run and in this order -- reconcile first, expire after -- because they depend
+ * on each other: an order that is both overdue and still has a pending attempt very likely means the school just paid at the last minute.
+ * Closing the order before asking the gateway creates the case "money collected but no order left to deliver".
  *
- * <p>Cả hai cổng đều tự gửi lại khi không nhận được phản hồi thành công, nhưng KHÔNG cổng nào công
- * bố lịch retry cho sản phẩm đang dùng (SePay chỉ công bố lịch 8 lần/33 phút cho webhook biến động
- * số dư -- một sản phẩm KHÁC với Payment Gateway ở đây). Nghĩa là không được coi retry của cổng là
- * lưới an toàn: job này mới là đường phục hồi duy nhất mình kiểm soát được.
+ * <p>Both gateways resend by themselves when they do not receive a successful response, but NEITHER gateway publishes
+ * a retry schedule for the product in use (SePay only publishes a schedule of 8 attempts/33 minutes for balance-change
+ * webhooks -- a DIFFERENT product from the Payment Gateway here). That means the gateway's retry must not be treated as a
+ * safety net: this job is the only recovery path we control.
  */
 @Component
 @RequiredArgsConstructor
@@ -82,7 +82,7 @@ public class PendingOrderReconciler {
         }
 
         if (progress.settled > 0 || progress.expired > 0) {
-            log.info("[RECONCILER] Quét {} đơn PENDING: chốt {} đơn đã thu được tiền, đóng {} đơn quá hạn",
+            log.info("[RECONCILER] Scanned {} PENDING orders: settled {} orders whose money was collected, closed {} overdue orders",
                 pendingOrders.size(), progress.settled, progress.expired);
         }
     }
@@ -121,7 +121,7 @@ public class PendingOrderReconciler {
 
     private boolean reserveRemoteCall(SweepProgress progress) {
         if (progress.remoteCalls >= MAX_REMOTE_CALLS_PER_RUN) {
-            log.warn("Dừng đối soát ở {} lần gọi cổng trong lượt này, phần còn lại để lượt sau",
+            log.warn("Stopped reconciliation at {} gateway calls in this run, the rest is left for the next run",
                 MAX_REMOTE_CALLS_PER_RUN);
             return false;
         }
@@ -154,14 +154,14 @@ public class PendingOrderReconciler {
         } catch (Exception e) {
             // Swallow the error of EACH order: a failing gateway must not be allowed to block reconciling the remaining
             // orders in the same sweep.
-            log.warn("Lỗi khi đối soát đơn {} provider={} orderRef={}",
+            log.warn("Error while reconciling order {} provider={} orderRef={}",
                 order.getId(), attempt.getProvider(), attempt.getProviderOrderRef(), e);
             return false;
         }
     }
 
     private void settleAsPaid(PaymentRecord attempt) {
-        log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành PAID qua polling {}",
+        log.info("[RECONCILER] Settled payment attempt {} (orderRef={}) as PAID via polling {}",
             attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider());
         orderSettlementService.settlePaid(attempt, Instant.now());
     }
@@ -170,7 +170,7 @@ public class PendingOrderReconciler {
     // again without placing a new order. See OrderSettlementService.failAttempt.
     private void failAttemptIfFinal(PaymentRecord attempt, PaymentLinkRemoteStatus remoteStatus) {
         if (isFinalFailure(remoteStatus, attempt)) {
-            log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành FAILED do cổng {} báo {}",
+            log.info("[RECONCILER] Settled payment attempt {} (orderRef={}) as FAILED because gateway {} reported {}",
                 attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider(), remoteStatus);
             orderSettlementService.failAttempt(attempt, PaymentStatus.FAILED);
         }
@@ -180,20 +180,20 @@ public class PendingOrderReconciler {
         try {
             return orderSettlementService.expireIfOverdue(order.getId(), now);
         } catch (Exception e) {
-            log.warn("Lỗi khi đóng đơn quá hạn {}", order.getId(), e);
+            log.warn("Error while closing overdue order {}", order.getId(), e);
             return false;
         }
     }
 
     /**
-     * null hoặc PENDING/PROCESSING/UNDERPAID = chưa phải trạng thái cuối, chưa chốt gì.
+     * null or PENDING/PROCESSING/UNDERPAID = not a final state yet, nothing settled.
      *
-     * <p>NOT_FOUND PHẢI nằm ở đây, và đây là chỗ quan trọng nhất trong ba chỗ xử lý nó. Dòng mồ côi
-     * (cổng chưa từng thấy mã, sinh ra khi createPaymentLink hỏng giữa chừng) mà không được chốt thì
-     * {@code expireIfOverdue} TỪ CHỐI đóng đơn -- nó thấy còn lần thử treo nên trả false. Đơn kẹt
-     * PENDING vĩnh viễn chứ không phải tới lúc hết hạn: hết hạn là thứ chính job này phải thực hiện,
-     * mà nó lại đang bị chặn bởi đúng dòng nó không chịu dọn. Với đơn đăng ký thì
-     * uq_orders_one_open_subscription_order khóa luôn trường khỏi việc đặt đơn mới -- cũng vĩnh viễn.
+     * <p>NOT_FOUND MUST be here, and this is the most important of the three places that handle it. An orphaned row
+     * (the gateway never saw the code, created when createPaymentLink failed midway) that is not settled makes
+     * {@code expireIfOverdue} REFUSE to close the order -- it sees a pending attempt and returns false. The order is stuck
+     * PENDING forever and not just until expiry: expiring is exactly what this job must do,
+     * and it is being blocked by the very row it refuses to clean up. For a subscription order,
+     * uq_orders_one_open_subscription_order also locks the school out of placing a new order -- also forever.
      */
     private boolean isFinalFailure(PaymentLinkRemoteStatus status, PaymentRecord attempt) {
         if (status == null) {
@@ -201,22 +201,22 @@ public class PendingOrderReconciler {
         }
         return switch (status) {
             case CANCELLED, EXPIRED, FAILED -> true;
-            // Ân hạn trước khi tin NOT_FOUND -- xem PaymentRecord.canRetireOnGatewayNotFound. Job
-            // này chạy nền nên nó chính là thứ dễ rơi vào giữa lúc createPaymentLink còn đang bay.
+            // Grace period before trusting NOT_FOUND -- see PaymentRecord.canRetireOnGatewayNotFound. This job
+            // runs in the background so it is exactly what is likely to land in the middle of a createPaymentLink still in flight.
             case NOT_FOUND -> attempt.canRetireOnGatewayNotFound(Instant.now());
             default -> false;
         };
     }
 
-    // Trả false khi bị ngắt (vd ứng dụng đang tắt) để vòng lặp dừng hẳn thay vì chạy tiếp không
-    // throttle và dội API của cổng.
+    // Returns false when interrupted (e.g. the application is shutting down) so the loop stops completely instead of running on without
+    // throttling and hammering the gateway API.
     private boolean throttle() {
         try {
             Thread.sleep(THROTTLE_MILLIS);
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("Job đối soát bị ngắt giữa chừng, dừng lượt quét này");
+            log.warn("Reconciliation job interrupted midway, stopping this sweep");
             return false;
         }
     }

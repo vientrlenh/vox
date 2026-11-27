@@ -29,22 +29,19 @@ public class ViewSystemRubricsUseCase implements IUseCase<ViewSystemRubricsQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricDto> execute(ViewSystemRubricsQuery query) {
-        // 1. Xác thực tài khoản (Đang Active)
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
 
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
 
-        // 2. Lấy dữ liệu phân trang từ Database (Chỉ lấy SYSTEM)
         PageResult<Rubric> rubricPage = rubricRepository.findAllByOwnerType(
                 RubricOwnerType.SYSTEM,
                 query.page(),
                 query.size()
         );
 
-        // 3. Sử dụng Mapper đã viết sẵn để chuyển PageResult<Rubric> thành PageResult<RubricDto>
         return RubricDtoMapper.toRubricPage(rubricPage);
     }
 }

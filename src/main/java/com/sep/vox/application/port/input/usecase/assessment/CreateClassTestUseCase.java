@@ -79,10 +79,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
         requireTeacher(currentUserId);
         SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
         requireActiveClassMember(currentUserId, schoolClass);
 
-        schoolSubscriptionActiveGuardService.requireActiveForSchool(schoolClass.getSchoolId(), "tạo Class Test");
+        schoolSubscriptionActiveGuardService.requireActiveForSchool(schoolClass.getSchoolId(), "create a class test");
 
         assessmentPolicyValidator.requirePublishedInSchool(
             command.assessmentPolicyId(), schoolClass.getSchoolId());
@@ -97,15 +97,15 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     private void requireTeacher(UUID currentUserId) {
         if (userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
                 .noneMatch(role -> "TEACHER".equals(role.roleCode()))) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
     private void requireActiveClassMember(UUID currentUserId, SchoolClass schoolClass) {
         SchoolClassUser membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Access denied"));
         if (!membership.isActive()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
@@ -187,7 +187,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
      */
     private AssessmentSchedule createDraftSchedule(Assessment assessment, UUID schoolRoomId) {
         if (assessment.getOpenAt() == null || assessment.getCloseAt() == null) {
-            throw new IllegalArgumentException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
+            throw new IllegalArgumentException("A class test must have an opening time and a closing time");
         }
         if (schoolRoomId != null) {
             assessmentScheduleRoomValidator.validateForNewSchedule(
@@ -240,10 +240,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
 
     private void validateOpenClose(Instant open, Instant close, UUID schoolId) {
         if (open == null || close == null) {
-            throw new IllegalArgumentException("Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài");
+            throw new IllegalArgumentException("A class test must have an opening time and a closing time");
         }
         if (!open.isBefore(close)) {
-            throw new IllegalArgumentException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+            throw new IllegalArgumentException("The opening time must be earlier than the closing time");
         }
         subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(schoolId, open, close);
     }

@@ -85,7 +85,7 @@ public class RubricResultBandValidatorTests {
 
     @Test
     void treeMap_newRangeSwallowsExistingBand_throws() {
-        // Band mới (0-10) nuốt trọn 1 band ở giữa (4-6) dù không đụng floor/ceiling theo scoreMin sát nhất
+        // A new band (0-10) swallows 1 band in the middle (4-6) entirely without touching the floor/ceiling nearest by scoreMin
         NavigableMap<BigDecimal, RubricResultBand> siblings = byMin(
                 band("Yếu", 0, 3), band("Khá", 4, 6), band("Giỏi", 7, 10));
         assertThrows(IllegalArgumentException.class, () -> RubricResultBandValidator.assertNoOverlap(

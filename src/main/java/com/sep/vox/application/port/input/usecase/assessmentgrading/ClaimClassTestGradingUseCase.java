@@ -68,10 +68,10 @@ public class ClaimClassTestGradingUseCase
     private List<UUID> requireCandidateResultIds(List<UUID> requestedIds) {
         List<UUID> candidateResultIds = requestedIds == null ? List.<UUID>of() : requestedIds;
         if (candidateResultIds.isEmpty()) {
-            throw new IllegalArgumentException("Phải chọn ít nhất một bài để nhận chấm.");
+            throw new IllegalArgumentException("At least one submission must be selected to claim.");
         }
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
-            throw new ResourceDuplicatedException("Không được chọn trùng bài.");
+            throw new ResourceDuplicatedException("The same submission must not be selected twice.");
         }
         return candidateResultIds;
     }
@@ -106,18 +106,18 @@ public class ClaimClassTestGradingUseCase
     private AssessmentCandidateResult requireClaimable(
             UUID assessmentId, GradingRoundType roundType, AssessmentCandidateResult result, boolean alreadyOpen) {
         if (result == null) {
-            throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
+            throw new ResourceNotFoundException("Submission result not found.");
         }
         // Blocks claiming an attempt of another test -- the assessmentId in the URL is the thing that has passed the permission check.
         if (!assessmentId.equals(result.getAssessmentId())) {
-            throw new ResourceNotFoundException("Bài thi không thuộc bài kiểm tra này.");
+            throw new ResourceNotFoundException("The submission does not belong to this assessment.");
         }
         if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
             throw new IllegalArgumentException(
-                "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
+                "The submission is not in a status suitable for the grading round " + roundType.name() + ".");
         }
         if (alreadyOpen) {
-            throw new ResourceDuplicatedException("Bài thi này đang được chấm.");
+            throw new ResourceDuplicatedException("This submission is being graded.");
         }
         return result;
     }
@@ -141,7 +141,7 @@ public class ClaimClassTestGradingUseCase
     private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {
         if (roundType == GradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
-                "Vòng phúc khảo được nhận từ màn đơn phúc khảo, không nhận ở đây.");
+                "Appeal rounds are claimed from the appeal screen, not here.");
         }
         return roundType;
     }

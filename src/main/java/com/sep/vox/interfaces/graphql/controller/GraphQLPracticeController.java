@@ -76,8 +76,8 @@ public class GraphQLPracticeController {
     }
 
     /**
-     * @param frameworkVersionId khung học sinh vừa chọn ở ô phía trên. Bỏ trống = khung đang
-     *     hiệu lực toàn hệ, giữ nguyên hành vi cho client cũ.
+     * @param frameworkVersionId the framework the student just picked in the box above. Empty = the framework
+     *     currently in effect system-wide, keeping the behaviour for old clients.
      */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -87,9 +87,9 @@ public class GraphQLPracticeController {
     }
 
     /**
-     * Async vì use case này có thể phải nhờ AI sinh bộ quiz sở thích riêng cho học sinh
-     * (10-20s). Chạy trên executor riêng khiến servlet vào chế độ bất đồng bộ, lúc đó OSIV
-     * nhả EntityManager + connection DB thay vì giữ tới hết request.
+     * Async because this use case may need the AI to generate a personal interest quiz set for the student
+     * (10-20s). Running on a dedicated executor puts the servlet into async mode, at which point OSIV
+     * releases the EntityManager + DB connection instead of holding them until the request ends.
      */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -135,7 +135,7 @@ public class GraphQLPracticeController {
     }
 
     /**
-     * Async cùng lý do với {@link #interestQuizItems()}: nhánh sinh mới gọi LLM 10-20 giây.
+     * Async for the same reason as {@link #interestQuizItems()}: the new-generation branch calls the LLM for 10-20 seconds.
      */
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")

@@ -28,9 +28,10 @@ import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Điểm mới đáng test: publish một gói DRAFT đang là replacedByPlanId của gói khác (luồng "Tạo gói
- * thay thế") phải bị chặn nếu điều khoản (giá/chu kỳ/hạn mức/thời lượng) tệ hơn gói nó thay -- đây là
- * lúc DUY NHẤT luật đó được kiểm cho luồng này, vì lúc tạo gói còn DRAFT nên chưa kiểm được.
+ * The new thing worth testing: publishing a DRAFT plan that is the replacedByPlanId of another plan (the "Create
+ * replacement plan" flow) must be blocked if its terms (price/cycle/quota/duration) are worse than the plan it
+ * replaces -- this is the ONLY moment that rule is checked for this flow, because while the plan is still DRAFT
+ * at creation time it cannot be checked.
  */
 class PublishSubscriptionPlanUseCaseTests {
 
@@ -73,7 +74,7 @@ class PublishSubscriptionPlanUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("giá");
+            .hasMessageContaining("price");
     }
 
     @Test
@@ -88,7 +89,7 @@ class PublishSubscriptionPlanUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new PublishSubscriptionPlanCommand(PLAN_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Hạn mức");
+            .hasMessageContaining("Quota");
     }
 
     @Test

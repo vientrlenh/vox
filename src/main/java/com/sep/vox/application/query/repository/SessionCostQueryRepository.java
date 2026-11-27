@@ -6,23 +6,23 @@ import java.util.List;
 import com.sep.vox.application.query.dto.SessionCostDto;
 
 /**
- * Đọc chi phí AI THẬT gộp theo phiên, cho QuotaPricingCalibrationService.
+ * Reads the REAL AI cost grouped by session, for QuotaPricingCalibrationService.
  *
- * <p>Tách khỏi AiUsageRecordRepository một cách CÓ CHỦ Ý dù cùng đọc một bảng: cổng kia phục vụ đường
- * GHI (ghi usage, cộng tiền, đóng dấu đã thu) nên nói bằng ngôn ngữ của aggregate, còn cái này là một
- * BÁO CÁO -- gộp nhiều phiên lại, không tương ứng với thực thể nào và không có đường ghi ngược. Để
- * chung thì hình dạng báo cáo phải sống trong domain.repository, và mỗi màn thống kê mới lại thêm một
- * record nữa vào đó cho tới khi không còn phân biệt được cái nào là mô hình nghiệp vụ.
+ * <p>Deliberately kept apart from AiUsageRecordRepository even though both read one table: that port serves the WRITE path
+ * (recording usage, adding money, stamping as charged) so it speaks the language of the aggregate, while this is a
+ * REPORT -- it combines many sessions, corresponds to no entity and has no write-back path. Kept together, the report shape
+ * would have to live in domain.repository, and every new statistics screen would add another record to it until nobody could tell
+ * which is a business model.
  *
- * <p>Xem SchoolAiCostQueryRepository / QuestionBankStatsQueryRepository cho cùng khuôn.
+ * <p>See SchoolAiCostQueryRepository / QuestionBankStatsQueryRepository for the same mold.
  */
 public interface SessionCostQueryRepository {
 
     /**
-     * Tổng cost_usd theo TỪNG phiên có {@code occurred_at >= since}.
+     * The total cost_usd for EACH session with {@code occurred_at >= since}.
      *
-     * <p>Không lọc theo charged_at: calibrate cần chi phí THẬT đã phát sinh để suy ra giá mỗi giây,
-     * còn đã thu tiền hay chưa là chuyện kế toán không liên quan tới việc đo giá vốn.
+     * <p>Not filtered by charged_at: calibration needs the REAL cost incurred to derive a per-second price,
+     * and whether it has been charged is an accounting matter unrelated to measuring cost price.
      */
     List<SessionCostDto> sumCostUsdGroupedBySessionSince(Instant since);
 }

@@ -42,7 +42,7 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
     public PageResult<SchoolClassUserDto> execute(ViewSchoolClassUsersQuery input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+            throw new UnauthorizedException("The user status is invalid");
         }
         UUID schoolId = getSchoolId(currentUserId);
         validateSchool(schoolId);
@@ -55,23 +55,23 @@ public class ViewSchoolClassUsersUseCase implements IUseCase<ViewSchoolClassUser
 
     private UUID getSchoolId(UUID userId) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(userId)
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("The current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("The school is not active");
         }
     }
 
     private void validateSchoolClass(UUID schoolClassId, UUID schoolId) {
         SchoolClass schoolClass = schoolClassRepository.findById(schoolClassId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new ResourceNotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Class not found");
         }
     }
 

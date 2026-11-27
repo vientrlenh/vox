@@ -87,7 +87,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
     @Transactional
     public Void execute(SubmitAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không thể tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Could not find the assessment session"));
         AssessmentSessionStatus fromStatus = requireGradableStatus(session);
         if (!assessmentSessionRepository.tryTransitionStatus(
                 session.getId(), fromStatus, AssessmentSessionStatus.GRADING)) {
@@ -121,19 +121,19 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
                 && fromStatus != AssessmentSessionStatus.EXPIRED
                 && fromStatus != AssessmentSessionStatus.GRADING_FAILED
                 && fromStatus != AssessmentSessionStatus.GRADED) {
-            throw new IllegalArgumentException("chỉ được gửi chấm khi phiên thi đã nộp hoặc hết giờ");
+            throw new IllegalArgumentException("grading can only be requested after the session was submitted or timed out");
         }
         return fromStatus;
     }
 
     private AssessmentCandidate findCandidate(AssessmentSession session) {
         return assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("could not find the candidate of the session"));
     }
 
     private Assessment findAssessment(AssessmentSession session) {
         return assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("could not find the assessment"));
     }
 
     /**
@@ -166,7 +166,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             }
             UUID paperItemId = response.getPaperItemId();
             if (paperItemId == null) {
-                throw new ResourceNotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());
+                throw new ResourceNotFoundException("could not find paperItemId for answer " + response.getId());
             }
             if (recordedAsSilentAnswer(response, paperItemId)) {
                 continue;
@@ -201,9 +201,9 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         UUID paperItemId,
         List<AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks) {
         AssessmentPaperItem paperItem = assessmentPaperItemRepository.findById(paperItemId)
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy paper item " + paperItemId));
+            .orElseThrow(() -> new ResourceNotFoundException("could not find paper item " + paperItemId));
         Question question = questionRepository.findById(paperItem.getQuestionId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy câu hỏi " + paperItem.getQuestionId()));
+            .orElseThrow(() -> new ResourceNotFoundException("could not find question " + paperItem.getQuestionId()));
         QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
         QuestionAsset asset = questionAssetRepository.findByQuestionId(question.getId()).stream().findFirst().orElse(null);
         QuestionTopic topic = question.getQuestionTopicId() == null
@@ -304,7 +304,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
      */
     private void persistInvalidBlockedResult(AssessmentSession session) {
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("could not find the assessment"));
         AssessmentPolicy policy = assessment.getAssessmentPolicyId() == null
             ? null
             : assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId()).orElse(null);
@@ -359,12 +359,12 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
 
     private FrameworkResultBand requireTargetBand(AssessmentPolicy policy) {
         if (policy.getTargetFrameworkBandId() == null) {
-            throw new IllegalStateException("Assessment policy chưa cấu hình bậc mục tiêu để AI chấm.");
+            throw new IllegalStateException("The assessment policy has no target band configured for AI grading.");
         }
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(policy.getTargetFrameworkBandId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bậc mục tiêu của assessment policy."));
+            .orElseThrow(() -> new ResourceNotFoundException("Target band of the assessment policy not found."));
         if (!policy.getFrameworkVersionId().equals(targetBand.getFrameworkVersionId())) {
-            throw new IllegalStateException("Bậc mục tiêu không thuộc framework version của assessment policy.");
+            throw new IllegalStateException("The target band does not belong to the framework version of the assessment policy.");
         }
         return targetBand;
     }
@@ -415,8 +415,8 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
     private void requireValidScoreRange(RubricCriterion criterion) {
         if (criterion.getMinScore() == null || criterion.getMaxScore() == null
                 || criterion.getMinScore().compareTo(criterion.getMaxScore()) >= 0) {
-            throw new IllegalArgumentException("Tiêu chí rubric '" + criterion.getName()
-                + "' phải có minScore nhỏ hơn maxScore trước khi gửi sang AI.");
+            throw new IllegalArgumentException("Rubric criterion '" + criterion.getName()
+                + "' must have minScore smaller than maxScore before it is sent to the AI.");
         }
     }
 
@@ -426,7 +426,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             .filter(item -> policy.getTargetFrameworkBandId().equals(item.getFrameworkResultBandId()))
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException(
-                "Tiêu chí framework chưa có mô tả cho bậc mục tiêu " + targetBand.getLabel() + "."));
+                "The framework criterion has no description for the target band " + targetBand.getLabel() + "."));
     }
 
     private AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand toFrameworkBand(
@@ -434,7 +434,7 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         FrameworkResultBand resultBand = lookups.resultBandsById().get(item.getFrameworkResultBandId());
         if (resultBand == null) {
             throw new IllegalStateException(
-                "Không tìm thấy bậc framework cho tiêu chí '" + criterion.getName() + "'.");
+                "Framework band not found for criterion '" + criterion.getName() + "'.");
         }
         return new AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand(
             resultBand.getCode(),

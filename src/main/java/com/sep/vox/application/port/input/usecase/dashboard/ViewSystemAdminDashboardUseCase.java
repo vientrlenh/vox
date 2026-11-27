@@ -30,10 +30,10 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
 /**
- * Doanh thu đọc từ ĐƠN HÀNG đã thu được tiền (Order.status = SUCCESS) thay vì từ hóa đơn: hóa đơn
- * giờ chỉ là chứng từ phát hành sau khi tiền về và không còn cột status lẫn amount -- xem
- * InvoiceRepository. Đây cũng là con số ĐÚNG hơn bản cũ: hóa đơn chỉ tồn tại cho đơn đã thành công,
- * nên "lọc hóa đơn PAID" trước đây là lọc một điều kiện luôn đúng.
+ * Revenue is read from ORDERS that have been paid (Order.status = SUCCESS) instead of from invoices: an invoice is
+ * now just a document issued after the money arrives and no longer has a status or amount column -- see
+ * InvoiceRepository. This is also a MORE CORRECT number than before: an invoice only exists for a successful
+ * order, so "filter PAID invoices" used to filter on a condition that is always true.
  */
 @Service
 @RequiredArgsConstructor
@@ -90,15 +90,15 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
     }
 
     /**
-     * Đơn chờ lâu nhất đã nằm trong hàng đợi bao nhiêu NGÀY LỊCH, theo giờ nghiệp vụ.
+     * How many CALENDAR DAYS the longest-waiting order has been in the queue, in business time.
      *
-     * <p>Đếm theo ngày lịch chứ không phải elapsed chia 24 giờ: đơn nộp 23:00 hôm qua mà bây giờ là
-     * 01:00 thì người trực đọc là "đã sang ngày thứ hai", trong khi phép chia cho 24 giờ vẫn trả 0 và
-     * làm thẻ KPI trông như hàng đợi vẫn sạch.
+     * <p>Counted in calendar days rather than elapsed divided by 24 hours: an order submitted at 23:00 yesterday that
+     * is read at 01:00 is "already on the second day" to whoever is on duty, while dividing by 24 hours still returns 0
+     * and makes the KPI card look as if the queue is still clean.
      *
-     * <p>{@code null} khi không còn đơn nào chờ — cùng quy ước với {@code grossMarginPercent}: thiếu
-     * dữ liệu và "bằng 0" là hai chuyện khác nhau, và ở đây 0 lại là trạng thái TỐT nhất nên nhập
-     * nhèm hai cái sẽ vẽ ra một hàng đợi rỗng trông y hệt một hàng đợi vừa được xử lý xong.
+     * <p>{@code null} when no order is waiting -- the same convention as {@code grossMarginPercent}: missing data and
+     * "equal to zero" are two different things, and here 0 is the BEST state, so mixing the two would draw an empty
+     * queue that looks exactly like a queue that was just cleared.
      */
     private Integer oldestPendingRegistrationDays(Instant now) {
         return registerFormRepository.findOldestCreatedAtByStatus(RegisterFormStatus.PENDING)
@@ -113,16 +113,17 @@ public class ViewSystemAdminDashboardUseCase implements IUseCase<Void, SystemAdm
     }
 
     /**
-     * Doanh thu 24 tháng gần nhất (kể cả tháng hiện tại), xếp cũ -> mới, tháng không có đơn nào trả
-     * về 0.
+     * Revenue of the last 24 months (including the current month), ordered old -> new, with 0 for a month that has no
+     * paid order.
      *
-     * <p>Chỉ nạp đúng cửa sổ 24 tháng thay vì mọi đơn thành công: bản cũ nạp toàn bộ hóa đơn PAID
-     * rồi vứt đi phần ngoài cửa sổ, tức là mỗi năm trôi qua màn hình lại nặng thêm mà kết quả không
-     * đổi.
+     * <p>Loads only the 24-month window instead of every successful order: the old version loaded all PAID invoices
+     * and threw away the part outside the window, so every year that passed made the screen heavier while the
+     * result did not change.
      *
-     * <p>Gom theo tháng của {@code createdAt} -- cùng mốc với sumTotalAmountByStatusInRange ở trên,
-     * để tổng của biểu đồ và con số tổng doanh thu không nói hai chuyện khác nhau. Quy về giờ Việt
-     * Nam trước khi cắt tháng: cắt theo UTC sẽ đẩy 7 giờ đầu của mỗi tháng sang tháng trước.
+     * <p>Groups by the month of {@code createdAt} -- the same reference point as sumTotalAmountByStatusInRange above,
+     * so the total of the chart and the total revenue figure do not tell two different stories. Converted to Vietnam
+     * time before cutting the month: cutting in UTC would push the first 7 hours of every month into the previous
+     * month.
      */
     private List<MonthlyRevenueResponse> buildMonthlyRevenue(Instant now) {
         YearMonth currentMonth = YearMonth.now(ZoneConstant.BUSINESS_ZONE);

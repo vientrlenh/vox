@@ -11,12 +11,12 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.port.input.service.CarryQuotaFundingAtPeriodStartService;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
-// Trước đây KHÔNG có gì tự động đưa subscription ACTIVE quá endDate sang EXPIRED — status chỉ đổi
-// khi có subscription MỚI đè lên (gia hạn / admin duyệt request khác). Job này lấp đúng chỗ đó, và
-// cũng là cơ chế "cắt quyền" cho case hủy giữa chừng kiểu Claude: hủy chỉ set cancelledAt (xem
-// CancelSubscriptionUseCase), subscription vẫn ACTIVE/dùng được bình thường tới hết endDate, rồi
-// job này tự chuyển EXPIRED khi ngày đó tới — không cần biết subscription có bị hủy hay không, cứ
-// hết hạn là hết hạn.
+// Before, NOTHING automatically moved an ACTIVE subscription past endDate to EXPIRED -- the status only changed
+// when a NEW subscription overrode it (renewal / admin approving another request). This job fills exactly that gap, and
+// is also the "cut off access" mechanism for the cancel-midway case in the Claude style: cancelling only sets cancelledAt (see
+// CancelSubscriptionUseCase), the subscription stays ACTIVE and fully usable until endDate, then
+// this job moves it to EXPIRED when that day arrives -- it does not need to know whether the subscription was cancelled,
+// expired is expired.
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -31,7 +31,7 @@ public class SubscriptionExpiryJob {
         Instant today = Instant.now();
         int expiredCount = schoolSubscriptionRepository.expireOverdue(today);
         if (expiredCount > 0) {
-            log.info("Đã chuyển {} subscription quá hạn sang EXPIRED", expiredCount);
+            log.info("Moved {} overdue subscriptions to EXPIRED", expiredCount);
         }
 
         // The boundary between two periods is the ONLY place where the self-funded amount to carry over can be fixed, and this job is already
@@ -40,7 +40,7 @@ public class SubscriptionExpiryJob {
         // of the old one, precisely because the new period can be spent right when its date arrives while the other sweep may lag by an hour.
         int carriedCount = carryQuotaFundingAtPeriodStartService.carryDueFunding(today);
         if (carriedCount > 0) {
-            log.info("Đã mang tiền tự nạp chưa tiêu sang {} ví hạn mức của kỳ vừa bắt đầu", carriedCount);
+            log.info("Carried unspent self-funded money over to {} quota wallets of the period that just started", carriedCount);
         }
     }
 }

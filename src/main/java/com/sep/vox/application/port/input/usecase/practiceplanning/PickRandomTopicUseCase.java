@@ -28,7 +28,7 @@ public class PickRandomTopicUseCase implements IUseCase<Void, PracticeTopicOffer
     public PracticeTopicOffer execute(Void input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         TopicSearchRowInfo row = practiceTopicQueryRepository.findRandomActiveTopic(studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Kho chủ đề đang trống."));
+            .orElseThrow(() -> new ResourceNotFoundException("The topic pool is empty."));
         return new PracticeTopicOffer(
             row.getId(),
             row.getName(),

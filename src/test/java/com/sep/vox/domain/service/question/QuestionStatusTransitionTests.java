@@ -19,11 +19,11 @@ import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionCod
 import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionKind;
 
 /**
- * Quy tắc chuyển trạng thái câu hỏi.
+ * Question status transition rules.
  *
- * <p>Bất biến quan trọng nhất được kiểm ở đây: hàm này KHÔNG BAO GIỜ ném exception. Đường đi cập
- * nhật hàng loạt dựa vào đúng điều đó để xử lý được câu lỗi rồi đi tiếp mà không làm hỏng
- * transaction dùng chung.
+ * <p>The most important invariant checked here: this function NEVER throws. The bulk update path
+ * relies on exactly that to handle a faulty question and move on without breaking
+ * the shared transaction.
  */
 class QuestionStatusTransitionTests {
 
@@ -83,8 +83,8 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.reason()).isEqualTo(
-            "Không thể duyệt: câu hỏi đang ở trạng thái \"Đã duyệt\", "
-                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Chờ duyệt\"");
+            "Cannot approve: the question is in status \"Approved\", "
+                + "this action only applies to questions in status \"Awaiting review\"");
     }
 
     @Test
@@ -94,8 +94,8 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.reason()).isEqualTo(
-            "Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Đã xuất bản\", "
-                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
+            "Cannot submit for review: the question is in status \"Published\", "
+                + "this action only applies to questions in status \"Draft\" or \"Revision requested\"");
     }
 
     /**
@@ -111,7 +111,7 @@ class QuestionStatusTransitionTests {
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
         assertThat(rejection.code()).isEqualTo(RejectionCode.SELF_REVIEW);
         assertThat(rejection.reason())
-            .isEqualTo("Không thể duyệt: bạn là người tạo câu hỏi này, cần người khác duyệt");
+            .isEqualTo("Cannot approve: you are the creator of this question, someone else must review it");
     }
 
     @Test
@@ -145,7 +145,7 @@ class QuestionStatusTransitionTests {
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
         assertThat(rejection.code()).isEqualTo(RejectionCode.NO_PERMISSION);
         assertThat(rejection.reason())
-            .isEqualTo("Không thể duyệt: bạn không có quyền duyệt câu hỏi trong ngân hàng này");
+            .isEqualTo("Cannot approve: you do not have permission to review questions in this question bank");
     }
 
     @Test
@@ -168,7 +168,7 @@ class QuestionStatusTransitionTests {
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.INVALID_STATE);
         assertThat(rejection.code()).isEqualTo(RejectionCode.NOTE_REQUIRED);
-        assertThat(rejection.reason()).isEqualTo("Không thể từ chối: thao tác này bắt buộc phải nhập lý do");
+        assertThat(rejection.reason()).isEqualTo("Cannot reject: this action requires a reason");
     }
 
     @Test
@@ -180,7 +180,7 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.reason())
-            .isEqualTo("Không thể yêu cầu chỉnh sửa: thao tác này bắt buộc phải nhập lý do");
+            .isEqualTo("Cannot request revision: this action requires a reason");
     }
 
     @Test
@@ -213,7 +213,7 @@ class QuestionStatusTransitionTests {
         assertThat(rejection.kind()).isEqualTo(RejectionKind.FORBIDDEN);
         assertThat(rejection.code()).isEqualTo(RejectionCode.ADMIN_ONLY);
         assertThat(rejection.reason()).isEqualTo(
-            "Không thể lưu trữ: chỉ quản trị viên của ngân hàng câu hỏi mới thực hiện được");
+            "Cannot archive: only an admin of the question bank can do this");
     }
 
     @Test
@@ -227,7 +227,7 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.code()).isEqualTo(RejectionCode.ALREADY_LOCKED);
-        assertThat(rejection.reason()).isEqualTo("Không thể khóa: câu hỏi đã bị khóa");
+        assertThat(rejection.reason()).isEqualTo("Cannot lock: the question is locked");
     }
 
     @Test
@@ -239,7 +239,7 @@ class QuestionStatusTransitionTests {
 
         assertThat(rejection).isNotNull();
         assertThat(rejection.code()).isEqualTo(RejectionCode.NOT_LOCKED);
-        assertThat(rejection.reason()).isEqualTo("Không thể mở khóa: câu hỏi chưa bị khóa");
+        assertThat(rejection.reason()).isEqualTo("Cannot unlock: the question is not locked");
     }
 
     @Test
@@ -250,7 +250,7 @@ class QuestionStatusTransitionTests {
         assertThat(rejection).isNotNull();
         assertThat(rejection.kind()).isEqualTo(RejectionKind.INVALID_STATE);
         assertThat(rejection.code()).isEqualTo(RejectionCode.INVALID_ACTION);
-        assertThat(rejection.reason()).isEqualTo("Action không hợp lệ");
+        assertThat(rejection.reason()).isEqualTo("Invalid action");
     }
 
     @Test

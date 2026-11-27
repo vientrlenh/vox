@@ -36,10 +36,10 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Nhắc chấm tay khi bài thi đóng mà còn bài "Chờ soát điểm AI" ({@code PENDING_REVIEW}).
+ * The manual-grading reminder when an assessment closes while it still has "Awaiting AI score review" answers ({@code PENDING_REVIEW}).
  *
- * <p>Chỉ sinh thông báo trong app: event đi trên topic riêng mà consumer mail không đăng ký,
- * nên ở đây không có gì để khẳng định về mail ngoài chính lựa chọn topic đó.
+ * <p>Only produces an in-app notification: the event goes on its own topic that the mail consumer does not subscribe to,
+ * so there is nothing to assert about mail here beyond that topic choice itself.
  */
 class AssessmentHumanGradingNotificationServiceTests {
 
@@ -131,7 +131,7 @@ class AssessmentHumanGradingNotificationServiceTests {
         assertThat(capturePayload().recipientIds()).containsExactly(bothRoles);
     }
 
-    /** AI chấm sạch cả kỳ là kết cục bình thường -- "0 bài cần chấm" chỉ là nhiễu. */
+    /** The AI grading a whole assessment cleanly is the normal outcome -- "0 answers to grade" is just noise. */
     @Test
     void should_stay_silent_when_nothing_awaits_human_grading() {
         when(assessmentCandidateResultRepository.findByAssessmentId(assessmentId))
@@ -143,7 +143,7 @@ class AssessmentHumanGradingNotificationServiceTests {
         verify(outboxRepository, never()).save(any());
     }
 
-    /** Chỉ đếm bài đang chờ soát, không đếm cả kỳ. */
+    /** Only counts answers awaiting review, not the whole assessment. */
     @Test
     void should_count_only_the_papers_still_awaiting_review() {
         when(assessmentCandidateResultRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(
@@ -158,7 +158,7 @@ class AssessmentHumanGradingNotificationServiceTests {
         assertThat(capturePayload().pendingCount()).isEqualTo(2);
     }
 
-    /** Không có ai để báo thì bài vẫn nằm trong hàng đợi chấm, chỉ là không phát event rỗng. */
+    /** With nobody to notify the answers still stay in the grading queue, only no empty event is published. */
     @Test
     void should_not_publish_an_event_with_no_recipients() {
         givenPendingResults(3);
@@ -219,7 +219,7 @@ class AssessmentHumanGradingNotificationServiceTests {
         assertThat(captor.getValue().getHumanGradingNotifiedAt()).isEqualTo(now);
     }
 
-    /** Không phát thì cũng không được đóng dấu -- bài thi phải còn cơ hội được nhắc sau. */
+    /** If it was not published it must not be stamped either -- the assessment must still have a chance to be reminded later. */
     @Test
     void should_not_stamp_the_assessment_when_nothing_is_published() {
         when(assessmentCandidateResultRepository.findByAssessmentId(assessmentId))

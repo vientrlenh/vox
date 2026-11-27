@@ -5,12 +5,12 @@ import java.util.List;
 import com.sep.vox.application.query.dto.GradingFailureGroupDto;
 
 /**
- * Trang phân loại phiên chấm lỗi: dải tóm tắt cộng danh sách nhóm nguyên nhân.
+ * The triage page for failed grading sessions: the summary strip plus the list of cause groups.
  *
- * @param groupsTruncated số nhóm đã vượt trần và bị cắt. Nói ra thay vì im lặng cắt, vì nó là DẤU
- *                        HIỆU CHẨN ĐOÁN: chuẩn hóa thông điệp lỗi mà không ăn thì số nhóm nở gần
- *                        bằng số phiên, và lúc đó việc gom nhóm không còn giúp gì — cần sửa hàm
- *                        {@code vox_grading_error_signature}, chứ không phải nới trần.
+ * @param groupsTruncated the number of groups that exceeded the cap and were cut. Stated instead of cutting silently, because it is a DIAGNOSTIC
+ *                        SIGNAL: if error-message normalization is not working, the number of groups swells to almost
+ *                        the number of sessions, and grouping no longer helps -- the function
+ *                        {@code vox_grading_error_signature} needs fixing, not the cap loosening.
  */
 public record GradingFailureOverviewResponse(
     long sessionCount,

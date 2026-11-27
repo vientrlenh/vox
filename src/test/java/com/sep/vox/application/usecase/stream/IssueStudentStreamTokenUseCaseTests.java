@@ -145,8 +145,8 @@ class IssueStudentStreamTokenUseCaseTests {
     }
 
     /**
-     * Cốt lõi của việc khóa: không cho phép bắt đầu bằng camera + màn hình rồi phát lại token với
-     * mỗi camera để tắt phần ghi màn hình giữa kỳ thi.
+     * The core of the lock: it must not be possible to start with camera + screen and then reissue the token with
+     * camera only to turn off screen recording in the middle of the assessment.
      */
     @Test
     void should_reject_switching_stream_type_after_the_session_locked_one() {
@@ -172,8 +172,8 @@ class IssueStudentStreamTokenUseCaseTests {
     }
 
     /**
-     * Việc chốt loại stream là một thao tác GHI, nên nó phải nằm sau kiểm tra quyền sở hữu phiên
-     * thi - nếu không, người không sở hữu phiên vẫn kịp chốt hộ trước khi bị từ chối.
+     * Locking the stream type is a WRITE, so it must come after the check of who owns the assessment session -- otherwise
+     * someone who does not own the session could still get to lock it before being rejected.
      */
     @Test
     void should_not_lock_a_stream_type_for_a_session_the_caller_does_not_own() {

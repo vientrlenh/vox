@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Gọi dịch vụ AI (Python agents) để đề xuất chủ đề luyện, đánh chỉ mục chủ đề và tìm chủ đề gần
- * nghĩa. Implement bởi TopicGenerationClient.
+ * Calls the AI service (Python agents) to propose practice topics, index topics and find topics
+ * close in meaning. Implemented by TopicGenerationClient.
  *
- * <p>Mọi method đều SUY GIẢM ÊM: lỗi mạng/timeout/response dị dạng trả về danh sách rỗng (hoặc
- * không làm gì với {@link #index}), không ném ra ngoài -- phía gọi ở application dựa vào tính chất
- * này để không phải bọc try/catch.
+ * <p>Every method DEGRADES GRACEFULLY: a network error/timeout/malformed response returns an empty
+ * list (or does nothing for {@link #index}) and is not thrown outward -- callers in the application
+ * rely on this so they do not have to wrap calls in try/catch.
  */
 public interface TopicGenerationPort {
 
@@ -32,7 +32,7 @@ public interface TopicGenerationPort {
         UUID studentId,
         String status);
 
-    /** Tìm chủ đề gần nghĩa với từ khoá. Trả về id kèm độ tương đồng, KHÔNG trả tên. */
+    /** Finds topics close in meaning to the keyword. Returns ids with their similarity, NOT names. */
     List<TopicSearchHit> searchByVector(String keyword, int limit);
 
     record TopicSearchHit(UUID topicId, double similarity) {

@@ -52,16 +52,16 @@ public class ViewSystemRubricVersionsUseCase implements IUseCase<ViewSystemRubri
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
     }
 
     private void requireSystemOwnedRubric(UUID rubricId) {
         Rubric rubric = rubricRepository.findById(rubricId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Bộ Rubric này không thuộc về Hệ thống.");
+            throw new ForbiddenException("Action denied: this Rubric does not belong to the System.");
         }
     }
 }

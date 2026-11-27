@@ -28,7 +28,7 @@ public class CreateSystemQuestionBankUseCase implements IUseCase<CreateSystemQue
         CreateSystemQuestionBankCommand command = normalize(input);
 
         if (!supportedLanguageRepository.existsByIdAndIsActive(command.languageId(), true)) {
-            throw new IllegalArgumentException("Ngôn ngữ yêu cầu không tồn tại hoặc không hoạt động");
+            throw new IllegalArgumentException("The requested language does not exist or is not active");
         }
 
         QuestionBank questionBank = QuestionBank.create(

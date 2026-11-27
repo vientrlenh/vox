@@ -20,14 +20,14 @@ public record AssessmentAttemptSummary(
     String flagReason,
     BigDecimal totalScore,
     /**
-     * Thang điểm của rubric đã chấm lượt này -- thêm 2026-08-11.
+     * The score scale of the rubric that graded this attempt -- added 2026-08-11.
      *
-     * <p>Không có nó thì client phải đoán, và đã đoán sai: cả web lẫn Flutter tô màu điểm theo
-     * ngưỡng cứng 80/45, đúng với thang 0-100 nhưng biến MỌI điểm của rubric thang 0-10 thành
-     * màu đỏ, kể cả bài 10/10.
+     * <p>Without it the client has to guess, and has guessed wrong: both web and Flutter color the
+     * score by hard thresholds 80/45, which is right for a 0-100 scale but turns EVERY score of a
+     * 0-10 rubric red, even a 10/10 submission.
      *
-     * <p>Danh sách lượt thi trộn nhiều kỳ thi, mà mỗi kỳ có thể dùng rubric khác thang -- nên
-     * thang phải đi theo TỪNG lượt, không suy từ một cấu hình chung nào được.
+     * <p>The attempt list mixes many assessments, each of which may use a rubric with a different
+     * scale -- so the scale must travel with EACH attempt and cannot be derived from any shared config.
      */
     BigDecimal scoringScaleMin,
     BigDecimal scoringScaleMax,
@@ -36,11 +36,11 @@ public record AssessmentAttemptSummary(
     String rubricResultBandName,
     AssessmentCandidateResultStatus resultStatus,
     /**
-     * Lý do lượt thi bị xoá mềm, null nếu chưa xoá. Đi cùng {@code status = DELETED}.
+     * The reason the attempt was soft-deleted, null if not deleted. Goes with {@code status = DELETED}.
      *
-     * <p>Chỉ có giá trị ở đường đọc của quản trị trường / chủ tịch hội đồng
-     * ({@code findByCandidateIdsIncludingDeleted}); đường của học sinh không trả về lượt đã xoá
-     * nên trường này luôn null ở đó.
+     * <p>Only has a value on the read path of the school admin / council chair
+     * ({@code findByCandidateIdsIncludingDeleted}); the student's path does not return deleted
+     * attempts, so this field is always null there.
      */
     String deletedReason
 ) {

@@ -1,22 +1,22 @@
 package com.sep.vox.application.response.output;
 
 /**
- * Danh tính Google đã được xác minh -- chỉ những trường mà luồng đăng nhập thật sự dùng tới.
+ * A verified Google identity -- only the fields that the login flow actually uses.
  *
- * <p>Đây là kết quả của một phép KIỂM CHỨNG mật mã, không phải một cục JSON do client gửi lên. Mọi
- * giá trị ở đây chỉ tồn tại sau khi chữ ký, {@code iss}, {@code aud} và hạn dùng của ID token đều đã
- * qua -- xem {@code GoogleIdTokenVerifierPort}. Nhờ vậy chỗ dùng không phải tự hỏi "tin được chưa",
- * và cũng không có đường nào để một trường chưa kiểm chứng lọt vào đây.
+ * <p>This is the result of a cryptographic VERIFICATION, not a blob of JSON sent up by the client. Every
+ * value here exists only after the signature, {@code iss}, {@code aud} and the validity period of the ID token have all
+ * passed -- see {@code GoogleIdTokenVerifierPort}. So the consumer does not have to ask "can it be trusted yet",
+ * and there is no path for an unverified field to slip in here.
  *
- * @param subject       {@code sub} của Google -- định danh ổn định của tài khoản, không đổi kể cả
- *                      khi người dùng đổi email. Đi thẳng vào {@code OAuth2LoginCommand.providerUserId}.
- * @param email         email đã xác minh; đây là khoá tra cứu người dùng trong hệ thống
- * @param emailVerified Google KHÔNG bảo đảm mọi ID token đều có email đã xác minh (tài khoản
- *                      Workspace cấu hình lạ, hoặc token cấp cho scope không gồm email), nên trường
- *                      này được mang theo thay vì giả định -- chỗ gọi phải tự từ chối, y như
- *                      {@code CustomOidcUserService} làm cho đường web.
- * @param fullName      có thể null: {@code name} chỉ có khi token được cấp kèm scope {@code profile}
- * @param avatarUrl     có thể null, cùng lý do với {@code fullName}
+ * @param subject       Google's {@code sub} -- the stable identifier of the account, unchanged even when
+ *                      the user changes their email. Goes straight into {@code OAuth2LoginCommand.providerUserId}.
+ * @param email         the verified email; this is the key used to look up the user in the system
+ * @param emailVerified Google does NOT guarantee every ID token has a verified email (a Workspace account
+ *                      configured oddly, or a token issued for a scope without email), so this field
+ *                      is carried along instead of assumed -- the caller must reject it itself, just as
+ *                      {@code CustomOidcUserService} does for the web path.
+ * @param fullName      may be null: {@code name} is only present when the token was issued with the {@code profile} scope
+ * @param avatarUrl     may be null, for the same reason as {@code fullName}
  */
 public record VerifiedGoogleIdentity(
     String subject,

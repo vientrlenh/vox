@@ -62,30 +62,30 @@ public record QuotaUserAllocationPageResponse(
 ) {
 
     /**
-     * Một người trong danh sách chia hạn mức.
+     * One person in the quota allocation list.
      *
-     * <p>KHÔNG mang tên người dùng: tên được nối vào ở tầng GraphQL qua data loader {@code userById},
-     * nên một trang 20 dòng chỉ tốn thêm ĐÚNG MỘT truy vấn users thay vì 20. Đây cũng là chỗ sửa lỗi
-     * cột "Họ tên" luôn hiện dấu gạch: {@code SchoolSubscriptionQuotaUserAllocationDto} chưa bao giờ
-     * có trường tên, còn client thì khai sẵn một trường như thế và không bao giờ nhận được giá trị.
+     * <p>Does NOT carry the user's name: the name is joined in at the GraphQL layer through the data loader {@code userById},
+     * so a page of 20 rows costs EXACTLY ONE extra users query instead of 20. This is also the fix for the bug where the "Full name"
+     * column always showed a dash: {@code SchoolSubscriptionQuotaUserAllocationDto} never had
+     * a name field, while the client declared such a field and never received a value.
      *
-     * <p><b>{@code allocatedAmountVnd} null = CHƯA CHIA, khác hẳn 0.</b> Hai trạng thái này cho ra
-     * hành vi NGƯỢC NHAU và trước đây bị gộp thành cùng một số 0 trên màn hình:
+     * <p><b>{@code allocatedAmountVnd} null = NOT YET ALLOCATED, very different from 0.</b> The two states produce
+     * OPPOSITE behavior and used to be merged into the same 0 on screen:
      *
      * <ul>
-     *   <li>chưa có dòng phân bổ (null) = KHÔNG bị chặn theo cá nhân. Với giáo viên nghĩa là tiêu
-     *       thoải mái trong ví trường ({@code ClassTestTokenQuotaGuardService.remainingUserAllocation}
-     *       trả null thì cửa chặn bỏ qua luôn); với học sinh thì ngược lại, LEAST(...) trong
-     *       {@code findPracticeSpendableFundsVnd} kéo về 0 nên em không luyện được lượt nào.</li>
-     *   <li>có dòng và bằng 0 = bị chặn hẳn, ở cả hai loại.</li>
+     *   <li>no allocation row (null) = NOT blocked per person. For a teacher it means spending
+     *       freely within the school wallet ({@code ClassTestTokenQuotaGuardService.remainingUserAllocation}
+     *       returns null and the guard skips it); for a student it is the opposite, the LEAST(...) in
+     *       {@code findPracticeSpendableFundsVnd} pulls it to 0 so they cannot practice a single turn.</li>
+     *   <li>a row that equals 0 = fully blocked, for both kinds.</li>
      * </ul>
      *
-     * <p>Nên một trường có nửa số giáo viên "0 ₫" có thể đang là nửa số giáo viên KHÔNG có trần chi
-     * nào cả -- và trên bảng cũ thì hai ca đó trông y hệt nhau. Client phải hiện thành hai nhãn khác
-     * nhau ("Chưa phân bổ" vs "0 ₫"), nên kiểu dữ liệu ở đây phải phân biệt được chúng.
+     * <p>So a school with half its teachers showing "0 ₫" may in fact have half its teachers with NO spending cap
+     * at all -- and on the old table those two cases looked identical. The client must show two different
+     * labels ("Not allocated" vs "0 ₫"), so the data type here must be able to tell them apart.
      *
-     * <p>{@code usedAmountVnd} thì luôn có số: chưa có dòng nghĩa là chưa tiêu đồng nào qua trần cá
-     * nhân, và 0 ở đó không mơ hồ.
+     * <p>{@code usedAmountVnd} always has a number: no row means nothing was spent through a personal cap,
+     * and 0 there is not ambiguous.
      */
     public record Row(
         UUID userId,

@@ -39,30 +39,30 @@ public class DeleteFrameworkResultBandUseCase
 
     private FrameworkVersion getVersion(DeleteFrameworkResultBandCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
     }
 
     private FrameworkResultBand getBand(DeleteFrameworkResultBandCommand command) {
         return frameworkResultBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mức kết quả"));
+            .orElseThrow(() -> new ResourceNotFoundException("Result band not found"));
     }
 
     private void checkValidRequest(DeleteFrameworkResultBandCommand command, FrameworkVersion version, FrameworkResultBand band) {
         if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc framework này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể chỉnh sửa phiên bản ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Only a version in DRAFT status can be edited");
 
         if (!band.getFrameworkVersionId().equals(command.versionId()))
-            throw new IllegalArgumentException("Mức kết quả không thuộc phiên bản này");
+            throw new IllegalArgumentException("The result band does not belong to this version");
 
         if (frameworkCriterionBandRepository.existsByFrameworkResultBandId(command.bandId()))
-            throw new IllegalArgumentException("Không thể xóa mức kết quả đang được sử dụng bởi tiêu chí");
+            throw new IllegalArgumentException("Cannot delete a result band that a criterion is using");
 
-        // V42 đặt FK từ grade_level_band_scopes sang đây. Chốt ở tầng ứng dụng để người dùng nhận
-        // được câu tiếng Việt thay vì lỗi ràng buộc thô của Postgres.
+        // V42 adds a foreign key from grade_level_band_scopes to this table. The check lives in the application layer
+        // so the user gets a readable message instead of Postgres' raw constraint error.
         if (gradeLevelBandScopeRepository.existsByBandId(command.bandId()))
-            throw new IllegalArgumentException("Không thể xóa mức kết quả đang được dùng làm trần bậc của một Khối lớp");
+            throw new IllegalArgumentException("Cannot delete a result band that is used as the tier ceiling of a grade level");
     }
 }

@@ -15,29 +15,29 @@ public interface SpringDataInterestQuizItemRepository
 
     List<InterestQuizItemJpaEntity> findByIdAndActiveTrue(UUID id);
 
-    // Lấy nguyên kho (giới hạn mềm bằng Top50) chứ không phải Top7: bộ chọn cân bằng cần
-    // nhiều ứng viên hơn số câu sẽ hỏi thì mới chọn được bộ phủ đều các chiều.
+    // Takes the whole pool (soft cap via Top50), not Top7: the balanced selector needs
+    // more candidates than the number of questions it will ask in order to pick a set that covers all dimensions evenly.
     List<InterestQuizItemJpaEntity> findTop50ByActiveTrueOrderById();
 
     List<InterestQuizItemJpaEntity> findTop50ByStudentIdAndActiveTrueOrderById(UUID studentId);
 
     /**
-     * Có bộ câu CÒN DÙNG ĐƯỢC của học sinh này không.
+     * Whether this student has a set of questions that is STILL USABLE.
      *
-     * <p>Phải kèm {@code AndActiveTrue}: từ khi có nút làm lại quiz, bộ cũ bị tắt {@code active}
-     * chứ không bị xoá (đáp án đã nộp còn trỏ tới id của nó). Chỉ hỏi theo {@code studentId} thì
-     * sau khi làm lại, hàm này vẫn trả {@code true} trong khi mọi câu đều đã tắt -- học sinh
-     * nhận về danh sách RỖNG và onboarding treo.
+     * <p>{@code AndActiveTrue} is required: since the quiz retake button exists, the old set gets {@code active}
+     * switched off rather than being deleted (submitted answers still point to its ids). Asking by {@code studentId}
+     * alone would, after a retake, still return {@code true} even though every question is already off -- the student
+     * would receive an EMPTY list and onboarding would hang.
      *
-     * <p>Chưa ai gọi làm lại thì mọi dòng đều {@code active = true}, nên hành vi y hệt bản cũ.
+     * <p>While nobody has retaken, every row is {@code active = true}, so behavior is identical to the old version.
      */
     boolean existsByStudentIdAndActiveTrue(UUID studentId);
 
     /**
-     * Tắt bộ câu hiện có của học sinh, KHÔNG xoá.
+     * Switches off the student's existing question set, does NOT delete it.
      *
-     * <p>Xoá thì đáp án đã nộp mất chỗ tham chiếu và không truy lại được vì sao hồ sơ sở thích
-     * ra như vậy. Tắt thì {@code findActiveQuizItem} không thấy nữa, nhưng dữ liệu còn nguyên.
+     * <p>Deleting would leave submitted answers without a reference and make it impossible to trace why the interest profile
+     * turned out as it did. Switching off makes {@code findActiveQuizItem} no longer see it, but the data stays intact.
      */
     @Modifying
     @Query("UPDATE InterestQuizItemJpaEntity i SET i.active = false "

@@ -3,9 +3,9 @@ package com.sep.vox.application.port.input.query.assessmentgrading;
 import java.util.UUID;
 
 /**
- * @param kind loại bài; {@code null} được use case hiểu là {@code CENTRALIZED} — cùng
- *             luật với {@link SearchGradingAssignmentsQuery} để bảng và thẻ số đầu màn
- *             không bao giờ đếm trên hai tập khác nhau.
+ * @param kind the assessment kind; {@code null} is read by the use case as {@code CENTRALIZED} -- the same
+ *             rule as {@link SearchGradingAssignmentsQuery} so that the table and the number cards at the top of the screen
+ *             never count over two different sets.
  */
 public record ViewGradingStatsQuery(
     UUID assessmentId,

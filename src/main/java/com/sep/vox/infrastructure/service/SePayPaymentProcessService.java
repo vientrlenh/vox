@@ -37,31 +37,31 @@ import com.sep.vox.infrastructure.properties.SePayPaymentProperties;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Adapter cho SePay Payment Gateway.
+ * Adapter for the SePay Payment Gateway.
  *
- * <p>Luồng khác hẳn PayOS: SePay không tạo sẵn một link riêng cho từng đơn qua API. Ta tự dựng một
- * bộ field kèm chữ ký HMAC rồi để trình duyệt POST sang một URL checkout cố định — nên
- * {@code createPaymentLink} ở đây không hề gọi mạng, và cũng không có paymentLinkId để trả về.
+ * <p>A completely different flow from PayOS: SePay does not create a dedicated link for each order through an API. We build a
+ * set of fields ourselves with an HMAC signature and let the browser POST to a fixed checkout URL -- so
+ * {@code createPaymentLink} here makes no network call at all, and has no paymentLinkId to return.
  */
 @Service
 @Slf4j
 public class SePayPaymentProcessService implements PaymentProcessPort {
 
-    // SePay xác thực IPN bằng secret key gửi kèm ở header, không ký HMAC trên body — đây chính là
-    // lý do verifyCallback phải nhận headers chứ không chỉ nhận body.
+    // SePay authenticates the IPN with a secret key sent in a header, not an HMAC over the body -- this is exactly the
+    // reason verifyCallback must receive headers and not only the body.
     private static final String SECRET_KEY_HEADER = "X-Secret-Key";
 
     private static final String HMAC = "HmacSHA256";
     private static final String CURRENCY = "VND";
     private static final String OPERATION_PURCHASE = "PURCHASE";
 
-    // SePay ký trên chuỗi các cặp "key=value" nối bằng dấu phẩy, nên bản thân dấu phẩy trong giá
-    // trị sẽ làm chuỗi ký nhập nhằng và chữ ký hai bên lệch nhau.
+    // SePay signs a string of "key=value" pairs joined by commas, so a comma inside a
+    // value would make the signing string ambiguous and the two sides' signatures diverge.
     private static final char SIGNATURE_SEPARATOR = ',';
 
-    // Chỉ là TẬP HỢP để lọc, không phải thứ tự ký: thứ tự lấy từ chính thứ tự chèn vào LinkedHashMap
-    // ở buildCheckoutFields(). Giữ hai danh sách có thứ tự song song là cách chắc chắn để một hôm
-    // nào đó sửa chỗ này quên chỗ kia rồi mọi giao dịch trượt chữ ký.
+    // Only a SET used for filtering, not the signing order: the order comes from the insertion order into the LinkedHashMap
+    // in buildCheckoutFields(). Keeping two parallel ordered lists is a sure way for someone one day
+    // to fix one place and forget the other, and then every transaction fails the signature.
     private static final Set<String> SIGNED_FIELDS = Set.of(
         "merchant",
         "env",
@@ -86,8 +86,8 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     private static final String NOTIFICATION_ORDER_PAID = "ORDER_PAID";
     private static final String NOTIFICATION_TRANSACTION_VOID = "TRANSACTION_VOID";
 
-    // Job đối soát chạy trên luồng scheduler và gọi lần lượt từng hóa đơn, nên một request treo là
-    // treo cả lượt quét — timeout ở đây không phải phòng xa mà là điều kiện để job chạy đúng nhịp.
+    // The reconciliation job runs on the scheduler thread and calls invoices one by one, so one hanging request
+    // hangs the whole sweep -- the timeout here is not a precaution but a condition for the job to run on schedule.
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(15);
 
@@ -123,9 +123,9 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     /**
-     * SePay định danh đơn bằng {@code order_invoice_number} dạng chuỗi và chỉ đòi nó duy nhất.
-     * Trước đây dùng thẳng số hóa đơn, nhưng hóa đơn giờ chỉ phát SAU khi tiền về nên lúc phát link
-     * chưa có số nào -- sinh tại chỗ, tiền tố VOX để nhìn dashboard SePay là biết đơn của mình.
+     * SePay identifies an order by the string {@code order_invoice_number} and only requires it to be unique.
+     * It used to use the invoice number directly, but an invoice is now only issued AFTER the money arrives, so when the link is issued
+     * there is no number yet -- generated in place, with the VOX prefix so the SePay dashboard shows at a glance that it is our order.
      */
     @Override
     public String newOrderRef() {
@@ -163,18 +163,18 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     /**
-     * VND không có phần lẻ và SDK chính thức ép số tiền về chuỗi số nguyên. BigDecimal đọc từ cột
-     * numeric(_,2) thì {@code toPlainString()} ra "10000.00" — vừa lệch chữ ký, vừa có nguy cơ
-     * SePay hiểu thành một số tiền khác.
+     * VND has no fractional part and the official SDK forces the amount to an integer string. A BigDecimal read from a
+     * numeric(_,2) column gives {@code toPlainString()} = "10000.00" -- which both mismatches the signature and risks
+     * SePay interpreting it as a different amount.
      */
     private String formatAmount(BigDecimal amount) {
         return String.valueOf(amount.longValueExact());
     }
 
     /**
-     * Dấu phẩy là ký tự phân tách của chuỗi ký, nên để nó lọt vào giá trị là tự phá chữ ký của mình.
-     * Thay bằng khoảng trắng thay vì ném lỗi: mô tả đơn hàng bị đổi một ký tự vẫn tốt hơn là chặn
-     * hẳn một giao dịch hợp lệ.
+     * A comma is the separator of the signing string, so letting it into a value breaks our own signature.
+     * Replaced with a space instead of throwing: an order description with one character changed is still better than blocking
+     * a valid transaction outright.
      */
     private String sanitizeForSignature(String value) {
         if (value == null) {
@@ -183,7 +183,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         if (value.indexOf(SIGNATURE_SEPARATOR) < 0) {
             return value;
         }
-        log.warn("Mô tả đơn SePay chứa dấu phẩy — đã thay bằng khoảng trắng để không phá chữ ký");
+        log.warn("SePay order description contains a comma — replaced with a space so the signature is not broken");
         return value.replace(SIGNATURE_SEPARATOR, ' ');
     }
 
@@ -202,7 +202,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             // Catch ONLY 404. The other errors -- 429 too fast, 5xx, network lost -- are still thrown: the
             // caller must tell "SePay says no order carries this code" from "could not ask SePay",
             // because mapping the latter to NOT_FOUND would allow failing an attempt that is still alive.
-            log.warn("SePay không có đơn nào mang mã {} -- coi như lần thử đã chết", providerOrderRef, e);
+            log.warn("SePay has no order with code {} -- treating the attempt as dead", providerOrderRef, e);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
         }
 
@@ -215,7 +215,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         if (status == null) {
             // Do not guess: mapping an unknown status to FAILED could mark an already-paid invoice as
             // failed, and mapping it to PAID would grant quota for free. Keep PENDING so the next sweep asks again.
-            log.warn("Trạng thái đơn SePay chưa được ánh xạ, giữ nguyên PENDING: orderRef={} order_status={}",
+            log.warn("SePay order status is not mapped yet, keeping PENDING: orderRef={} order_status={}",
                 providerOrderRef, orderStatus);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.PENDING);
         }
@@ -223,25 +223,25 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
     }
 
     /**
-     * SePay KHÔNG có API hủy một phiên chưa trả, nên luôn trả false.
+     * SePay has NO API to cancel a session that has not been paid, so this always returns false.
      *
-     * <p>Thứ gần nhất là {@code POST /v1/order/voidTransaction}, nhưng nó là nghiệp vụ KHÁC hẳn:
-     * chỉ nhận giao dịch THẺ ({@code payment_method = CARD}) đã ở trạng thái {@code CAPTURED} và
-     * chưa tới giờ đối soát -- tức là hoàn lại một khoản ĐÃ THU, không phải đóng một phiên chưa
-     * trả. Dùng nó ở đây thì hoặc lỗi (chưa CAPTURED), hoặc tệ hơn: hoàn một giao dịch mà hệ thống
-     * chưa kịp ghi nhận là đã trả.
+     * <p>The closest is {@code POST /v1/order/voidTransaction}, but it is an entirely DIFFERENT operation:
+     * it only accepts CARD transactions ({@code payment_method = CARD}) that are already {@code CAPTURED} and
+     * not yet at reconciliation time -- i.e. refunding money ALREADY COLLECTED, not closing a session that has not been
+     * paid. Using it here either fails (not CAPTURED yet) or, worse: refunds a transaction that the system
+     * has not yet recorded as paid.
      *
-     * <p>Hệ quả: đơn SePay chỉ đóng được sau khi phiên tự hết hạn. Xem CancelOrderUseCase.
+     * <p>Consequence: a SePay order can only be closed after the session expires by itself. See CancelOrderUseCase.
      */
     @Override
     public boolean cancelPaymentLink(String providerOrderRef, String reason) {
-        log.info("SePay không hỗ trợ hủy phiên thanh toán chưa trả, bỏ qua lệnh hủy cho orderRef={}",
+        log.info("SePay does not support cancelling an unpaid payment session, ignoring the cancel command for orderRef={}",
             providerOrderRef);
         return false;
     }
 
-    // Response bọc dữ liệu trong "data", nhưng chấp nhận cả dạng phẳng để một thay đổi nhỏ bên
-    // SePay không làm chết luôn job đối soát.
+    // The response wraps data in "data", but the flat form is accepted too so a small change on
+    // SePay's side does not kill the reconciliation job.
     private String extractOrderStatus(Map<?, ?> response) {
         if (response == null) {
             return null;
@@ -260,13 +260,13 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
 
         SePayIpnPayload payload = parseBody(rawBody);
         if (payload == null || payload.order() == null) {
-            log.warn("IPN SePay có secret key hợp lệ nhưng payload thiếu phần order");
+            log.warn("SePay IPN has a valid secret key but the payload is missing the order part");
             return CallbackVerificationResult.invalid();
         }
 
         String orderRef = payload.order().orderInvoiceNumber();
         if (orderRef == null || orderRef.isBlank()) {
-            log.warn("IPN SePay thiếu order_invoice_number, không tra được hóa đơn nào");
+            log.warn("SePay IPN is missing order_invoice_number, no invoice can be looked up");
             return CallbackVerificationResult.invalid();
         }
 
@@ -293,16 +293,16 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         }
         PaymentLinkRemoteStatus status = toRemoteStatus(payload.order().orderStatus());
         if (status == null) {
-            log.warn("IPN SePay có notification_type lạ ({}) và order_status chưa ánh xạ ({}) — bỏ qua",
+            log.warn("SePay IPN has an unknown notification_type ({}) and an unmapped order_status ({}) — ignoring",
                 notificationType, payload.order().orderStatus());
         }
         return status;
     }
 
     /**
-     * Tài liệu công khai của SePay chỉ nêu vài giá trị mẫu (CAPTURED, APPROVED) chứ không liệt kê
-     * đủ, nên đây là danh sách nhận diện rộng, và mọi giá trị chưa biết đều trả null (= chưa kết
-     * luận) thay vì bị gom thành thất bại. Cần chốt lại danh sách này sau khi chạy sandbox.
+     * SePay's public documentation only states a few sample values (CAPTURED, APPROVED) and does not list
+     * them all, so this is a broad recognition list, and every unknown value returns null (= no
+     * conclusion yet) instead of being lumped into failure. This list needs to be pinned down after running the sandbox.
      */
     private PaymentLinkRemoteStatus toRemoteStatus(String rawStatus) {
         if (rawStatus == null || rawStatus.isBlank()) {
@@ -320,7 +320,7 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         };
     }
 
-    // null nghĩa là IPN không kèm số tiền — tầng trên sẽ bỏ qua bước đối chiếu thay vì coi là lệch.
+    // null means the IPN carries no amount — the upper layer skips the matching step instead of treating it as a mismatch.
     private BigDecimal parseAmount(String rawAmount) {
         if (rawAmount == null || rawAmount.isBlank()) {
             return null;
@@ -328,22 +328,22 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         try {
             return new BigDecimal(rawAmount.trim());
         } catch (NumberFormatException e) {
-            log.warn("IPN SePay có order_amount không đọc được: {}", rawAmount);
+            log.warn("SePay IPN has an unreadable order_amount: {}", rawAmount);
             return null;
         }
     }
 
-    // So sánh constant-time để không lộ secret qua thời gian phản hồi.
+    // Constant-time comparison so the secret does not leak through response time.
     private boolean hasValidSecretKey(Map<String, String> headers) {
         String provided = headers.get(SECRET_KEY_HEADER);
         if (provided == null) {
-            log.warn("IPN SePay thiếu header {}", SECRET_KEY_HEADER);
+            log.warn("SePay IPN is missing header {}", SECRET_KEY_HEADER);
             return false;
         }
         String expected = properties.ipnSecretKey();
         // If it is not configured and still accepted, the IPN endpoint becomes an open door for anyone to settle an invoice.
         if (expected == null || expected.isBlank()) {
-            log.error("Chưa cấu hình sepay.pg.ipn-secret-key — từ chối mọi IPN SePay");
+            log.error("sepay.pg.ipn-secret-key is not configured — rejecting every SePay IPN");
             return false;
         }
         return MessageDigest.isEqual(
@@ -369,8 +369,8 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             return Base64.getEncoder()
                 .encodeToString(mac.doFinal(data.toString().getBytes(StandardCharsets.UTF_8)));
         } catch (GeneralSecurityException e) {
-            log.error("Lỗi khi ký form thanh toán SePay", e);
-            throw new IllegalStateException("Lỗi ký chữ ký cho SePay");
+            log.error("Error while signing the SePay payment form", e);
+            throw new IllegalStateException("Error computing the signature for SePay");
         }
     }
 
@@ -383,13 +383,13 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         return "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Thà chết ở đây với thông điệp rõ ràng còn hơn NPE giữa lúc ký, hoặc tệ hơn là POST sang SePay
-    // một form mang merchant rỗng. Không validate lúc khởi động vì môi trường dev/test chạy được
-    // mà không cần biến môi trường SePay.
+    // Better to die here with a clear message than an NPE in the middle of signing, or worse a POST to SePay
+    // of a form carrying an empty merchant. Not validated at startup because dev/test environments run
+    // without the SePay environment variables.
     private void requireConfigured() {
         if (!properties.isConfigured()) {
             throw new IllegalStateException(
-                "Chưa cấu hình SePay: cần sepay.pg.merchant-id và sepay.pg.secret-key (SEPAY_MERCHANT_ID / SEPAY_SECRET_KEY)");
+                "SePay is not configured: sepay.pg.merchant-id and sepay.pg.secret-key are required (SEPAY_MERCHANT_ID / SEPAY_SECRET_KEY)");
         }
     }
 
@@ -397,18 +397,18 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
         try {
             return jsonMapper.readValue(rawBody, SePayIpnPayload.class);
         } catch (Exception e) {
-            log.warn("Không đọc được payload IPN SePay", e);
+            log.warn("Could not read the SePay IPN payload", e);
             return null;
         }
     }
 
     /**
-     * Payload IPN dùng snake_case, còn JsonMapper của ứng dụng là bean autoconfig với chiến lược
-     * đặt tên mặc định — nên phải khai @JsonProperty từng field. Thiếu nó thì mọi field bind ra null
-     * và IPN nào cũng bị coi là thiếu order.
+     * The IPN payload uses snake_case, while the application's JsonMapper is an autoconfigured bean with the default
+     * naming strategy -- so @JsonProperty must be declared on every field. Without it every field binds to null
+     * and every IPN is treated as missing the order.
      *
-     * <p>Kiểu String cho id/amount là cố ý: SePay không cam kết id là UUID hay amount là số nguyên,
-     * mà một exception lúc parse ở đây đồng nghĩa với việc mất luôn thông báo đã thanh toán.
+     * <p>The String type for id/amount is intentional: SePay does not promise that id is a UUID or amount an integer,
+     * and an exception while parsing here means losing the paid notification altogether.
      */
     private record SePayIpnPayload(
         @JsonProperty("timestamp") Long timestamp,
@@ -424,10 +424,10 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             @JsonProperty("order_currency") String orderCurrency,
             @JsonProperty("order_amount") String orderAmount,
             @JsonProperty("order_invoice_number") String orderInvoiceNumber,
-            // Object chứ không phải String: SePay gửi custom_data dưới dạng mảng (rỗng, hoặc mảng
-            // object name/value). Khai là String làm Jackson ném MismatchedInputException, parseBody
-            // trả null, và MỌI IPN đều bị coi là không xác thực được — trường đã trả tiền nhưng hóa
-            // đơn không bao giờ được chốt. Ta không đọc field này, nên nhận kiểu gì cũng được.
+            // Object and not String: SePay sends custom_data as an array (empty, or an array of
+            // name/value objects). Declared as String it makes Jackson throw MismatchedInputException, parseBody
+            // returns null, and EVERY IPN is treated as unauthenticatable — the school paid but the
+            // invoice is never settled. We do not read this field, so any type will do.
             @JsonProperty("custom_data") Object customData,
             @JsonProperty("user_agent") String userAgent,
             @JsonProperty("ip_address") String ipAddress,

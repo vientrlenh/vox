@@ -38,7 +38,7 @@ public class ViewAssessmentsUseCase implements IUseCase<ViewAssessmentsQuery, Pa
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         return findAccessibleAssessments(input, currentUserId, currentSchoolId, systemAdmin, schoolAdmin);

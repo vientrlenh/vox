@@ -91,11 +91,11 @@ public class NotificationPushedEventConsumer {
 
     private static final String CONSUMER_GROUP = "notification";
 
-    /** {@code withZone} là phần bắt buộc: thiếu nó thì thông báo ghi giờ UTC của container. */
+    /** {@code withZone} is mandatory: without it the notification shows the container's UTC time. */
     private static final DateTimeFormatter DEADLINE_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
 
-    /** DecimalFormat KHÔNG thread-safe, nên đây phải là ThreadLocal chứ không phải field dùng chung. */
+    /** DecimalFormat is NOT thread-safe, so this must be a ThreadLocal and not a shared field. */
     private static final ThreadLocal<DecimalFormat> AMOUNT_FORMAT = ThreadLocal.withInitial(
         () -> new DecimalFormat("#,###", DecimalFormatSymbols.getInstance(Locale.of("vi", "VN"))));
 
@@ -201,7 +201,7 @@ public class NotificationPushedEventConsumer {
      * which blocks at startup.
      */
     private void skipUnmappedEventType(UUID eventId, String eventType) {
-        log.warn("Skip notification, eventType chưa ánh xạ category: eventId={}, eventType={}",
+        log.warn("Skip notification, eventType not mapped to a category: eventId={}, eventType={}",
             eventId, eventType);
         markProcessed(eventId);
     }
@@ -212,7 +212,7 @@ public class NotificationPushedEventConsumer {
      * can be fixed by running it again.
      */
     private void skipWithoutRecipients(UUID eventId, String eventType) {
-        log.warn("Skip notification, không có người nhận: eventId={}, eventType={}",
+        log.warn("Skip notification, no recipient: eventId={}, eventType={}",
             eventId, eventType);
         markProcessed(eventId);
     }
@@ -223,7 +223,7 @@ public class NotificationPushedEventConsumer {
         if (pushable.isEmpty()) {
             // uk_notifications_user_event blocked everything: the message was fully processed before but
             // markProcessed had not run yet (crash between the two steps). Do not push a second time.
-            log.info("Notification đã tồn tại cho cả {} người nhận, bỏ qua push: eventId={}",
+            log.info("Notification already exists for all {} recipients, skipping push: eventId={}",
                 drafts.size(), eventId);
             markProcessed(eventId);
             return;
@@ -304,7 +304,7 @@ public class NotificationPushedEventConsumer {
 
     @DltHandler
     public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
-        log.error("Notification event vào DLT: topic={}, partition={}, offset={}, payload={}",
+        log.error("Notification event sent to the DLT: topic={}, partition={}, offset={}, payload={}",
             record.topic(), record.partition(), record.offset(), record.value());
     }
 
@@ -320,7 +320,7 @@ public class NotificationPushedEventConsumer {
         }
 
         if (!pushEnabled(draft.userId(), draft.category())) {
-            log.debug("Người dùng đã tắt push nhóm {}: userId={}", draft.category(), draft.userId());
+            log.debug("The user has turned off push for group {}: userId={}", draft.category(), draft.userId());
             return;
         }
 
@@ -329,7 +329,7 @@ public class NotificationPushedEventConsumer {
             .toList();
 
         if (installationIds.isEmpty()) {
-            log.debug("Không có thiết bị nào đăng ký: userId={}", draft.userId());
+            log.debug("No device registered: userId={}", draft.userId());
             return;
         }
 
@@ -345,7 +345,7 @@ public class NotificationPushedEventConsumer {
         // would mean wiping the whole device table after a single FCM downtime.
         if (!result.staleInstallationIds().isEmpty()) {
             int removed = notificationDeviceRepository.deleteByInstallationIdIn(result.staleInstallationIds());
-            log.info("Dọn {} thiết bị không còn dùng được: eventId={}", removed, eventId);
+            log.info("Cleaned up {} devices that are no longer usable: eventId={}", removed, eventId);
         }
 
         log.debug("Push xong: eventId={}, success={}, stale={}, retryable={}",
@@ -356,7 +356,7 @@ public class NotificationPushedEventConsumer {
     private boolean pushEnabled(UUID userId, NotificationCategory category) {
         return notificationPreferenceRepository.findByUserIdAndCategory(userId, category)
             .map(preference -> preference.isPushEnabled())
-            // Không có dòng nghĩa là chưa từng đổi thiết lập -> dùng mặc định.
+            // No row means the setting was never changed -> use the default.
             .orElse(NotificationPreference.DEFAULT_PUSH_ENABLED);
     }
 
@@ -388,7 +388,7 @@ public class NotificationPushedEventConsumer {
 
     private IllegalStateException unhandledEventType(IncomingEvent event) {
         return new IllegalStateException(
-            "eventType không được xử lý: eventId=" + event.eventId() + ", eventType=" + event.eventType());
+            "Unhandled eventType: eventId=" + event.eventId() + ", eventType=" + event.eventType());
     }
 
     private List<Draft> renderResultDrafts(IncomingEvent event) {
@@ -405,8 +405,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderResultReleased(IncomingEvent event) {
         AssessmentResultReleasedPayloadV1 payload = parse(event, AssessmentResultReleasedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Điểm thi của bạn đã có",
-            "%s: %s điểm".formatted(orPlaceholder(payload.assessmentName()), formatScore(payload.totalScore())),
+            "Your assessment score is available",
+            "%s: %s points".formatted(orPlaceholder(payload.assessmentName()), formatScore(payload.totalScore())),
             resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
                 payload.assessmentKind(), payload.assessmentName()));
     }
@@ -414,8 +414,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderResultRegraded(IncomingEvent event) {
         AssessmentResultRegradedPayloadV1 payload = parse(event, AssessmentResultRegradedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Điểm thi của bạn đã thay đổi",
-            "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
+            "Your assessment score has changed",
+            "%s: %s -> %s points".formatted(orPlaceholder(payload.assessmentName()),
                 formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
             resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
                 payload.assessmentKind(), payload.assessmentName()));
@@ -424,7 +424,7 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderResultInvalidated(IncomingEvent event) {
         AssessmentResultInvalidatedPayloadV1 payload = parse(event, AssessmentResultInvalidatedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Bài thi của bạn đã bị vô hiệu",
+            "Your submission has been invalidated",
             "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
             resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
                 payload.assessmentKind(), payload.assessmentName()));
@@ -433,7 +433,7 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderResultInvalidCleared(IncomingEvent event) {
         AssessmentResultInvalidClearedPayloadV1 payload = parse(event, AssessmentResultInvalidClearedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Bài thi của bạn đã được khôi phục",
+            "Your submission has been reinstated",
             "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
             resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
                 payload.assessmentKind(), payload.assessmentName()));
@@ -442,7 +442,7 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderResultOutcomeDecided(IncomingEvent event) {
         AssessmentResultOutcomeDecidedPayloadV1 payload = parse(event, AssessmentResultOutcomeDecidedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Kết quả cuối cùng của bạn",
+            "Your final result",
             "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.outcome())),
             resultNavigation(event, payload.candidateResultId(), payload.sessionId(),
                 payload.assessmentKind(), payload.assessmentName()));
@@ -470,8 +470,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderAppealPublished(IncomingEvent event) {
         AssessmentAppealPublishedPayloadV1 payload = parse(event, AssessmentAppealPublishedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Kết quả phúc khảo đã được công bố",
-            "%s: %s -> %s điểm".formatted(orPlaceholder(payload.assessmentName()),
+            "Appeal result published",
+            "%s: %s -> %s points".formatted(orPlaceholder(payload.assessmentName()),
                 formatScore(payload.scoreBefore()), formatScore(payload.scoreAfter())),
             navigationData(event.eventType()).with("appealId", payload.appealId()).build());
     }
@@ -479,7 +479,7 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderAppealRejected(IncomingEvent event) {
         AssessmentAppealRejectedPayloadV1 payload = parse(event, AssessmentAppealRejectedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Đơn phúc khảo không được chấp nhận",
+            "Appeal not accepted",
             "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
             navigationData(event.eventType()).with("appealId", payload.appealId()).build());
     }
@@ -487,8 +487,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderAppealApproved(IncomingEvent event) {
         AssessmentAppealApprovedPayloadV1 payload = parse(event, AssessmentAppealApprovedPayloadV1.class);
         return one(payload.studentId(), event.category(),
-            "Đơn phúc khảo của bạn đã được duyệt",
-            "%s -- dự kiến có kết quả trước %s".formatted(
+            "Your appeal has been approved",
+            "%s -- result expected by %s".formatted(
                 orPlaceholder(payload.assessmentName()), formatDeadline(payload.deadline())),
             navigationData(event.eventType()).with("appealId", payload.appealId()).build());
     }
@@ -506,8 +506,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderGradingDeadlineReminder(IncomingEvent event) {
         GradingDeadlineReminderPayloadV1 payload = parse(event, GradingDeadlineReminderPayloadV1.class);
         return one(payload.teacherId(), event.category(),
-            "Sắp tới hạn chấm bài",
-            "%s -- hạn %s".formatted(orPlaceholder(payload.assessmentName()),
+            "Grading deadline approaching",
+            "%s -- deadline %s".formatted(orPlaceholder(payload.assessmentName()),
                 formatDeadline(payload.deadlineAt())),
             gradingNavigation(event, payload.assignmentId(), payload.assessmentId(), payload.assessmentKind()));
     }
@@ -516,7 +516,7 @@ public class NotificationPushedEventConsumer {
         GradingAssignmentDeclinedPayloadV1 payload = parse(event, GradingAssignmentDeclinedPayloadV1.class);
         // The recipient is the admin who assigned the work, not the teacher who returned it.
         return one(payload.assignedBy(), event.category(),
-            "Có người trả lại phân công chấm",
+            "A grading assignment was returned",
             "%s: %s".formatted(orPlaceholder(payload.assessmentName()), orPlaceholder(payload.reason())),
             gradingNavigation(event, payload.assignmentId(), payload.assessmentId(), payload.assessmentKind()));
     }
@@ -524,7 +524,7 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderGradingAssignmentOpened(IncomingEvent event) {
         GradingAssignmentOpenedPayloadV1 payload = parse(event, GradingAssignmentOpenedPayloadV1.class);
         return one(payload.teacherId(), event.category(),
-            "Bạn được giao chấm bài",
+            "You have been assigned a grading task",
             // candidateLabel was already chosen by the anonymity rule at publish time: the student's name
             // for a class test, the attempt code for a centralized assessment. Do NOT re-derive it here.
             "%s - %s: %s".formatted(
@@ -546,8 +546,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderHumanGradingRequired(IncomingEvent event) {
         AssessmentHumanGradingRequiredPayloadV1 payload = parse(event, AssessmentHumanGradingRequiredPayloadV1.class);
         return fanOut(payload.recipientIds(), event.category(),
-            "Có bài chờ soát điểm AI",
-            "%s: %d bài cần chấm tay".formatted(
+            "Submissions waiting for AI score review",
+            "%s: %d submissions need manual grading".formatted(
                 orPlaceholder(payload.assessmentName()), payload.pendingCount()),
             navigationData(event.eventType())
                 .with("assessmentId", payload.assessmentId())
@@ -566,8 +566,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderInvoicePaid(IncomingEvent event) {
         InvoicePaidPayloadV1 payload = parse(event, InvoicePaidPayloadV1.class);
         return fanOut(payload.schoolAdminIds(), event.category(),
-            "Hóa đơn đã được thanh toán",
-            "Hóa đơn #%s -- %s".formatted(orPlaceholder(payload.invoiceNumber()),
+            "Invoice paid",
+            "Invoice #%s -- %s".formatted(orPlaceholder(payload.invoiceNumber()),
                 formatAmount(payload.amount())),
             navigationData(event.eventType()).with("invoiceNumber", payload.invoiceNumber()).build());
     }
@@ -578,7 +578,7 @@ public class NotificationPushedEventConsumer {
         AssessmentBlueprintVersionPublishedEvent payload =
             parse(event, AssessmentBlueprintVersionPublishedEvent.class);
         return fanOut(payload.schoolAdminIds(), event.category(),
-            "Blueprint đề thi đã sẵn sàng",
+            "Assessment blueprint is ready",
             "%s (%s)".formatted(orPlaceholder(payload.blueprintName()),
                 orPlaceholder(payload.blueprintCode())),
             navigationData(event.eventType())
@@ -602,8 +602,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderDebtCapExceeded(IncomingEvent event) {
         SchoolDebtCapExceededPayloadV1 payload = parse(event, SchoolDebtCapExceededPayloadV1.class);
         return fanOut(payload.systemAdminIds(), event.category(),
-            "Cảnh báo: nợ hạn mức AI vượt trần",
-            "%s -- nợ %s vượt trần cảnh báo %s".formatted(quotaLabel(payload.quotaType()),
+            "Warning: AI quota debt exceeds the cap",
+            "%s -- debt %s exceeds the warning cap %s".formatted(quotaLabel(payload.quotaType()),
                 formatAmount(payload.overageVnd()), formatAmount(payload.capVnd())),
             navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
     }
@@ -611,8 +611,8 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderLockedDueToDebt(IncomingEvent event) {
         SchoolLockedDueToDebtPayloadV1 payload = parse(event, SchoolLockedDueToDebtPayloadV1.class);
         return fanOut(payload.schoolAdminIds(), event.category(),
-            "Trường đang bị khóa do nợ hạn mức AI",
-            "Chi phí AI thực tế đã vượt hạn mức -- thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục tổ chức thi",
+            "The school is locked due to AI quota debt",
+            "Actual AI cost has exceeded the quota -- pay, or renew or upgrade the plan, to continue organizing assessments",
             navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
     }
 
@@ -622,8 +622,8 @@ public class NotificationPushedEventConsumer {
             .multiply(BigDecimal.valueOf(100))
             .divide(payload.totalAllocatedVnd(), 0, RoundingMode.HALF_UP);
         return fanOut(payload.schoolAdminIds(), event.category(),
-            "Cảnh báo: sắp hết hạn mức AI",
-            "%s đã dùng %s%% hạn mức -- cân nhắc gia hạn/nâng cấp gói để tránh gián đoạn"
+            "Warning: AI quota almost used up",
+            "%s has used %s%% of its quota -- consider renewing or upgrading the plan to avoid interruption"
                 .formatted(quotaLabel(payload.quotaType()), percent),
             navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
     }
@@ -631,31 +631,31 @@ public class NotificationPushedEventConsumer {
     private List<Draft> renderDebtCleared(IncomingEvent event) {
         SchoolDebtClearedPayloadV1 payload = parse(event, SchoolDebtClearedPayloadV1.class);
         return fanOut(payload.schoolAdminIds(), event.category(),
-            "Trường đã hết nợ hạn mức AI",
-            "Đã đủ hạn mức trở lại -- có thể tổ chức thi bình thường",
+            "The school has cleared its AI quota debt",
+            "Quota is sufficient again -- assessments can be organized as normal",
             navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
     }
 
     private List<Draft> renderSubscriptionSuspended(IncomingEvent event) {
         SchoolSubscriptionSuspendedPayloadV1 payload = parse(event, SchoolSubscriptionSuspendedPayloadV1.class);
         return fanOut(payload.schoolAdminIds(), event.category(),
-            "Gói subscription bị đình chỉ",
-            "Lý do: %s".formatted(orPlaceholder(payload.reason())),
+            "Subscription plan suspended",
+            "Reason: %s".formatted(orPlaceholder(payload.reason())),
             navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
     }
 
     private List<Draft> renderSubscriptionUnsuspended(IncomingEvent event) {
         SchoolSubscriptionUnsuspendedPayloadV1 payload = parse(event, SchoolSubscriptionUnsuspendedPayloadV1.class);
         return fanOut(payload.schoolAdminIds(), event.category(),
-            "Gói subscription đã được gỡ đình chỉ",
-            "Trường có thể sử dụng bình thường trở lại",
+            "Subscription plan unsuspended",
+            "The school can use the system as normal again",
             navigationData(event.eventType()).with("schoolId", payload.schoolId()).build());
     }
 
     /**
-     * Người nhận null trả về danh sách rỗng thay vì một Draft hỏng: {@code notifications
-     * .user_id} là NOT NULL, nên dựng Draft ở đây chỉ để chết ở tầng DB, và saveIfAbsent
-     * nuốt DataIntegrityViolationException nên sự cố sẽ biến mất không dấu vết.
+     * A null recipient returns an empty list instead of a broken Draft: {@code notifications
+     * .user_id} is NOT NULL, so building a Draft here would only die at the DB layer, and saveIfAbsent
+     * swallows DataIntegrityViolationException so the problem would vanish without a trace.
      */
     private List<Draft> one(UUID userId, NotificationCategory category, String title, String body,
             Map<String, String> data) {
@@ -663,14 +663,14 @@ public class NotificationPushedEventConsumer {
     }
 
     /**
-     * Danh sách người nhận được chốt từ lúc publish và đi kèm trong payload, KHÔNG truy vấn
-     * lại ở đây. Nhờ vậy mỗi lần chạy lại (retry, replay từ DLT) đều cho ra đúng tập người
-     * nhận cũ, và uk_notifications_user_event chặn được sạch. Nếu resolve tại đây, một admin
-     * mới được thêm giữa hai lần retry sẽ nhận thông báo về việc đã cũ -- ràng buộc unique
-     * không cứu được vì đó là user_id khác.
+     * The recipient list is fixed at publish time and carried in the payload, NOT queried
+     * again here. That way every re-run (retry, replay from the DLT) yields exactly the same set of
+     * recipients, and uk_notifications_user_event blocks duplicates cleanly. If resolved here, an admin
+     * added between two retries would receive a notification about something already old -- the unique constraint
+     * cannot save us because that is a different user_id.
      *
-     * <p>{@code distinct} là lưới an toàn: payload đã đi qua Kafka nên phía này không kiểm
-     * soát được nó, mà id trùng sẽ tốn một lượt ghi hỏng cho mỗi bản trùng.
+     * <p>{@code distinct} is a safety net: the payload has passed through Kafka so this side does not control
+     * it, and a duplicate id costs one failed write per duplicate.
      */
     private List<Draft> fanOut(List<UUID> userIds, NotificationCategory category, String title, String body,
             Map<String, String> data) {
@@ -685,12 +685,12 @@ public class NotificationPushedEventConsumer {
     }
 
     /**
-     * Mở một map điều hướng đã có sẵn {@code eventType} và {@code target}.
+     * Opens a navigation map that already holds {@code eventType} and {@code target}.
      *
-     * <p>{@code target} là màn hình client cần mở, tách khỏi {@code eventType} có chủ ý:
-     * năm event nhóm điểm cùng dẫn về một màn hình, nên client chỉ phải nhớ chín target
-     * thay vì mười tám eventType. Quan trọng hơn, gắn thêm một event mới vào một target đã
-     * có chỉ là thay đổi phía server -- xem {@link NotificationTarget}.
+     * <p>{@code target} is the screen the client must open, deliberately separate from {@code eventType}:
+     * five score-group events lead to the same screen, so the client only has to remember nine targets
+     * instead of eighteen eventTypes. More importantly, attaching a new event to an existing target
+     * is only a server-side change -- see {@link NotificationTarget}.
      */
     private NavigationData navigationData(String eventType) {
         return new NavigationData(eventType);
@@ -717,7 +717,7 @@ public class NotificationPushedEventConsumer {
             values.put("target", NotificationTarget.of(eventType).name());
         }
 
-        /** FCM chỉ nhận {@code Map<String, String>}, nên mọi giá trị phải stringify từ đây. */
+        /** FCM only accepts {@code Map<String, String>}, so every value must be stringified from here. */
         NavigationData with(String key, UUID value) {
             return with(key, value == null ? null : value.toString());
         }
@@ -754,7 +754,7 @@ public class NotificationPushedEventConsumer {
         Map<String, String> data = new LinkedHashMap<>(pushable.draft().data());
 
         if (pushable.notificationId() == null) {
-            log.warn("Thiếu notificationId sau khi ghi, push sẽ chỉ mở được danh sách: userId={}",
+            log.warn("Missing notificationId after the write, the push can only open the list: userId={}",
                 pushable.draft().userId());
             return data;
         }
@@ -772,7 +772,7 @@ public class NotificationPushedEventConsumer {
             return jsonMapper.readValue(event.value(), type);
         } catch (Exception e) {
             throw new IllegalStateException(
-                "Payload sai định dạng: eventId=" + event.eventId() + ", eventType=" + event.eventType(), e);
+                "Malformed payload: eventId=" + event.eventId() + ", eventType=" + event.eventType(), e);
         }
     }
 
@@ -784,8 +784,8 @@ public class NotificationPushedEventConsumer {
                     .processedAt(Instant.now())
                     .build());
         } catch (DataIntegrityViolationException e) {
-            // Luồng khác đã ghi trước: kết quả mong muốn đã đạt được, không có gì phải làm.
-            log.debug("Event đã được đánh dấu bởi luồng khác: eventId={}", eventId);
+            // Another flow wrote first: the desired result is already achieved, nothing to do.
+            log.debug("Event already marked by another flow: eventId={}", eventId);
         }
     }
 
@@ -802,8 +802,8 @@ public class NotificationPushedEventConsumer {
             return "--";
         }
         return switch (quotaType) {
-            case ASSESSMENT -> "Bài kiểm tra";
-            case PRACTICE -> "Lượt ôn luyện cá nhân";
+            case ASSESSMENT -> "Assessment";
+            case PRACTICE -> "Personal practice session";
         };
     }
 
@@ -811,17 +811,17 @@ public class NotificationPushedEventConsumer {
         return deadline == null ? "--" : DEADLINE_FORMAT.format(deadline);
     }
 
-    /** Cùng bộ chữ với GradingAssignmentEmailConsumer: hai kênh nói về một vòng chấm. */
+    /** Same wording as GradingAssignmentEmailConsumer: the two channels talk about one grading round. */
     private String roundLabel(String roundType) {
         if (roundType == null) {
-            return "Chấm bài";
+            return "Grading";
         }
         return switch (roundType) {
-            case "INITIAL" -> "Chấm lần đầu";
-            case "SPOT_CHECK" -> "Hậu kiểm";
-            case "REMEDIATION" -> "Xem xét bài bị vô hiệu";
-            case "APPEAL" -> "Phúc khảo";
-            default -> "Chấm bài";
+            case "INITIAL" -> "Initial grading";
+            case "SPOT_CHECK" -> "Spot check";
+            case "REMEDIATION" -> "Review of invalidated submission";
+            case "APPEAL" -> "Appeal";
+            default -> "Grading";
         };
     }
 
@@ -840,11 +840,11 @@ public class NotificationPushedEventConsumer {
     ) {}
 
     /**
-     * Một {@link Draft} đã ghi xuống DB thành công, kèm id của dòng vừa tạo.
+     * A {@link Draft} that was successfully written to the DB, together with the id of the row just created.
      *
-     * <p>Tách khỏi Draft vì id chỉ tồn tại sau bước ghi: Draft dựng xong từ lúc render nội
-     * dung, còn id do DB sinh ra trong {@code saveIfAbsent}. Gộp vào Draft nghĩa là có một
-     * ô luôn null trong suốt nửa đầu vòng đời, và không ai đọc code nhớ được nửa nào.
+     * <p>Kept apart from Draft because the id only exists after the write step: a Draft is complete from the time the content
+     * is rendered, while the id is generated by the DB in {@code saveIfAbsent}. Merging it into Draft would mean a
+     * field that is always null during the first half of its life, and nobody reading the code can remember which half.
      */
     private record Pushable(Draft draft, UUID notificationId) {}
 }

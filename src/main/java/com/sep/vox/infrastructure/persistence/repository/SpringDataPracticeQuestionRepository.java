@@ -43,11 +43,11 @@ public interface SpringDataPracticeQuestionRepository
              OR question.target_tense = :tense
           )
           AND question.difficulty_rank BETWEEN :rankMin AND :rankMax
-          -- ĐÃ GẶP LÀ KHÔNG BAO GIỜ GẶP LẠI (2026-08-06). Chỉ một điều kiện: có dòng exposure
-          -- là loại. Bản cũ cho câu quay lại nếu học sinh được chấm DƯỚI bậc của câu và đã qua
-          -- thời gian chờ -- kèm theo là một LATERAL join qua 5 bảng (response → evaluation →
-          -- criterion_score → rubric_criterions → framework_result_bands) chỉ để biết điều đó.
-          -- Bỏ cả luật lẫn join.
+          -- SEEN MEANS NEVER SEEN AGAIN (2026-08-06). A single condition: a row in exposure
+          -- excludes the question. The old version let a question come back if the student was graded BELOW the band of the question and the
+          -- waiting time had passed -- which came with a LATERAL join across 5 tables (response → evaluation →
+          -- criterion_score → rubric_criterions → framework_result_bands) just to know that.
+          -- Both the rule and the join are gone.
           AND NOT EXISTS (
               SELECT 1
               FROM student_question_exposures exposure
@@ -65,10 +65,10 @@ public interface SpringDataPracticeQuestionRepository
         @Param("rankMax") int rankMax
     );
 
-    // "Cạn vĩnh viễn" = đã gặp. Từ 2026-08-06 không còn khái niệm gặp-lại-nếu-làm-chưa-đạt,
-    // nên mọi câu đã gặp đều cạn -- điều kiện trùng khít với bộ lọc ở
-    // findUnseenByTopicAndCriterionAndRankRange, và hai chỗ PHẢI trùng nhau: lệch một chút là
-    // chủ đề bị coi là còn câu trong khi thang leo không tìm ra câu nào, hoặc ngược lại.
+    // "Permanently exhausted" = seen. Since 2026-08-06 there is no seen-again-if-not-passed concept,
+    // so every seen question is exhausted -- the condition is identical to the filter in
+    // findUnseenByTopicAndCriterionAndRankRange, and the two places MUST match: a slight mismatch means
+    // a topic is considered to still have questions while the climbing ladder finds none, or the opposite.
     @Query(value = """
         SELECT question.id
         FROM practice_questions question
@@ -97,17 +97,17 @@ public interface SpringDataPracticeQuestionRepository
 
  
     /**
-     * ⚠️ Cột target_tense TỪNG BỊ SÓT ở đây (sửa 2026-08-07).
+     * ⚠️ The target_tense column WAS MISSED here (fixed 2026-08-07).
      *
-     * Thì đích đi hết cả chuỗi -- TensePolicy.forSlot -> generateAndStore -> payload gửi Python
-     * -> Python trả về -> PracticeQuestion giữ trong object -- rồi bị vứt ở đúng bước ghi cuối
-     * vì câu INSERT này không liệt kê cột. Không lỗi, không cảnh báo: mọi câu sinh ra đều có
-     * target_tense NULL, nên bộ lọc thì ở findUnseenByTopicAndCriterionAndRankRange
-     * (`question.target_tense IS NULL OR = :tense`) luôn rơi vào vế đầu và cả cơ chế ép thì
-     * chưa từng chạy.
+     * The target tense went through the whole chain -- TensePolicy.forSlot -> generateAndStore -> payload sent to Python
+     * -> Python returns it -> PracticeQuestion holds it in the object -- and then was dropped at the very last write
+     * because this INSERT does not list the column. No error, no warning: every generated question had
+     * target_tense NULL, so the filter in findUnseenByTopicAndCriterionAndRankRange
+     * (`question.target_tense IS NULL OR = :tense`) always fell into the first side and the whole enforcement
+     * mechanism never ran.
      *
-     * Thêm cột mới vào practice_questions thì PHẢI sửa cả đây -- đây là đường ghi duy nhất của
-     * câu do AI sinh, và nó không dùng entity nên Hibernate không nhắc.
+     * Adding a new column to practice_questions MUST also change this -- this is the only write path of
+     * AI-generated questions, and it does not use an entity so Hibernate will not remind you.
      */
     @Modifying
     @Query(value = """

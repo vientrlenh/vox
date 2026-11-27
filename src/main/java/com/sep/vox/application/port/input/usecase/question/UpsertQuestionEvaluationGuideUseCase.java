@@ -35,7 +35,7 @@ public class UpsertQuestionEvaluationGuideUseCase implements IUseCase<UpsertQues
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         boolean immutable = questionEditAccessService.authorizeEditing(question, currentUserId);
 
         Question targetQuestion = immutable

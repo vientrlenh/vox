@@ -3,11 +3,11 @@ package com.sep.vox.domain.repository;
 import java.util.UUID;
 
 /**
- * Một câu đã trả lời nhưng chưa có bản chấm -- diện cần xả chấm lúc đóng phiên.
+ * An answered question that has no grading yet -- the set to flush for grading when the session closes.
  *
- * Cần CẢ HAI id: {@code responseId} để gom các lượt đã nói, {@code questionId} để lấy đề bài
- * và hướng dẫn chấm. Trả về mỗi questionId rồi upsert lại để lấy responseId là lách -- upsert
- * còn nối thêm transcript và ghi đè audioUrl, tức là sửa dữ liệu chỉ để đọc một cái id.
+ * Needs BOTH ids: {@code responseId} to gather the turns already spoken, {@code questionId} to fetch the prompt
+ * and the grading guide. Returning only questionId and then upserting to get responseId is a workaround -- the upsert
+ * also appends the transcript and overwrites audioUrl, i.e. it modifies data just to read an id.
  */
 public interface PendingEvaluationResponse {
 

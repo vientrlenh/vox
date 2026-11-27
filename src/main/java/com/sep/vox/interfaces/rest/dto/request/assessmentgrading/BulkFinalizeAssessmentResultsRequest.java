@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
  *        Empty = {@code false}: the safe default, the use case refuses if unfinished submissions remain.
  */
 public record BulkFinalizeAssessmentResultsRequest(
-    @NotNull(message = "Thiếu kỳ thi cần chốt sổ")
+    @NotNull(message = "The assessment to finalize is missing")
     UUID assessmentId,
 
     Boolean releasePendingWithAiScores

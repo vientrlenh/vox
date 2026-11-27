@@ -50,7 +50,7 @@ public class ImportAssessmentCandidatesFromClassUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(ImportAssessmentCandidatesFromClassCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentDirectoryAccessService.AssessmentDirectoryScope scope = assessmentDirectoryAccessService.resolve(assessment);
         UUID currentUserId = scope.callerId();
         AssessmentEditingGuard.requireScheduleEditable(assessment);
@@ -73,15 +73,15 @@ public class ImportAssessmentCandidatesFromClassUseCase
     private SchoolClass requireImportableClass(
         Assessment assessment, AssessmentDirectoryAccessService.AssessmentDirectoryScope scope, UUID schoolClassId) {
         SchoolClass schoolClass = schoolClassRepository.findById(schoolClassId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
         if (!schoolClass.getSchoolId().equals(assessment.getSchoolId())) {
-            throw new ForbiddenException("Lớp học không thuộc trường của bài kiểm tra");
+            throw new ForbiddenException("The class does not belong to the school of the assessment");
         }
         // The chair of a class test can only import the class they are in charge of -- exactly matching the scope
         // that ViewAssessmentDirectoryClassesUseCase lets them see.
         if (!scope.schoolWide()
                 && !assessmentDirectoryAccessService.callerClassIds(scope).contains(schoolClass.getId())) {
-            throw new ForbiddenException("Bạn không phụ trách lớp học này");
+            throw new ForbiddenException("You are not in charge of this class");
         }
         return schoolClass;
     }

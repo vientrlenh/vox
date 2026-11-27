@@ -62,17 +62,17 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
     @Override
     public StudentAssessmentPaperResponse execute(ViewAssessmentSessionPaperQuery input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the assessment session not found"));
         if (!candidate.getStudentId().equals(userContextPort.getCurrentAuthenticatedUserId())) {
-            throw new ForbiddenException("Bạn không được phép xem đề thi của phiên này");
+            throw new ForbiddenException("You are not allowed to view the paper of this session");
         }
 
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentPaper paper = assessmentPaperRepository.findById(session.getPaperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
 
         List<StudentAssessmentPaperQuestionResponse> paperQuestions = loadPaperQuestions(session.getPaperId());
         return toPaperResponse(assessment, paper, session, candidate, paperQuestions);
@@ -94,7 +94,7 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
             AssessmentPaperItem item,
             Map<UUID, AssessmentPaperSection> sectionById) {
         Question question = questionRepository.findById(item.getQuestionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found in the assessment paper"));
         AssessmentPaperSection section = sectionById.get(item.getSectionId());
         QuestionAssetDto asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
             .findFirst()

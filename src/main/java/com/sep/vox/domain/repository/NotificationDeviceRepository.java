@@ -15,7 +15,7 @@ public interface NotificationDeviceRepository {
 
     List<NotificationDevice> findByUserId(UUID userId);
 
-    /** Dọn FID mà FCM đã báo là không còn dùng được. */
+    /** Cleans up FIDs that FCM reported as no longer usable. */
     int deleteByInstallationIdIn(Collection<String> installationIds);
     int deleteByUserIdAndDeviceIdAndExceptInstallationId(UUID userId, String deviceId, String installationId);
     int deleteByUserIdAndInstallationId(UUID userId, String installationId);

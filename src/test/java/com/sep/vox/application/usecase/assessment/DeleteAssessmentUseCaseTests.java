@@ -45,12 +45,12 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Xoá kỳ thi phải dọn hết dữ liệu con: không có FK/cascade nào ở DB làm hộ, nên bỏ sót một bảng
- * là để lại ca thi/thí sinh mồ côi trỏ vào kỳ thi đã biến mất — đúng lỗi khiến trang lịch thi của
- * học sinh hiện một ca thi không còn kỳ thi nào đứng sau.
+ * Deleting an assessment must clean up all child data: no FK/cascade in the DB does it, so missing one table leaves
+ * orphaned assessment schedules/candidates pointing at an assessment that is gone -- exactly the bug that made the
+ * student's exam schedule page show an assessment schedule with no assessment behind it.
  *
- * <p>Chỉ kỳ thi còn DRAFT mới được xoá cứng; từ lúc đã lên lịch trở đi lịch đã công bố cho học
- * sinh nên chỉ được chuyển CANCELLED.
+ * <p>Only a DRAFT assessment may be hard-deleted; from the moment it is scheduled the schedule has been published to
+ * students, so it can only be moved to CANCELLED.
  */
 class DeleteAssessmentUseCaseTests {
 
@@ -108,7 +108,7 @@ class DeleteAssessmentUseCaseTests {
             userRoleQueryRepository,
             userContextPort);
 
-        // Giáo viên chủ bài kiểm tra trên lớp — nhánh cho phép xoá.
+        // The teacher who owns the class test -- the branch that allows deletion.
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(schoolUserRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of());
@@ -211,7 +211,7 @@ class DeleteAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentCommand(assessmentId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("công bố kết quả");
+            .hasMessageContaining("results have been published");
         verify(assessmentRepository, never()).deleteById(any());
         verify(assessmentRepository, never()).save(any());
     }

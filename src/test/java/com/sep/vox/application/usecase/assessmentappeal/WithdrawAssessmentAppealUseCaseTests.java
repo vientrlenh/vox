@@ -75,8 +75,8 @@ class WithdrawAssessmentAppealUseCaseTests {
     void should_not_burn_an_appeal_round() {
         useCase.execute(appealId);
 
-        // Hạn mức đếm số đơn đã PUBLISHED; WITHDRAWN không nằm trong đó, nên học sinh
-        // rút đơn rồi vẫn còn nguyên lượt.
+        // The quota counts appeals that are PUBLISHED; WITHDRAWN is not among them, so the student
+        // keeps the round after withdrawing.
         assertThat(appeal.getStatus()).isNotEqualTo(AssessmentAppealStatus.PUBLISHED);
     }
 
@@ -90,8 +90,8 @@ class WithdrawAssessmentAppealUseCaseTests {
 
     @Test
     void should_not_pull_a_result_that_already_moved_on_back_to_released() {
-        // Bài đã chốt sổ (hoặc đã sang PASSED/FAILED) thì một thao tác của học sinh
-        // không được phép mở lại nó — rút đơn chỉ đóng đơn.
+        // A submission that has been finalized (or has moved to PASSED/FAILED) must not be reopened by a single
+        // student action -- withdrawing only closes the appeal.
         candidateResult.setStatus(AssessmentCandidateResultStatus.FINAL);
 
         useCase.execute(appealId);
@@ -114,18 +114,18 @@ class WithdrawAssessmentAppealUseCaseTests {
     void should_reject_withdrawing_after_the_appeal_was_approved() {
         appeal.setStatus(AssessmentAppealStatus.APPROVED);
 
-        // Từ APPROVED trở đi đã có người bị điều động và có thể đã đọc bài; muốn dừng
-        // thì đi đường admin từ chối, có ghi lý do.
+        // From APPROVED on, someone has been assigned and may have read the submission; to stop it,
+        // the admin rejects the appeal, with a recorded reason.
         assertThatThrownBy(() -> useCase.execute(appealId))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chờ duyệt");
+            .hasMessageContaining("pending");
 
         verify(assessmentResultAppealRepository, never()).save(any());
     }
 
     @Test
     void should_reject_withdrawing_someone_elses_appeal() {
-        org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
+        org.mockito.Mockito.doThrow(new ForbiddenException("SECURITY"))
             .when(assessmentAppealAccessService).authorizeOwningStudent(any(), any());
 
         assertThatThrownBy(() -> useCase.execute(appealId))

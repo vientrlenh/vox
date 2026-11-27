@@ -5,7 +5,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record RenewSchoolSubscriptionRequest(
-    @NotNull(message = "Gói gia hạn đã xác nhận không được để trống")
+    @NotNull(message = "Confirmed renewal plan must not be blank")
     UUID acceptedPlanId
 ) {
 }

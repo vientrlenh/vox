@@ -22,42 +22,42 @@ import com.sep.vox.domain.model.school.SchoolBalance;
  * neighboring block, so every money field here uses one type.
  */
 public record SchoolFundingResponse(
-    /** Hạn mức CHẤM THI còn lại. Không bao giờ âm — phần vượt đã chuyển thành nợ trên ví. */
+    /** The remaining ASSESSMENT quota. Never negative -- the excess has been turned into debt on the wallet. */
     String assessmentQuotaRemainingVnd,
     String assessmentQuotaTotalVnd,
-    /** Số dư ví tự nạp. Âm CHÍNH LÀ khoản nợ. */
+    /** The top-up wallet balance. Negative IS the debt. */
     String balanceVnd,
     boolean locked,
-    /** Hạn mức thi còn lại cộng số dư ví nếu dương — tiền còn thật sự chấm được. */
+    /** The remaining assessment quota plus the wallet balance if positive -- the money that can actually still pay for grading. */
     String spendableVnd,
-    /** Phần đã hứa cho giáo viên mà họ chưa tiêu. Không bao giờ âm. */
+    /** The part promised to teachers that they have not spent yet. Never negative. */
     String committedToUsersVnd,
-    /** {@code spendable - committedToUsers}. ÂM = trường đã hứa nhiều hơn số tiền còn lại. */
+    /** {@code spendable - committedToUsers}. NEGATIVE = the school has promised more than the money it has left. */
     String uncommittedVnd
 ) {
 
     /**
-     * {@code locked} hỏi thẳng {@link SchoolBalance#isInDebt()} chứ không gõ lại phép so với 0: đó
-     * đúng là hàm mà {@code SchoolSubscriptionDebtGuardService} gọi để chặn mở ca thi, và một luật
-     * thì chỉ nên có một nơi định nghĩa.
+     * {@code locked} asks {@link SchoolBalance#isInDebt()} directly instead of retyping the comparison with 0: that is
+     * exactly the function {@code SchoolSubscriptionDebtGuardService} calls to block opening assessment sessions, and a rule
+     * should have only one place that defines it.
      *
-     * <p>Ví âm KHÔNG bị cộng vào {@code spendable}: nợ không phải là hạn mức âm mà là một khoản phải
-     * trả, và trừ nó khỏi hạn mức còn lại sẽ vẽ ra "còn 3 triệu" cho một trường đang bị khoá cứng.
+     * <p>A negative wallet is NOT added into {@code spendable}: debt is not a negative quota but an amount that must be
+     * paid, and subtracting it from the remaining quota would draw "3 million left" for a school that is hard locked.
      *
-     * <p><b>{@code spendable} KHÔNG bị {@code committedToUsers} trừ đi</b>, dù hai con số đứng cạnh
-     * nhau. {@code spendable} là vị từ KHOÁ — nó phải khớp từng đồng với
-     * {@code ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd}, cửa thật sự từ chối lên lịch
-     * kỳ thi, và cũng là mẫu số của băng cảnh báo "sắp hết". Trừ phần đã hứa vào đó là làm dashboard
-     * báo hết tiền trong khi hệ thống vẫn cho chi — sai lệch tệ hơn hẳn con số hiện tại.
-     * {@code uncommitted} trả lời câu hỏi KHÁC: trường còn tự do dùng bao nhiêu cho kỳ thi tập trung
-     * mà không ăn vào phần đã hứa cho giáo viên.
+     * <p><b>{@code spendable} is NOT reduced by {@code committedToUsers}</b>, even though the two numbers sit next to each
+     * other. {@code spendable} is the LOCK predicate -- it must match, to the dong,
+     * {@code ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd}, the door that actually refuses to schedule an
+     * assessment, and it is also the denominator of the "running low" warning band. Subtracting the promised part from it would make the dashboard
+     * report no money while the system still allows spending -- a far worse discrepancy than the current number.
+     * {@code uncommitted} answers a DIFFERENT question: how much the school is free to use on a centralized assessment
+     * without eating into what was promised to teachers.
      *
-     * @param committedToUsersVnd tổng phần CHƯA TIÊU của các trần chi cá nhân, kẹp 0 theo từng dòng —
-     *                            xem {@code SchoolSubscriptionQuotaUserAllocationRepository
-     *                            .sumUnusedAllocation}. Trừ tổng {@code allocated} thay cho phần chưa
-     *                            tiêu là trừ hai lần đúng những đồng giáo viên đã tiêu.
-     * @param balance             null khi trường chưa từng chạm vào ví — ví rỗng và ví 0 đồng là cùng
-     *                            một nghĩa.
+     * @param committedToUsersVnd the total UNSPENT part of the personal spending caps, clamped at 0 per row --
+     *                            see {@code SchoolSubscriptionQuotaUserAllocationRepository
+     *                            .sumUnusedAllocation}. Subtracting the total {@code allocated} instead of the unspent
+     *                            part would subtract twice the very money the teachers already spent.
+     * @param balance             null when the school has never touched the wallet -- an empty wallet and a 0-dong wallet mean
+     *                            the same thing.
      */
     public static SchoolFundingResponse of(BigDecimal assessmentQuotaTotalVnd, BigDecimal assessmentQuotaUsedVnd,
             BigDecimal committedToUsersVnd, SchoolBalance balance) {
@@ -74,9 +74,9 @@ public record SchoolFundingResponse(
             locked,
             DecimalText.of(spendable),
             DecimalText.of(committed),
-            // KHÔNG kẹp về 0: số âm ở đây là thứ đáng báo động nhất mà màn này nói được — trường đã
-            // hứa cho giáo viên nhiều hơn số tiền còn lại, nên người tiêu sau cùng sẽ bị từ chối bởi
-            // ví trường dù trần cá nhân của họ vẫn còn chỗ. Kẹp về 0 là giấu đúng cảnh báo đó đi.
+            // NOT clamped to 0: a negative number here is the most alarming thing this screen can say -- the school has
+            // promised teachers more than the money it has left, so the last person to spend will be refused by the
+            // school wallet even though their personal cap still has room. Clamping to 0 hides exactly that warning.
             DecimalText.of(spendable.subtract(committed))
         );
     }

@@ -78,7 +78,7 @@ public class SecurityContextProvider implements UserContextPort {
     private Authentication getAuthentication() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
-            throw new AuthenticationCredentialsNotFoundException("Người dùng hiện không đăng nhập");
+            throw new AuthenticationCredentialsNotFoundException("The user is not currently signed in");
         }
         return authentication;
     }
@@ -86,7 +86,7 @@ public class SecurityContextProvider implements UserContextPort {
     private CustomUserDetails getUserDetails(Authentication authentication) {
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof CustomUserDetails userDetails)) {
-            throw new AuthenticationCredentialsNotFoundException("Nguyên tắc xác thực không hợp lệ");
+            throw new AuthenticationCredentialsNotFoundException("Invalid authentication principal");
         }
         return userDetails;
     }

@@ -12,12 +12,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 
 public record CreateFrameworkCriterionBandsRequest(
-        @NotEmpty(message = "Phải gửi lên ít nhất 1 mức đánh giá")
+        @NotEmpty(message = "At least 1 criterion band must be submitted")
         @Valid
         List<CriterionBandItemRequest> bands
 ) {
     public record CriterionBandItemRequest(
-            @NotBlank(message = "Mã kết quả (resultBandCode) không được để trống")
+            @NotBlank(message = "Result code (resultBandCode) must not be blank")
             String resultBandCode,
 
             String descriptor,
@@ -30,13 +30,13 @@ public record CreateFrameworkCriterionBandsRequest(
     ) {}
 
     public record SignalRequest(
-            @NotBlank(message = "Mã dấu hiệu không được để trống")
+            @NotBlank(message = "Signal code must not be blank")
             String code,
 
-            @NotBlank(message = "Mô tả dấu hiệu không được để trống")
+            @NotBlank(message = "Signal description must not be blank")
             String description,
 
-            @NotBlank(message = "Độ quan trọng không được để trống")
+            @NotBlank(message = "Importance must not be blank")
             String importance,
 
             String evidenceHint

@@ -45,15 +45,15 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
         AssessmentSession assessmentSession = assessmentSessionRepository.findByIdAndResumable(command.assessmentSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found or it has expired"));
 
         Assessment assessment = assessmentRepository.findById(assessmentSession.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class test not found"));
 
         AssessmentCandidate candidate = findOwnCandidate(assessmentSession, userId);
 
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
 
         // After the whole authentication step, not before: this step WRITES to the assessment session (it fixes
         // the stream type), so if it ran earlier, someone who does not own the session could still fix the
@@ -67,10 +67,10 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
 
     private AssessmentCandidate findOwnCandidate(AssessmentSession assessmentSession, UUID userId) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(assessmentSession.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment candidate not found"));
 
         if (!candidate.getStudentId().equals(userId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return candidate;
     }
@@ -102,7 +102,7 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
      */
     private List<String> resolveStreamTypes(Assessment assessment, AssessmentSession assessmentSession, AssessmentRequiredStreamType requestedStreamType) {
         if (assessment.getRequiredStreamType() == null) {
-            throw new IllegalArgumentException("Kỳ thi không hỗ trợ stream");
+            throw new IllegalArgumentException("The assessment does not support streaming");
         }
 
         AssessmentRequiredStreamType chosenStreamType = assessmentSession.getChosenStreamType();
@@ -112,7 +112,7 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
 
         if (requestedStreamType != null && requestedStreamType != chosenStreamType) {
             throw new ForbiddenException(
-                "Phiên thi đã chốt loại stream " + chosenStreamType.name() + ", không thể đổi giữa chừng"
+                "The session has locked the stream type " + chosenStreamType.name() + ", it cannot be changed midway"
             );
         }
         return toStreamTypes(chosenStreamType);
@@ -142,21 +142,21 @@ public class IssueStudentStreamTokenUseCase implements IUseCase<IssueStudentStre
         switch (requestedStreamType) {
             case CAMERA:
                 if (isInvalidRequestedIndividualStreamType(assessment, AssessmentRequiredStreamType.SCREEN)) {
-                    throw new IllegalArgumentException("Kỳ thi đang chỉ hỗ trợ stream screen");
+                    throw new IllegalArgumentException("The assessment only supports the screen stream");
                 }
                 return AssessmentRequiredStreamType.CAMERA;
             case SCREEN:
                 if (isInvalidRequestedIndividualStreamType(assessment, AssessmentRequiredStreamType.CAMERA)) {
-                    throw new IllegalArgumentException("Kỳ thi đang chỉ hỗ trợ stream camera");
+                    throw new IllegalArgumentException("The assessment only supports the camera stream");
                 }
                 return AssessmentRequiredStreamType.SCREEN;
             case CAMERA_AND_SCREEN:
                 if (!assessment.getRequiredStreamType().equals(AssessmentRequiredStreamType.CAMERA_AND_SCREEN)) {
-                    throw new IllegalArgumentException("Kỳ thi không yêu cầu đồng thời camera và màn hình");
+                    throw new IllegalArgumentException("The assessment does not require camera and screen at the same time");
                 }
                 return AssessmentRequiredStreamType.CAMERA_AND_SCREEN;
             default:
-                throw new IllegalArgumentException("Loại stream không được hỗ trợ: " + requestedStreamType);
+                throw new IllegalArgumentException("Unsupported stream type: " + requestedStreamType);
         }
     }
 

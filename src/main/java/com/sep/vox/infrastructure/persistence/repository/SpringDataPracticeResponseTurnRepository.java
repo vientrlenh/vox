@@ -16,10 +16,10 @@ public interface SpringDataPracticeResponseTurnRepository
 
     List<PracticeResponseTurnJpaEntity> findByPracticeResponseIdOrderByTurnOrder(UUID practiceResponseId);
 
-    // Idempotency cho retry: Python thử lại submit_turn tới 3 lần khi HTTP response bị mất dù
-    // lần đầu đã commit (xem practice_session_client.py) -- (practice_response_id, turn_order)
-    // là unique constraint, nên tra trước để trả lại đúng id cũ thay vì insert trùng và vỡ
-    // ràng buộc.
+    // Idempotency for retries: Python retries submit_turn up to 3 times when the HTTP response is lost even though
+    // the first attempt already committed (see practice_session_client.py) -- (practice_response_id, turn_order)
+    // is a unique constraint, so look up first to return the original id instead of inserting a duplicate and breaking
+    // the constraint.
     Optional<PracticeResponseTurnJpaEntity> findByPracticeResponseIdAndTurnOrder(
         UUID practiceResponseId, int turnOrder);
 
@@ -34,8 +34,8 @@ public interface SpringDataPracticeResponseTurnRepository
     List<PracticeResponseTurnJpaEntity> findBySessionIdOrderByTurnOrder(@Param("sessionId") UUID sessionId);
 
     @Query(value = """
-        -- Còn bao nhiêu giây nữa mới chạm TRẦN của câu này, tính trên tổng mọi lượt (câu chính
-        -- lẫn follow-up) -- nên trần phải là max_response_seconds đứng một mình, không cộng sàn.
+        -- How many seconds remain before hitting the CEILING of this question, counted over all turns (main question
+        -- and follow-ups) -- so the ceiling must be max_response_seconds on its own, without the floor added.
         SELECT GREATEST(
             0,
             question.max_response_seconds

@@ -25,18 +25,18 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
- * MỘT lô nhắc hạn, trong MỘT transaction.
+ * ONE batch of deadline reminders, in ONE transaction.
  *
- * <p>Tách khỏi {@link GradingDeadlineReminderJob} vì ranh giới transaction phải nằm ở
- * từng lô chứ không ở cả lượt chạy: {@code findDueForReminder} có {@code LIMIT} để một
- * transaction không ôm cả nghìn dòng, nên muốn xử lý hết tồn đọng thì phải chạy nhiều
- * lô — mà nhiều lô trong một transaction thì đúng bằng không có LIMIT. Cùng khuôn với
+ * <p>Split from {@link GradingDeadlineReminderJob} because the transaction boundary must sit at
+ * each batch and not at the whole run: {@code findDueForReminder} has a {@code LIMIT} so that one
+ * transaction does not take thousands of rows, so clearing the whole backlog needs many
+ * batches -- and many batches in one transaction is exactly the same as having no LIMIT. Same mould as
  * {@code ImportJobDispatcher} + {@code ImportCommitService}.
  *
- * <p>Đây cũng là lý do việc tách là bắt buộc chứ không phải cho đẹp: gọi thẳng một
- * method {@code @Transactional} của chính mình sẽ đi tắt qua proxy và mất luôn
- * transaction — mà mất transaction thì {@code FOR UPDATE SKIP LOCKED} trong câu select
- * không còn giữ khoá tới lúc commit, tức mất luôn phần chống trùng giữa các instance.
+ * <p>This is also why the split is mandatory and not cosmetic: calling a {@code @Transactional}
+ * method of one's own class directly goes around the proxy and loses the
+ * transaction -- and without a transaction the {@code FOR UPDATE SKIP LOCKED} in the select
+ * no longer holds its lock until commit, losing the protection against duplicates across instances.
  */
 @Component
 @RequiredArgsConstructor

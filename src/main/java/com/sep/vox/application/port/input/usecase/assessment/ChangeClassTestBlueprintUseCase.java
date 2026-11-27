@@ -73,7 +73,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
     public AssessmentDto execute(ChangeClassTestBlueprintCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         requireBlueprintChangeAllowed(input, assessment, currentUserId);
         if (input.blueprintId() != null) {
@@ -98,20 +98,20 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
 
     private void requireBlueprintChangeAllowed(ChangeClassTestBlueprintCommand input, Assessment assessment, UUID currentUserId) {
         if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
-            throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
+            throw new ForbiddenException("Only applies to a class test");
         }
         if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException("Chỉ được đổi blueprint khi bài kiểm tra chưa bắt đầu");
+            throw new IllegalArgumentException("The blueprint may only be changed before the assessment starts");
         }
         if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
-            throw new IllegalArgumentException("Không thể đổi blueprint khi đã có học sinh nộp bài");
+            throw new IllegalArgumentException("The blueprint cannot be changed after a student has submitted");
         }
         if ((input.blueprintId() == null) != (input.blueprintVersionId() == null)) {
             throw new IllegalArgumentException(
-                "Phải cung cấp đầy đủ blueprintId và blueprintVersionId, hoặc để trống cả hai để gỡ blueprint");
+                "Provide both blueprintId and blueprintVersionId, or leave both empty to detach the blueprint");
         }
     }
 
@@ -123,11 +123,11 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
         if (papers.size() > 1) {
             throw new IllegalArgumentException(
-                "Bài có nhiều mã đề, hãy xoá bớt chỉ còn một mã đề trước khi đổi blueprint");
+                "The assessment has several papers: delete papers until only one is left before changing the blueprint");
         }
         return papers.stream()
             .findFirst()
-            .orElseThrow(() -> new ResourceNotFoundException("Bài kiểm tra chưa có mã đề nào"));
+            .orElseThrow(() -> new ResourceNotFoundException("The assessment has no paper yet"));
     }
 
     private void validateExistingBlueprintDuration(ChangeClassTestBlueprintCommand input, Assessment assessment) {
@@ -135,7 +135,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             version.getTotalTimeLimitSeconds(),
-            "Phiên bản blueprint " + version.getCode()
+            "Blueprint version " + version.getCode()
         );
     }
 
@@ -143,17 +143,17 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             ChangeClassTestBlueprintCommand input,
             Assessment assessment) {
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Blueprint not found"));
         if (!blueprint.getSchoolId().equals(assessment.getSchoolId())) {
-            throw new IllegalArgumentException("Blueprint không thuộc trường của giáo viên");
+            throw new IllegalArgumentException("The blueprint does not belong to the teacher's school");
         }
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Blueprint version not found"));
         if (!version.getBlueprintId().equals(blueprint.getId())) {
-            throw new IllegalArgumentException("Version không thuộc blueprint đã chọn");
+            throw new IllegalArgumentException("The version does not belong to the selected blueprint");
         }
         if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được dùng version đã PUBLISHED");
+            throw new IllegalArgumentException("Only a PUBLISHED version may be used");
         }
         return version;
     }
@@ -199,7 +199,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
         if (sections.isEmpty()) {
-            throw new IllegalArgumentException("Blueprint version không có section nào");
+            throw new IllegalArgumentException("The blueprint version has no section");
         }
         return sections;
     }
@@ -242,7 +242,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
 
     private boolean isFixedQuestionPublished(UUID questionId) {
         Question fixedQuestion = questionRepository.findById(questionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Fixed question not found in the blueprint"));
         return fixedQuestion.getStatus() == QuestionStatus.PUBLISHED;
     }
 
@@ -252,7 +252,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalArgumentException(
-                "Blueprint version đã chốt có tổng trọng số section không hợp lệ, không thể dùng cho bài kiểm tra");
+                "The locked blueprint version has an invalid total section weight and cannot be used for an assessment");
         }
         for (AssessmentBlueprintSection section : sections) {
             List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of());
@@ -261,7 +261,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalArgumentException(
-                    "Phần \"" + section.getTitle() + "\" trong blueprint có tổng trọng số ô câu hỏi không hợp lệ");
+                    "Section \"" + section.getTitle() + "\" in the blueprint has an invalid total question slot weight");
             }
         }
     }
@@ -272,7 +272,7 @@ public class ChangeClassTestBlueprintUseCase implements IUseCase<ChangeClassTest
                 continue;
             }
             if (slot.getFixedQuestionId() == null) {
-                throw new IllegalArgumentException("Slot FIXED phải có fixedQuestionId");
+                throw new IllegalArgumentException("A FIXED slot must have a fixedQuestionId");
             }
         }
     }

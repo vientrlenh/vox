@@ -25,12 +25,12 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Chạy SQL THẬT trên Postgres thật.
+ * Runs REAL SQL on a real Postgres.
  *
- * <p>Điều đáng kiểm nhất KHÔNG phải "danh sách có trả về dòng không", mà là danh sách có ĐẾM RA ĐÚNG
- * con số mà thẻ trên trang tổng quan đang hiện hay không. Vì thế phần lớn test ở đây gọi CẢ HAI
- * repository trên cùng một tập dữ liệu và so hai kết quả — đó là lỗi mà bản thiết kế cảnh báo: bấm
- * vào thẻ ghi 5 rồi thấy 9 dòng.
+ * <p>What is most worth checking is NOT "does the list return rows", but whether the list COUNTS EXACTLY
+ * the number that the card on the overview page shows. So most tests here call BOTH
+ * repositories on the same data set and compare the two results -- that is the bug the design warned about: clicking
+ * a card that says 5 and then seeing 9 rows.
  */
 @RepositoryTest
 @Import({ JpaSchoolsAtRiskQueryRepository.class, JpaPlatformBusinessHealthQueryRepository.class })
@@ -154,8 +154,8 @@ class JpaSchoolsAtRiskQueryRepositoryTests {
     }
 
     /**
-     * Trường CHƯA TỪNG mua gói nào không thuộc nhóm nào cả — nó không có dòng nào để gộp. Giữ đúng
-     * như phép đếm là có chủ đích: hai màn hình phải nói cùng một con số.
+     * A school that has NEVER bought any plan belongs to no group at all -- it has no row to merge. Keeping it exactly
+     * like the count is deliberate: the two screens must say the same number.
      */
     @Test
     void shouldLeaveOutSchoolsThatNeverHadASubscription() {

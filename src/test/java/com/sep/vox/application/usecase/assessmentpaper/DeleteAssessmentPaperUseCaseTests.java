@@ -46,9 +46,9 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Xoá mã đề phải dọn mọi con trỏ đang chỉ vào nó: phần thi, câu trong đề và mã đề đã phân cho thí
- * sinh đều treo trên paper_id mà không có FK nào, nên xoá mỗi dòng đề là để lại con trỏ mồ côi.
- * Phiên thi cũng trỏ vào paper_id nhưng cột đó NOT NULL nên không gỡ được — chỉ chặn xoá.
+ * Deleting a paper must clean up every pointer to it: sections, questions in the paper and the paper assigned to
+ * candidates all hang on paper_id with no FK, so deleting only the paper row leaves orphaned pointers.
+ * Sessions also point at paper_id but that column is NOT NULL so it cannot be detached -- deletion is only blocked.
  */
 class DeleteAssessmentPaperUseCaseTests {
 
@@ -174,14 +174,14 @@ class DeleteAssessmentPaperUseCaseTests {
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
-    /** paper_id của phiên thi là NOT NULL: không gỡ được con trỏ thì chỉ còn cách không cho xoá. */
+    /** paper_id of a session is NOT NULL: if the pointer cannot be detached, the only option is to refuse the deletion. */
     @Test
     void should_reject_when_paper_already_has_assessment_sessions() {
         when(assessmentSessionRepository.existsByPaperId(paperId)).thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentPaperCommand(paperId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã có học sinh làm bài");
+            .hasMessageContaining("students have already taken");
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
         verify(assessmentPaperRepository, never()).deleteById(any());
     }
@@ -194,7 +194,7 @@ class DeleteAssessmentPaperUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentPaperCommand(paperId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("kỳ thi đã bắt đầu");
+            .hasMessageContaining("has started");
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
         verify(assessmentPaperRepository, never()).deleteById(any());
     }

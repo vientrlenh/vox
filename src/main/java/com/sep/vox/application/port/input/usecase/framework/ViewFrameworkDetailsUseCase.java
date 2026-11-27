@@ -22,7 +22,7 @@ public class ViewFrameworkDetailsUseCase implements IUseCase<ViewFrameworkDetail
     @Transactional(readOnly = true)
     public FrameworkDto execute(ViewFrameworkDetailsQuery input) {
         Framework framework = frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework not found"));
         return FrameworkDtoMapper.toDto(framework);
     }
 }

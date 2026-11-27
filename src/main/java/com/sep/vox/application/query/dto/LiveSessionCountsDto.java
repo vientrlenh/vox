@@ -1,12 +1,13 @@
 package com.sep.vox.application.query.dto;
 
 /**
- * Ảnh chụp phiên thi tại ĐÚNG thời điểm gọi — không phụ thuộc cửa sổ thời gian đang xem trên
- * dashboard.
+ * A snapshot of the assessment sessions at EXACTLY the moment of the call -- independent of the time
+ * window being viewed on the dashboard.
  *
- * <p>Tách khỏi {@link GradingOutcomeBucketDto} vì hai con số trả lời hai câu hỏi khác nhau: chuỗi
- * theo ngày là "đường chấm AI có ổn không trong 14 ngày qua", còn bản ghi này là "ngay lúc này đang
- * có gì chạy". Gộp chung một query sẽ buộc một trong hai phải nhận cửa sổ thời gian mà nó không cần.
+ * <p>Kept apart from {@link GradingOutcomeBucketDto} because the two numbers answer two different
+ * questions: the daily series is "is the AI grading path healthy over the last 14 days", while this
+ * record is "what is running right now". Putting them in one query would force one of them to accept a
+ * time window it does not need.
  */
 public record LiveSessionCountsDto(
     long sessionsInProgress,

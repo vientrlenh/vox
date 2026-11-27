@@ -56,9 +56,9 @@ import com.sep.vox.domain.repository.AssessmentResultStatusHistoryRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Bốn hành động không nhập điểm, chạy với {@link GradingActionSupport} THẬT: phần đáng
- * kiểm ở đây là "quyết định này dẫn bài tới đâu", mà câu trả lời nằm ở chỗ nối giữa use
- * case và support — mock support đi thì chẳng còn gì để kiểm.
+ * The four actions that enter no score, run with the REAL {@link GradingActionSupport}: what is worth
+ * checking here is "where does this decision take the submission", and the answer lives in the join between the use
+ * case and the support -- mock the support away and nothing is left to check.
  */
 class GradingDecisionUseCasesTests {
 
@@ -233,7 +233,7 @@ class GradingDecisionUseCasesTests {
         // measured on session 01a00e64.
         assertThatThrownBy(() -> uphold.execute(command("AI chấm đúng")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa được chấm");
+            .hasMessageContaining("have not been graded");
 
         assertThat(result.getStatus()).isEqualTo(AssessmentCandidateResultStatus.PENDING_REVIEW);
     }
@@ -277,7 +277,7 @@ class GradingDecisionUseCasesTests {
 
         assertThatThrownBy(() -> invalidate.execute(command("  ")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("lý do");
+            .hasMessageContaining("reason");
 
         assertThat(result.getStatus()).isEqualTo(AssessmentCandidateResultStatus.PENDING_REVIEW);
     }

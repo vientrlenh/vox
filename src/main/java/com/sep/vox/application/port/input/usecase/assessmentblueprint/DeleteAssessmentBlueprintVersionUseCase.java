@@ -30,11 +30,11 @@ public class DeleteAssessmentBlueprintVersionUseCase implements IUseCase<DeleteA
         AssessmentBlueprintVersion version =
             assessmentBlueprintEditAccessService.requireEditableVersion(input.versionId()).version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được xóa phiên bản khi đang ở trạng thái Bản nháp");
+            throw new IllegalArgumentException("A version can only be deleted while it is a Draft");
         }
         if (assessmentBlueprintVersionRepository.existsUsedByVersion(version.getId())) {
             throw new IllegalArgumentException(
-                "Phiên bản vẫn đang được ít nhất 1 bài kiểm tra hoặc mã đề tham chiếu, không thể xóa");
+                "The version is still referenced by at least 1 assessment or paper and cannot be deleted");
         }
 
         deleteSectionsWithSlots(version);

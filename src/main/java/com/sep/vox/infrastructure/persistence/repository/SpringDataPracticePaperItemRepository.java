@@ -14,9 +14,9 @@ public interface SpringDataPracticePaperItemRepository
         extends JpaRepository<PracticePaperItemJpaEntity, UUID> {
 
     @Query(value = """
-        -- Ngân sách DỰ TRÙ của đề = tổng TRẦN nói của các câu. Không cộng min_response_seconds
-        -- (đó là sàn để biết khi nào trả lời đã đủ, không phải một khoản chi thêm); hai cột
-        -- max_followup_seconds và preparation_time_seconds cũ đã bỏ -- xem V11.
+        -- ESTIMATED budget of the paper = sum of the speaking CEILINGS of the questions. min_response_seconds is not added
+        -- (it is a floor to know when an answer is long enough, not an extra expense); the two old columns
+        -- max_followup_seconds and preparation_time_seconds were removed -- see V11.
         SELECT COALESCE(SUM(question.max_response_seconds), 0)
         FROM practice_paper_items item
         JOIN practice_questions question ON question.id = item.practice_question_id
@@ -33,11 +33,11 @@ public interface SpringDataPracticePaperItemRepository
     List<UUID> findQuestionIdsForPaper(@Param("paperId") UUID paperId);
 
     /**
-     * Xoá đúng dòng ở slot CAO NHẤT của paper, và chỉ khi nó mang đúng câu được chỉ định.
+     * Deletes exactly the row at the HIGHEST slot of the paper, and only if it carries the specified question.
      *
-     * <p>Ràng buộc {@code practice_question_id = :questionId} là chốt an toàn, không thừa: giữa
-     * lúc caller đọc "câu cuối là gì" và lúc xoá, một lượt {@code next-question} khác có thể đã
-     * chèn thêm slot mới. Không ràng thì ta xoá nhầm câu vừa được chọn cho học sinh.
+     * <p>The constraint {@code practice_question_id = :questionId} is a safety latch, not redundant: between
+     * the caller reading "what is the last question" and the delete, another {@code next-question} call may
+     * have inserted a new slot. Without the constraint we would delete the question that was just chosen for the student.
      */
     @Modifying
     @Query(value = """

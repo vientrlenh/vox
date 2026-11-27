@@ -32,12 +32,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Archive một Policy kéo theo Archive Phiên bản Rubric -- nhưng chỉ khi không còn Policy nào khác
- * đang dùng phiên bản đó.
+ * Archiving a Policy also archives the Rubric Version -- but only when no other Policy
+ * is still using that version.
  *
- * <p>Ràng buộc này sinh ra cùng lúc với việc nới luật gán Policy vào phiên bản đã PUBLISHED: khi
- * nhiều Policy dùng chung được một phiên bản (V44), Archive kèm vô điều kiện sẽ rút thang chấm khỏi
- * chân các Policy còn hiệu lực.
+ * <p>This constraint was born together with relaxing the rule for attaching a Policy to a PUBLISHED version: when
+ * several Policies can share one version (V44), an unconditional archive would pull the grading scale out from under
+ * the Policies still in force.
  */
 class ArchiveSchoolAssessmentPolicyUseCaseTests {
 
@@ -109,9 +109,9 @@ class ArchiveSchoolAssessmentPolicyUseCaseTests {
 
     @Test
     void keepsTheRubricVersion_whenAnotherPolicyStillUsesIt() {
-        // Lớp thường và lớp chuyên dùng chung một phiên bản Rubric. Thu hồi chính sách của lớp
-        // thường mà Archive luôn phiên bản là chính sách lớp chuyên trỏ vào một thang đã bỏ -- hỏng
-        // âm thầm, vì không có gì chặn lúc chấm.
+        // A regular class and a specialized class share one Rubric version. Reclaiming the regular class's policy
+        // while archiving the version too would leave the specialized class's policy pointing at a scale that was dropped -- failing
+        // silently, because nothing blocks it at grading time.
         when(assessmentPolicyRepository.existsOtherActiveByRubricVersionId(RUBRIC_VERSION_ID, POLICY_ID))
                 .thenReturn(true);
 

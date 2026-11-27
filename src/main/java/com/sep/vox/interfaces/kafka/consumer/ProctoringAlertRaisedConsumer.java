@@ -53,7 +53,7 @@ public class ProctoringAlertRaisedConsumer {
             ack.acknowledge();
         } catch (Exception ex) {
             log.error(
-                "Xử lý cảnh báo giám sát thất bại, không ack: partition={} offset={} key={} lỗi={}",
+                "Processing the proctoring alert failed, not acking: partition={} offset={} key={} error={}",
                 record.partition(), record.offset(), record.key(), ex.getMessage(), ex
             );
             throw (RuntimeException) ex;
@@ -66,16 +66,16 @@ public class ProctoringAlertRaisedConsumer {
         // read the most -- during an incident.
         if (Boolean.TRUE.equals(stored)) {
             log.info(
-                "Đã lưu cảnh báo giám sát: eventId={} sessionId={} alertType={} capturedAt={}",
+                "Saved the proctoring alert: eventId={} sessionId={} alertType={} capturedAt={}",
                 dto.eventId(), dto.sessionId(), dto.alertType(), dto.capturedAt()
             );
         } else {
-            log.debug("Bỏ qua cảnh báo giám sát trùng hoặc không dùng được: eventId={}", dto.eventId());
+            log.debug("Skipping a duplicate or unusable proctoring alert: eventId={}", dto.eventId());
         }
     }
 
     @DltHandler
     public void dltHandler(ConsumerRecord<String, Object> record) {
-        log.error("Cảnh báo giám sát rơi vào DLT ở topic {}: {}", record.topic(), record.value());
+        log.error("Proctoring alert landed in the DLT on topic {}: {}", record.topic(), record.value());
     }
 }

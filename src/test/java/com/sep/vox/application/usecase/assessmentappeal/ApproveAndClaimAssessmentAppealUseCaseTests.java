@@ -94,7 +94,7 @@ public class ApproveAndClaimAssessmentAppealUseCaseTests {
         // reason, so it must always be non-null and must always make clear that this is a class
         // test.
         assertThat(command.overrideReason())
-            .isEqualTo("Bài kiểm tra trên lớp: giáo viên phụ trách bài tự nhận chấm phúc khảo.");
+            .isEqualTo("Class test: the teacher in charge of the test claims the appeal grading.");
     }
 
     @Test
@@ -113,8 +113,8 @@ public class ApproveAndClaimAssessmentAppealUseCaseTests {
     void should_use_the_same_deadline_for_the_appeal_and_the_grading_round() {
         useCase.execute(appealId);
 
-        // Lệch nhau thì hạn hiển thị trên đơn và hạn chấm thật của giáo viên là hai
-        // mốc khác nhau — không ai đối chiếu ra được.
+        // If they differ, the deadline shown on the appeal and the teacher's real grading deadline are two
+        // different points in time -- nobody can reconcile them.
         assertThat(captureAssignCommand().deadlineAt()).isEqualTo(captureApproveCommand().deadline());
     }
 
@@ -124,7 +124,7 @@ public class ApproveAndClaimAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(appealId))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("giáo viên phụ trách bài");
+            .hasMessageContaining("teacher in charge of the test");
 
         verify(approveAssessmentAppealUseCase, never()).execute(any());
         verify(assignAssessmentAppealReviewerUseCase, never()).execute(any());

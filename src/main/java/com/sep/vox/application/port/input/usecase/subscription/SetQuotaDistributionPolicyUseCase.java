@@ -13,11 +13,12 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.repository.SchoolQuotaPolicyRepository;
 
 /**
- * Đặt trần phân phối hạn mức của trường cho MỘT loại hạn mức.
+ * Sets the school's quota distribution ceiling for ONE quota type.
  *
- * <p>Hạ trần xuống dưới mức ĐÃ CHIA là hợp lệ và cố ý không bị từ chối: phần đã chia là chuyện đã
- * rồi, còn cấm hạ trần thì quản trị viên mắc kẹt không siết lại được chính sách. Giao diện hiện phần
- * vượt để họ biết cần thu bớt của ai, và mọi lần chia TIẾP theo đều bị chặn tới khi tổng về dưới trần.
+ * <p>Lowering the ceiling below the amount ALREADY distributed is valid and deliberately not rejected: what was
+ * distributed is past, and forbidding a lower ceiling would leave the administrator stuck, unable to tighten the
+ * policy. The UI shows the excess so they know whom to take back from, and every FURTHER distribution is blocked
+ * until the total falls under the ceiling.
  */
 @Service
 @RequiredArgsConstructor
@@ -30,14 +31,14 @@ public class SetQuotaDistributionPolicyUseCase implements IUseCase<SetQuotaDistr
     @Transactional
     public BigDecimal execute(SetQuotaDistributionPolicyCommand input) {
         if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         BigDecimal ratio = input.distributableRatio();
-        // DB có CHECK giữ khoảng này, nhưng chặn ở đây để lỗi ra thành câu tiếng Việt đọc được thay
-        // vì một DataIntegrityViolationException.
+        // The DB has a CHECK keeping this range, but it is checked here so the error comes out as a readable message
+        // instead of a DataIntegrityViolationException.
         if (ratio == null || ratio.compareTo(BigDecimal.ZERO) < 0 || ratio.compareTo(BigDecimal.ONE) > 0) {
-            throw new IllegalArgumentException("Trần phân phối phải nằm trong khoảng 0% tới 100%");
+            throw new IllegalArgumentException("The distribution ceiling must be between 0 and 100 percent");
         }
 
         return schoolQuotaPolicyRepository

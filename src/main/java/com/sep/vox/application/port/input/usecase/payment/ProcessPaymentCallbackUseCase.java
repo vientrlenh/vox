@@ -67,14 +67,14 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
                 .resolve(input.provider())
                 .verifyCallback(input.rawBody(), input.headers());
         if (!verification.valid()) {
-            throw new UnauthorizedException("Callback " + input.provider() + " không hợp lệ");
+            throw new UnauthorizedException("Callback " + input.provider() + " is invalid");
         }
         return verification;
     }
 
     private PaymentCallbackResponse respondToUnknownPayment(
             ProcessPaymentCallbackCommand input, CallbackVerificationResult verification) {
-        log.warn("Nhận callback {} hợp lệ nhưng không tìm thấy lần thanh toán cho orderRef={}",
+        log.warn("Received a valid {} callback but found no payment attempt for orderRef={}",
             input.provider(), verification.providerOrderRef());
         return PaymentCallbackResponse.toResponse(CallbackOutcome.UNKNOWN_PAYMENT);
     }
@@ -89,7 +89,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
             return respondToPaidAfterWriteOff(input, verification, payment);
         }
 
-        log.info("Callback {} lặp cho orderRef={} -- lần thử đã ở trạng thái {}",
+        log.info("Repeated {} callback for orderRef={} -- the attempt is already in status {}",
             input.provider(), verification.providerOrderRef(), payment.getStatus());
         return PaymentCallbackResponse.toResponse(CallbackOutcome.ALREADY_SETTLED);
     }
@@ -109,7 +109,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         // for the same reason: the system has no refund flow yet, so it must shout loudly for
         // someone to reconcile by hand.
         log.error(
-            "TIỀN VỀ CHO LẦN THỬ ĐÃ XÓA SỔ -- cần đối soát thủ công: provider={} orderRef={} paymentId={} orderId={} trạngTháiĐangLưu={} amountVnd={}",
+            "MONEY ARRIVED FOR A WRITTEN-OFF ATTEMPT -- manual reconciliation needed: provider={} orderRef={} paymentId={} orderId={} storedStatus={} amountVnd={}",
             input.provider(), verification.providerOrderRef(), payment.getId(),
             payment.getOrderId(), payment.getStatus(), payment.getAmountVnd());
         return PaymentCallbackResponse.toResponse(CallbackOutcome.PAID_AFTER_WRITE_OFF);
@@ -125,7 +125,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
 
     private PaymentCallbackResponse respondToAmountMismatch(
             ProcessPaymentCallbackCommand input, CallbackVerificationResult verification, PaymentRecord payment) {
-        log.error("Callback {} lệch số tiền cho orderRef={}: nhận {} nhưng lần thử là {}",
+        log.error("{} callback amount mismatch for orderRef={}: received {} but the attempt is {}",
             input.provider(), verification.providerOrderRef(), verification.amount(), payment.getAmountVnd());
         return PaymentCallbackResponse.toResponse(CallbackOutcome.AMOUNT_MISMATCH);
     }
@@ -134,7 +134,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
             ProcessPaymentCallbackCommand input, CallbackVerificationResult verification, PaymentRecord payment) {
         PaymentLinkRemoteStatus status = verification.status();
         if (status == PaymentLinkRemoteStatus.PAID) {
-            log.info("[WEBHOOK] Chốt lần thanh toán {} (orderRef={}) thành PAID qua callback {}",
+            log.info("[WEBHOOK] Settling payment attempt {} (orderRef={}) as PAID via callback {}",
                 payment.getId(), verification.providerOrderRef(), input.provider());
             orderSettlementService.settlePaid(payment, Instant.now());
             return PaymentCallbackResponse.toResponse(CallbackOutcome.SETTLED);
@@ -144,7 +144,7 @@ public class ProcessPaymentCallbackUseCase implements IUseCase<ProcessPaymentCal
         // closing an attempt that is still alive means the later "paid" notification has no row left to settle.
         PaymentStatus failureStatus = toFailureStatus(status);
         if (failureStatus == null) {
-            log.info("Callback {} cho orderRef={} ở trạng thái {} -- chưa chốt gì",
+            log.info("{} callback for orderRef={} in status {} -- nothing settled",
                 input.provider(), verification.providerOrderRef(), status);
             return PaymentCallbackResponse.toResponse(CallbackOutcome.NOT_FINAL);
         }

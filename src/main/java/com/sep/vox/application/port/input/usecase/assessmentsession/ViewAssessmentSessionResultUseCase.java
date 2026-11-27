@@ -187,7 +187,7 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
         AssessmentResultAccessService.SessionAccess access = assessmentResultAccessService.authorizeSession(input.sessionId());
         AssessmentSession session = access.session();
         AssessmentCandidateResult result = assessmentCandidateResultRepository.findBySessionId(session.getId())
-            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ket qua phien thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session result not found"));
         // The owner can only see an attempt that has a conclusion; teachers/admins can always see it.
         // The page still returns the record with its status -- the fields are hidden rather than blocked, so the
         // student knows where their attempt stands instead of meeting a "not found" screen.

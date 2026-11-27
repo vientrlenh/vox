@@ -32,12 +32,12 @@ public class CreateAssessmentBlueprintSectionUseCase implements IUseCase<CreateA
         AssessmentBlueprintVersion version =
             assessmentBlueprintEditAccessService.requireEditableVersion(command.versionId()).version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được thêm section khi version đang DRAFT");
+            throw new IllegalArgumentException("A section can only be added while the version is DRAFT");
         }
 
         List<AssessmentBlueprintSection> siblings = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
         if (siblings.stream().anyMatch(s -> s.getOrder() == command.order())) {
-            throw new IllegalArgumentException("Thứ tự section đã tồn tại trong version này");
+            throw new IllegalArgumentException("The section order already exists in this version");
         }
 
         AssessmentBlueprintSection section = AssessmentBlueprintSection.create(

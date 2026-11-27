@@ -3,11 +3,11 @@ package com.sep.vox.application.query.dto;
 import java.time.LocalDate;
 
 /**
- * Kết quả chấm AI của MỘT ngày lịch, gộp sẵn hai chiều thành công / thất bại.
+ * The AI grading outcome of ONE calendar day, with the success / failure dimensions already combined.
  *
- * <p>Ngày ở đây là ngày lịch theo giờ Việt Nam ({@code ZoneConstant.BUSINESS_ZONE}), không phải ngày
- * UTC: cắt theo UTC đẩy 7 giờ đầu mỗi ngày sang ngày hôm trước, tức các ca thi buổi sáng sớm rơi
- * nhầm cột.
+ * <p>The day here is the calendar day in Vietnam time ({@code ZoneConstant.BUSINESS_ZONE}), not the UTC
+ * day: cutting by UTC pushes the first 7 hours of each day into the previous day, so early-morning
+ * assessment sessions land in the wrong column.
  */
 public record GradingOutcomeBucketDto(
     LocalDate day,

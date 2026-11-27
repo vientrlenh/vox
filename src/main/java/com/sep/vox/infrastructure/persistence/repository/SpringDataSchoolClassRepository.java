@@ -18,7 +18,7 @@ import com.sep.vox.infrastructure.persistence.entity.school.SchoolClassJpaEntity
 public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolClassJpaEntity, UUID>{
     Optional<SchoolClassJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
     Optional<SchoolClassJpaEntity> findBySchoolIdAndName(UUID schoolId, String name);
-    // Nhận codes đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    // Receives codes already uppercased by the Impl; the entity side still wraps UPPER() in case old data has inconsistent case.
     @Query("SELECT sc FROM SchoolClassJpaEntity sc WHERE sc.schoolId = :schoolId AND UPPER(sc.code) IN :codes")
     List<SchoolClassJpaEntity> findBySchoolIdAndCodeIn(@Param("schoolId") UUID schoolId, @Param("codes") Collection<String> codes);
     List<SchoolClassJpaEntity> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
@@ -38,8 +38,8 @@ public interface SpringDataSchoolClassRepository extends JpaRepository<SchoolCla
         @Param("status") String status,
         Pageable pageable);
 
-    // Bản có tìm kiếm của findByUserId ở trên; tách riêng để đường cũ (Flutter,
-    // màn tạo bài trên lớp) không đổi hành vi.
+    // The searchable version of findByUserId above; kept separate so the old path (Flutter,
+    // the create-assessment-on-class screen) does not change behavior.
     @Query("""
         SELECT sc
         FROM SchoolClassJpaEntity sc

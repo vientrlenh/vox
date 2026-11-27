@@ -5,13 +5,13 @@ import java.math.BigDecimal;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Cấu hình cho ExchangeRateApiClient/ExchangeRateRefreshJob -- job tự động lấy tỷ giá USD->VND
- * thật từ API bên ngoài định kỳ, thay cho hằng số tĩnh gõ tay ở QuotaSellingPriceProperties.
+ * Configuration for ExchangeRateApiClient/ExchangeRateRefreshJob -- the job that periodically fetches the real
+ * USD->VND rate from an external API, replacing the hand-typed static constant in QuotaSellingPriceProperties.
  *
- * <p>minRateBound/maxRateBound là chặn an toàn: nếu API trả về giá trị ngoài khoảng này (lỗi
- * provider, response dị dạng, ...) thì ExchangeRateApiClient coi như fetch thất bại và KHÔNG lưu
- * snapshot -- tránh 1 lần API trả rác làm hỏng giá bán quota thật (tỷ giá này đi vào tiền hạn mức
- * trên đơn hàng và vào SchoolBalanceEntry.fxRateUsed của từng lượt dùng -- xem
+ * <p>minRateBound/maxRateBound are a safety bound: if the API returns a value outside this range (provider
+ * error, malformed response, ...) then ExchangeRateApiClient treats it as a failed fetch and does NOT save a
+ * snapshot -- so that one garbage response from the API cannot corrupt the real quota selling price (this rate goes into the quota money
+ * on orders and into SchoolBalanceEntry.fxRateUsed of every usage -- see
  * QuotaPricingPort.usdToVndRate).
  */
 @ConfigurationProperties(prefix = "vox.quota.exchange-rate-api")

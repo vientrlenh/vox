@@ -54,7 +54,7 @@ public class CreateFrameworkCriterionBandsUseCase
                     .map(fcb -> fcb.getId())
                     .collect(Collectors.toList());
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Mã kết quả đã được gán mức đánh giá cho tiêu chí này", e);
+            throw new IllegalArgumentException("The result code already has a band assigned for this criterion", e);
         }
     }
 
@@ -64,12 +64,12 @@ public class CreateFrameworkCriterionBandsUseCase
                 .collect(Collectors.toSet());
 
         if (requestedCodes.size() != command.bands().size())
-            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã kết quả");
+            throw new IllegalArgumentException("The submitted data repeats a result code");
 
         List<FrameworkResultBand> existingBands = frameworkResultBandRepository.findByFrameworkVersionIdAndCodeIn(command.versionId(), requestedCodes);
 
         if (existingBands.size() != requestedCodes.size())
-            throw new IllegalArgumentException("Một hoặc nhiều mã kết quả không tồn tại trong phiên bản này");
+            throw new IllegalArgumentException("One or more result codes do not exist in this version");
 
         return existingBands.stream()
                         .collect(Collectors.toMap(frb -> frb.getCode(), frb -> frb.getId()));
@@ -90,22 +90,22 @@ public class CreateFrameworkCriterionBandsUseCase
 
     private FrameworkVersion getVersion(CreateFrameworkCriterionBandsCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
     }
 
     private FrameworkCriterion getCriterion(CreateFrameworkCriterionBandsCommand command) {
         return frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí"));
+            .orElseThrow(() -> new ResourceNotFoundException("Criterion not found"));
     }
 
     private void checkValidRequest(CreateFrameworkCriterionBandsCommand command, FrameworkVersion version, FrameworkCriterion criterion, Map<String, UUID> resultBandCodeToId) {
         if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể thêm mức đánh giá khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Bands can only be added while the version is in DRAFT status");
         
         if (!criterion.getFrameworkVersionId().equals(command.versionId()))
-            throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
+            throw new IllegalArgumentException("The criterion does not belong to this version");
     }
 }

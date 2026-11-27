@@ -41,7 +41,7 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
     Page<RubricJpaEntity> findAllByOwnerTypeAndSchoolId(String ownerType, UUID schoolId, Pageable pageable);
 
 
-    // 1. Search cho SYSTEM (Lọc cứng owner_type = 'SYSTEM')
+    // 1. Search for SYSTEM (hard filter owner_type = 'SYSTEM')
     @Query("SELECT r FROM RubricJpaEntity r WHERE r.ownerType = 'SYSTEM' " +
             "AND (CAST(:keyword AS string) IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
             "AND (:frameworkId IS NULL OR r.frameworkId = :frameworkId) " +
@@ -52,7 +52,7 @@ public interface SpringDataRubricRepository extends JpaRepository<RubricJpaEntit
             @Param("languageId") UUID languageId,
             Pageable pageable);
 
-    // 2. Search cho SCHOOL (Lọc cứng theo school_id)
+    // 2. Search for SCHOOL (hard filter by school_id)
     @Query("SELECT r FROM RubricJpaEntity r WHERE r.schoolId = :schoolId " +
             "AND (CAST(:keyword AS string) IS NULL OR LOWER(r.name) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%')) OR LOWER(r.code) LIKE LOWER(CONCAT('%', CAST(:keyword AS string), '%'))) " +
             "AND (:frameworkId IS NULL OR r.frameworkId = :frameworkId) " +

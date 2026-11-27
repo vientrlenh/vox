@@ -45,26 +45,26 @@ public class ViewSystemScoringRuleDetailUseCase implements IUseCase<ViewScoringR
     private void requireActiveAccount() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
     }
 
     private ScoringRule requireRuleOfPolicy(UUID ruleId, UUID policyId) {
         ScoringRule rule = scoringRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
+                .orElseThrow(() -> new ResourceNotFoundException("Scoring Rule not found."));
         if (!rule.getPolicyId().equals(policyId)) {
-            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
+            throw new ForbiddenException("SECURITY: This Scoring Rule does not belong to the specified Assessment Policy.");
         }
         return rule;
     }
 
     private void requireSystemPolicy(UUID policyId) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
         if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");
+            throw new ForbiddenException("Cannot view the Scoring Rules of an Assessment Policy that belongs to a school.");
         }
     }
 

@@ -20,12 +20,12 @@ import com.sep.vox.domain.repository.PracticeSessionRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 
 /**
- * Phase 1 (khoá + đọc + kiểm tra idempotency/budget) của ResolveNextPracticeQuestionUseCase --
- * tách riêng thành bean @Transactional của chính nó để giữ FOR UPDATE + connection DB chỉ trong
- * đúng khoảng đọc nhanh này, KHÔNG trải dài qua lúc gọi LLM chậm (selectionService.resolveNextQuestion
- * bậc 4) như code cũ. Việc serialize các lời gọi trùng cho cùng 1 session giờ do khoá JVM ở
- * ResolveNextPracticeQuestionUseCase đảm nhiệm; FOR UPDATE ở đây chỉ còn bảo vệ đúng đoạn đọc
- * ngắn này khỏi ghi đè từ nơi khác, không còn phải giữ suốt cuộc gọi ngoài.
+ * Phase 1 (lock + read + check idempotency/budget) of ResolveNextPracticeQuestionUseCase --
+ * split out into its own @Transactional bean to hold FOR UPDATE + the DB connection only for
+ * this quick read, NOT stretched across the slow LLM call (selectionService.resolveNextQuestion
+ * tier 4) as in the old code. Serializing duplicate calls for the same session is now done by a JVM lock in
+ * ResolveNextPracticeQuestionUseCase; FOR UPDATE here only protects this short read
+ * from overwrites elsewhere, and no longer has to be held across an external call.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,11 +40,11 @@ public class ResolveNextPracticeQuestionClaimService {
     private final PracticeTopicOfferEnrichmentService enrichmentService;
 
     /**
-     * Đúng 1 trong 3 kết quả có ý nghĩa:
-     * - idempotentQuestion != null: câu MỚI NHẤT đã được resolve trước đó (do lần gọi này hoặc
-     *   1 lần gọi trước timeout) nhưng chưa có response -- trả lại NGUYÊN nó, không resolve mới.
-     * - earlyExitReason != null: dừng luôn (hết hạn mức), không cần gọi resolveNextQuestion.
-     * - cả 2 đều null: cần đi tiếp bậc 2 (gọi resolveNextQuestion, có thể chậm) rồi persist.
+     * Exactly 1 of 3 meaningful outcomes:
+     * - idempotentQuestion != null: the LATEST question was already resolved earlier (by this call or
+     *   1 earlier call that timed out) but has no response yet -- return it AS IS, do not resolve a new one.
+     * - earlyExitReason != null: stop right away (quota exhausted), no need to call resolveNextQuestion.
+     * - both null: continue to phase 2 (call resolveNextQuestion, may be slow) and then persist.
      */
     public record Claim(
         UUID studentId,
@@ -56,29 +56,29 @@ public class ResolveNextPracticeQuestionClaimService {
         int idempotentSlot,
         String earlyExitReason,
         /**
-         * Cặp số cho thanh tiến độ "đã nói / ngân sách" trên máy học sinh. Khác {@code
-         * usedSeconds}/{@code maxSeconds} ngay bên trên ở CHỖ QUAN TRỌNG NHẤT: usedSeconds là
-         * ngân sách DỰ TRÙ của các câu đã phát ra đề (dùng để quyết có phát thêm câu nữa
-         * không), còn spokenSeconds là số giây học sinh THẬT SỰ nói (đúng thứ bị trừ quota).
-         * Trên dữ liệu thật hai số này lệch nhau rất xa -- 45 giây dự trù cho 16 giây nói.
+         * The pair of numbers for the "spoken / budget" progress bar on the student's device. Differs from {@code
+         * usedSeconds}/{@code maxSeconds} just above in the MOST IMPORTANT way: usedSeconds is the
+         * ESTIMATED budget of the questions already issued (used to decide whether to issue another question),
+         * while spokenSeconds is the number of seconds the student REALLY spoke (exactly what is deducted from quota).
+         * On real data the two numbers differ greatly -- 45 seconds budgeted for 16 seconds spoken.
          */
         int spokenSeconds,
         int budgetSeconds,
         /**
-         * Thứ tự bậc học sinh đã chọn khi dựng đề, đọc lại từ phiên. Trước đây chỗ này ước
-         * lượng lại bậc mỗi lượt (bậc đo được + EMA hiệu năng + lần bỏ dở gần nhất), nên độ
-         * khó có thể trôi ngay giữa phiên mà học sinh không hiểu vì sao.
+         * The band order the student chose when building the paper, read back from the session. Previously this place
+         * re-estimated the band on every turn (measured band + performance EMA + most recent abandoned attempt), so difficulty
+         * could drift mid-session without the student understanding why.
          */
         int targetBandOrder,
-        /** Số bậc của khung mà targetBandOrder thuộc về -- xem frameworkBandCountOfBand. */
+        /** The band count of the framework that targetBandOrder belongs to -- see frameworkBandCountOfBand. */
         int targetBandCount,
-        /** Khung mà bậc đích thuộc về -- ladder gửi xuống Python phải theo đúng khung này. */
+        /** The framework the target band belongs to -- the ladder sent to Python must follow exactly this framework. */
         UUID targetFrameworkVersionId) {
     }
 
     /**
-     * Dưới ngưỡng này thì không phát câu mới nữa. Không phải "đủ cho một câu trọn vẹn" --
-     * chỉ là mốc dưới đó thì phát thêm câu là vô nghĩa: học sinh chưa kịp nói gì đã hết giờ.
+     * Below this threshold no new question is issued. Not "enough for one complete question" --
+     * just the point below which issuing another question is pointless: the student runs out of time before saying anything.
      */
     private static final int MINIMUM_USEFUL_TURN_SECONDS = 10;
 
@@ -98,7 +98,7 @@ public class ResolveNextPracticeQuestionClaimService {
         }
 
         PracticeTopic topic = topicRepository.findTopicById(session.getChosenPracticeTopicId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice topic not found."));
         PracticeFocusInfo focus = selectionService.resolveFocus(session.getStudentId(), null);
         List<PracticeQuestion> alreadyChosen = questionRepository.findByIds(alreadyChosenIds);
 
@@ -111,9 +111,9 @@ public class ResolveNextPracticeQuestionClaimService {
      */
     private PracticeSession lockInProgressSession(UUID sessionId) {
         PracticeSession session = practiceSessionRepository.findByIdForUpdate(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice session not found."));
         if (!"IN_PROGRESS".equals(session.getStatus())) {
-            throw new IllegalArgumentException("Phiên luyện không còn hoạt động.");
+            throw new IllegalArgumentException("The practice session is no longer active.");
         }
         return session;
     }
@@ -148,7 +148,7 @@ public class ResolveNextPracticeQuestionClaimService {
             return Optional.empty();
         }
         PracticeQuestion latestQuestion = questionRepository.findById(latestQuestionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice question not found."));
         return Optional.of(claimOf(session, progress, null, null, null, latestQuestion, alreadyChosenIds.size(), null));
     }
 

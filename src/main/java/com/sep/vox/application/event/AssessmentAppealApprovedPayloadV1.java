@@ -4,11 +4,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Đơn phúc khảo đã được duyệt và đã có người chấm.
+ * An appeal has been approved and a grader has been assigned.
  *
- * <p>Phát ở bước PHÂN CÔNG chứ không ở bước duyệt: giữa "đã duyệt" và "đã có người
- * chấm" có thể cách nhau nhiều ngày, và tin đáng gửi cho học sinh là tin thứ hai —
- * nó kèm được hạn xử lý cụ thể.
+ * <p>Published at the ASSIGNMENT step, not at the approval step: "approved" and "assigned"
+ * can be days apart, and the message worth sending to the student is the second one,
+ * because it carries a concrete deadline.
  */
 public record AssessmentAppealApprovedPayloadV1(
     UUID appealId,

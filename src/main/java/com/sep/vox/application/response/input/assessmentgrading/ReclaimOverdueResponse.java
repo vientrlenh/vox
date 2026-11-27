@@ -4,18 +4,18 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Kết quả một lượt thu hồi phân công quá hạn.
+ * The result of one pass of reclaiming overdue assignments.
  *
- * <p>Hai danh sách tách bạch thay vì một {@code List<UUID>} mang hai nghĩa tuỳ nhánh:
- * trước đây cùng một endpoint trả id các phân công <em>đã đóng</em> khi chỉ thu hồi, và
- * id các phân công <em>mới tạo</em> khi có giao lại — client không có cách nào phân biệt.
+ * <p>Two separate lists instead of one {@code List<UUID>} carrying two meanings depending on the branch:
+ * before, the same endpoint returned the ids of assignments that were <em>closed</em> when only reclaiming, and
+ * the ids of <em>newly created</em> assignments when reassigning -- the client had no way to tell them apart.
  *
- * @param reclaimedAssignmentIds phân công cũ vừa bị đóng (luôn có khi thu hồi được gì đó)
- * @param reassignedAssignmentIds phân công mới vừa mở cho nhóm thay thế; rỗng khi admin
- *        chỉ thu hồi mà không chọn ai
- * @param hasMore còn phân công quá hạn chưa xử lý vì đã chạm trần một lượt — admin bấm
- *        tiếp là chạy lượt sau. Không có cờ này thì một lượt "thu hồi toàn bộ" bị cắt
- *        trông y hệt một lượt đã làm xong.
+ * @param reclaimedAssignmentIds old assignments just closed (always present when anything was reclaimed)
+ * @param reassignedAssignmentIds new assignments just opened for the replacement group; empty when the admin
+ *        only reclaimed without choosing anyone
+ * @param hasMore overdue assignments remain unprocessed because the cap of one pass was reached -- the admin
+ *        clicks again to run the next pass. Without this flag a truncated "reclaim everything" pass
+ *        looks exactly like one that finished.
  */
 public record ReclaimOverdueResponse(
     List<UUID> reclaimedAssignmentIds,

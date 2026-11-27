@@ -21,13 +21,13 @@ public class SubscriptionPlanResolver {
         int hops = 0;
         while (current.getStatus() == SubscriptionPlanStatus.ARCHIVED) {
             if (current.getReplacedByPlanId() == null) {
-                throw new ResourceNotFoundException("Gói đã ngừng cung cấp và chưa có gói thay thế");
+                throw new ResourceNotFoundException("The plan has been discontinued and has no replacement plan");
             }
             if (++hops > MAX_PLAN_REPLACEMENT_HOPS) {
-                throw new IllegalStateException("Chuỗi thay thế gói bị lặp vòng");
+                throw new IllegalStateException("The plan replacement chain loops");
             }
             current = subscriptionPlanRepository.findById(current.getReplacedByPlanId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
+                .orElseThrow(() -> new ResourceNotFoundException("Replacement plan not found"));
         }
         return current;
     }

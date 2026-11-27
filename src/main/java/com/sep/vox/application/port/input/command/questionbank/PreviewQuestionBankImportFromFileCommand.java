@@ -3,11 +3,11 @@ package com.sep.vox.application.port.input.command.questionbank;
 import com.sep.vox.application.common.UploadedFile;
 
 /**
- * Import ngân hàng câu hỏi.
+ * Imports a question bank.
  *
- * <p>Không có tham số phạm vi: ngân hàng thuộc trường nào (hay thuộc hệ thống) suy từ vai trò của
- * người đang đăng nhập ở use case. Cho client tự khai schoolId là mở đường để một người tạo ngân
- * hàng cho trường khác.
+ * <p>No scope parameter: which school the bank belongs to (or the system) is derived in the use case from the role of
+ * the logged-in user. Letting the client declare schoolId would open the way for someone to create a
+ * bank for another school.
  */
 public record PreviewQuestionBankImportFromFileCommand(
     UploadedFile file

@@ -22,12 +22,12 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Chạy SQL THẬT trên Postgres thật — xem lý do ở
+ * Runs REAL SQL on a real Postgres -- see the reason in
  * {@link JpaPlatformOperationalHealthQueryRepositoryTests}.
  *
- * <p>Trọng tâm là phép phân loại TỪNG TRƯỜNG: một trường có nhiều kỳ thuê bao trong lịch sử, nên
- * đếm theo dòng sẽ vừa cộng trùng vừa xếp một trường đang dùng tốt vào nhóm "đã hết hạn" chỉ vì kỳ
- * năm ngoái của nó đã kết thúc. Đó là chỗ dễ sai nhất trong cả hai repository mới.
+ * <p>The focus is the classification PER SCHOOL: a school has several subscription periods in its history, so
+ * counting by row would both double count and put a school in good standing into the "expired" bucket just because its
+ * last-year period ended. That is the easiest place to go wrong in both new repositories.
  */
 @RepositoryTest
 @Import(JpaPlatformBusinessHealthQueryRepository.class)
@@ -40,9 +40,9 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
     private EntityManager em;
 
     /**
-     * Mốc "bây giờ" cố định. Là {@link Instant} chứ không phải ngày lịch vì V2 đã đổi
-     * {@code start_date} / {@code end_date} của {@code school_subscriptions} sang {@code timestamptz}
-     * — so ngày với timestamptz sẽ để Postgres ép ngày đó thành nửa đêm theo múi giờ SESSION.
+     * A fixed "now". It is an {@link Instant} and not a calendar date because V2 changed
+     * {@code start_date} / {@code end_date} of {@code school_subscriptions} to {@code timestamptz}
+     * -- comparing a date with a timestamptz makes Postgres cast that date to midnight in the SESSION time zone.
      */
     private static final Instant NOW = Instant.parse("2026-08-30T05:00:00Z");
     private static final Instant EXPIRING_THROUGH = NOW.plus(30, java.time.temporal.ChronoUnit.DAYS);
@@ -207,7 +207,7 @@ class JpaPlatformBusinessHealthQueryRepositoryTests {
         assertThat(health.suspendedSchools()).isZero();
     }
 
-    /** Ví âm CHÍNH LÀ khoản nợ — cột cố ý không có CHECK >= 0, xem SchoolBalance. */
+    /** A negative balance IS the debt -- the column intentionally has no CHECK >= 0, see SchoolBalance. */
     @Test
     void countsOnlySchoolsWithNegativeBalance() {
         insertBalance(insertSchool(), "-2450000");

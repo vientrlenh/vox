@@ -38,12 +38,11 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Chủ tịch hội đồng tự lập hội đồng ra đề của kỳ thi mình chủ trì — trước đây ba endpoint này chỉ
- * nhận quản trị trường, nên giáo viên chủ tịch không qua nổi bước đầu tiên của quy trình.
+ * A CHAIR sets up the paper-authoring committee of the assessment they chair -- these three endpoints used to accept
+ * only the school admin, so a CHAIR teacher could not get past the first step of the workflow.
  *
- * <p>Ranh giới còn lại: hàng CHAIR vẫn chỉ quản trị trường đụng được. Chủ tịch thu hồi vai trò của
- * chính mình hay của chủ tịch khác là kỳ thi mất người quyết định mà luồng giáo viên không dựng lại
- * được.
+ * <p>The remaining boundary: only the school admin can touch a CHAIR row. A CHAIR who revokes their own role or another
+ * CHAIR's role leaves the assessment without a decision maker, and the teacher flow cannot rebuild that.
  */
 class AssessmentMemberManagementTests {
 
@@ -84,7 +83,7 @@ class AssessmentMemberManagementTests {
         givenCallerIsChair();
     }
 
-    // --- Chủ tịch hội đồng ---
+    // --- CHAIR ---
 
     @Test
     void should_let_the_chair_add_an_author() {
@@ -105,7 +104,7 @@ class AssessmentMemberManagementTests {
     void should_reject_the_chair_appointing_another_chair() {
         assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.CHAIR)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Chỉ quản trị trường mới bổ nhiệm");
+            .hasMessageContaining("Only the school admin may appoint");
         verify(assessmentMemberRepository, never()).save(any());
     }
 
@@ -118,14 +117,14 @@ class AssessmentMemberManagementTests {
         assertThat(result.role()).isEqualTo(AssessmentMemberRole.REVIEWER);
     }
 
-    /** Vai đích không phải CHAIR nhưng vai đang bị gỡ thì có — bỏ sót vế này là chủ tịch hạ cấp nhau. */
+    /** The target role is not CHAIR but the role being removed is -- missing this half lets a CHAIR demote another CHAIR. */
     @Test
     void should_reject_the_chair_demoting_another_chair() {
         givenExistingMember(AssessmentMemberRole.CHAIR);
 
         assertThatThrownBy(() -> updateUseCase.execute(new UpdateAssessmentMemberCommand(ASSESSMENT_ID, MEMBER_ID, AssessmentMemberRole.AUTHOR)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Chỉ quản trị trường mới bổ nhiệm");
+            .hasMessageContaining("Only the school admin may appoint");
         verify(assessmentMemberRepository, never()).save(any());
     }
 
@@ -147,7 +146,7 @@ class AssessmentMemberManagementTests {
         verify(assessmentMemberRepository, never()).deleteById(any());
     }
 
-    // --- Quản trị trường ---
+    // --- School admin ---
 
     @Test
     void should_let_the_school_admin_appoint_a_chair() {
@@ -168,7 +167,7 @@ class AssessmentMemberManagementTests {
         verify(assessmentMemberRepository).deleteById(MEMBER_ID);
     }
 
-    // --- Người ngoài ---
+    // --- Outsider ---
 
     @Test
     void should_reject_a_member_who_is_neither_school_admin_nor_chair() {
@@ -177,7 +176,7 @@ class AssessmentMemberManagementTests {
 
         assertThatThrownBy(() -> createUseCase.execute(new CreateAssessmentMemberCommand(ASSESSMENT_ID, TARGET_USER_ID, AssessmentMemberRole.AUTHOR)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Quyền truy cập bị từ chối");
+            .hasMessageContaining("Access denied");
     }
 
     /** A school admin from another school must not touch the council of this school. */

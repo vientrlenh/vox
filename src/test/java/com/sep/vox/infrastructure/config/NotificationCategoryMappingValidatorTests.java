@@ -6,14 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.InitializingBean;
 
 /**
- * Validator chỉ chạy đúng một lần lúc khởi động, nên nếu logic của nó sai chiều (lọc nhầm
- * tập, so nhầm bảng) thì hậu quả là app vẫn lên bình thường và không kiểm gì cả -- im lặng
- * y hệt lúc chưa có validator. Test này gọi thẳng bean với ba bảng ánh xạ thật.
+ * The validator runs exactly once at startup, so if its logic is wrong-way-round (filters the wrong
+ * set, compares the wrong table) the consequence is that the app still comes up normally and checks nothing -- silent,
+ * exactly as if there were no validator. This test calls the bean directly with the three real mapping tables.
  *
- * <p>Không có test cho nhánh ném lỗi: cả ba bảng đều là {@code static final}, muốn làm chúng
- * lệch nhau phải dùng reflection, và cái bẫy thật sự -- ai đó thêm event mới mà quên một bảng
- * -- đã được {@code NotificationPushedEventConsumerTests} bắt bằng phép so trực tiếp hai tập
- * eventType.
+ * <p>There is no test for the throwing branch: all three tables are {@code static final}, making them
+ * disagree needs reflection, and the real trap -- someone adds a new event but forgets one table
+ * -- is already caught by {@code NotificationPushedEventConsumerTests} with a direct comparison of the two sets of
+ * eventTypes.
  */
 class NotificationCategoryMappingValidatorTests {
 

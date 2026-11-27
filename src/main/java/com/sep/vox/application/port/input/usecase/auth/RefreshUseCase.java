@@ -48,11 +48,11 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         
         String tokenHash = sessionTokenManagerPort.hash(command.token());
         RefreshToken refreshToken = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
-            .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
+            .orElseThrow(() -> new UnauthorizedException("The requested token is invalid"));
         
         Instant now = Instant.now();
         DeviceSession deviceSession = deviceSessionRepository.findById(refreshToken.getSessionId())
-            .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
+            .orElseThrow(() -> new UnauthorizedException("The requested token is invalid"));
 
         validateValidRequest(refreshToken, deviceSession, now, command);
         
@@ -61,7 +61,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         markOldTokenAsUsed(refreshToken.getId(), newGeneratedRefreshToken.getId(), deviceSession.getId(), now);
 
         User user = userRepository.findById(deviceSession.getUserId())
-            .orElseThrow(() -> new UnauthorizedException("Token yêu cầu không hợp lệ"));
+            .orElseThrow(() -> new UnauthorizedException("The requested token is invalid"));
         UUID schoolId = schoolUserRepository.findByUserId(user.getId())
             .map(su -> su.getSchoolId())
             .orElse(null);
@@ -80,21 +80,21 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
 
     private void validateValidRequest(RefreshToken refreshToken, DeviceSession deviceSession, Instant now, RefreshCommand command) {
         if (refreshToken.isExpired(now)) {
-            throw new UnauthorizedException("Token yêu cầu không hợp lệ");
+            throw new UnauthorizedException("The requested token is invalid");
         }
         
         if (refreshToken.isUsed()) {
             sessionManagerPort.revoke(deviceSession.getId(), now);
-            throw new UnauthorizedException("Token yêu cầu không hợp lệ");
+            throw new UnauthorizedException("The requested token is invalid");
         }
 
         if (deviceSession.isDeviceIdMismatches(command.deviceId())) {
             sessionManagerPort.revoke(deviceSession.getId(), now);
-            throw new UnauthorizedException("Token yêu cầu không hợp lệ");
+            throw new UnauthorizedException("The requested token is invalid");
         }
 
         if (deviceSession.isRevoked()) {
-            throw new UnauthorizedException("Token yêu cầu không hợp lệ");
+            throw new UnauthorizedException("The requested token is invalid");
         }
     }
 
@@ -107,7 +107,7 @@ public class RefreshUseCase implements IUseCase<RefreshCommand, RefreshResponse>
         int updatedRow = refreshTokenRepository.markUsedAndReplacedBy(oldTokenId, newTokenId, now);
         if (updatedRow == 0) {
             sessionManagerPort.revoke(sessionId, now);
-            throw new UnauthorizedException("Token yêu cầu không hợp lệ");
+            throw new UnauthorizedException("The requested token is invalid");
         }
     }
 

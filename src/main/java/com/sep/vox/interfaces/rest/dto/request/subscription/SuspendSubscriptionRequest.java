@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record SuspendSubscriptionRequest(
-    @NotBlank(message = "Phải nêu lý do đình chỉ gói đăng ký")
-    @Size(max = 512, message = "Lý do đình chỉ tối đa 512 ký tự")
+    @NotBlank(message = "The reason for suspending the subscription must be stated")
+    @Size(max = 512, message = "Suspension reason must not exceed 512 characters")
     String reason
 ) {
 }

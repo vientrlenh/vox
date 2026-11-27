@@ -31,7 +31,7 @@ public class RestImportController {
             @RequestBody(required = false) RejectImportSessionRequest request) {
         RejectImportSessionCommand command = RejectImportSessionRequest.toCommand(sessionId, request);
         RejectImportSessionResponse data = rejectImportSessionUseCase.execute(command);
-        ApiResponse<RejectImportSessionResponse> response = ApiResponse.success("Hủy import thành công", data);
+        ApiResponse<RejectImportSessionResponse> response = ApiResponse.success("Import cancelled successfully", data);
         return ResponseEntity.ok(response);
     }
 }

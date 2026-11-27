@@ -80,6 +80,6 @@ class CreateSystemRubricCriteriaUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn (Framework) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            .hasMessage("Data save error: the criterion code, Framework or order already exists in this system Rubric version.");
     }
 }

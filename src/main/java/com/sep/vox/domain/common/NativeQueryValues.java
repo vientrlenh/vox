@@ -6,15 +6,15 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /**
- * Ép kiểu cho các ô {@code Object[]} mà native query trả về.
+ * Casts the {@code Object[]} cells returned by a native query.
  *
- * <p>Tồn tại vì cùng một cột về Java dưới nhiều kiểu khác nhau tùy phiên bản driver và Hibernate:
- * {@code COUNT(*)} là {@code Long} hoặc {@code BigInteger}, cột {@code timestamptz} là
- * {@link Instant}, {@link OffsetDateTime} hoặc {@link java.sql.Timestamp}. Ép thẳng sang một kiểu cụ
- * thể chạy được trên máy này và ném {@code ClassCastException} trên máy khác.
+ * <p>Exists because the same column arrives in Java under different types depending on the driver and Hibernate
+ * version: {@code COUNT(*)} is {@code Long} or {@code BigInteger}, a {@code timestamptz} column is
+ * {@link Instant}, {@link OffsetDateTime} or {@link Timestamp}. Casting straight to one specific type works on
+ * this machine and throws {@code ClassCastException} on another.
  *
- * <p>Gói riêng cho tầng native query. Câu JPQL không cần tới đây — Hibernate đã trả về đúng kiểu của
- * thuộc tính entity.
+ * <p>Scoped to the native query layer. JPQL queries do not need it — Hibernate already returns the type of the
+ * entity attribute.
  */
 public final class NativeQueryValues {
 
@@ -25,7 +25,7 @@ public final class NativeQueryValues {
         return value == null ? 0L : ((Number) value).longValue();
     }
 
-    /** Số đếm luôn nằm gọn trong {@code int} ở mọi màn hình — nhưng đọc về vẫn phải qua Number. */
+    /** A count always fits in an {@code int} on every screen — but it must still be read through Number. */
     public static int toInt(Object value) {
         return value == null ? 0 : ((Number) value).intValue();
     }
@@ -47,6 +47,6 @@ public final class NativeQueryValues {
         if (value instanceof Timestamp timestamp) {
             return timestamp.toInstant();
         }
-        throw new IllegalStateException("Không đọc được cột thời gian kiểu " + value.getClass());
+        throw new IllegalStateException("Cannot read a time column of type " + value.getClass());
     }
 }

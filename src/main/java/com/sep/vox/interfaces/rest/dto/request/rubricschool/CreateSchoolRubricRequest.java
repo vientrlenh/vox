@@ -7,21 +7,21 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 public record CreateSchoolRubricRequest(
-        @NotBlank(message = "Mã bộ tiêu chí không được để trống")
-        @Size(max = 50, message = "Mã bộ tiêu chí tối đa 50 ký tự")
+        @NotBlank(message = "Rubric code must not be blank")
+        @Size(max = 50, message = "Rubric code must not exceed 50 characters")
         String code,
 
-        @NotBlank(message = "Tên bộ tiêu chí không được để trống")
-        @Size(max = 255, message = "Tên bộ tiêu chí tối đa 255 ký tự")
+        @NotBlank(message = "Rubric name must not be blank")
+        @Size(max = 255, message = "Rubric name must not exceed 255 characters")
         String name,
 
-        @Size(max = 2048, message = "Mô tả tối đa 2048 ký tự")
+        @Size(max = 2048, message = "Description must not exceed 2048 characters")
         String description,
 
-        @NotNull(message = "Ngôn ngữ không được để trống")
+        @NotNull(message = "Language must not be blank")
         UUID languageId,
 
-        @NotNull(message = "Khung tiêu chuẩn (Framework) không được để trống")
+        @NotNull(message = "Framework must not be blank")
         UUID frameworkId
 ) {
 

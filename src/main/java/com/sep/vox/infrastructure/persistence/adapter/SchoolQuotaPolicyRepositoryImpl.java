@@ -27,8 +27,8 @@ public class SchoolQuotaPolicyRepositoryImpl implements SchoolQuotaPolicyReposit
         return springDataSchoolQuotaPolicyRepository
             .findBySchoolIdAndQuotaType(schoolId, quotaType.name())
             .map(SchoolQuotaPolicyMapper::toDomain)
-            // Chưa đặt gì = chia được toàn bộ. Dựng tại chỗ chứ không ghi xuống: không có dòng và có
-            // dòng 1.0 là cùng một nghĩa, ghi thêm chỉ để đọc là đẻ ra một hàng cho mọi trường.
+            // Nothing set = the whole amount is distributable. Built in place rather than written: no row and a
+            // row with 1.0 mean the same thing, and writing one just to read it would create a row for every school.
             .orElseGet(() -> SchoolQuotaPolicy.fullyDistributable(schoolId, quotaType));
     }
 

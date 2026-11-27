@@ -6,16 +6,16 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateFrameworkRequest(
-    @NotBlank(message = "Mã framework không được để trống")
-    @Size(max = 100, message = "Mã framework không được vượt quá 100 ký tự")
-    @Pattern(regexp = "^[A-Z0-9_-]+$", message = "Mã framework chỉ được chứa chữ hoa, số, gạch dưới và gạch ngang")
+    @NotBlank(message = "Framework code must not be blank")
+    @Size(max = 100, message = "Framework code must not exceed 100 characters")
+    @Pattern(regexp = "^[A-Z0-9_-]+$", message = "Framework code may only contain uppercase letters, digits, underscores and hyphens")
     String code,
 
-    @NotBlank(message = "Tên framework không được để trống")
-    @Size(max = 255, message = "Tên framework không được vượt quá 255 ký tự")
+    @NotBlank(message = "Framework name must not be blank")
+    @Size(max = 255, message = "Framework name must not exceed 255 characters")
     String name,
 
-    @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Description must not exceed 2048 characters")
     String description,
 
     Boolean isActive

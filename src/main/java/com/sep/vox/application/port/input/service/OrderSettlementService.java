@@ -138,12 +138,12 @@ public class OrderSettlementService {
         // credit the money is exactly the scenario that uq_payment_records_one_paid_per_order cannot block, because each thread
         // works on a different payment_records row of the same order.
         return orderRepository.findByIdForUpdate(payment.getOrderId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của lần thanh toán"));
+            .orElseThrow(() -> new ResourceNotFoundException("Order of the payment not found"));
     }
 
     private boolean isOpenForSettlement(Order order, PaymentRecord payment) {
         if (order.getStatus() == OrderStatus.SUCCESS) {
-            log.info("Đơn {} đã SUCCESS -- bỏ qua lần chốt lặp cho payment {}",
+            log.info("Order {} is already SUCCESS -- skipping the repeated settlement for payment {}",
                 order.getId(), payment.getId());
             return false;
         }
@@ -156,7 +156,7 @@ public class OrderSettlementService {
             // early cancellation, so CancelOrderUseCase blocks it, but if that block is loosened this is the consequence), or the order
             // expires exactly while the school is paying.
             log.error(
-                "TIỀN VỀ CHO ĐƠN ĐÃ ĐÓNG -- cần hoàn tiền thủ công: orderId={} orderStatus={} paymentId={} amountVnd={}",
+                "MONEY RECEIVED FOR A CLOSED ORDER -- manual refund needed: orderId={} orderStatus={} paymentId={} amountVnd={}",
                 order.getId(), order.getStatus(), payment.getId(), payment.getAmountVnd());
             return false;
         }
@@ -164,14 +164,14 @@ public class OrderSettlementService {
     }
 
     /**
-     * Cổng đã xác nhận lần thử này KHÔNG ra tiền (hủy/hết hạn/thất bại).
+     * The gateway has confirmed this attempt did NOT bring in money (cancelled/expired/failed).
      *
-     * <p>CHỈ đóng dòng payment_records, KHÔNG đụng tới đơn: đơn vẫn PENDING nên trường bấm thanh
-     * toán lại được ngay, và ràng buộc uq_payment_records_one_pending_per_order lúc đó đã thông vì
-     * dòng cũ không còn PENDING. Đóng luôn đơn ở đây là bắt trường đặt lại đơn mới chỉ vì họ bấm
-     * nhầm nút hủy trên trang cổng.
+     * <p>ONLY closes the payment_records row, does NOT touch the order: the order stays PENDING so the school can click pay
+     * again right away, and the constraint uq_payment_records_one_pending_per_order is already clear then because
+     * the old row is no longer PENDING. Closing the order here would force the school to create a new order just because they
+     * clicked the cancel button by mistake on the gateway page.
      *
-     * <p>Đơn hết hạn thật thì đã có expires_at + job quét lo, không phải việc của callback.
+     * <p>A genuinely expired order is already handled by expires_at + the sweeper job, not the callback's concern.
      */
     @Transactional
     public void failAttempt(PaymentRecord payment, PaymentStatus failureStatus) {
@@ -195,26 +195,26 @@ public class OrderSettlementService {
     @Transactional
     public boolean expireIfOverdue(UUID orderId, Instant now) {
         Order order = orderRepository.findByIdForUpdate(orderId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng cần hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Order to expire not found"));
 
         if (order.getStatus() != OrderStatus.PENDING || now.isBefore(order.getExpiresAt())) {
             return false;
         }
         if (paymentRecordRepository.findPendingByOrderId(orderId).isPresent()) {
-            log.warn("Đơn {} đã quá hạn nhưng còn lần thử đang treo -- chưa đóng, đợi đối soát xong",
+            log.warn("Order {} is past its deadline but still has a pending attempt -- not closing it, waiting for reconciliation to finish",
                 orderId);
             return false;
         }
 
         order.setStatus(OrderStatus.EXPIRED);
         orderRepository.save(order);
-        log.info("Đóng đơn {} do quá hạn thanh toán ({})", orderId, order.getExpiresAt());
+        log.info("Closing order {} because the payment deadline passed ({})", orderId, order.getExpiresAt());
         return true;
     }
 
     /**
-     * @return kỳ đăng ký gắn với lần chốt này, dùng để dựng hóa đơn. Null là hợp lệ: trường chưa có
-     *         gói nào vẫn nạp tiền được -- xem {@link #creditBalance}.
+     * @return the subscription period tied to this settlement, used to build the invoice. Null is valid: a school with no
+     *         plan can still top up -- see {@link #creditBalance}.
      */
     private UUID fulfil(Order order, Instant now) {
         return switch (order.getType()) {
@@ -243,7 +243,7 @@ public class OrderSettlementService {
         schoolBalanceEntryRepository.save(SchoolBalanceEntry.forTopUp(
             order.getSchoolId(), activeSubscriptionId, order.getId(), credited, balanceAfter, now));
 
-        log.info("Nạp {} VND vào ví trường {} từ đơn {} -- số dư mới {}",
+        log.info("Credited {} VND to the balance of school {} from order {} -- new balance {}",
             credited, order.getSchoolId(), order.getId(), balanceAfter);
 
         reportDebtClearedIfCrossedBack(order.getSchoolId(), activeSubscriptionId, balanceBefore, balanceAfter, now);
@@ -260,19 +260,19 @@ public class OrderSettlementService {
     }
 
     /**
-     * Lần nạp này vừa kéo số dư từ ÂM về không âm: trường hết nợ và khoá tự mở ngay.
+     * This top-up has just moved the balance from NEGATIVE back to non-negative: the school is out of debt and the lock opens by itself.
      *
-     * <p>Đây là chỗ gọi DUY NHẤT của publishSchoolDebtCleared, và trước V4 nó không tồn tại --
-     * hàm phát sự kiện đã viết xong, mẫu email đã có, mà không dòng mã nào gọi tới. Hệ quả: sổ nợ
-     * ghi lúc trường rơi vào nợ và lúc vượt trần, rồi im lặng mãi mãi. Với hiệu trưởng, quyển sổ
-     * dùng để giải thích "vì sao trường bị khoá" không bao giờ nói trường đã thoát ra.
+     * <p>This is the ONLY call site of publishSchoolDebtCleared, and before V4 it did not exist --
+     * the event-publishing function was written, the email template existed, but no line of code called it. Consequence: the
+     * debt ledger recorded when the school fell into debt and when it exceeded the cap, then stayed silent forever. For the principal, the ledger
+     * used to explain "why the school is locked" never said the school had got out.
      *
-     * <p>Nạp thêm là đường DUY NHẤT cộng tiền vào ví (REFUND/ADJUSTMENT có trong enum nhưng chưa có
-     * factory nào dựng), nên đặt ở đây là phủ hết. Khi hai loại kia có đường ghi, chúng phải gọi lại
-     * chính hàm này.
+     * <p>Topping up is the ONLY path that adds money to the balance (REFUND/ADJUSTMENT exist in the enum but no
+     * factory builds them yet), so putting it here covers everything. When those two get a write path, they must call
+     * this same function again.
      *
-     * <p>So sánh TRƯỚC/SAU của cùng một dòng đang giữ khoá, giống crossedIntoDebt ở chiều ngược lại:
-     * chỉ báo đúng một lần lúc CHUYỂN, còn nạp tiếp khi đã hết nợ thì không sinh sự kiện nào.
+     * <p>Compares BEFORE/AFTER on the same row while holding the lock, like crossedIntoDebt in the opposite direction:
+     * it reports exactly once, on the CROSSING, and topping up again after the debt is gone creates no event.
      */
     private void reportDebtClearedIfCrossedBack(
             UUID schoolId, UUID subscriptionId, BigDecimal balanceBefore, BigDecimal balanceAfter, Instant now) {
@@ -280,17 +280,17 @@ public class OrderSettlementService {
             return;
         }
 
-        // school_debt_events.subscription_id là NOT NULL, mà nợ lại thuộc về TRƯỜNG chứ không thuộc
-        // kỳ đăng ký nào -- một trường trả hết nợ đúng lúc gói vừa hết hạn thì không có id nào để
-        // ghi. Bỏ qua dòng sự kiện thay vì để INSERT nổ và cuốn theo cả lần nạp tiền đã thành công.
+        // school_debt_events.subscription_id is NOT NULL, yet the debt belongs to the SCHOOL, not to any
+        // subscription period -- a school that pays off its debt just as its plan expires has no id to
+        // write. Skip the event row instead of letting the INSERT blow up and take the successful top-up down with it.
         if (subscriptionId == null) {
             log.warn(
-                "Trường {} vừa hết nợ (số dư {} -> {}) nhưng không có gói nào đang hoạt động để gắn sự kiện -- bỏ qua dòng CLEARED.",
+                "School {} just cleared its debt (balance {} -> {}) but has no active subscription to attach the event to -- skipping the CLEARED row.",
                 schoolId, balanceBefore, balanceAfter);
             return;
         }
 
-        log.info("Trường {} đã hết nợ: số dư {} -> {}", schoolId, balanceBefore, balanceAfter);
+        log.info("School {} is out of debt: balance {} -> {}", schoolId, balanceBefore, balanceAfter);
         schoolDebtNotificationService.publishSchoolDebtCleared(subscriptionId, schoolId, now);
     }
 
@@ -311,7 +311,7 @@ public class OrderSettlementService {
         UUID previousSubscriptionId = previousSubscriptionIdOf(order.getSchoolId());
         UUID planId = subscriptionPlanIdOf(order);
         SubscriptionPlan plan = subscriptionPlanRepository.findById(planId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói dịch vụ của đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription plan of the order not found"));
 
         Instant startsAt = order.getType() == OrderType.SUBSCRIPTION_UPGRADE
             ? cutOverToUpgrade(order.getSchoolId(), now)
@@ -342,7 +342,7 @@ public class OrderSettlementService {
             .map(item -> item.getItemId())
             .findFirst()
             .orElseThrow(() -> new IllegalStateException(
-                "Đơn đăng ký " + order.getId() + " không có dòng SUBSCRIPTION nào để kích hoạt"));
+                "Order " + order.getId() + " has no SUBSCRIPTION line to activate"));
     }
 
     // The price paid is taken from the ORDER rather than re-reading plan.getPriceVnd(): a plan can change price while the
@@ -356,21 +356,21 @@ public class OrderSettlementService {
 
     private void logActivation(Order order, UUID planId, SchoolSubscription subscription, Instant startsAt, Instant now) {
         if (startsAt.isAfter(now)) {
-            log.info("Gia hạn sớm gói {} cho trường {} từ đơn {} -- kỳ mới chạy {} tới {}",
+            log.info("Early renewal of plan {} for school {} from order {} -- the new period runs {} to {}",
                 planId, order.getSchoolId(), order.getId(), startsAt, subscription.getEndDate());
         } else {
-            log.info("Kích hoạt gói {} cho trường {} từ đơn {} -- hạn tới {}",
+            log.info("Activating plan {} for school {} from order {} -- valid until {}",
                 planId, order.getSchoolId(), order.getId(), subscription.getEndDate());
         }
     }
 
     /**
-     * Mốc bắt đầu cho đăng ký mới / gia hạn: nối vào sau kỳ xa nhất còn hạn, không có kỳ nào thì chạy
-     * ngay.
+     * The start point for a new subscription / renewal: chain after the furthest period that is still valid, or run
+     * immediately if there is none.
      *
-     * <p>Lấy theo endDate LỚN NHẤT chứ không phải kỳ đang chạy: trường gia hạn hai lần liên tiếp thì
-     * lần sau phải xếp sau lần trước, nếu bám vào kỳ đang chạy thì hai lần gia hạn sẽ trùng nhau và
-     * mất một chu kỳ.
+     * <p>Uses the LARGEST endDate rather than the running period: when a school renews twice in a row the
+     * second must queue after the first; anchoring on the running period would make the two renewals overlap and
+     * lose one cycle.
      */
     private Instant nextPeriodStart(UUID schoolId, Instant now) {
         return schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).stream()
@@ -380,21 +380,21 @@ public class OrderSettlementService {
     }
 
     /**
-     * Nâng cấp: gói mới có hiệu lực NGAY, nên mọi kỳ chưa kết thúc của trường bị đóng lại tại đây.
+     * Upgrade: the new plan takes effect IMMEDIATELY, so every unfinished period of the school is closed here.
      *
-     * <p>Đóng bằng cách kéo endDate về {@code now} chứ không chỉ đổi status: hai truy vấn phân biệt
-     * "kỳ nào đang chạy" đều soi khoảng ngày (findInForceBySchoolId) hoặc endDate
-     * (findUnfinishedBySchoolId), nên một dòng EXPIRED mà endDate vẫn ở tương lai sẽ tiếp tục
-     * được tính là "kỳ chưa kết thúc" ở chỗ thứ hai -- và lần gia hạn kế tiếp sẽ xếp hàng sau một kỳ
-     * đã chết. Kéo endDate về hiện tại cũng là ghi đúng sự thật: kỳ đó kết thúc thật vào lúc này.
+     * <p>Closed by pulling endDate back to {@code now} rather than only changing the status: the two queries that tell
+     * "which period is running" look at the date range (findInForceBySchoolId) or at endDate
+     * (findUnfinishedBySchoolId), so an EXPIRED row whose endDate is still in the future would keep
+     * counting as an "unfinished period" in the second place -- and the next renewal would queue behind a
+     * dead period. Pulling endDate back to now is also recording the truth: that period really ended at this moment.
      *
-     * <p>Đóng TẤT CẢ chứ không chỉ kỳ đang chạy: trường có thể vừa gia hạn (kỳ tương lai đang xếp
-     * hàng) rồi đổi ý nâng cấp. Bỏ sót kỳ xếp hàng thì sau khi gói mới hết hạn, trường tụt về đúng
-     * gói cũ mà họ vừa trả tiền để rời khỏi.
+     * <p>Close ALL of them, not just the running one: a school may have just renewed (a future period queued)
+     * and then changed its mind to upgrade. Missing the queued period would, once the new plan expires, drop the school back to exactly
+     * the old plan it just paid to leave.
      *
-     * <p>Hạn mức của các kỳ bị đóng KHÔNG được chuyển sang kỳ mới: phần chưa dùng đã được quy ra
-     * tiền và trừ vào chính đơn nâng cấp này (xem SubscriptionUpgradePolicyService), cộng thêm
-     * lần nữa là bù hai lần cho cùng một thứ.
+     * <p>The quotas of the closed periods are NOT carried to the new period: the unused part has already been converted to
+     * money and deducted from this very upgrade order (see SubscriptionUpgradePolicyService), and adding it
+     * again would compensate twice for the same thing.
      */
     private Instant cutOverToUpgrade(UUID schoolId, Instant now) {
         List<SchoolSubscription> unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now);
@@ -404,7 +404,7 @@ public class OrderSettlementService {
             schoolSubscriptionRepository.save(previous);
         }
         if (!unfinished.isEmpty()) {
-            log.info("Nâng cấp trường {}: đóng {} kỳ chưa kết thúc tại {}", schoolId, unfinished.size(), now);
+            log.info("Upgrade of school {}: closing {} unfinished periods at {}", schoolId, unfinished.size(), now);
         }
         return now;
     }
@@ -450,7 +450,7 @@ public class OrderSettlementService {
 
         records.stream()
             .filter(record -> record.getFundedFromBalanceVnd().signum() > 0)
-            .forEach(record -> log.info("Chuyển {}đ tiền tự nạp chưa tiêu của ví {} sang kỳ {}",
+            .forEach(record -> log.info("Moving {} VND of unspent self-funded money of quota {} to period {}",
                 record.getFundedFromBalanceVnd(), record.getQuotaType(), subscriptionId));
 
         Map<QuotaType, BigDecimal> seededPoolTotals = new EnumMap<QuotaType, BigDecimal>(QuotaType.class);
@@ -484,19 +484,19 @@ public class OrderSettlementService {
         carriedByType.forEach((quotaType, amountVnd) -> {
             if (!seededPoolTotals.containsKey(quotaType)) {
                 log.warn(
-                    "Kỳ {} không có ví {} nên {}đ tiền tự nạp chưa tiêu của kỳ {} không mang sang được"
-                        + " -- gói mới không còn loại hạn mức này.",
+                    "Period {} has no quota {} so {} VND of unspent self-funded money of period {} cannot be carried over"
+                        + " -- the new plan no longer has this quota type.",
                     subscriptionId, quotaType, amountVnd, previousSubscriptionId);
             }
         });
     }
 
     /**
-     * Phần tiền tự nạp còn chưa tiêu của kỳ cũ, theo từng loại ví.
+     * The unspent self-funded part of the old period, per quota type.
      *
-     * <p>Gói mới có thể KHÔNG còn loại ví mà kỳ cũ có (nhà trường đổi sang gói không kèm PRACTICE
-     * chẳng hạn). Khi đó tiền của loại đó không có chỗ nào để mang sang và nằm lại ở kỳ cũ -- một ca
-     * hiếm và chưa có đường xử lý, nên ghi log WARN để lộ ra thay vì lặng lẽ bốc hơi.
+     * <p>The new plan may NO LONGER have a quota type that the old period had (the school switches to a plan without PRACTICE,
+     * for instance). Then the money of that type has nowhere to be carried and stays in the old period -- a rare case with
+     * no handling yet, so a WARN log is written to expose it instead of letting it evaporate silently.
      */
     private Map<QuotaType, BigDecimal> unspentFundingByQuotaType(UUID previousSubscriptionId) {
         if (previousSubscriptionId == null) {
@@ -590,7 +590,7 @@ public class OrderSettlementService {
         }
 
         if (!kept.isEmpty()) {
-            log.info("Chuyển {} trần chi cá nhân {} từ kỳ {} sang kỳ {}",
+            log.info("Moving {} personal spending caps {} from period {} to period {}",
                 kept.size(), quotaType, previousSubscriptionId, newSubscriptionId);
         }
     }
@@ -605,37 +605,37 @@ public class OrderSettlementService {
                 .toList())
             .orElse(carried);
         if (kept.size() < carried.size()) {
-            log.info("Bỏ {} dòng trần {} của người không còn đủ điều kiện -- không mang sang kỳ {}",
+            log.info("Dropping {} cap rows {} of people who are no longer eligible -- not carrying them over to period {}",
                 carried.size() - kept.size(), quotaType, newSubscriptionId);
         }
         return kept;
     }
 
     /**
-     * Tập người CÒN đủ điều kiện nhận trần của ví này -- đang ACTIVE, còn thuộc trường, còn đúng vai
-     * trò. Cùng ba điều kiện mà {@code sumAllocatedForEligibleUsers} dùng để tính "đã chia", và cùng
-     * lời gọi mà {@code DistributeQuotaToUsersService.fetchEligibleUserIds} dùng để dựng danh sách.
+     * The set of people who are STILL eligible to receive the cap of this quota type -- ACTIVE, still in the school, still in the right
+     * role. The same three conditions that {@code sumAllocatedForEligibleUsers} uses to compute "already distributed", and the same
+     * call that {@code DistributeQuotaToUsersService.fetchEligibleUserIds} uses to build the list.
      *
-     * <p><b>Optional rỗng nghĩa là KHÔNG XÁC ĐỊNH ĐƯỢC, và chỗ gọi phải chép TẤT CẢ.</b> Hai lối
-     * hỏng ở đây đều dẫn tới một tập thiếu người chứ không phải một tập rỗng rõ ràng, mà lọc theo một
-     * tập thiếu là LẤY MẤT trần của người thật -- đúng thảm hoạ Q-2, chỉ khác là lần này do chính
-     * đoạn sửa Q-2 gây ra. Giữ nhầm một dòng đáng bỏ chỉ làm bảng phình thêm một kỳ; hai cái giá đó
-     * không cùng hạng.
+     * <p><b>An empty Optional means UNDETERMINABLE, and the caller must copy EVERYTHING.</b> Both
+     * failure paths here lead to a set missing people rather than a clearly empty set, and filtering by a
+     * set missing people TAKES AWAY the cap of real people -- exactly the Q-2 disaster, except this time caused by
+     * the very patch that fixed Q-2. Keeping one row that should have been dropped only makes the table one period bigger; the two
+     * costs are not in the same class.
      */
     private Optional<Set<UUID>> eligibleUserIds(UUID schoolId, QuotaType quotaType) {
         String roleCode = quotaType.allocationRoleCode();
         Optional<Role> role = roleRepository.findByCode(roleCode);
         if (role.isEmpty()) {
-            log.error("Không tìm thấy vai trò {} -- chép TOÀN BỘ trần {} sang kỳ mới thay vì lọc,"
-                + " để không lấy mất trần của người còn đang dạy/học.", roleCode, quotaType);
+            log.error("Role {} not found -- copying ALL caps {} to the new period instead of filtering,"
+                + " so that the cap of someone still teaching/studying is not taken away.", roleCode, quotaType);
             return Optional.empty();
         }
 
         PageResult<SchoolUser> page = schoolUserRepository.findBySchoolId(schoolId, null, role.get().getId(),
             UserStatus.ACTIVE.name(), null, false, 1, MAX_CARRY_FORWARD_USERS);
         if (page.totalElements() > page.content().size()) {
-            log.error("Trường {} có {} người đủ điều kiện nhận trần {} nhưng chỉ đọc được {} --"
-                + " chép TOÀN BỘ thay vì lọc, vì lọc theo một tập thiếu sẽ xoá trần của phần dôi ra.",
+            log.error("School {} has {} people eligible for cap {} but only {} could be read --"
+                + " copying ALL instead of filtering, because filtering by an incomplete set would erase the cap of the remainder.",
                 schoolId, page.totalElements(), quotaType, page.content().size());
             return Optional.empty();
         }
@@ -646,10 +646,10 @@ public class OrderSettlementService {
     }
 
     /**
-     * Tỉ lệ thu nhỏ để tổng trần chép sang vừa ví của kỳ mới. {@code null} = không phải thu nhỏ.
+     * The scale-down ratio so that the total of the copied caps fits the new period's quota. {@code null} = no scaling needed.
      *
-     * <p>Làm tròn XUỐNG nên tổng sau khi nhân luôn nhỏ hơn hoặc bằng trần ví -- thà thiếu vài đồng
-     * còn hơn để kỳ mới mở ra đã vượt trần, đúng thứ phép kẹp này sinh ra để chặn.
+     * <p>Rounds DOWN so the total after multiplying is always less than or equal to the quota cap -- better a few dong short
+     * than a new period that opens already over the cap, which is exactly what this clamp exists to prevent.
      */
     private BigDecimal carryScaleFor(List<SchoolSubscriptionQuotaUserAllocation> kept,
             BigDecimal poolTotalVnd, QuotaType quotaType, UUID previousSubscriptionId, UUID newSubscriptionId) {
@@ -661,8 +661,8 @@ public class OrderSettlementService {
             return null;
         }
 
-        log.warn("Trần cá nhân {} của kỳ {} cộng lại {}đ, lớn hơn ví {}đ của kỳ {} -- thu nhỏ theo"
-            + " tỉ lệ để kỳ mới không mở ra trong trạng thái đã vượt trần.",
+        log.warn("Personal caps {} of period {} add up to {} VND, more than the {} VND quota of period {} -- scaling down by"
+            + " ratio so the new period does not open already over its cap.",
             quotaType, previousSubscriptionId, totalCarriedVnd, poolTotalVnd, newSubscriptionId);
         return poolTotalVnd.divide(totalCarriedVnd, 10, RoundingMode.DOWN);
     }
@@ -676,22 +676,22 @@ public class OrderSettlementService {
     }
 
     /**
-     * Hóa đơn chỉ phát SAU khi tiền đã về -- đây là thay đổi nghiệp vụ chính so với model cũ, nơi
-     * invoice được tạo lúc phát link và mang luôn trạng thái thanh toán.
+     * The invoice is issued only AFTER the money has arrived -- this is the main business change versus the old model, where the
+     * invoice was created when the link was issued and carried the payment status itself.
      *
-     * <p>Kiểm tra tồn tại trước khi phát: guard trạng thái đơn ở trên đã chặn hầu hết đường lặp,
-     * nhưng hóa đơn là chứng từ đối ngoại nên đáng trả thêm một truy vấn để chắc chắn không phát
-     * hai số cho cùng một đơn.
+     * <p>The existence check comes before issuing: the order status guard above already blocks most repeat paths,
+     * but the invoice is an external-facing document so it is worth one more query to be sure two numbers are never issued
+     * for the same order.
      *
-     * @return hóa đơn vừa phát, hoặc rỗng khi đơn đã có hóa đơn từ lần chốt trước. Phía gọi dùng
-     *         đúng dấu hiệu này để quyết định có báo cho trường hay không.
+     * @return the invoice just issued, or empty when the order already has an invoice from an earlier settlement. The caller uses
+     *         exactly this signal to decide whether to notify the school.
      */
     private Optional<Invoice> issueInvoice(Order order, PaymentRecord payment, Instant now) {
         if (invoiceRepository.existsByOrderId(order.getId())) {
             return Optional.empty();
         }
         Invoice invoice = invoiceRepository.save(Invoice.issueFor(order.getId(), payment.getId(), now));
-        log.info("Phát hành hóa đơn {} cho đơn {}", invoice.getInvoiceNumber(), order.getId());
+        log.info("Issuing invoice {} for order {}", invoice.getInvoiceNumber(), order.getId());
 
         return Optional.of(invoice);
     }
@@ -744,12 +744,12 @@ public class OrderSettlementService {
     }
 
     /**
-     * Loại đơn -> loại nguồn hóa đơn. Hai enum tách nhau vì {@code InvoiceSourceType} mô tả thứ
-     * đang được mua trên chứng từ, còn {@code OrderType} mô tả cách đơn được tạo.
+     * Order type -> invoice source type. The two enums are separate because {@code InvoiceSourceType} describes what
+     * is being bought on the document, while {@code OrderType} describes how the order was created.
      *
-     * <p>Đăng ký mới và nâng cấp cùng ra {@code SUBSCRIPTION}: trên chứng từ cả hai đều là tiền
-     * mua một kỳ gói, khác nhau ở đường tạo đơn chứ không ở thứ được bán. Phân biệt hai đường đó
-     * là việc của {@code OrderType}, đã nằm sẵn trên đơn.
+     * <p>New registration and upgrade both map to {@code SUBSCRIPTION}: on the document both are money
+     * for buying one plan period, differing in the order-creation path and not in what is sold. Telling those two paths apart
+     * is the job of {@code OrderType}, which is already on the order.
      */
     private InvoiceSourceType sourceTypeOf(OrderType orderType) {
         return switch (orderType) {

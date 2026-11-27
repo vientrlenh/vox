@@ -40,7 +40,7 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
         UUID schoolId = requireActiveSchoolOfCaller();
 
         if (query.effectiveFrom() != null && query.effectiveTo() != null && query.effectiveFrom().isAfter(query.effectiveTo())) {
-            throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");
+            throw new IllegalArgumentException("The effectiveFrom/effectiveTo period is invalid.");
         }
 
         // A Teacher may only see PUBLISHED policies
@@ -53,18 +53,18 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
     private UUID requireActiveSchoolOfCaller() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
 
         School school = schoolRepository.findById(schoolUser.getSchoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
+            throw new ForbiddenException("Action denied: this school has been deactivated.");
         }
         return schoolUser.getSchoolId();
     }

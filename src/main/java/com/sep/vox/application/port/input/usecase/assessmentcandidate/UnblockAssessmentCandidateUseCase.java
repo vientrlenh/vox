@@ -50,15 +50,15 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
     @Transactional
     public AssessmentCandidateDto execute(UnblockAssessmentCandidateCommand input) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         Assessment assessment = assessmentRepository.findById(candidate.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of the candidate not found"));
 
         moderationAccessService.authorize(assessment, candidate);
-        // G.4: mốc chặn cứng duy nhất là RESULTS_PUBLISHED - trước đó vẫn dỡ cấm được,
-        // kể cả sau khi kỳ thi đã đóng (đang trong giai đoạn rà soát trước công bố).
+        // G.4: the only hard cut-off is RESULTS_PUBLISHED -- before that a block can still be lifted,
+        // even after the assessment has closed (while it is in the review phase before publishing).
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalArgumentException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
+            throw new IllegalArgumentException("The assessment results have been published, no further change is possible");
         }
 
         Instant now = Instant.now();
@@ -91,8 +91,8 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
             boolean hasEvaluations = !assessmentItemEvaluationRepository.findByResponseIdIn(responseIds).isEmpty();
             if (hasEvaluations) {
                 AssessmentCandidateResult recalculated = upsertAssessmentCandidateResultUseCase.execute(session.getId());
-                // Gỡ chặn có thể kéo bài từ INVALID về PENDING_REVIEW — bài trên lớp cần
-                // một phân công mới thì giáo viên chủ bài mới chấm lại được.
+                // Lifting the block can pull a submission from INVALID back to PENDING_REVIEW -- a class test needs
+                // a new assignment before the teacher who owns the test can grade it again.
                 classTestGradingAssignmentService.ensureAssignmentForResult(recalculated);
             } else {
                 moveToPendingReviewWithoutScores(result, session.getId());
@@ -126,7 +126,7 @@ public class UnblockAssessmentCandidateUseCase implements IUseCase<UnblockAssess
         result.setStatus(AssessmentCandidateResultStatus.PENDING_REVIEW);
         assessmentCandidateResultRepository.save(result);
         log.info(
-            "Gỡ chặn phiên {}: chưa có evaluation nào, chuyển PENDING_REVIEW cho giáo viên chấm tay (không gọi AI).",
+            "Unblocking session {}: there is no evaluation yet, moving to PENDING_REVIEW for the teacher to grade manually (no AI call).",
             sessionId
         );
     }

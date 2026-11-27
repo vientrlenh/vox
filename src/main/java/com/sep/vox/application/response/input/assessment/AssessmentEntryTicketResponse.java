@@ -7,13 +7,13 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentRequiredStreamType;
 
 /**
- * Vé vào thi. Ứng dụng thi bám hoàn toàn vào đây cho cả vòng đời phiên thi, nên vé phải nói đủ để
- * client biết bước tiếp theo là gì.
+ * The entry ticket. The assessment app relies entirely on it for the whole lifecycle of the assessment
+ * session, so the ticket must say enough for the client to know what the next step is.
  *
- * <p>{@code requiredStreamType} bỏ trống nghĩa là bài KHÔNG giám sát bằng stream: client phải bỏ
- * qua hẳn bước xin token ở {@code /streams/student/token}. Endpoint đó trả 400 cho bài không cấu
- * hình stream, nên nếu vé không nói ra thì client cứ gọi và học sinh không vào thi được, dù mọi
- * điều kiện dự thi đều đã đạt.
+ * <p>An empty {@code requiredStreamType} means the assessment is NOT proctored by stream: the client must skip
+ * the step of requesting a token at {@code /streams/student/token}. That endpoint returns 400 for an assessment
+ * without stream configuration, so if the ticket does not say so the client keeps calling and the student
+ * cannot enter the assessment, even though every entry condition has been met.
  */
 public record AssessmentEntryTicketResponse(
     UUID attemptId,
@@ -26,14 +26,14 @@ public record AssessmentEntryTicketResponse(
 ) {
 
     /**
-     * @param chosenStreamType loại stream phiên thi ĐÃ chốt, null khi chưa phát token lần nào.
+     * @param chosenStreamType the stream type the session HAS locked in, null when no token has been issued yet.
      *
-     * <p>Chỉ có ý nghĩa với kỳ thi cho học viên tự chọn ({@code streamTypePermission = ANY}), và ở
-     * đó nó là bắt buộc chứ không phải tiện nghi: {@code IssueStudentStreamTokenUseCase} chốt lựa
-     * chọn ở lần phát token ĐẦU TIÊN rồi từ chối mọi loại khác bằng 403. Một phiên thi bị gián
-     * đoạn và vào lại sẽ đi qua màn chọn lần thứ hai -- không có trường này thì client không có
-     * cách nào biết đã chốt gì, nên nó hiện lại đầy đủ lựa chọn và học viên ăn 403 sau khi đã ngồi
-     * qua cả bước kiểm tra thiết bị.
+     * <p>Only meaningful for an assessment where learners choose for themselves ({@code streamTypePermission = ANY}), and
+     * there it is required rather than a convenience: {@code IssueStudentStreamTokenUseCase} locks the choice at the
+     * FIRST token issue and rejects every other type with 403. An interrupted session that is re-entered goes
+     * through the selection screen a second time -- without this field the client has no way to know what was locked, so it
+     * shows the full set of choices again and the learner gets a 403 after sitting through the whole
+     * device check.
      */
     public static AssessmentEntryTicketResponse of(
             UUID attemptId,

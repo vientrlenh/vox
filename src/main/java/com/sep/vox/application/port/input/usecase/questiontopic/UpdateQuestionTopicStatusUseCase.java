@@ -36,9 +36,9 @@ public class UpdateQuestionTopicStatusUseCase implements IUseCase<UpdateQuestion
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         QuestionTopic topic = questionTopicRepository.findById(command.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question topic not found"));
         QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         questionBankManageAccessService.requireManageAccess(bank, currentUserId);
 
@@ -52,12 +52,12 @@ public class UpdateQuestionTopicStatusUseCase implements IUseCase<UpdateQuestion
         switch (action) {
             case "PUBLISH" -> {
                 if (topic.getStatus() != QuestionTopicStatus.DRAFT) {
-                    throw new IllegalArgumentException("Chỉ được publish chủ đề đang ở trạng thái DRAFT");
+                    throw new IllegalArgumentException("Only a topic in DRAFT status can be published");
                 }
                 topic.setStatus(QuestionTopicStatus.PUBLISHED);
             }
             case "ARCHIVE" -> topic.setStatus(QuestionTopicStatus.ARCHIVED);
-            default -> throw new IllegalArgumentException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Invalid action");
         }
     }
 

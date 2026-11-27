@@ -12,14 +12,14 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.question.QuestionStatusTransition;
 
 /**
- * Resolve bối cảnh phân quyền của người đang thao tác trên câu hỏi.
+ * Resolves the authorization context of the person acting on a question.
  *
- * <p>Tách riêng để đường đi hàng loạt gọi đúng MỘT lần cho cả batch. Trước đây ba query này chạy
- * lại cho từng câu hỏi trong vòng lặp, nên cập nhật 50 câu là 150 query thừa.
+ * <p>Split out so the bulk path calls it exactly ONCE for the whole batch. Previously these three queries ran
+ * again for every question in the loop, so updating 50 questions meant 150 redundant queries.
  *
- * <p>Cố ý KHÔNG đánh {@code @Transactional}: chỉ đọc, và luôn được gọi từ trong transaction của
- * use case nên tự tham gia sẵn. Thêm proxy transaction ở đây chỉ mở lại đúng cái bẫy rollback-only
- * mà {@link QuestionStatusTransition} được thiết kế để tránh.
+ * <p>Deliberately NOT annotated with {@code @Transactional}: it is read-only and is always called from inside the use
+ * case's transaction so it joins automatically. Adding a transaction proxy here would only reopen the very rollback-only trap
+ * that {@link QuestionStatusTransition} was designed to avoid.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ public class QuestionStatusActorResolver {
     public QuestionStatusTransition.Actor resolveForListing() {
         QuestionStatusTransition.Actor actor = resolve();
         if (!actor.systemAdmin() && actor.schoolId() == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return actor;
     }

@@ -17,10 +17,10 @@ import com.sep.vox.domain.model.importfile.ImportType;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 
 /**
- * Xác nhận ghép cột rồi đẩy phiên import chủ đề câu hỏi sang hàng đợi xử lý ngầm.
+ * Confirms the column mapping and then hands the question topic import session to the background processing queue.
  *
- * <p>Không tự chạy commit ở đây: {@code ImportQueueService} nhặt phiên đã queued và gọi
- * handler tương ứng, nên một file lớn không giữ request HTTP của người dùng.
+ * <p>The commit is not run here: {@code ImportQueueService} picks up a queued session and calls the
+ * matching handler, so a large file does not hold the user's HTTP request.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,7 +44,7 @@ public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestion
         Instant now = Instant.now();
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         importSessionAcceptanceGuard.requireAcceptableSession(
-            input.importSessionId(), ImportType.QUESTION_TOPIC, "Phiên import không phải là loại chủ đề câu hỏi", currentUserId, now);
+            input.importSessionId(), ImportType.QUESTION_TOPIC, "The import session is not a question topic import", currentUserId, now);
         importSessionAcceptanceGuard.requireMappedFields(input.confirmedMapping(), REQUIRED_FIELDS);
 
         int queued = importSessionRepository.markQueued(
@@ -54,17 +54,17 @@ public class AcceptQuestionTopicImportUseCase implements IUseCase<AcceptQuestion
             now
         );
         if (queued == 0) {
-            throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
+            throw new IllegalArgumentException("The import session is not in a status that allows accepting, or it has expired");
         }
         return null;
     }
 
     private void validateCommand(AcceptQuestionTopicImportCommand input) {
         if (input == null || input.importSessionId() == null) {
-            throw new IllegalArgumentException("Phiên import không được để trống");
+            throw new IllegalArgumentException("Import session must not be empty");
         }
         if (input.confirmedMapping() == null || input.confirmedMapping().isEmpty()) {
-            throw new IllegalArgumentException("Mapping import không được để trống");
+            throw new IllegalArgumentException("Import mapping must not be empty");
         }
     }
 }

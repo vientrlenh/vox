@@ -3,10 +3,10 @@ package com.sep.vox.application.port.input.query.subscription;
 import java.util.UUID;
 
 /**
- * @param search lọc theo TÊN người dùng, null/rỗng = không lọc. Lọc ở máy chủ chứ không ở giao diện:
- *               từ khi danh sách có phân trang, lọc trên một trang 20 dòng sẽ bỏ sót đúng người mà
- *               quản trị viên đang tìm.
- * @param page   đếm TỪ 1 theo quy ước chung của dự án
+ * @param search filter by the user's NAME, null/empty = no filter. Filtered on the server and not in the UI:
+ *               since the list became paged, filtering within a page of 20 rows would miss exactly the person
+ *               the administrator is looking for.
+ * @param page   counted FROM 1 per the project-wide convention
  */
 public record ViewQuotaUserAllocationsQuery(
     UUID schoolId,

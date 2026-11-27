@@ -26,14 +26,14 @@ public class AssessmentResultAppeal {
 
     public AssessmentResultAppeal() {}
 
-    /** Đơn còn đang chiếm chỗ — chặn học sinh nộp đơn thứ hai cho cùng một bài. */
+    /** The appeal still holds its place — blocks the student from filing a second appeal for the same result. */
     public boolean isOpen() {
         return status == AssessmentAppealStatus.PENDING
             || status == AssessmentAppealStatus.APPROVED
             || status == AssessmentAppealStatus.GRADING;
     }
 
-    /** Đơn đã quá hạn xử lý mà chưa xong. */
+    /** The appeal is past its handling deadline and not finished. */
     public boolean isOverdue(Instant now) {
         return isOpen() && deadline != null && deadline.isBefore(now);
     }

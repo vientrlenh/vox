@@ -4,15 +4,15 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Ai đã tiêu bao nhiêu hạn mức AI của trường trong cửa sổ đang xem.
+ * Who spent how much of the school's AI quota within the window being viewed.
  *
- * <p>{@code schoolWideCostVnd} là phần KHÔNG thuộc về ai — kỳ thi tập trung do nhà trường tổ chức nên
- * cố ý không tính vào trần chi của người nào. Trả riêng thay vì nhét thành một hàng "không rõ": ở
- * gần như mọi trường nó là khoản lớn nhất và sẽ chiếm đỉnh bảng xếp hạng, che mất đúng thứ bảng này
- * sinh ra để cho thấy.
+ * <p>{@code schoolWideCostVnd} is the part that does NOT belong to anyone -- centralized assessments are organized by the school, so
+ * they are deliberately not counted against anyone's spending cap. Returned separately instead of being stuffed into an "unknown" row: in
+ * almost every school it is the largest amount and would top the ranking, hiding exactly what this table
+ * exists to show.
  *
- * <p>Không có nó thì tổng của bảng không bao giờ khớp tổng của biểu đồ ngay bên trên, và người đọc
- * sẽ đi tìm một khoản thất thoát không tồn tại.
+ * <p>Without it the table total would never match the total of the chart just above, and the reader
+ * would go looking for a leak that does not exist.
  */
 public record SchoolAiSpendByUserPageResponse(
     List<UserAiSpendResponse> content,
@@ -28,7 +28,7 @@ public record SchoolAiSpendByUserPageResponse(
         String fullName,
         String quotaType,
         String spentVnd,
-        /** Trần chi cá nhân; null khi nhà trường chưa chia trần cho người này. */
+        /** The personal spending cap; null when the school has not divided a cap for this person. */
         String allocatedAmountVnd
     ) {
     }

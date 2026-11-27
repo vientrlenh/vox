@@ -3,23 +3,23 @@ package com.sep.vox.application.response.input.payment;
 public record PaymentCallbackResponse(
     CallbackOutcome outcome
 ) {
-        /** Kết quả để tầng REST chọn thông điệp trả về. */
+        /** The outcome, so the REST layer can pick the message to return. */
     public enum CallbackOutcome {
-        /** Đã chốt lần thử (thành công hoặc thất bại). */
+        /** The attempt has been settled (success or failure). */
         SETTLED,
-        /** Chữ ký hợp lệ nhưng không khớp lần thử nào -- vd payload test cố định của cổng. */
+        /** The signature is valid but matches no attempt -- e.g. a fixed test payload from the gateway. */
         UNKNOWN_PAYMENT,
-        /** Lần thử này đã được chốt từ trước -- callback lặp, không làm gì thêm. */
+        /** This attempt was already settled earlier -- a repeated callback, nothing more to do. */
         ALREADY_SETTLED,
         /**
-         * Cổng báo ĐÃ TRẢ cho một lần thử mình đã ghi thất bại: tiền về thật nhưng không còn dòng nào
-         * nhận nó. Tách khỏi ALREADY_SETTLED vì hai ca này ngược hẳn nhau về mức nghiêm trọng --
-         * một bên là callback lặp vô hại, một bên là tiền của trường đang treo lơ lửng.
+         * The gateway reports it HAS BEEN PAID for an attempt we recorded as failed: the money really arrived but no row is left
+         * to receive it. Kept apart from ALREADY_SETTLED because the two cases are opposite in severity --
+         * one is a harmless repeated callback, the other is the school's money hanging in limbo.
          */
         PAID_AFTER_WRITE_OFF,
-        /** Số tiền báo về lệch với lần thử: dừng lại, cần người xem. */
+        /** The reported amount differs from the attempt: stop, a person must look. */
         AMOUNT_MISMATCH,
-        /** Trạng thái chưa phải trạng thái cuối (hoặc chưa ánh xạ được) -- chưa chốt gì. */
+        /** The status is not a final status yet (or could not be mapped) -- nothing settled. */
         NOT_FINAL
     }
 

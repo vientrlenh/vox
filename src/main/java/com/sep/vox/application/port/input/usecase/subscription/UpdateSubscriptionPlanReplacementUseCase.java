@@ -46,17 +46,17 @@ public class UpdateSubscriptionPlanReplacementUseCase
     @Transactional
     public UUID execute(UpdateSubscriptionPlanReplacementCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
         // ONLY applies to an archived plan: the replacedByPlanId of a plan still on sale means nothing -- resolveActivePlan only
         // follows that pointer when the plan is ARCHIVED. Allowing it on an ACTIVE plan would create data that is never read, and
         // one day someone would believe it has an effect.
         if (plan.getStatus() != SubscriptionPlanStatus.ARCHIVED) {
-            throw new IllegalArgumentException("Chỉ gói đã lưu trữ mới cần gói thay thế.");
+            throw new IllegalArgumentException("Only an archived plan needs a replacement plan.");
         }
 
         SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
+            .orElseThrow(() -> new ResourceNotFoundException("Replacement plan not found"));
 
         // The same rule set as at archive time. Editing the pointer later must NOT be looser: schools are still forced to follow
         // it on renewal, and still have no chance to refuse.

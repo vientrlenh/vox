@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Đặt / sửa hạn chấm cho một hoặc nhiều phân công.
+ * Sets / changes the grading deadline for one or more assignments.
  *
- * @param deadlineAt {@code null} = gỡ hạn (bài không còn bị tính quá hạn)
+ * @param deadlineAt {@code null} = remove the deadline (the submission is no longer counted as overdue)
  */
 public record SetGradingDeadlineCommand(
     List<UUID> assignmentIds,

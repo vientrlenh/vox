@@ -15,14 +15,14 @@ public interface SchoolGradeRepository {
     Optional<SchoolGrade> findBySchoolIdAndName(UUID schoolId, String name);
     SchoolGrade save(SchoolGrade grade);
 
-    // gradeLevelId nay trỏ tới catalog toàn cục, nên mã lớp chỉ duy nhất trong phạm vi
-    // (schoolId, gradeLevelId) -- phải truyền kèm schoolId, khác bản cũ chỉ cần levelId.
+    // gradeLevelId now points at the global catalog, so a class code is only unique within
+    // (schoolId, gradeLevelId) -- schoolId must be passed along, unlike the old version that only needed levelId.
     boolean existsBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code);
     Optional<SchoolGrade> findBySchoolIdAndGradeLevelIdAndCode(UUID schoolId, UUID gradeLevelId, String code);
     List<SchoolGrade> findBySchoolIdAndCodeIn(UUID schoolId, Collection<String> codes);
     List<SchoolGrade> findBySchoolIdAndNameIn(UUID schoolId, Collection<String> names);
 
-    // Quét mọi trường: dùng để chặn xóa một khối trong catalog dùng chung.
+    // Scans every school: used to block deleting a grade in the shared catalog.
     boolean existsByGradeLevelId(UUID gradeLevelId);
 
     boolean existsByGradeLevelIdAndStatusNot(UUID gradeLevelId, String status);

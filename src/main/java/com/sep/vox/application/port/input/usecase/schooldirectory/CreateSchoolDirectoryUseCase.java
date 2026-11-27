@@ -25,7 +25,7 @@ public class CreateSchoolDirectoryUseCase implements IUseCase<CreateSchoolDirect
         CreateSchoolDirectoryCommand command = normalize(input);
 
         if (schoolDirectoryRepository.existsByCode(command.code())) {
-            throw new ResourceDuplicatedException("Mã trường này đã tồn tại trong danh mục hệ thống");
+            throw new ResourceDuplicatedException("This school code already exists in the system directory");
         }
 
         SchoolDirectory directory = SchoolDirectory.createByAdmin(

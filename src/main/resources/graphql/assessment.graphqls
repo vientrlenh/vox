@@ -86,7 +86,7 @@ enum AssessmentSessionStatus {
     GRADED
     EXPIRED
     GRADING_FAILED
-    """Đã xoá mềm. Chỉ xuất hiện ở đường đọc của quản trị trường / chủ tịch hội đồng."""
+    """Soft-deleted. Only appears on the read path of school administration / the council chair."""
     DELETED
 }
 enum AssessmentSecurePoolStatus {
@@ -166,11 +166,11 @@ type AssessmentPaperItem {
     order: Int!
     weight: Float
     """
-    Loại ô trong blueprint sinh ra câu này. null khi câu không sinh từ blueprint,
-    hoặc khi slot tương ứng đã bị xoá — cả hai trường hợp đều được phép gán câu tự do.
+    The kind of slot in the blueprint that produced this question. null when the question was not generated from a blueprint,
+    or when the corresponding slot has since been deleted — in both cases a free-form question may be assigned.
     """
     slotType: AssessmentBlueprintSlotType
-    """Tiêu chí rút câu của ô SELECTION; null với ô FIXED và câu không sinh từ blueprint."""
+    """Selection criteria of a SELECTION slot; null for a FIXED slot and for a question not generated from a blueprint."""
     selectionSpec: QuestionSelectionSpec
     question: Question
 }
@@ -479,7 +479,7 @@ enum AssessmentCandidateResultStatus {
     RETAKE_REQUIRED
     PASSED
     FAILED
-    """Phiên thi sinh ra kết quả này đã bị xoá mềm."""
+    """The exam session that produced this result has been soft-deleted."""
     DELETED
 }
 
@@ -512,17 +512,17 @@ type AssessmentCandidateResultItem {
     paperItemId: ID!
     responseId: ID!
     sectionId: ID!
-    "Đề bài của câu. Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá."
+    "The question text. Null when the paper item points to no question or the question has been deleted."
     questionText: String
     """
-    Tài nguyên đi kèm câu hỏi. Null khi câu không có.
-    Hiện cho cả giáo viên lẫn học sinh: trang này vốn đã trả questionText nên asset không làm lộ
-    thêm gì, mà thiếu nó thì không đối chiếu được câu trả lời với thứ đã nhìn/nghe.
+    Resource attached to the question. Null when the question has none.
+    Shown to both teachers and students: this page already returns questionText so the asset reveals
+    nothing extra, and without it the answer cannot be matched against what was seen/heard.
     """
     asset: QuestionAsset
-    "Null khi câu chưa được chấm -- bài vẫn trả về câu để client hiện bản ghi bài nói."
+    "Null when the question has not been graded -- the submission still returns the question so the client can show the speaking recording."
     itemScore: Float
-    "Null khi câu chưa được chấm."
+    "Null when the question has not been graded."
     weightedScore: Float
 }
 
@@ -764,12 +764,12 @@ input UpdateAssessmentScheduleInput {
 }
 
 """
-Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + khả năng chi trả còn lại -- xem
-ClassTestTokenQuotaGuardService.estimateTokenQuota. Việc CHẶN thật vẫn xảy ra lúc publish/sửa/thêm
-thí sinh, không phải ở query này.
+Warning (does NOT block) estimating the worst-case AI cost + the remaining affordability -- see
+ClassTestTokenQuotaGuardService.estimateTokenQuota. The real BLOCKING still happens on publish/edit/adding
+candidates, not in this query.
 
-Mọi số đều là VND theo GIÁ VỐN, không cộng phí dịch vụ: phí đã thu một lần lúc trường đặt đơn, còn
-ví hạn mức lẫn ví tự nạp đều ghi bằng giá vốn.
+All numbers are VND at COST PRICE, without the service fee: the fee was charged once when the school placed the order, and
+both the quota wallet and the self-top-up wallet are recorded at cost price.
 """
 type AssessmentTokenEstimate {
     estimatedCostVnd: Float!
@@ -781,18 +781,18 @@ type AssessmentTokenEstimate {
     """
     remainingAssessmentVnd: Float
     """
-    Hạn mức CÁ NHÂN còn lại của giáo viên ra đề -- KHÔNG phải một ví cấp trường thứ hai (ví
-    CLASS_TEST đã bị bỏ, xem QuotaType), và KHÔNG cộng số dư ví trường vì đây là trần chi nội bộ
-    chứ không phải túi tiền. null nếu bài không phải CLASS_TEST, hoặc giáo viên không được cấp hạn
-    mức riêng nên chỉ tiền của trường áp dụng.
+    The teacher's remaining PERSONAL quota for authoring -- NOT a second school-level wallet (the
+    CLASS_TEST wallet was removed, see QuotaType), and it does NOT include the school wallet balance because this is an internal spending
+    ceiling, not a pocket of money. null if the assessment is not a CLASS_TEST, or the teacher has no personal
+    quota allocated so only the school's money applies.
     """
     remainingMyClassTestVnd: Float
     wouldExceedAssessment: Boolean!
     wouldExceedMyClassTest: Boolean!
     """
-    Trường đang bị khóa do nợ (số dư ví tự nạp âm) -- xem SchoolSubscriptionDebtGuardService. Khác
-    nguyên nhân với wouldExceedAssessment (hết hạn mức): khóa do nợ thì cần thanh toán/nạp thêm, không chỉ
-    là "mua thêm token". Có thể true dù wouldExceedAssessment=false nếu hạn mức gói vẫn còn dư.
+    The school is locked because of debt (negative self-top-up wallet balance) -- see SchoolSubscriptionDebtGuardService. Different
+    cause from wouldExceedAssessment (quota exhausted): a debt lock requires payment/top-up, not just
+    "buying more tokens". May be true even when wouldExceedAssessment=false if the plan quota still has room.
     """
     schoolLocked: Boolean!
     """
@@ -803,9 +803,9 @@ type AssessmentTokenEstimate {
     """
     sharedPoolUsageRatio: Float
     """
-    Số giáo viên (thuộc subscription này) hiện còn hạn mức cá nhân CHƯA dùng hết cho CLASS_TEST. Chỉ có
-    giá trị cùng điều kiện với sharedPoolUsageRatio -- CENTRALIZED tiêu nhiều vào ví chung có thể khiến
-    các giáo viên này không lên lịch CLASS_TEST được nữa dù hạn mức cá nhân vẫn còn.
+    Number of teachers (of this subscription) who still have UNUSED personal quota for CLASS_TEST. Only has a
+    value under the same condition as sharedPoolUsageRatio -- CENTRALIZED spending heavily from the shared wallet can make
+    these teachers unable to schedule a CLASS_TEST any more even though their personal quota remains.
     """
     teachersWithUnusedPersonalAllocationCount: Int
 }
@@ -826,7 +826,7 @@ extend type Query {
 
     assessmentPaper(id: ID!): AssessmentPaper
 
-    "Cảnh báo (KHÔNG chặn) ước lượng worst-case chi phí AI + hạn mức còn lại -- xem lúc tạo/sửa bài trước khi publish"
+    "Warning (does NOT block) estimating the worst-case AI cost + the remaining quota -- shown when creating/editing the assessment before publishing"
     assessmentTokenEstimate(assessmentId: ID!): AssessmentTokenEstimate!
 
     assessmentStatusCounts(schoolId: ID, kind: AssessmentKind, dateFrom: DateTime, dateTo: DateTime): AssessmentStatusCounts!
@@ -879,17 +879,17 @@ extend type Query {
     """
     monitorableAssessments: [MonitoredAssessmentSummary!]!
 
-    "Một kỳ thi đọc bằng quyền giám sát, cho phần đầu trang danh sách ca thi."
+    "An exam read with proctoring permission, for the header of the exam-session list page."
     monitorableAssessment(assessmentId: ID!): MonitoredAssessmentSummary
 
     myProctorScheduleCandidates(scheduleId: ID!): [ProctorCandidateSummary!]!
 
     """
-    Lịch sử cảnh báo giám sát của cả ca thi, xếp theo thời gian xảy ra.
+    Proctoring-alert history of the whole exam session, ordered by time of occurrence.
 
-    Kênh cảnh báo trực tiếp là Redis pub/sub (fire-and-forget), nên nó chỉ kể được những gì xảy ra
-    SAU khi giám thị kết nối. Query này là phần còn lại: vào ca muộn, tải lại trang, hay mở thêm một
-    người giám sát thứ hai đều thấy đủ như nhau.
+    The live alert channel is Redis pub/sub (fire-and-forget), so it can only tell what happened
+    AFTER the proctor connected. This query is the rest: joining the session late, reloading the page, or opening a second
+    proctor all see exactly the same.
     """
     scheduleProctoringAlerts(scheduleId: ID!): [AssessmentProctoringAlert!]!
 
@@ -905,24 +905,24 @@ extend type Query {
     recordings(assessmentSessionId: ID!, streamType: AssessmentRecordingStreamType): [AssessmentRecording!]!
 
     """
-    Bản ghi camera + màn hình của một phiên thi, kèm link phát -- cho màn chấm bài và trang kết
-    quả phía giáo viên. Cùng luật quyền với `records` (school admin, hoặc giáo viên là chủ tịch
-    hội đồng / giám thị của đúng ca thi).
+    Camera + screen recording of an exam session, with a playback link -- for the grading screen and the result
+    page on the teacher side. Same permission rule as `records` (school admin, or the teacher who is the council
+    chair / proctor of that exact exam session).
     """
     assessmentRecordingPlayback(assessmentSessionId: ID!): [AssessmentRecordingPlayback!]!
 
     """
-    Cảnh báo giám sát của một phiên thi, xếp theo thời gian xảy ra.
+    Proctoring alerts of one exam session, ordered by time of occurrence.
 
-    Cùng luật quyền với `assessmentRecordingPlayback` (school admin, hoặc giáo viên là chủ tịch hội đồng /
-    giám thị / người đang cầm bài): hai thứ này là cùng một loại bằng chứng về cùng một con người.
+    Same permission rule as `assessmentRecordingPlayback` (school admin, or the teacher who is the council chair /
+    proctor / the person holding the paper): these two are the same kind of evidence about the same person.
     """
     assessmentSessionProctoringAlerts(assessmentSessionId: ID!): [AssessmentProctoringAlert!]!
 }
 
 extend type Mutation {
     updateAssessmentSchedule(id: ID!, input: UpdateAssessmentScheduleInput!): ID!
-    # Toggle: flagged=true đánh dấu nghi vấn (reason bắt buộc), flagged=false bỏ đánh dấu.
+    # Toggle: flagged=true marks it as suspicious (reason required), flagged=false removes the mark.
     flagAssessmentSession(sessionId: ID!, flagged: Boolean!, reason: String): ID!
     forceEndAssessmentSession(sessionId: ID!, reason: String!): ID!
     unblockAssessmentCandidate(candidateId: ID!, reason: String!): ID!
@@ -932,9 +932,9 @@ extend type Mutation {
     # has no passingScore) -- the school decides PASSED or FAILED manually.
     decideAssessmentCandidateResultOutcome(candidateResultId: ID!, decision: AssessmentCandidateResultStatus!): ID!
     retryGradingAssessmentSession(sessionId: ID!): ID!
-    # TEST-ONLY: chấm lại 1 phiên thi bằng AI bất kể trạng thái (kể cả đã GRADED) -- re-publish
-    # grading request từ dữ liệu làm bài đã lưu, evaluation cũ bị ghi đè (upsert). Dùng để kiểm
-    # thử pipeline chấm điểm, không phải luồng nghiệp vụ chính thức.
+    # TEST-ONLY: re-grade one exam session with AI regardless of status (even if already GRADED) -- re-publishes the
+    # grading request from the saved answer data, and the old evaluation is overwritten (upsert). Used to test
+    # the grading pipeline, not an official business flow.
     regradeAssessmentSessionForTest(sessionId: ID!): ID!
     updateAssessmentCandidateStatus(candidateId: ID!, status: AssessmentCandidateStatus!): ID!
     updateAssessmentCandidatesAttendance(scheduleId: ID!, candidateIds: [ID!]!): [AssessmentCandidate!]!

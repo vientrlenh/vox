@@ -32,7 +32,7 @@ public class ExchangeRateRefreshService {
     public void refresh() {
         Optional<BigDecimal> rate = exchangeRateApiClient.fetchUsdToVndRate();
         if (rate.isEmpty()) {
-            log.info("[exchange-rate] Bỏ qua lần refresh này -- giữ nguyên snapshot mới nhất hiện có");
+            log.info("[exchange-rate] Skipping this refresh -- keeping the latest existing snapshot");
             return;
         }
 
@@ -46,6 +46,6 @@ public class ExchangeRateRefreshService {
             .sourceUrl(exchangeRateApiProperties.baseUrl())
             .build();
         exchangeRateSnapshotRepository.save(snapshot);
-        log.info("[exchange-rate] Đã lưu snapshot tỷ giá mới: {}", rate.get());
+        log.info("[exchange-rate] Saved the new exchange rate snapshot: {}", rate.get());
     }
 }

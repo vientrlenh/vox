@@ -46,7 +46,7 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         gradingFlushService.flush(sessionId);
         Double lastScore = practiceItemEvaluationRepository.findLastValidNormalizedScore(sessionId);
         com.sep.vox.domain.model.personalization.PracticeSession session = practiceSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice session not found."));
         String status = endedStatus(session);
         String diagnosis = "ABANDONED".equals(status)
             ? SessionDiagnosisPolicy.diagnose(lastScore, input.helpRequestCount(), input.longPauseCount())
@@ -106,13 +106,13 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         } catch (RuntimeException exception) {
             // The session IS already closed above; a failure in the follow-up bookkeeping must not
             // break the student's end-session request. Caught here, outside the REQUIRES_NEW boundary.
-            log.warn("Ghi nhận sau khi kết thúc phiên {} thất bại.", sessionId, exception);
+            log.warn("Recording after ending session {} failed.", sessionId, exception);
         }
     }
 
     private void requireOwnedInProgress(UUID sessionId, UUID studentId) {
         if (!practiceSessionRepository.existsByIdAndStudentIdAndStatus(sessionId, studentId, "IN_PROGRESS")) {
-            throw new ResourceNotFoundException("Phiên luyện không còn hoạt động.");
+            throw new ResourceNotFoundException("The practice session is no longer active.");
         }
     }
 

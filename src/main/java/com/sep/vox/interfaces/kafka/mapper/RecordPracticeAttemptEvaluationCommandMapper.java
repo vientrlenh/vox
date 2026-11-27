@@ -14,9 +14,9 @@ import com.sep.vox.interfaces.kafka.dto.ConfidenceCaseSignalsDto;
 import com.sep.vox.interfaces.kafka.dto.PracticeAttemptEvaluationCompletedEventDto;
 
 /**
- * Chuyển {@code PracticeAttemptEvaluationCompletedEventDto} (wire format riêng của Kafka) sang
- * {@code RecordPracticeAttemptEvaluationCommand} (application layer) -- application/domain không
- * được biết tới định dạng Kafka DTO, mapping này PHẢI xảy ra ở interfaces layer trước khi gọi use case.
+ * Converts {@code PracticeAttemptEvaluationCompletedEventDto} (Kafka's own wire format) to
+ * {@code RecordPracticeAttemptEvaluationCommand} (application layer) -- application/domain must
+ * not know the Kafka DTO format, so this mapping MUST happen in the interfaces layer before calling the use case.
  */
 public final class RecordPracticeAttemptEvaluationCommandMapper {
 

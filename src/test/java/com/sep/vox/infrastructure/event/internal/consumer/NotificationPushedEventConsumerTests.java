@@ -86,15 +86,15 @@ class NotificationPushedEventConsumerTests {
     private NotificationPushedEventConsumer consumer;
 
     /**
-     * Chạy task ngay trên luồng gọi. Đây chính là lý do consumer nhận {@link Executor} thay
-     * vì {@code ThreadPoolTaskExecutor} hay {@code @Async}: mọi assertion về push bên dưới
-     * giữ nguyên tính tất định, không cần await và không thể flaky.
+     * Runs the task right on the calling thread. This is exactly why the consumer takes an {@link Executor} instead
+     * of {@code ThreadPoolTaskExecutor} or {@code @Async}: every push assertion below
+     * stays deterministic, needs no await and cannot be flaky.
      */
     private Executor executor;
 
     private UUID userId;
 
-    /** Hai khoá điều hướng mà màn hình đích cần ngoài id của chính thực thể. */
+    /** The two navigation keys that the target screen needs besides the id of the entity itself. */
     private UUID sessionId;
     private UUID assessmentId;
     private UUID blueprintId;
@@ -159,17 +159,17 @@ class NotificationPushedEventConsumerTests {
             Notification saved = captor.getValue();
 
             assertThat(saved.getUserId())
-                .as("người nhận của %s", testCase.eventType())
+                .as("recipient of %s", testCase.eventType())
                 .isEqualTo(userId);
             assertThat(saved.getTitle())
-                .as("tiêu đề của %s", testCase.eventType())
+                .as("title of %s", testCase.eventType())
                 .isNotBlank();
             assertThat(saved.getEventType()).isEqualTo(testCase.eventType());
             // The payload is the only thing the client has to know which screen to open, so every
             // eventType must write its target into it -- no notification should be one that "goes
             // nowhere when tapped".
             assertThat(saved.getPayload())
-                .as("target trong payload của %s", testCase.eventType())
+                .as("target in the payload of %s", testCase.eventType())
                 .contains(NotificationTarget.of(testCase.eventType()).name());
             verify(ack).acknowledge();
         }
@@ -243,7 +243,7 @@ class NotificationPushedEventConsumerTests {
         verify(ack).acknowledge();
     }
 
-    /** Trường không còn admin nào đang hoạt động: bỏ qua, không đẩy vào vòng retry. */
+    /** The school has no active admin left: skip, do not push into the retry loop. */
     @Test
     void should_skip_event_without_recipients_instead_of_failing() {
         consumer.consume(record(EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED,
@@ -308,7 +308,7 @@ class NotificationPushedEventConsumerTests {
         verify(pushNotificationPort).send(any(), anyList());
     }
 
-    /** Chỉ nhóm stale mới bị xoá; lỗi tạm thời phải giữ nguyên thiết bị. */
+    /** Only the stale group is deleted; a transient error must keep the device. */
     @Test
     void should_delete_only_stale_installation_ids() {
         when(pushNotificationPort.send(any(), anyList()))
@@ -324,8 +324,8 @@ class NotificationPushedEventConsumerTests {
 
     @Test
     void should_not_push_twice_when_notification_already_exists() {
-        // doReturn thay vì when(...): mock đã được stub bằng thenAnswer ở setUp, nên
-        // when(mock.saveIfAbsent(any())) sẽ thực sự gọi answer cũ với đối số null.
+        // doReturn instead of when(...): the mock was already stubbed with thenAnswer in setUp, so
+        // when(mock.saveIfAbsent(any())) would actually call the old answer with a null argument.
         doReturn(Optional.empty()).when(notificationRepository).saveIfAbsent(any());
 
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
@@ -351,9 +351,9 @@ class NotificationPushedEventConsumerTests {
     }
 
     /**
-     * Hàng đợi đầy là chuyện bình thường khi FCM chậm. Thông báo đã nằm trong DB nên
-     * message phải được coi là xử lý xong -- không được để RejectedExecutionException lan
-     * ra và kéo cả message vào vòng retry cho một công việc đã hoàn thành.
+     * A full queue is normal when FCM is slow. The notification is already in the DB so the
+     * message must be treated as fully processed -- RejectedExecutionException must not spread
+     * out and pull the message into the retry loop for work that is already done.
      */
     @Test
     void should_still_ack_when_push_queue_rejects() {
@@ -368,11 +368,11 @@ class NotificationPushedEventConsumerTests {
         verify(ack).acknowledge();
     }
 
-    /** Lỗi khi push chạy trên luồng pool không được thoát ra ngoài task. */
+    /** An error while pushing on the pool thread must not escape the task. */
     @Test
     void should_not_let_push_failure_escape_the_task() {
         when(notificationDeviceRepository.findByUserId(any()))
-            .thenThrow(new IllegalStateException("mất kết nối DB"));
+            .thenThrow(new IllegalStateException("DB connection lost"));
 
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, releasedPayload()), ack);
 
@@ -475,7 +475,7 @@ class NotificationPushedEventConsumerTests {
         verify(notificationRepository).saveIfAbsent(captor.capture());
         assertThat(captor.getValue().getBody())
             .contains("Kỳ thi giữa kỳ")
-            .contains("Hậu kiểm")
+            .contains("Spot check")
             .contains("A2041F3C");
     }
 
@@ -607,9 +607,9 @@ class NotificationPushedEventConsumerTests {
     }
 
     /**
-     * Cùng lý do với {@code should_cover_exactly_the_mapped_event_types}: category và target
-     * là hai bảng riêng trên cùng một tập eventType, thiếu một bên thì renderDrafts ném giữa
-     * chừng và message rơi vào DLT. Lưới an toàn thật nằm ở NotificationCategoryMappingValidator.
+     * Same reason as {@code should_cover_exactly_the_mapped_event_types}: category and target
+     * are two separate tables over the same set of eventTypes, and if one side is missing renderDrafts throws midway
+     * and the message falls into the DLT. The real safety net is in NotificationCategoryMappingValidator.
      */
     @Test
     void should_map_a_target_for_every_event_type_that_has_a_category() {
@@ -618,9 +618,9 @@ class NotificationPushedEventConsumerTests {
     }
 
     /**
-     * Hai event dưới đây cùng mang {@code assignmentId} nhưng gửi cho hai vai trò khác nhau,
-     * nên phải là hai target khác nhau -- client đoán theo tên khoá sẽ đẩy admin vào màn hình
-     * của giáo viên. Đây chính là lý do target tồn tại thay vì để client tự suy từ payload.
+     * The two events below both carry {@code assignmentId} but are sent to two different roles,
+     * so they must be two different targets -- a client guessing by key name would push an admin onto the
+     * teacher's screen. This is exactly why the target exists instead of letting the client infer it from the payload.
      */
     @Test
     void should_separate_targets_for_events_sharing_an_id_key_across_roles() {
@@ -718,10 +718,10 @@ class NotificationPushedEventConsumerTests {
     }
 
     /**
-     * saveIfAbsent thật trả về dòng ĐÃ ghi, tức là đã có khoá chính (xem
-     * NotificationRepositoryImpl). Mock phải bắt chước đúng chi tiết đó: thiếu id thì nhánh
-     * gắn notificationId vào push data không bao giờ chạy, và test sẽ xanh trong khi thực
-     * tế client không mở được đúng mục.
+     * The real saveIfAbsent returns the row that WAS written, meaning it already has a primary key (see
+     * NotificationRepositoryImpl). The mock must imitate exactly that detail: without an id the branch
+     * attaching notificationId to the push data never runs, and the test would be green while in
+     * reality the client cannot open the right entry.
      */
     private Notification withId(Notification notification) {
         notification.setId(UUID.randomUUID());

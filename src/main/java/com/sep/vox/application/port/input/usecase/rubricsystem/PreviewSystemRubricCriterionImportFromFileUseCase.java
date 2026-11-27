@@ -64,38 +64,38 @@ public class PreviewSystemRubricCriterionImportFromFileUseCase implements IUseCa
 
     private UUID requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
         return currentUserId;
     }
 
     // Security: a school-scoped call must come from a member of that same school.
     private void requireSchoolMemberWhenSchoolScoped(PreviewRubricCriterionImportCommand command, UUID currentUserId) {
         if (command.schoolId() != null) {
-            SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
-            if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("Xâm nhập dữ liệu trường khác bị từ chối.");
+            SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Does not belong to any school."));
+            if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("Intrusion into the data of another school was denied.");
         }
     }
 
     // Security: without a school id the rubric must be a SYSTEM rubric; with one it must belong to that school.
     private void requireOwnedRubricVersion(PreviewRubricCriterionImportCommand command) {
         RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("The requested version was not found."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         if (command.schoolId() == null && rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("System Admin không được phép can thiệp vào Rubric của Trường học.");
+            throw new ForbiddenException("A System Admin is not allowed to interfere with the Rubric of a School.");
         }
         if (command.schoolId() != null && (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId()))) {
-            throw new ForbiddenException("Bộ Rubric này không thuộc sở hữu của trường bạn.");
+            throw new ForbiddenException("This Rubric is not owned by your school.");
         }
     }
 
     private ParseImportFileResult parseNonEmptyFile(PreviewRubricCriterionImportCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_CRITERION);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên rỗng hoặc không có dữ liệu hợp lệ.");
+            throw new IllegalArgumentException("The uploaded file is empty or has no valid data.");
         }
         return parsedResult;
     }

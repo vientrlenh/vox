@@ -9,12 +9,12 @@ package com.sep.vox.domain.model.assessment;
  * see the matrix in {@code GradingRoundPolicy}.
  */
 public enum GradingRoundType {
-    /** Chấm lần đầu bài PENDING_REVIEW. Kết thúc là bài được công bố. */
+    /** First grading of a PENDING_REVIEW result. Ends with the result being published. */
     INITIAL,
-    /** Hậu kiểm bài đã RELEASED. Bài giữ nguyên RELEASED suốt quá trình. */
+    /** Spot check of a result already RELEASED. The result stays RELEASED throughout. */
     SPOT_CHECK,
-    /** Soi lại bài INVALID: giữ vô hiệu, hoặc gỡ vô hiệu rồi chấm lại. */
+    /** Re-examination of an INVALID result: keep it invalid, or lift the invalidation and then grade. */
     REMEDIATION,
-    /** Chấm phúc khảo theo đơn của học sinh. Nộp là công bố. */
+    /** Appeal grading according to the student's appeal. Submitting is publishing. */
     APPEAL
 }

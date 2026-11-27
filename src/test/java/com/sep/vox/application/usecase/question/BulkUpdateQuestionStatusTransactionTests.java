@@ -33,17 +33,17 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Cập nhật trạng thái hàng loạt phải là "thành công một phần", không phải "được ăn cả ngã về không".
+ * Bulk status update must be "partial success", not "all or nothing".
  *
- * <p>Vì sao cần transaction thật: bug gốc là {@code UnexpectedRollbackException}. Use case bulk mở
- * một transaction rồi gọi một use case {@code @Transactional} khác; use case bên trong tham gia
- * chính transaction đó, nên khi nó ném exception, Spring đánh dấu transaction là rollback-only.
- * Vòng lặp bulk bắt exception và trả về bình thường, nhưng lúc commit thì nổ 500 — và mọi câu hỏi
- * đã cập nhật thành công cũng bị cuốn theo. Unit test với mock KHÔNG bắt được: không có transaction
- * thật thì không có gì để đánh dấu rollback-only.
+ * <p>Why a real transaction is needed: the original bug was {@code UnexpectedRollbackException}. The bulk use case opens
+ * a transaction and then calls another {@code @Transactional} use case; the inner use case joins that
+ * very transaction, so when it throws, Spring marks the transaction rollback-only.
+ * The bulk loop catches the exception and returns normally, but at commit it blows up with a 500 -- and every question
+ * that had been updated successfully is taken down with it. A unit test with mocks does NOT catch this: without a real transaction
+ * there is nothing to mark rollback-only.
  *
- * <p>Lớp này KHÔNG {@code @Transactional}: transaction của use case phải là transaction ngoài cùng
- * thì mới tới lượt commit — chính là chỗ exception được ném ra.
+ * <p>This class is NOT {@code @Transactional}: the use case's transaction must be the outermost one,
+ * so that the commit step is reached -- exactly where the exception is thrown.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport

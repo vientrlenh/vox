@@ -18,19 +18,19 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Cho trường xem trước gói nào sẽ được dùng khi gia hạn, và kỳ mới bắt đầu lúc nào.
+ * Lets the school preview which plan will be used on renewal, and when the new period starts.
  *
- * <p>Cần thiết vì gói đang dùng có thể đã bị lưu trữ và được gán gói thay thế -- lúc đó gia hạn tự
- * chuyển sang gói mới. Trường xác nhận bằng cách gửi lại renewalPlan.id làm acceptedPlanId khi đặt
- * đơn (RenewSchoolSubscriptionUseCase), thay vì bị âm thầm đổi gói.
+ * <p>Needed because the plan in use may have been archived and given a replacement plan -- in that case the
+ * renewal automatically moves to the new plan. The school confirms by sending renewalPlan.id back as acceptedPlanId
+ * when placing the order (RenewSchoolSubscriptionUseCase), instead of being silently switched to another plan.
  *
- * <p>KHÔNG nhận tham số nào: trường lấy từ token, và kỳ để gia hạn là kỳ gần nhất của chính trường
- * đó. Nhận subscriptionId từ ngoài thì {@code hasRole('SCHOOL_ADMIN')} không đủ để bảo vệ -- nó trả
- * lời "có phải school admin không", không trả lời "có phải kỳ CỦA TRƯỜNG NÀY không" -- nên lại phải
- * dựng một lớp kiểm quyền sở hữu trong use case. Không nhận id thì không có gì để kiểm.
+ * <p>Takes NO parameter: the school comes from the token, and the period to renew is the school's own most
+ * recent one. If a subscriptionId came from outside, {@code hasRole('SCHOOL_ADMIN')} would not be enough to
+ * protect it -- it answers "is this a school admin", not "is this period OF THIS SCHOOL" -- so an ownership check
+ * would have to be built into the use case. With no id accepted, there is nothing to check.
  *
- * <p>Cũng vì thế mà không có nhánh System Admin: đây là thao tác của nhà trường. Admin muốn xem tình
- * trạng gói của một trường thì dùng màn quản trị gói đăng ký, không đi qua đường này.
+ * <p>That is also why there is no System Admin branch: this is an action of the school. An admin who wants to see
+ * the state of a school's plan uses the subscription management screen, not this path.
  */
 @Service
 @RequiredArgsConstructor
@@ -47,16 +47,16 @@ public class PreviewSchoolSubscriptionRenewalUseCase
     public SchoolSubscriptionRenewalPreviewResponse execute(Void input) {
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
-        // Kỳ GẦN NHẤT, không lọc trạng thái: gia hạn muộn (gói hết hạn tuần trước) là đường phổ biến
-        // nhất, mà ở đó không còn kỳ nào ACTIVE để hỏi.
+        // The MOST RECENT period, with no status filter: a late renewal (the plan expired last week) is the most common
+        // path, and there is no ACTIVE period left to ask about there.
         SchoolSubscription subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
             .orElseThrow(() -> new ResourceNotFoundException(
-                "Trường chưa từng đăng ký gói nào, hãy chọn gói từ danh sách thay vì gia hạn."));
+                "The school has never subscribed to a plan; choose a plan from the list instead of renewing."));
 
         SubscriptionPlan currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
-        // Ném lỗi nếu gói đã lưu trữ mà chưa có gói thay thế -- đúng ý: trường cần biết ngay là chưa
-        // gia hạn được, thay vì thấy một màn xem trước đẹp đẽ rồi mới hỏng ở bước đặt đơn.
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
+        // Throws if the plan is archived and has no replacement plan -- intended: the school must learn right away
+        // that it cannot renew yet, instead of seeing a pretty preview and then failing at the order step.
         SubscriptionPlan renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
 
         Instant now = Instant.now();

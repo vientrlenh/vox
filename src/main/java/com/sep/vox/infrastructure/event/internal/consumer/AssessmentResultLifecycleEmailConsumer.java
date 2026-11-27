@@ -34,11 +34,11 @@ import com.sep.vox.domain.repository.UserRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Mail báo học sinh mọi mốc trong vòng đời điểm của họ.
+ * Emails the student about every milestone in the lifecycle of their score.
  *
- * <p>Gom năm eventType vào một topic vì chúng dùng chung đúng một khuôn: giải
- * {@code studentId} thành email rồi render template. Tách thành năm consumer chỉ nhân
- * bản cùng một constructor năm lần.
+ * <p>Groups five eventTypes into one topic because they share exactly one mould: resolve
+ * {@code studentId} to an email and then render the template. Splitting into five consumers would only duplicate
+ * the same constructor five times.
  */
 @Component
 @RequiredArgsConstructor
@@ -47,11 +47,11 @@ public class AssessmentResultLifecycleEmailConsumer {
 
     private static final String CONSUMER_GROUP = "assessment-result-lifecycle-email";
 
-    private static final String SUBJECT_RELEASED = "Điểm thi của bạn đã có";
-    private static final String SUBJECT_REGRADED = "Điểm thi của bạn đã thay đổi";
-    private static final String SUBJECT_INVALIDATED = "Bài thi của bạn đã bị vô hiệu";
-    private static final String SUBJECT_INVALID_CLEARED = "Bài thi của bạn đã được khôi phục";
-    private static final String SUBJECT_OUTCOME_DECIDED = "Kết quả cuối cùng của bạn";
+    private static final String SUBJECT_RELEASED = "Your assessment score is available";
+    private static final String SUBJECT_REGRADED = "Your assessment score has changed";
+    private static final String SUBJECT_INVALIDATED = "Your submission has been invalidated";
+    private static final String SUBJECT_INVALID_CLEARED = "Your submission has been reinstated";
+    private static final String SUBJECT_OUTCOME_DECIDED = "Your final result";
 
     private final UserRepository userRepository;
     private final MailSendingPort mailSendingPort;
@@ -118,7 +118,7 @@ public class AssessmentResultLifecycleEmailConsumer {
             mailSendingPort.sendHtml(mail.to(), mail.subject(), mail.html());
         } catch (Exception e) {
             log.error("Send mail error: eventId={}, to={}", eventId, mail.to(), e);
-            throw new IllegalStateException("Gửi mail vòng đời điểm thất bại: eventId=" + eventId, e);
+            throw new IllegalStateException("Failed to send the score lifecycle email: eventId=" + eventId, e);
         }
     }
 
@@ -133,7 +133,7 @@ public class AssessmentResultLifecycleEmailConsumer {
             case EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED ->
                 renderOutcomeDecidedMail(value, eventType, eventId);
             default -> throw new IllegalStateException(
-                "eventType không hợp lệ: " + eventType + ", eventId=" + eventId);
+                "Invalid eventType: " + eventType + ", eventId=" + eventId);
         };
     }
 
@@ -191,38 +191,38 @@ public class AssessmentResultLifecycleEmailConsumer {
         } catch (Exception e) {
             log.error("Invalid payload: eventId={}, eventType={}, value={}", eventId, eventType, value, e);
             throw new IllegalStateException(
-                "Payload " + eventType + " không hợp lệ, eventId=" + eventId, e);
+                "Payload " + eventType + " is invalid, eventId=" + eventId, e);
         }
     }
 
     /**
-     * Học sinh không cần biết tên kỹ thuật của vòng chấm.
+     * The student does not need to know the technical name of the grading round.
      *
-     * <p>Giá trị lạ trả về nhãn mặc định thay vì ném: message cũ còn nằm trong topic có
-     * thể mang tên vòng đã bị đổi hoặc xoá, và một cái nhãn hiển thị không đáng để đẩy
-     * cả thông báo điểm vào DLT.
+     * <p>An unknown value returns a default label instead of throwing: an old message still in the topic may
+     * carry a round name that has since been renamed or deleted, and a display label is not worth
+     * sending the whole score notification to the DLT.
      */
     private String roundLabel(String roundType) {
         if (roundType == null) {
-            return "chấm lại";
+            return "regraded";
         }
         GradingRoundType round;
         try {
             round = GradingRoundType.valueOf(roundType);
         } catch (IllegalArgumentException e) {
             log.warn("Unknown roundType, fallback to default label: roundType={}", roundType);
-            return "chấm lại";
+            return "regraded";
         }
         return switch (round) {
-            case INITIAL -> "chấm lại";
-            case SPOT_CHECK -> "hậu kiểm và chấm lại";
-            case REMEDIATION -> "xem xét lại";
-            case APPEAL -> "chấm lại theo đơn phúc khảo";
+            case INITIAL -> "regraded";
+            case SPOT_CHECK -> "spot-checked and regraded";
+            case REMEDIATION -> "reviewed again";
+            case APPEAL -> "regraded following an appeal";
         };
     }
 
     private String outcomeLabel(String outcome) {
-        return "PASSED".equals(outcome) ? "Đạt" : "Chưa đạt";
+        return "PASSED".equals(outcome) ? "Passed" : "Not passed";
     }
 
     private String formatScore(BigDecimal score) {

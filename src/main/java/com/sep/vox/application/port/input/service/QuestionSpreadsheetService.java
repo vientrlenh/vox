@@ -44,22 +44,22 @@ public class QuestionSpreadsheetService {
     private static final String SHEET_NAME = "Questions";
 
     private static final List<String> IMPORT_HEADERS = List.of(
-        "Mã câu hỏi",
-        "Loại câu hỏi",
-        "Nội dung câu hỏi",
-        "Hướng dẫn",
-        "Gợi ý",
-        "Văn bản chuẩn bị",
-        "Thời gian chuẩn bị",
-        "Thời gian trả lời tối thiểu",
-        "Thời gian trả lời tối đa",
-        "Chia sẻ",
-        "Nội dung mong đợi",
-        "Ý chính",
-        "Câu trả lời chấp nhận",
-        "Ví dụ lạc đề",
-        "Gợi ý chấm điểm",
-        "Lỗi thường gặp"
+        "Question code",
+        "Question type",
+        "Question text",
+        "Instruction",
+        "Prompt",
+        "Preparation text",
+        "Prep time",
+        "Min response",
+        "Max response",
+        "Sharing",
+        "Expected content",
+        "Key points",
+        "Acceptable responses",
+        "Off topic examples",
+        "Scoring hints",
+        "Common mistakes"
     );
 
     private static final int TYPE_COLUMN_INDEX = 1;
@@ -123,7 +123,7 @@ public class QuestionSpreadsheetService {
         boolean schoolAdmin = !systemAdmin && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return new AccessContext(currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
     }
@@ -285,11 +285,11 @@ public class QuestionSpreadsheetService {
 
     private List<String> fullExportHeaders() {
         List<String> headers = new ArrayList<String>(IMPORT_HEADERS);
-        headers.add("Mã ngân hàng");
-        headers.add("Chủ đề");
-        headers.add("Trạng thái");
-        headers.add("Người tạo");
-        headers.add("Ngày tạo");
+        headers.add("Bank code");
+        headers.add("Topic");
+        headers.add("Status");
+        headers.add("Created by");
+        headers.add("Created at");
         return headers;
     }
 

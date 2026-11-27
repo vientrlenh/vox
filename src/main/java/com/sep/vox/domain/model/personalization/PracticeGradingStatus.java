@@ -22,7 +22,7 @@ public enum PracticeGradingStatus {
 
     GRADING_FAILED;
 
-    /** Đã chốt, không còn gì để chờ nữa. */
+    /** Finalized, nothing left to wait for. */
     public boolean isTerminal() {
         return this == GRADED;
     }

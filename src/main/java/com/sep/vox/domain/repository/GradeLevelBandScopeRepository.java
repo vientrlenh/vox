@@ -8,20 +8,20 @@ import java.util.UUID;
 import com.sep.vox.domain.model.gradelevel.GradeLevelBandScope;
 
 /**
- * Trần bậc mục tiêu theo (khối lớp, phiên bản khung). Xem GradeLevelBandScope.
+ * Target band ceiling per (grade level, framework version). See GradeLevelBandScope.
  */
 public interface GradeLevelBandScopeRepository {
 
     Optional<GradeLevelBandScope> findByGradeLevelIdAndFrameworkVersionId(UUID gradeLevelId, UUID frameworkVersionId);
 
     /**
-     * Nạp sẵn nhiều cặp cho luồng import: import Assessment Policy đọc theo lô, không được để
-     * mỗi dòng Excel bắn một câu truy vấn.
+     * Preloads many pairs for the import flow: Assessment Policy import reads in batches and must not let
+     * each Excel row fire its own query.
      */
     List<GradeLevelBandScope> findByGradeLevelIdInAndFrameworkVersionIdIn(
             Collection<UUID> gradeLevelIds, Collection<UUID> frameworkVersionIds);
 
-    /** Dùng để chặn xóa một bậc đang được khai làm trần/bậc mặc định của khối nào đó. */
+    /** Used to block deleting a band that some grade declares as its ceiling/default band. */
     boolean existsByBandId(UUID bandId);
 
     GradeLevelBandScope save(GradeLevelBandScope bandScope);

@@ -48,7 +48,7 @@ public class AssessmentScheduleTimeoutGradingJob {
 
                 submitAssessmentSessionUseCase.execute(new SubmitAssessmentSessionCommand(session.getId()));
             } catch (Exception ex) {
-                log.warn("Không thể xử lý hết giờ ca thi cho phiên {}", session.getId(), ex);
+                log.warn("Could not process the schedule timeout for session {}", session.getId(), ex);
             }
         }
     }

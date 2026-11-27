@@ -39,7 +39,7 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
         validateUserAndAccess(currentUserId, query.schoolId());
 
         if (!schoolRepository.existsById(query.schoolId())) {
-            throw new ResourceNotFoundException("Không tìm thấy trường học.");
+            throw new ResourceNotFoundException("School not found.");
         }
 
         // status null -> by default hides soft-deleted school years (ARCHIVED).
@@ -69,13 +69,13 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
 
     private void validateUserAndAccess(UUID userId, UUID targetSchoolId) {
         if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
         if (!userContextPort.isSystemAdmin()) {
             UUID userSchoolId = schoolUserRepository.findSchoolIdByUserId(userId)
-                .orElseThrow(() -> new ForbiddenException("Bạn không có quyền xem năm học của trường khác."));
+                .orElseThrow(() -> new ForbiddenException("You are not allowed to view another school's school year."));
             if (!userSchoolId.equals(targetSchoolId)) {
-                throw new ForbiddenException("Bạn không có quyền xem năm học của trường khác.");
+                throw new ForbiddenException("You are not allowed to view another school's school year.");
             }
         }
     }

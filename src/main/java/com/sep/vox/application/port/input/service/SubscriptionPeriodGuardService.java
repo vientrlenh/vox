@@ -13,15 +13,15 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Khung mở/đóng bài của kỳ thi và bài kiểm tra trên lớp phải nằm trong phiên thuê bao trường đã mua.
+ * The assessment open/close window of centralized assessments and class tests must fall inside the school's purchased subscription period.
  *
- * <p>Không có ràng buộc này thì trường đặt được lịch thi ngoài hạn gói, và bài đó chỉ vỡ lúc chạy
- * thật (ClassTestTokenQuotaGuardService / StartClassTestSessionUseCase) -- tức là sau khi giáo viên
- * đã soạn đề và xếp học sinh xong.
+ * <p>Without this constraint a school can schedule an assessment outside the plan period, and it only breaks at real run time
+ * (ClassTestTokenQuotaGuardService / StartClassTestSessionUseCase) -- i.e. after the teacher
+ * has already prepared the paper and arranged the students.
  *
- * <p>Cố ý so trực tiếp với {@code start_date}/{@code end_date} thay vì tin vào
- * {@code status = ACTIVE}: việc hạ ACTIVE → EXPIRED do {@code SubscriptionExpiryJob} chạy mỗi giờ,
- * nên ngay sau khi gói hết hạn vẫn còn một khoảng repository trả về gói cũ.
+ * <p>Deliberately compares directly with {@code start_date}/{@code end_date} instead of trusting
+ * {@code status = ACTIVE}: demoting ACTIVE → EXPIRED is done by {@code SubscriptionExpiryJob}, which runs hourly,
+ * so right after a plan expires there is still a window in which the repository returns the old plan.
  */
 @Service
 @RequiredArgsConstructor
@@ -46,7 +46,7 @@ public class SubscriptionPeriodGuardService {
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new BusinessRuleViolationException(
-                "Trường chưa có gói dịch vụ đang hoạt động, không thể đặt thời gian cho bài kiểm tra"));
+                "The school has no active subscription, so the assessment time cannot be set"));
 
         Instant startDate = subscription.getStartDate();
         Instant endDate = subscription.getEndDate();
@@ -71,10 +71,10 @@ public class SubscriptionPeriodGuardService {
         // would be accepted and then fail at run time in ClassTestTokenQuotaGuardService, the very
         // late failure this guard exists to prevent.
         if (openAt != null && isOutside(openAt, startDate, endDate)) {
-            throw new IllegalArgumentException(outsidePeriodMessage("Thời gian mở bài", subscription));
+            throw new IllegalArgumentException(outsidePeriodMessage("Opening time", subscription));
         }
         if (closeAt != null && isOutside(closeAt, startDate, endDate)) {
-            throw new IllegalArgumentException(outsidePeriodMessage("Thời gian đóng bài", subscription));
+            throw new IllegalArgumentException(outsidePeriodMessage("Closing time", subscription));
         }
     }
 
@@ -83,11 +83,11 @@ public class SubscriptionPeriodGuardService {
     }
 
     /**
-     * Hiển thị theo ngày giờ VN thay vì {@code Instant.toString()} (UTC, hậu tố Z) -- người dùng đối
-     * chiếu với hạn gói đang hiện trên màn quản lý thuê bao, vốn cũng là ngày địa phương.
+     * Displays in Vietnam date-time instead of {@code Instant.toString()} (UTC, with a Z suffix) -- users compare it
+     * with the plan expiry shown on the subscription management screen, which is also a local date.
      */
     private String outsidePeriodMessage(String fieldLabel, SchoolSubscription subscription) {
-        return "%s phải nằm trong hạn gói dịch vụ của trường (từ %s đến %s)".formatted(
+        return "%s must be within the school's subscription period (from %s to %s)".formatted(
             fieldLabel,
             DISPLAY_DATE.format(subscription.getStartDate()),
             DISPLAY_DATE.format(subscription.getEndDate()));

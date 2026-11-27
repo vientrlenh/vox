@@ -28,12 +28,10 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Xem trước file import ngân hàng câu hỏi.
- *
- * <p>Phạm vi sở hữu chốt Ở ĐÂY, không nhận từ client: quản trị hệ thống import ngân hàng SYSTEM
- * ({@code schoolId} null), quản trị trường import ngân hàng của CHÍNH trường mình. Ghi vào
- * {@code session.schoolId} để bước commit chạy ngầm sau đó không phải hỏi lại ai — và không có
- * đường nào cho một file tự nâng phạm vi của nó.
+ * The ownership scope is fixed HERE and never taken from the client: a system admin imports SYSTEM question
+ * banks ({@code schoolId} null), a school admin imports the banks of their OWN school. It is written to
+ * {@code session.schoolId} so the background commit step does not have to ask anyone again -- and there is no
+ * way for a file to raise its own scope.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,7 +51,7 @@ public class PreviewQuestionBankImportFromFileUseCase
     @Transactional
     public PreviewImportResponse execute(PreviewQuestionBankImportFromFileCommand input) {
         if (input == null || input.file() == null) {
-            throw new IllegalArgumentException("File import không được để trống");
+            throw new IllegalArgumentException("The import file must not be empty");
         }
 
         UUID schoolId = resolveSessionSchoolId();
@@ -80,7 +78,7 @@ public class PreviewQuestionBankImportFromFileUseCase
         if (!userContextPort.isSystemAdmin()) {
             schoolId = schoolUserRepository.findByUserId(currentUserId)
                 .map(schoolUser -> schoolUser.getSchoolId())
-                .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
         }
         return schoolId;
     }

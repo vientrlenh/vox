@@ -28,20 +28,20 @@ public class AssessmentScheduleProctorConflictValidator {
     private final AssessmentScheduleProctorRepository assessmentScheduleProctorRepository;
 
     /**
-     * Giáo viên phải rảnh trong khoảng [start, end); {@code excludeScheduleId} để bỏ qua chính ca
-     * đang thao tác.
+     * The teacher must be free within [start, end); {@code excludeScheduleId} skips the schedule
+     * being operated on.
      */
     public void requireTeacherFree(UUID teacherId, Instant start, Instant end, UUID excludeScheduleId) {
         if (assessmentScheduleProctorRepository.existsOverlappingAssignment(teacherId, start, end, excludeScheduleId)) {
-            throw new ResourceDuplicatedException("Giám thị đã có ca thi khác trong khoảng thời gian này");
+            throw new ResourceDuplicatedException("The proctor already has another assessment schedule in this time range");
         }
     }
 
     /**
-     * Đổi giờ một ca thi: mọi giám thị đang gác ca đó phải còn rảnh ở khung giờ mới.
+     * Changing the time of an assessment schedule: every proctor on duty in that schedule must still be free in the new time window.
      *
-     * <p>Không có bước này thì luật bị lách dễ dàng — gán giám thị lúc hai ca chưa đụng nhau, rồi
-     * dời giờ cho chúng chồng lên.
+     * <p>Without this step the rule is easy to bypass — assign proctors while two schedules do not clash yet, then
+     * move the time so they overlap.
      */
     public void requireProctorsFreeForNewWindow(UUID scheduleId, Instant start, Instant end) {
         for (AssessmentScheduleProctor proctor : assessmentScheduleProctorRepository.findByScheduleId(scheduleId)) {

@@ -7,7 +7,7 @@ public record CapFinalScoreParams(
 ) implements ScoringRuleActionParams {
     public CapFinalScoreParams {
         if (maxScore == null || maxScore.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Điểm tối đa không được để trống hoặc dưới 0");
+            throw new IllegalArgumentException("The maximum score must not be blank or below 0");
         }
     }
 }

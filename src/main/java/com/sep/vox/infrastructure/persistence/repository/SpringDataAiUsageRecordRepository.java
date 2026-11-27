@@ -41,16 +41,16 @@ public interface SpringDataAiUsageRecordRepository extends JpaRepository<AiUsage
         @Param("assessmentSessionId") UUID assessmentSessionId, @Param("chargedAt") Instant chargedAt);
 
     /**
-     * MIỄN mọi dòng chi phí chưa ngã ngũ của phiên: chúng thuộc lượt chấm vừa hỏng, và lượt hỏng
-     * không tạo ra kết quả nào cho trường nên không có gì để thu.
+     * WAIVES every undecided cost row of the session: they belong to the grading attempt that just failed, and a failed
+     * attempt produces no result for the school, so there is nothing to charge.
      *
-     * <p>"Chưa ngã ngũ" = chưa thu VÀ chưa miễn. Loại dòng đã thu ra là bắt buộc: một phiên có thể
-     * chấm nhiều lượt, và những lượt trước đã thu tiền hợp lệ -- miễn đè lên chúng là hoàn tiền cho
-     * phần việc đã giao đủ.
+     * <p>"Undecided" = not yet charged AND not yet waived. Excluding already-charged rows is mandatory: a session can be
+     * graded several times, and earlier attempts were legitimately charged -- waiving over them would refund
+     * work that was fully delivered.
      *
-     * <p>Gọi ngay lúc phiên vào GRADING_FAILED, KHÔNG đợi tới lúc ai đó bấm chấm lại: để tới đó thì
-     * hành vi phụ thuộc vào việc có người đi khắc phục hay không -- bỏ mặc thì miễn phí, còn đi sửa
-     * thì bị tính tiền, đúng chiều khuyến khích ngược.
+     * <p>Called right when the session enters GRADING_FAILED, NOT when someone later presses regrade: waiting until then makes
+     * the behavior depend on whether someone goes to fix it -- left alone it is free, fixed it
+     * is charged, exactly the wrong incentive.
      */
     @Modifying
     @Query("""
@@ -61,7 +61,7 @@ public interface SpringDataAiUsageRecordRepository extends JpaRepository<AiUsage
     int markWaivedByAssessmentSessionId(
         @Param("assessmentSessionId") UUID assessmentSessionId, @Param("waivedAt") Instant waivedAt);
 
-    /** Tổng chi phí nền tảng đã gánh thay cho các lượt chấm hỏng của phiên này. */
+    /** Total platform cost absorbed for the failed grading attempts of this session. */
     @Query("""
         SELECT COALESCE(SUM(r.costVnd), 0)
         FROM AiUsageRecordJpaEntity r

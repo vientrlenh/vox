@@ -15,12 +15,12 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Phiên dựng đề chuyển từ RAM sang Redis (2026-08-11), nên nó bắt đầu phải đi qua JSON rồi quay về
- * nguyên vẹn. Trước đây nằm trong {@code ConcurrentHashMap} thì cùng một object, không ai serialize
- * bao giờ -- một trường không dựng lại được sẽ không lộ ra lúc build mà lộ ra giữa buổi luyện của
- * học sinh, dưới dạng đúng cái 404 vừa đi sửa.
+ * The paper-building session moved from RAM to Redis (2026-08-11), so it now has to go through JSON
+ * and come back intact. When it lived in a {@code ConcurrentHashMap} it was the same object and
+ * nobody ever serialized it -- a field that cannot be rebuilt would not show up at build time but
+ * in the middle of a student's practice, as exactly the 404 that was just fixed.
  *
- * <p>Dùng chính {@code JsonMapper} mà {@code RedisCacheManagerRepository} dùng.
+ * <p>Uses the very {@code JsonMapper} that {@code RedisCacheManagerRepository} uses.
  */
 class PracticePaperDraftEntrySerializationTests {
 

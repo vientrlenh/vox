@@ -4,8 +4,8 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
- * Thông báo lỗi dùng chung cho các ràng buộc khung giờ ca thi, để mọi nơi áp cùng một bất biến
- * (tạo/sửa ca thi, sửa kỳ thi, tính lại thời gian làm bài) báo cùng một cách.
+ * Shared error messages for the schedule time-window constraints, so that every place applying the same invariant
+ * (create/edit schedule, edit assessment, recalculate answering time) reports it the same way.
  */
 public final class AssessmentScheduleWindowMessages {
 
@@ -13,50 +13,50 @@ public final class AssessmentScheduleWindowMessages {
     }
 
     public static String tooShortForAssessmentTime(Assessment assessment) {
-        return "Thời lượng ca thi phải lớn hơn hoặc bằng thời gian làm bài của kỳ thi ("
+        return "The schedule duration must be greater than or equal to the answering time of the assessment ("
             + formatDuration(assessment.getAssessmentTimeDurationSecond()) + ")";
     }
 
-    /** Hiển thị thời lượng dạng "xx phút yy giây" thay vì giây thô cho dễ đọc. */
+    /** Shows the duration as "xx minutes yy seconds" instead of raw seconds, for readability. */
     private static String formatDuration(Integer totalSeconds) {
         if (totalSeconds == null) {
-            return "0 giây";
+            return "0 seconds";
         }
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
         if (minutes == 0) {
-            return seconds + " giây";
+            return seconds + " seconds";
         }
-        return seconds == 0 ? minutes + " phút" : minutes + " phút " + seconds + " giây";
+        return seconds == 0 ? minutes + " minutes" : minutes + " minutes " + seconds + " seconds";
     }
 
     public static String outsideAssessmentWindow(Assessment assessment) {
-        StringBuilder message = new StringBuilder("Ca thi phải nằm trong khoảng thời gian mở và đóng của kỳ thi");
+        StringBuilder message = new StringBuilder("The schedule must lie within the opening and closing time of the assessment");
         if (assessment.getOpenAt() != null) {
-            message.append(", mở lúc ").append(assessment.getOpenAt());
+            message.append(", opens at ").append(assessment.getOpenAt());
         }
         if (assessment.getCloseAt() != null) {
-            message.append(", đóng lúc ").append(assessment.getCloseAt());
+            message.append(", closes at ").append(assessment.getCloseAt());
         }
         return message.toString();
     }
 
     /**
-     * Ca thi đã lên lịch không còn đủ dài sau khi kỳ thi đổi khung giờ hoặc thời gian làm bài.
-     * Với CLASS_TEST, ca thi chính là khung openAt/closeAt nên phải chỉ vào thời gian đóng bài --
-     * bảo người dùng "sửa ca thi" là vô nghĩa, nhất là khi lỗi nổ ngay lúc tạo bài kiểm tra.
+     * A scheduled schedule is no longer long enough after the assessment changed its time window or answering time.
+     * For CLASS_TEST the schedule IS the openAt/closeAt window, so the message must point at the closing time --
+     * telling the user to "edit the schedule" is meaningless, especially when the error fires right when the class test is created.
      */
     public static String schedulesNoLongerFit(int count, Assessment assessment) {
         if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-            return "Tổng thời gian làm bài (" + formatDuration(assessment.getAssessmentTimeDurationSecond())
-                + ") vượt quá khoảng mở và đóng bài đã đặt. Vui lòng kéo dài thời gian đóng bài.";
+            return "The total answering time (" + formatDuration(assessment.getAssessmentTimeDurationSecond())
+                + ") exceeds the set opening and closing window. Please extend the closing time.";
         }
-        return "Thời gian làm bài (" + formatDuration(assessment.getAssessmentTimeDurationSecond()) + ") vượt quá thời lượng của "
-            + count + " ca thi đã lên lịch. Vui lòng kéo dài các ca thi này trước.";
+        return "The answering time (" + formatDuration(assessment.getAssessmentTimeDurationSecond()) + ") exceeds the duration of "
+            + count + " scheduled schedules. Please extend those schedules first.";
     }
 
     public static String schedulesOutsideNewWindow(int count) {
-        return "Có " + count + " ca thi nằm ngoài khoảng thời gian mở và đóng mới của kỳ thi. "
-            + "Vui lòng dời các ca thi này trước.";
+        return "There are " + count + " schedules outside the new opening and closing time of the assessment. "
+            + "Please move those schedules first.";
     }
 }

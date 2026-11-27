@@ -32,7 +32,7 @@ public class DeleteAssessmentBlueprintSectionUseCase implements IUseCase<DeleteA
         AssessmentBlueprintSection section = editable.section();
         AssessmentBlueprintVersion version = editable.version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được xoá section khi version đang DRAFT");
+            throw new IllegalArgumentException("A section can only be deleted while the version is DRAFT");
         }
 
         for (AssessmentBlueprintSlot slot : assessmentBlueprintSlotRepository.findBySectionId(section.getId())) {

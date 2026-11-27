@@ -16,11 +16,11 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 /**
- * Gỡ phân công = xoá dòng. Không có trạng thái "đã gỡ": bài quay lại đúng tình trạng
- * chưa gán, và unique index trên {@code active_result_id} lại trống để gán người khác.
+ * Removing an assignment = deleting the row. There is no "removed" status: the submission goes back to exactly the
+ * unassigned state, and the unique index on {@code active_result_id} is free again to assign someone else.
  *
- * <p>Là một trong ba đường đóng phân công KHÔNG đi qua
- * {@code GradingActionSupport.finish()}, nên phần nhả đơn phúc khảo phải tự làm ở đây.
+ * <p>It is one of three paths that close an assignment WITHOUT going through
+ * {@code GradingActionSupport.finish()}, so the release of the appeal has to be done here by itself.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,7 +42,7 @@ public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAss
         // Once grading is finished the score is already written and the attempt published -- deleting the
         // assignment row now only erases the trace of who graded, and undoes nothing.
         if (assignment.isCompleted()) {
-            throw new IllegalArgumentException("Không thể gỡ phân công của bài đã chấm xong.");
+            throw new IllegalArgumentException("The assignment of a submission that has been graded cannot be removed.");
         }
         releaseAppeal(assignment);
 

@@ -24,8 +24,8 @@ public final class DateMapper {
     );
 
     /**
-     * Formatter được dựng sẵn một lần. {@link DateTimeFormatter#ofPattern} phải biên dịch lại chuỗi
-     * pattern mỗi lần gọi, nên tạo nó bên trong vòng lặp parse là trả giá đó cho mọi request.
+     * Formatter built once. {@link DateTimeFormatter#ofPattern} has to recompile the pattern string
+     * on every call, so creating it inside the parse loop makes every request pay that cost.
      */
     private static final List<DateTimeFormatter> INPUT_LOCALDATE_FORMATTERS =
             INPUT_LOCALDATE_FORMAT.stream().map(DateTimeFormatter::ofPattern).toList();
@@ -34,34 +34,35 @@ public final class DateMapper {
             DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
     /**
-     * Múi giờ nghiệp vụ của hệ thống. Dùng cho hai việc:
+     * The system's business time zone. Used for two things:
      *
      * <ul>
-     *   <li><b>Giải nghĩa input không mang offset</b> — xem {@link #toInstant(String)} và
+     *   <li><b>Interpreting input that carries no offset</b> -- see {@link #toInstant(String)} and
      *       {@link #toImportedInstant(String, ZoneId)}.
-     *   <li><b>Hiển thị thời gian cho người dùng</b> (mail, CSV, chuỗi ngày). Một {@link Instant}
-     *       tự nó <b>không</b> format ra được — nó không mang múi giờ nào cả, nên chỗ format bắt
-     *       buộc phải cấp một zone. Đừng cấp bằng múi giờ mặc định của JVM: hiện nó đúng chỉ vì
-     *       {@code Dockerfile} đặt {@code TZ=Asia/Ho_Chi_Minh} và {@code build.gradle} đặt
-     *       {@code user.timezone} cho task {@code test} — đổi một trong hai chỗ đó là giờ hiển thị
-     *       lệch mà không có test nào đỏ. Gắn zone tường minh thì không phụ thuộc vào chúng.
+     *   <li><b>Showing times to users</b> (mail, CSV, date strings). An {@link Instant} cannot be
+     *       formatted by itself -- it carries no time zone, so the formatting code must be given a
+     *       zone. Do not give it the JVM default zone: that is only correct today because the
+     *       {@code Dockerfile} sets {@code TZ=Asia/Ho_Chi_Minh} and {@code build.gradle} sets
+     *       {@code user.timezone} for the {@code test} task -- change either one and the displayed
+     *       times shift without any test turning red. An explicit zone does not depend on them.
      * </ul>
      *
-     * <p>Cố tình để {@code public}: mọi chỗ cần nó phải truyền tay vào
-     * {@link #toImportedInstant(String, ZoneId)} hoặc {@code DateTimeFormatter.withZone(...)}, để
-     * lựa chọn múi giờ hiện ra ở call site chứ không nằm ẩn trong bộ parse/format. Khi
-     * {@code School} có cột múi giờ riêng, grep hằng này là ra đúng danh sách những chỗ phải đổi
-     * sang múi giờ của trường.
+     * <p>Deliberately {@code public}: every place that needs it must pass it by hand to
+     * {@link #toImportedInstant(String, ZoneId)} or {@code DateTimeFormatter.withZone(...)}, so the
+     * choice of zone is visible at the call site and not hidden inside the parser/formatter. When
+     * {@code School} gets its own time zone column, grepping this constant gives exactly the list
+     * of places to switch to the school's zone.
      *
-     * <p>Lưu ý khi xoá nhánh tương thích trong {@link #toInstant(String)}: hằng này <b>không</b>
-     * biến mất theo, vì đường import và đường hiển thị vẫn cần nó.
+     * <p>Note when removing the compatibility branch in {@link #toInstant(String)}: this constant
+     * does <b>not</b> go away with it, because the import path and the display path still need it.
      *
-     * <p>Dùng {@link ZoneId} thay vì {@code ZoneOffset.ofHours(7)} vì {@code atStartOfDay} cần
-     * ZoneId, và offset cứng sẽ sai ở những vùng có giờ mùa hè.
+     * <p>Uses {@link ZoneId} rather than {@code ZoneOffset.ofHours(7)} because {@code atStartOfDay}
+     * needs a ZoneId, and a fixed offset would be wrong in regions with daylight saving time.
      *
-     * <p>Giá trị thật nằm ở {@link ZoneConstant#BUSINESS_ZONE}: domain model cũng cần đúng múi này
-     * (vd {@code SubscriptionPlan.endDateFrom}) mà domain không được phụ thuộc lên application, nên
-     * nguồn sự thật phải nằm ở tầng trong. Giữ tên cũ ở đây để không phải sửa mọi call site.
+     * <p>The real value lives in {@link ZoneConstant#BUSINESS_ZONE}: domain models need exactly this
+     * zone too (e.g. {@code SubscriptionPlan.endDateFrom}) but the domain must not depend on the
+     * application layer, so the source of truth has to sit in the inner layer. The old name is kept
+     * here so that no call site has to change.
      */
     public static final ZoneId DEFAULT_INPUT_ZONE = ZoneConstant.BUSINESS_ZONE;
 
@@ -74,10 +75,10 @@ public final class DateMapper {
             try {
                 return LocalDate.parse(stripped, formatter);
             } catch (DateTimeParseException e) {
-                // Thử pattern kế tiếp.
+                // Try the next pattern.
             }
         }
-        throw new IllegalArgumentException("Định dạng ngày yêu cầu không hợp lệ");
+        throw new IllegalArgumentException("The requested date format is invalid");
     }
 
     public static String localDateToString(LocalDate date) {
@@ -144,24 +145,24 @@ public final class DateMapper {
         }
         Instant resolved = resolveWithoutOffset(raw, zone);
         if (resolved == null) {
-            throw new IllegalArgumentException("Định dạng ngày yêu cầu không hợp lệ");
+            throw new IllegalArgumentException("The requested date format is invalid");
         }
         return resolved;
     }
 
     /**
-     * Đổi thời điểm tuyệt đối thành chuỗi trả ra API.
+     * Converts an absolute point in time to the string returned by the API.
      *
-     * <p>Dùng ISO-8601 ở UTC (hậu tố {@code Z}) — đúng thứ {@link Instant#toString()} vẫn cho ra,
-     * nên gọi hàm này không đổi dữ liệu client đang nhận. Điểm khác là <b>chỗ quyết định định
-     * dạng chỉ còn một</b>: trước đây mỗi mapper tự gọi {@code .toString()}, muốn đổi cách hiển
-     * thị là phải đi sửa từng nơi và rất dễ sót.
+     * <p>Uses ISO-8601 in UTC (suffix {@code Z}) -- exactly what {@link Instant#toString()} already
+     * produces, so calling this does not change the data clients receive. The difference is that
+     * <b>the place that decides the format is now only one</b>: before, every mapper called
+     * {@code .toString()} itself, so changing the display meant editing each one and it was easy to miss.
      *
-     * <p>Cố ý KHÔNG đổi sang {@link #DEFAULT_INPUT_ZONE}: chuỗi trả ra API là dữ liệu máy đọc,
-     * client tự đổi sang giờ địa phương của người dùng. Chỉ đường hiển thị cho người (mail, CSV)
-     * mới cần gắn zone — xem javadoc của {@code DEFAULT_INPUT_ZONE}.
+     * <p>Deliberately NOT switched to {@link #DEFAULT_INPUT_ZONE}: the string returned by the API is
+     * machine-readable data and the client converts it to the user's local time itself. Only the
+     * paths shown to people (mail, CSV) need a zone -- see the javadoc of {@code DEFAULT_INPUT_ZONE}.
      *
-     * @return {@code null} khi {@code instant} là null, để hàm gọi khỏi phải tự kiểm
+     * @return {@code null} when {@code instant} is null, so the caller does not have to check
      */
     public static String toIsoString(Instant instant) {
         return instant == null ? null : instant.toString();
@@ -188,22 +189,22 @@ public final class DateMapper {
         Instant fallback = resolveWithoutOffset(raw, DEFAULT_INPUT_ZONE);
         if (fallback == null) {
             throw new IllegalArgumentException(
-                    "Thời gian phải kèm múi giờ, ví dụ 2026-07-28T09:30:00+07:00 hoặc 2026-07-28T02:30:00Z");
+                    "The time must include a time zone, for example 2026-07-28T09:30:00+07:00 or 2026-07-28T02:30:00Z");
         }
         return fallback;
     }
 
     /**
-     * Giải nghĩa input không mang offset theo {@code zone}: thử dạng có giờ trước, rồi đến dạng chỉ
-     * có ngày.
+     * Interprets input that carries no offset according to {@code zone}: tries the form with a
+     * time first, then the date-only form.
      *
-     * @return {@code null} nếu không khớp dạng nào — để hàm gọi tự quyết định thông báo lỗi
+     * @return {@code null} if neither form matches -- so the caller decides the error message
      */
     private static Instant resolveWithoutOffset(String raw, ZoneId zone) {
         try {
             return LocalDateTime.parse(raw).atZone(zone).toInstant();
         } catch (DateTimeParseException e) {
-            // Thử dạng chỉ có ngày.
+            // Try the date-only form.
         }
         try {
             LocalDate date = toLocalDate(raw);

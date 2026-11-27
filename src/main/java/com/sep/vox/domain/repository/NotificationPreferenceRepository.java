@@ -11,8 +11,8 @@ public interface NotificationPreferenceRepository {
     NotificationPreference save(NotificationPreference preference);
 
     /**
-     * @return rỗng khi người dùng chưa từng đổi thiết lập cho nhóm này -- phía gọi phải
-     *         hiểu đó là "dùng mặc định", xem NotificationPreference#DEFAULT_PUSH_ENABLED
+     * @return empty when the user has never changed the setting for this group -- the caller must
+     *         read that as "use the default", see NotificationPreference#DEFAULT_PUSH_ENABLED
      */
     Optional<NotificationPreference> findByUserIdAndCategory(UUID userId, NotificationCategory category);
 }

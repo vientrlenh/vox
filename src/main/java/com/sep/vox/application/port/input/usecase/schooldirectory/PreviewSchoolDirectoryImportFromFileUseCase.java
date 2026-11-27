@@ -41,7 +41,7 @@ public class PreviewSchoolDirectoryImportFromFileUseCase
     @Transactional
     public PreviewSchoolDirectoryImportResponse execute(PreviewSchoolDirectoryImportFromFileCommand input) {
         if (input == null || input.file() == null) {
-            throw new IllegalArgumentException("File import không được để trống");
+            throw new IllegalArgumentException("The import file must not be empty");
         }
 
         Instant now = Instant.now();

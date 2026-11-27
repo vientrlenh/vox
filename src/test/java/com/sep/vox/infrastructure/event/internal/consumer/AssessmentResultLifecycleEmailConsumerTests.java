@@ -78,7 +78,7 @@ class AssessmentResultLifecycleEmailConsumerTests {
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_RELEASED, payload), ack);
 
         verify(mailTemplatePort).renderResultReleasedEmail("Kỳ thi giữa kỳ", "8.5");
-        verify(mailSendingPort).sendHtml("student@example.com", "Điểm thi của bạn đã có", "<html></html>");
+        verify(mailSendingPort).sendHtml("student@example.com", "Your assessment score is available", "<html></html>");
         verify(processedEventRepository).save(any(ProcessedEvent.class));
         verify(ack).acknowledge();
     }
@@ -94,8 +94,8 @@ class AssessmentResultLifecycleEmailConsumerTests {
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_REGRADED, payload), ack);
 
         verify(mailTemplatePort)
-            .renderResultRegradedEmail("Kỳ thi giữa kỳ", "hậu kiểm và chấm lại", "8.5", "7.0");
-        verify(mailSendingPort).sendHtml("student@example.com", "Điểm thi của bạn đã thay đổi", "<html></html>");
+            .renderResultRegradedEmail("Kỳ thi giữa kỳ", "spot-checked and regraded", "8.5", "7.0");
+        verify(mailSendingPort).sendHtml("student@example.com", "Your assessment score has changed", "<html></html>");
     }
 
     @Test
@@ -110,7 +110,7 @@ class AssessmentResultLifecycleEmailConsumerTests {
         // trade-off.
         assertThatCode(() -> consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_REGRADED, payload), ack))
             .doesNotThrowAnyException();
-        verify(mailTemplatePort).renderResultRegradedEmail("Kỳ thi giữa kỳ", "chấm lại", "-", "7.0");
+        verify(mailTemplatePort).renderResultRegradedEmail("Kỳ thi giữa kỳ", "regraded", "-", "7.0");
     }
 
     @Test
@@ -123,7 +123,7 @@ class AssessmentResultLifecycleEmailConsumerTests {
 
         verify(mailTemplatePort).renderResultInvalidatedEmail("Kỳ thi giữa kỳ", "Sử dụng tài liệu");
         verify(mailSendingPort)
-            .sendHtml("student@example.com", "Bài thi của bạn đã bị vô hiệu", "<html></html>");
+            .sendHtml("student@example.com", "Your submission has been invalidated", "<html></html>");
     }
 
     @Test
@@ -136,7 +136,7 @@ class AssessmentResultLifecycleEmailConsumerTests {
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED, payload), ack);
 
         verify(mailSendingPort)
-            .sendHtml("student@example.com", "Bài thi của bạn đã được khôi phục", "<html></html>");
+            .sendHtml("student@example.com", "Your submission has been reinstated", "<html></html>");
     }
 
     @Test
@@ -148,8 +148,8 @@ class AssessmentResultLifecycleEmailConsumerTests {
 
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED, payload), ack);
 
-        verify(mailTemplatePort).renderResultOutcomeDecidedEmail("Kỳ thi giữa kỳ", "Đạt", "8.5");
-        verify(mailSendingPort).sendHtml("student@example.com", "Kết quả cuối cùng của bạn", "<html></html>");
+        verify(mailTemplatePort).renderResultOutcomeDecidedEmail("Kỳ thi giữa kỳ", "Passed", "8.5");
+        verify(mailSendingPort).sendHtml("student@example.com", "Your final result", "<html></html>");
     }
 
     @Test
@@ -161,7 +161,7 @@ class AssessmentResultLifecycleEmailConsumerTests {
 
         consumer.consume(record(EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED, payload), ack);
 
-        verify(mailTemplatePort).renderResultOutcomeDecidedEmail("Kỳ thi giữa kỳ", "Chưa đạt", "-");
+        verify(mailTemplatePort).renderResultOutcomeDecidedEmail("Kỳ thi giữa kỳ", "Not passed", "-");
     }
 
     @Test

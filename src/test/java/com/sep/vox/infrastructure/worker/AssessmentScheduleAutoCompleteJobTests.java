@@ -24,8 +24,8 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Job mỏng: chạy service thật trên repo giả để bắt được cả phần nối dây (trần lô, không đụng ca
- * chưa hết giờ) chứ không chỉ xác nhận có gọi.
+ * A thin job: runs the real service on a fake repo so the wiring is caught too (batch cap, not touching schedules
+ * that have not ended) and not only a check that it was called.
  */
 class AssessmentScheduleAutoCompleteJobTests {
 

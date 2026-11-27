@@ -56,7 +56,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
         AssessmentBlueprint blueprint = editable.blueprint();
         AssessmentBlueprintVersion version = editable.version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được cập nhật version ở trạng thái DRAFT");
+            throw new IllegalArgumentException("A version can only be updated while it is DRAFT");
         }
         assessmentBlueprintStructureValidator.validateSections(command.sections());
 
@@ -67,7 +67,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
         assessmentTimeQuotaGuardService.requireWithinPlan(
             blueprint.getSchoolId(),
             recalculatedVersion.getTotalTimeLimitSeconds(),
-            "Phiên bản blueprint " + recalculatedVersion.getCode()
+            "Blueprint version " + recalculatedVersion.getCode()
         );
         return AssessmentBlueprintVersionDtoMapper.toDto(recalculatedVersion);
     }
@@ -196,7 +196,7 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
         }
         AssessmentBlueprintSection existing = existingSectionsById.get(command.id());
         if (existing == null) {
-            throw new ResourceNotFoundException("Không tìm thấy section cần cập nhật");
+            throw new ResourceNotFoundException("Section to update not found");
         }
         return existing.revisedWith(
             command.order(),
@@ -216,10 +216,10 @@ public class UpdateAssessmentBlueprintVersionUseCase implements IUseCase<UpdateA
         }
         AssessmentBlueprintSlot existing = existingSlots.get(command.id());
         if (existing == null) {
-            throw new ResourceNotFoundException("Không tìm thấy slot cần cập nhật");
+            throw new ResourceNotFoundException("Slot to update not found");
         }
         if (!existing.getSectionId().equals(sectionId)) {
-            throw new IllegalArgumentException("Không được di chuyển slot sang section khác bằng PUT hiện tại");
+            throw new IllegalArgumentException("A slot cannot be moved to another section with the current PUT");
         }
         return reviseSlot(existing, command);
     }

@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import com.sep.vox.domain.repository.NotificationDeviceRepository;
 
 /**
- * FCM chỉ báo UNREGISTERED khi có lần push thật sự gửi tới thiết bị đó, nên thiết bị
- * biến mất lặng lẽ -- gỡ app mà không đăng xuất, đổi máy, xoá dữ liệu trình duyệt --
- * sẽ không bao giờ tự rời khỏi bảng. Job này là đường dọn duy nhất cho nhóm đó.
+ * FCM reports UNREGISTERED only when a push is really sent to that device, so a device that
+ * disappears silently -- app uninstalled without logging out, a changed phone, cleared browser data --
+ * would never leave the table on its own. This job is the only cleanup path for that group.
  */
 @Component
 @Slf4j
@@ -38,7 +38,7 @@ public class NotificationDeviceCleanUpJob {
         Instant threshold = Instant.now().minus(Duration.ofDays(retentionDays));
         int removed = notificationDeviceRepository.deleteByLastSeenAtBefore(threshold);
         if (removed > 0) {
-            log.info("Đã dọn {} thiết bị không hoạt động quá {} ngày", removed, retentionDays);
+            log.info("Cleaned up {} devices inactive for more than {} days", removed, retentionDays);
         }
     }
 }

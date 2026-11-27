@@ -46,22 +46,22 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Phép chia hạn mức cá nhân -- nơi quản trị trường biến ví cấp trường thành trần chi cho từng người.
+ * Splitting the personal quota -- where the school admin turns the school-level balance into a spending cap per person.
  *
- * <p>Bốn bất biến mà bộ test này giữ, cả bốn đều đã từng sai và cả bốn đều hỏng trong im lặng:
+ * <p>The four invariants this suite holds, all four were once wrong and all four broke silently:
  *
  * <ul>
- *   <li><b>Chỉ người CÒN đủ điều kiện mới chiếm chỗ trong trần.</b> Dòng phân bổ không bị xoá khi
- *       giáo viên nghỉ việc, mà bảng thì chỉ hiện người đang tại chức -- cộng cả những dòng vô hình
- *       đó là để chúng ăn dần trần cho tới lúc mọi lần chia đều bị từ chối, với một câu báo lỗi không
- *       khớp với bất kỳ con số nào trên màn hình.</li>
- *   <li><b>Chia đều tự động phải khớp ĐÚNG phần được phép chia.</b> Không dư (vượt trần của chính
- *       trường ngay sau một cú bấm) và không thiếu (mất tiền vì làm tròn).</li>
- *   <li><b>"Chưa chia" khác "chia 0 đồng".</b> Hai trạng thái cho hành vi ngược nhau ở cửa chặn, nên
- *       tầng đọc phải phân biệt được chúng thay vì trả cùng một số 0.</li>
- *   <li><b>Trần phân phối KHÔNG phải khả năng chi trả.</b> Trần tính trên tổng hạn mức gói và không
- *       nhỏ đi khi ví bị tiêu; số tiền thật sự còn trả được là một con số RIÊNG, và màn hình phải nói
- *       ra cả hai.</li>
+ *   <li><b>Only people who are STILL eligible take up room in the cap.</b> Allocation rows are not deleted when a
+ *       teacher leaves, while the table only shows people currently employed -- counting those invisible rows
+ *       lets them eat into the cap until every even split is rejected, with an error message that matches
+ *       no number on the screen.</li>
+ *   <li><b>The automatic even split must match EXACTLY the distributable amount.</b> Not over (exceeding the school's own cap
+ *       right after one click) and not under (losing money to rounding).</li>
+ *   <li><b>"Not distributed" differs from "distributed 0 dong".</b> The two states behave oppositely at the blocking gate, so
+ *       the read layer must be able to tell them apart instead of returning the same 0.</li>
+ *   <li><b>The distribution cap is NOT the ability to pay.</b> The cap is computed on the total plan quota and does not
+ *       shrink when the balance is spent; the amount that can really still be paid is a SEPARATE number, and the screen must show
+ *       both.</li>
  * </ul>
  */
 class DistributeQuotaToUsersServiceTests {
@@ -80,7 +80,7 @@ class DistributeQuotaToUsersServiceTests {
     private final UUID roleId = UUID.randomUUID();
     private final UUID teacherA = UUID.randomUUID();
     private final UUID teacherB = UUID.randomUUID();
-    /** Đã nghỉ việc: dòng phân bổ còn nguyên trong DB nhưng không còn ở bất kỳ trang nào của bảng. */
+    /** Has left: the allocation row is still in the DB but no longer on any page of the table. */
     private final UUID formerTeacher = UUID.randomUUID();
 
     @BeforeEach
@@ -129,14 +129,14 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     // ---------------------------------------------------------------------
-    // Người không còn đủ điều kiện
+    // People who are no longer eligible
     // ---------------------------------------------------------------------
 
     @Test
     void manual_allocation_ignores_rows_of_users_who_are_no_longer_eligible() {
-        // Người đã nghỉ đang giữ 6 triệu trên giấy tờ. Cộng vào thì 8 + 6 > 10 và lần chia này bị từ
-        // chối -- trong khi bảng chỉ hiện hai giáo viên với tổng 0đ, nên lời từ chối đó không thể
-        // đối chiếu với bất cứ thứ gì người dùng nhìn thấy.
+        // The person who left holds 6 million on paper. Adding it makes 8 + 6 > 10 and this split is rejected
+        // -- while the table only shows two teachers totalling 0 VND, so that rejection cannot be
+        // matched against anything the user can see.
         givenExistingAllocations(allocation(formerTeacher, 6_000_000, 0));
 
         assertThatCode(() -> allocateManually(teacherA, 8_000_000)).doesNotThrowAnyException();
@@ -147,13 +147,13 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void manual_allocation_still_counts_rows_of_users_who_are_still_eligible() {
-        // Mặt kia của cùng một luật: bỏ qua người đã nghỉ KHÔNG có nghĩa là bỏ qua mọi người vắng mặt
-        // trong yêu cầu. Đồng nghiệp còn đang tại chức thì phần của họ vẫn chiếm chỗ.
+        // The other side of the same rule: skipping the person who left does NOT mean skipping everyone absent
+        // from the request. A colleague still employed still has their share taking up room.
         givenExistingAllocations(allocation(teacherB, 6_000_000, 0));
 
         assertThatThrownBy(() -> allocateManually(teacherA, 8_000_000))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("vượt quá phần được phép chia");
+            .hasMessageContaining("exceeds the distributable share");
     }
 
     @Test
@@ -171,7 +171,7 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     // ---------------------------------------------------------------------
-    // Chia đều tự động
+    // Automatic even split
     // ---------------------------------------------------------------------
 
     @Test
@@ -188,10 +188,10 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void auto_split_does_not_overshoot_when_former_staff_still_hold_allocations() {
-        // Đây chính là cái bẫy cũ: chia đều phát hết phần được phép chia cho người đủ điều kiện, còn
-        // dòng của người đã nghỉ thì không ai đụng tới -- nên ngay sau một cú "chia đều tự động",
-        // tổng vượt trần và mọi lần sửa tay tiếp theo đều bị từ chối. Giờ tổng chỉ đếm người đủ điều
-        // kiện, nên chia đều xong là vừa khít trần, và sửa tay ngay sau đó vẫn chạy.
+        // This is the old trap: the even split handed out the whole distributable amount to the eligible people, while
+        // the row of the person who left was untouched -- so right after an "automatic even split"
+        // the total exceeded the cap and every following manual edit was rejected. Now the total counts only eligible
+        // people, so after the even split it fits the cap exactly, and a manual edit right after it still works.
         givenExistingAllocations(allocation(formerTeacher, 6_000_000, 0));
         captureAutoSplitAmounts(2);
 
@@ -204,7 +204,7 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     // ---------------------------------------------------------------------
-    // "Chưa chia" khác "chia 0 đồng"
+    // "Not distributed" differs from "distributed 0 dong"
     // ---------------------------------------------------------------------
 
     @Test
@@ -224,7 +224,7 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     // ---------------------------------------------------------------------
-    // Trần phân phối vs khả năng chi trả
+    // Distribution cap vs ability to pay
     // ---------------------------------------------------------------------
 
     @Test
@@ -257,7 +257,7 @@ class DistributeQuotaToUsersServiceTests {
     }
 
     // ---------------------------------------------------------------------
-    // Cổng xác nhận rút ví
+    // Balance-draw confirmation gate
     // ---------------------------------------------------------------------
 
     @Test
@@ -266,8 +266,8 @@ class DistributeQuotaToUsersServiceTests {
 
         assertThatThrownBy(() -> allocateManually(teacherA, 12_000_000))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessage("Phân bổ này vượt phần chia từ gói, sẽ trích thêm 2000000.000000đ từ ví tự nạp của trường "
-                + "(đang còn 4000000đ). Xác nhận để tiếp tục.");
+            .hasMessage("This allocation exceeds the share from the plan and will draw an extra 2000000.000000 VND from the school's self-funded balance "
+                + "(4000000 VND remaining). Confirm to continue.");
 
         assertThatCode(() -> service.distribute(
                 schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
@@ -277,14 +277,14 @@ class DistributeQuotaToUsersServiceTests {
 
     @Test
     void allocation_beyond_cap_and_wallet_is_refused_even_with_confirmation() {
-        // Xác nhận là để người dùng biết mình đang ăn vào ví chung, không phải để đi vòng qua giới hạn.
+        // The confirmation is so the user knows they are eating into the shared balance, not a way around the limit.
         givenWallet(1_000_000);
 
         assertThatThrownBy(() -> service.distribute(
                 schoolId, QuotaType.ASSESSMENT, SchoolRoleCodes.TEACHER, DistributionMode.MANUAL,
                 List.of(new AllocateUserQuotaAmountCommand(teacherA, BigDecimal.valueOf(12_000_000))), true))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("số dư ví tự nạp");
+            .hasMessageContaining("self-funded balance");
     }
 
     @Test
@@ -293,7 +293,7 @@ class DistributeQuotaToUsersServiceTests {
 
         assertThatThrownBy(() -> allocateManually(teacherA, 1_000_000))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("nhỏ hơn số lượng đã sử dụng");
+            .hasMessageContaining("lower than the amount already used");
     }
 
     // ---------------------------------------------------------------------

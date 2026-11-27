@@ -3,9 +3,9 @@ package com.sep.vox.application.port.output;
 import java.math.BigDecimal;
 
 /**
- * Tham số cho QuotaPricingCalibrationService -- cửa sổ dữ liệu, cỡ mẫu tối thiểu và biên an toàn
- * khi tự tính lại giá mỗi giây. Giá trị thật bind từ application.yaml
- * ({@code vox.quota.calibration.*}) ở QuotaPricingCalibrationProperties.
+ * Parameters for QuotaPricingCalibrationService -- the data window, the minimum sample size and the
+ * safety margin when the per-second price is recalculated automatically. The real values are bound
+ * from application.yaml ({@code vox.quota.calibration.*}) in QuotaPricingCalibrationProperties.
  */
 public interface QuotaPricingCalibrationConfigPort {
 

@@ -9,12 +9,11 @@ import java.util.UUID;
 
 public class PreviewRubricResultBandImportCommandMapper {
 
-    // Dành cho System Admin (Không có schoolId)
     public static PreviewRubricResultBandImportCommand fromSystemRequest(UUID versionId, MultipartFile file) {
         return new PreviewRubricResultBandImportCommand(null, versionId, toUploadedFile(file));
     }
 
-    // Dành cho School Admin (Phải truyền kèm schoolId để bảo mật)
+    // For School Admin (schoolId must be passed along, for security)
     public static PreviewRubricResultBandImportCommand fromSchoolRequest(UUID schoolId, UUID versionId, MultipartFile file) {
         return new PreviewRubricResultBandImportCommand(schoolId, versionId, toUploadedFile(file));
     }
@@ -28,7 +27,7 @@ public class PreviewRubricResultBandImportCommandMapper {
                     file.getBytes()
             );
         } catch (IOException e) {
-            throw new IllegalArgumentException("Hệ thống không thể xử lý dữ liệu từ file tải lên.");
+            throw new IllegalArgumentException("The system cannot process the data from the uploaded file.");
         }
     }
 }

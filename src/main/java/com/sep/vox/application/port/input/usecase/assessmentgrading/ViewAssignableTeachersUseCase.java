@@ -13,7 +13,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.query.dto.AssignableTeacherInfo;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
 
-/** Nguồn chung cho cả modal auto-assign lẫn dropdown gán tay / đổi giáo viên. */
+/** The shared source for both the auto-assign modal and the manual assign / change teacher dropdown. */
 @Service
 @RequiredArgsConstructor
 public class ViewAssignableTeachersUseCase

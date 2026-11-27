@@ -38,7 +38,7 @@ public class ViewProctorBusySlotsUseCase
             return List.of();
         }
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         // Same permission rule as the proctor directory: whoever can see the teacher list may also
         // know which of them are busy.
         assessmentDirectoryAccessService.resolveByAssessmentId(schedule.getAssessmentId());

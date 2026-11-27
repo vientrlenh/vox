@@ -16,10 +16,10 @@ import com.sep.vox.application.exception.UnauthorizedException;
 import com.sep.vox.infrastructure.properties.GoogleIdTokenProperties;
 
 /**
- * Cửa kiểm ID token của đường đăng nhập Google từ ứng dụng native.
+ * The ID token gate of the Google sign-in path from native apps.
  *
- * <p>Trọng tâm là hai phép kiểm mà Spring KHÔNG làm hộ ở đường này, và cả hai đều thuộc loại hỏng
- * mà không có triệu chứng: mọi lần đăng nhập thật vẫn chạy đúng như cũ, chỉ có cửa là mở.
+ * <p>The focus is the two checks that Spring does NOT do on this path, and both are the kind of failure
+ * with no symptom: every real sign-in still works exactly as before, only the gate is open.
  */
 class GoogleIdTokenProviderTests {
 
@@ -97,7 +97,7 @@ class GoogleIdTokenProviderTests {
 
         assertThatThrownBy(() -> provider.verify("bat-ky-chuoi-nao"))
             .isInstanceOf(UnauthorizedException.class)
-            .hasMessageContaining("chưa được cấu hình");
+            .hasMessageContaining("is not configured");
     }
 
     /** An empty token is not worth a network round trip to Google. */

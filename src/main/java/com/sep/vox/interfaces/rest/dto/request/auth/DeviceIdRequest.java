@@ -5,7 +5,7 @@ import com.sep.vox.application.port.input.command.auth.RefreshCommand;
 import jakarta.validation.constraints.NotBlank;
 
 public record DeviceIdRequest(
-    @NotBlank(message = "ID của thiết bị không được để trống")
+    @NotBlank(message = "Device ID must not be blank")
     String deviceId
 ) {
 

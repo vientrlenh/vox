@@ -15,10 +15,10 @@ import jakarta.validation.constraints.Size;
  *        stored on the appeal.
  */
 public record AssignAssessmentAppealReviewerRequest(
-    @NotNull(message = "Thiếu người chấm phúc khảo")
+    @NotNull(message = "The appeal grader is missing")
     UUID reviewerId,
 
-    @Size(max = 1024, message = "Lý do tối đa 1024 ký tự")
+    @Size(max = 1024, message = "Reason must not exceed 1024 characters")
     String overrideReason,
 
     Instant deadlineAt

@@ -84,6 +84,6 @@ class CreateSchoolRubricResultBandsUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
+            .hasMessage("Data save error: the result band code (Code) or order already exists in this Rubric version. Please check again.");
     }
 }

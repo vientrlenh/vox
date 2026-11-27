@@ -4,52 +4,52 @@ enum GradingAssignmentStatus {
 }
 
 """
-Vòng chấm. Một bài đi qua nhiều vòng theo thời gian, mỗi vòng một dòng phân công
-và tối đa một dòng đang mở.
+Grading round. A submission goes through several rounds over time, each round with one assignment row
+and at most one open row.
 """
 enum GradingRoundType {
-    "Chấm lần đầu bài chờ chấm"
+    "First grading of a submission awaiting grading"
     INITIAL
-    "Hậu kiểm bài đã công bố — bài GIỮ NGUYÊN trạng thái RELEASED suốt quá trình"
+    "Post-check of a published submission — the submission KEEPS its RELEASED status throughout"
     SPOT_CHECK
-    "Soi lại bài bị vô hiệu"
+    "Re-examination of an invalidated submission"
     REMEDIATION
-    "Chấm phúc khảo theo đơn học sinh; nộp là công bố"
+    "Appeal grading driven by the student's appeal; submitting publishes"
     APPEAL
 }
 
-"Kết luận của giáo viên khi đóng một phân công."
+"The teacher's conclusion when closing an assignment."
 enum GradingOutcome {
-    "Giữ nguyên điểm đang có"
+    "Keep the existing score"
     UPHELD
-    "Chấm lại, điểm thay đổi"
+    "Re-graded, the score changes"
     REGRADED
-    "Kết luận vi phạm -> bài INVALID"
+    "Violation found -> submission becomes INVALID"
     INVALIDATED
-    "Kết luận không vi phạm -> gỡ INVALID"
+    "No violation found -> INVALID is lifted"
     CLEARED_INVALID
-    "Giáo viên trả lại phân công"
+    "The teacher returns the assignment"
     DECLINED
 }
 
-"Cách chọn tập bài khi giao tự động."
+"How the set of submissions is chosen for automatic assignment."
 enum GradingSampleSelectionMode {
     ALL
-    "Bốc ngẫu nhiên N% — dùng cho hậu kiểm"
+    "Randomly pick N% — used for post-checks"
     RANDOM_PERCENT
-    "Ưu tiên AI kém tự tin / điểm sát ngưỡng đạt"
+    "Prefer submissions where the AI is less confident / the score is close to the pass threshold"
     RISK_BASED
     MANUAL_LIST
 }
 
-"Tiến độ của một giáo viên trong phạm vi đang xem."
+"Progress of one teacher within the scope being viewed."
 type GradingTeacherProgress {
     teacherId: ID!
     teacherName: String
     assigned: Int!
     completed: Int!
     overdue: Int!
-    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. Dùng cho ảnh đại diện."
+    "Teacher profile, loaded through the `userById` DataLoader. Used for the avatar."
     teacher: User
 }
 
@@ -60,20 +60,20 @@ type GradingResultStatusCount {
 }
 
 """
-Thẻ số đầu màn điều phối. Mẫu số là TOÀN BỘ bài của phạm vi đang xem — khác bản cũ
-vốn chỉ đếm bài chờ chấm, vì admin nay điều phối cả bốn vòng.
+Number cards at the top of the dispatch screen. The denominator is ALL submissions in the scope being viewed — unlike the old version,
+which only counted submissions awaiting grading, because the admin now dispatches all four rounds.
 """
 type GradingStats {
     total: Int!
     byResultStatus: [GradingResultStatusCount!]!
     """
-    Bài còn có thể nhận một vòng chấm (PENDING_REVIEW / RELEASED / INVALID / APPEALED /
-    RE_GRADING) mà chưa có phân công đang mở. Bài đã kết thúc vòng đời không tính vào đây.
+    Submissions that can still receive a grading round (PENDING_REVIEW / RELEASED / INVALID / APPEALED /
+    RE_GRADING) but have no open assignment. Submissions whose lifecycle has ended are not counted here.
     """
     unassigned: Int!
-    "Phân công đang mở"
+    "Open assignments"
     assigned: Int!
-    "Phân công đang mở đã quá hạn"
+    "Open assignments that are overdue"
     overdue: Int!
     teacherProgress: [GradingTeacherProgress!]!
 }
@@ -104,8 +104,8 @@ type GradingCriterionScore {
 }
 
 """
-Tiêu chí rubric kèm dải điểm THẬT. FE dựng ô nhập từ minScore/maxScore ở đây,
-không hardcode 0-9 — mỗi rubric một thang khác nhau.
+Rubric criterion with the REAL score range. The FE builds the input cells from minScore/maxScore here,
+not hardcoded 0-9 — each rubric has a different scale.
 """
 type GradingCriterionMeta {
     id: ID!
@@ -114,46 +114,46 @@ type GradingCriterionMeta {
     description: String
     minScore: Float
     maxScore: Float
-    "Trọng số dùng để quy đổi điểm tiêu chí thành điểm phần thi"
+    "Weight used to convert criterion scores into the part score"
     weight: Float
     required: Boolean!
 }
 
 """
-MỘT CÂU HỎI cần chấm, không phải một phần thi — một phần (section) có thể có nhiều câu.
-`partLabel` là tiêu đề section nên nhiều item dùng chung một nhãn; FE ghép thêm
-`orderInSection` để phân biệt.
+ONE QUESTION to grade, not one exam part — a part (section) can have many questions.
+`partLabel` is the section title so many items share one label; the FE adds
+`orderInSection` to tell them apart.
 """
 type GradingTaskItem {
     paperItemId: ID!
     responseId: ID!
     partLabel: String
-    "Section chứa câu này. Gộp câu theo ID này, KHÔNG theo partLabel — hai section có thể trùng tên."
+    "The section containing this question. Group questions by this ID, NOT by partLabel — two sections can have the same name."
     sectionId: ID
-    "Thứ tự của câu trong section, bắt đầu từ 1"
+    "Order of the question within the section, starting from 1"
     orderInSection: Int!
     """
-    Đề bài của câu — cùng nguồn với màn Xem kết quả (`questions.question_text`).
-    Null khi paper item không trỏ tới câu hỏi nào hoặc câu hỏi đã bị xoá.
-    KHÁC `GradingTurn.promptText`: cái đó là lời AI đọc lúc vào lượt, không phải đề bài.
+    The question text — same source as the Result screen (`questions.question_text`).
+    Null when the paper item points to no question or the question has been deleted.
+    DIFFERENT from `GradingTurn.promptText`: that one is what the AI said when entering the turn, not the question text.
     """
     questionText: String
     """
-    Tài nguyên đi kèm câu hỏi (ảnh / audio / video / đoạn văn). Null khi câu không có.
-    Thiếu nó thì giáo viên chấm câu tả tranh chỉ thấy đề bài và transcript, không có tấm ảnh —
-    không đối chiếu nổi câu trả lời với thứ thí sinh thực sự nhìn/nghe.
+    Resource attached to the question (image / audio / video / passage). Null when the question has none.
+    Without it a teacher grading a picture-description question only sees the question text and the transcript, not the picture —
+    so the answer cannot be matched against what the candidate actually saw/heard.
     """
     asset: QuestionAsset
-    "Điểm của bản chấm đang có hiệu lực (lần đầu là điểm AI) — mốc để đối chiếu"
+    "Score of the grading currently in effect (the AI score at first) — the reference point to compare against"
     currentItemScore: Float
     currentFeedbackSummary: String
     currentScores: [GradingCriterionScore!]!
-    "Luôn lấy từ bản AI — chỉ bản AI mới sinh lượt nói"
+    "Always taken from the AI version — only the AI version produces speaking turns"
     turns: [GradingTurn!]!
     """
-    Điểm tiêu chí kèm rationale của BẢN AI. Khác `currentScores`: sau khi chấm tay,
-    bản đang hiệu lực là bản HUMAN nên rationale của AI biến mất khỏi `currentScores`,
-    trong khi giáo viên ở vòng phúc khảo vẫn cần đọc AI đã lập luận gì.
+    Criterion scores with the rationale of the AI VERSION. Different from `currentScores`: after manual grading,
+    the version in effect is the HUMAN one so the AI's rationale disappears from `currentScores`,
+    while the teacher in the appeal round still needs to read what the AI reasoned.
     """
     aiScores: [GradingCriterionScore!]!
     aiOverallConfidence: Float
@@ -164,7 +164,7 @@ type GradingTaskItem {
     aiRequiresRetake: Boolean!
     "JSON string — EvaluationSignals (audioQuality, audioGateStatus, evidenceStatus, confidenceMode…)"
     aiSignals: String
-    "JSON string — ValidityResult, chứa ruleResults[] cho khối Vi phạm quy tắc"
+    "JSON string — ValidityResult, containing ruleResults[] for the Rule violations block"
     aiValidity: String
 }
 
@@ -304,32 +304,32 @@ type GradingAssignmentRowPage {
     totalPages: Int!
 }
 
-"Giáo viên có thể nhận bài, kèm tải hiện tại."
+"A teacher who can take submissions, with the current load."
 type AssignableTeacher {
     id: ID!
     name: String
-    "Số phân công đang mở đang giữ, gộp cả bốn vòng"
+    "Number of open assignments held, across all four rounds"
     load: Int!
     """
-    Hồ sơ người dùng của chính giáo viên này, nạp qua DataLoader `userById` -- không thêm join vào
-    read model. Chỉ hỏi khi cần ảnh đại diện; `name` ở trên vẫn đủ cho mọi thứ khác.
+    The user profile of this teacher, loaded through the `userById` DataLoader -- no extra join added to
+    the read model. Only query it when the avatar is needed; `name` above is enough for everything else.
     """
     user: User
 }
 
 """
-Một mục trong bộ lọc kỳ thi của hàng đợi giáo viên. Cố ý mỏng — đây là dropdown, không
-phải màn kỳ thi: mỗi field thêm vào đây là một field giáo viên đọc được về kỳ thi tập
-trung mà họ không phải thành viên.
+An entry in the exam filter of the teacher queue. Deliberately thin — this is a dropdown, not
+an exam screen: every field added here is one more field a teacher can read about a centralized
+exam they are not a member of.
 """
 type GradingAssessmentOption {
     id: ID!
-    "Mã kỳ thi — tên kỳ thi trùng nhau giữa các đợt, mã thì không."
+    "Exam code — exam names repeat across rounds, codes do not."
     code: String
     name: String
-    "Tổng số bài được giao ở kỳ thi này, gộp cả bốn vòng và cả phân công đã đóng"
+    "Total submissions assigned in this exam, across all four rounds and including closed assignments"
     taskCount: Int!
-    "Trong đó còn phải chấm (ASSIGNED)"
+    "Of which still to be graded (ASSIGNED)"
     openTaskCount: Int!
 }
 
@@ -364,30 +364,30 @@ type ResultStatusHistoryEntry {
     createdAt: DateTime!
 }
 
-"Chất lượng AI theo từng giáo viên hậu kiểm."
+"AI quality per post-check teacher."
 type AiQualityByTeacher {
     teacherId: ID
     teacherName: String
     reviewed: Int!
     regraded: Int!
-    "Lệch tuyệt đối trung bình trên các bài người này đã sửa điểm"
+    "Mean absolute deviation over the submissions this person corrected"
     averageDelta: Float
-    "Hồ sơ giáo viên, nạp qua DataLoader `userById`. null khi teacherId null."
+    "Teacher profile, loaded through the `userById` DataLoader. null when teacherId is null."
     teacher: User
 }
 
 """
-"AI chấm lệch bao nhiêu", đo từ chính dữ liệu hậu kiểm. Mẫu số là các vòng
-SPOT_CHECK đã hoàn thành — vòng INITIAL không tính vì ở đó AI vốn chưa được coi là chốt.
+"How far off the AI grades", measured from the post-check data itself. The denominator is the completed
+SPOT_CHECK rounds — INITIAL rounds are not counted because there the AI was not yet considered final.
 """
 type AiQualityReport {
     reviewed: Int!
     upheld: Int!
     regraded: Int!
     invalidated: Int!
-    "Phần trăm bài bị sửa điểm; null khi chưa hậu kiểm bài nào"
+    "Percentage of submissions whose score was corrected; null when no submission has been post-checked yet"
     regradeRate: Float
-    "Lệch tuyệt đối trung bình, chỉ tính trên các bài bị sửa điểm"
+    "Mean absolute deviation, counted only over submissions whose score was corrected"
     averageDelta: Float
     maxDelta: Float
     byTeacher: [AiQualityByTeacher!]!
@@ -420,32 +420,32 @@ extend type Query {
         size: Int = 20
     ): GradingAssignmentRowPage!
 
-    "Cùng luật `kind` với `gradingAssignments` — hai chỗ phải đếm trên cùng một tập."
+    "Same `kind` rule as `gradingAssignments` — the two places must count over the same set."
     gradingStats(assessmentId: ID, scheduleId: ID, kind: AssessmentKind): GradingStats!
 
     """
-    Tiến độ chấm của MỘT bài kiểm tra trên lớp, cho chính giáo viên tạo bài. Tách khỏi
-    `gradingStats` vì ở đó `assessmentId` rỗng nghĩa là toàn trường -- nới quyền chỗ đó là để
-    một giáo viên đọc được tiến độ chấm của cả trường.
+    Grading progress of ONE class test, for the teacher who created it. Separate from
+    `gradingStats` because there an empty `assessmentId` means the whole school -- widening the permission there would let
+    a teacher read the grading progress of the whole school.
     """
     classTestGradingStats(assessmentId: ID!): GradingStats!
 
     """
-    Hàng đợi bài của giáo viên đang đăng nhập, cả bốn vòng. Phân trang 0-based.
-    CHỈ kỳ thi tập trung — bài kiểm tra trên lớp đi `myClassTestGradingTasks`.
+    Queue of submissions of the logged-in teacher, across all four rounds. Pagination is 0-based.
+    ONLY centralized exams — class tests go through `myClassTestGradingTasks`.
     """
     myGradingTasks(
         """
-        Thu hẹp về MỘT kỳ thi. Bỏ trống = mọi kỳ thi giáo viên đang có bài. Đây thuần là
-        bộ lọc, không phải cổng phân quyền: phạm vi vẫn là phân công của chính người gọi,
-        nên id của kỳ thi mình không có bài chỉ cho ra danh sách rỗng.
-        Danh sách kỳ thi để đổ vào dropdown lấy ở `myGradingAssessments`.
+        Narrow to ONE exam. Empty = every exam in which the teacher has submissions. This is purely a
+        filter, not a permission gate: the scope is still the caller's own assignments,
+        so the id of an exam in which they have no submissions just yields an empty list.
+        The list of exams to fill the dropdown comes from `myGradingAssessments`.
         """
         assessmentId: ID,
         status: GradingAssignmentStatus,
         roundType: GradingRoundType,
         page: Int = 1,
-        "Tối đa 100 — giá trị lớn hơn bị kẹp xuống 100 chứ không báo lỗi."
+        "At most 100 — a larger value is clamped to 100 rather than reporting an error."
         size: Int = 20
     ): GradingTaskPage!
 
@@ -491,17 +491,17 @@ extend type Query {
 
     gradingTaskDetail(assignmentId: ID!): GradingTaskDetail!
 
-    "Dùng cho cả modal phân công tự động lẫn dropdown gán tay / đổi giáo viên."
+    "Used for both the automatic assignment modal and the dropdown for manual assignment / changing teacher."
     assignableTeachers(search: String): [AssignableTeacher!]!
 
     """
-    Dòng thời gian điểm của một bài, cũ trước. Học sinh xem được của CHÍNH MÌNH,
-    school admin xem được của bài thuộc trường mình, giáo viên xem được bài mình ĐÃ
-    TỪNG được giao chấm — kể cả khi phân công đó đã đóng, vì ở vòng phúc khảo người
-    chấm vòng trước chính là người bị hỏi lại.
+    Score timeline of one submission, oldest first. A student can view their OWN,
+    a school admin can view submissions of their school, a teacher can view submissions they HAVE
+    EVER been assigned to grade — even after that assignment has closed, because in the appeal round the person
+    who graded the previous round is exactly the one being questioned.
     """
     resultStatusHistory(candidateResultId: ID!): [ResultStatusHistoryEntry!]!
 
-    "Báo cáo chất lượng AI. Bỏ trống assessmentId để xem toàn trường."
+    "AI quality report. Leave assessmentId empty to see the whole school."
     aiQualityReport(assessmentId: ID): AiQualityReport!
 }

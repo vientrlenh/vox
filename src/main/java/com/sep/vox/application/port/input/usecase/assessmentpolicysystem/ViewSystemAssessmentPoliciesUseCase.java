@@ -34,7 +34,7 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
         String safeStatus = query.status() == null ? null : query.status().name();
 
         if (query.effectiveFrom() != null && query.effectiveTo() != null && query.effectiveFrom().isAfter(query.effectiveTo())) {
-            throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");
+            throw new IllegalArgumentException("The effectiveFrom/effectiveTo period is invalid.");
         }
 
         safeStatus = restrictStatusForNonSystemAdmin(safeStatus);
@@ -47,9 +47,9 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
     private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
     }
 
@@ -64,7 +64,7 @@ public class ViewSystemAssessmentPoliciesUseCase implements IUseCase<ViewSystemA
         }
         if (safeStatus != null && !AssessmentPolicyStatus.PUBLISHED.name().equals(safeStatus)) {
             throw new IllegalArgumentException(
-                    "Chỉ xem được các chính sách mẫu đã ban hành (PUBLISHED).");
+                    "Only published (PUBLISHED) template policies can be viewed.");
         }
         return AssessmentPolicyStatus.PUBLISHED.name();
     }

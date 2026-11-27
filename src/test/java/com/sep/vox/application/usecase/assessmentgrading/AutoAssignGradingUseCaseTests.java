@@ -176,7 +176,7 @@ public class AutoAssignGradingUseCaseTests {
             useCase.execute(new AutoAssignGradingCommand(null, null, GradingRoundType.INITIAL,
                 GradingSampleSelectionMode.ALL, null, null, null, List.of(anh))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("kỳ thi hoặc ca thi");
+            .hasMessageContaining("assessment or an assessment schedule");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -185,25 +185,25 @@ public class AutoAssignGradingUseCaseTests {
     void should_reject_an_empty_teacher_group() {
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("ít nhất một giáo viên");
+            .hasMessageContaining("At least one teacher");
     }
 
     @Test
     void should_reject_duplicate_teachers() {
         assertThatThrownBy(() -> useCase.execute(command(anh, anh)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("trùng giáo viên");
+            .hasMessageContaining("same teacher");
     }
 
     @Test
     void should_reject_a_grader_who_is_not_a_teacher_of_the_same_school() {
-        // Query lọc chỉ trả anh — binh không thuộc trường nên bị loại.
+        // The query filter only returns Anh -- Binh is not in the school, so is excluded.
         when(assessmentGradingQueryRepository.findTeacherIdsInSchool(eq(schoolId), anyCollection()))
             .thenReturn(Set.of(anh));
 
         assertThatThrownBy(() -> useCase.execute(command(anh, binh)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("cùng trường");
+            .hasMessageContaining("same school");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -215,7 +215,7 @@ public class AutoAssignGradingUseCaseTests {
         useCase.execute(new AutoAssignGradingCommand(assessmentId, null, GradingRoundType.SPOT_CHECK,
             GradingSampleSelectionMode.RANDOM_PERCENT, 30, null, null, List.of(anh, binh)));
 
-        // Hậu kiểm không ai soi 100% bài; 30% của 10 là 3.
+        // The post-check does not look at 100% of the submissions; 30% of 10 is 3.
         assertThat(captureSaved()).hasSize(3);
     }
 

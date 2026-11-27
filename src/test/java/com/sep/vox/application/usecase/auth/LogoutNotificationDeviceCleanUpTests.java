@@ -30,36 +30,36 @@ import com.sep.vox.domain.repository.RefreshTokenRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Đăng xuất phải gỡ luôn thiết bị nhận thông báo của máy vừa đăng xuất.
+ * Logout must also remove the notification device of the machine that just logged out.
  *
- * <p>Vì sao cần transaction thật: bug gốc nằm ĐÚNG ở ranh giới giao dịch, không ở logic nào cả.
- * {@code NotificationDeviceRevokeListener} chạy ở pha AFTER_COMMIT, và lúc đó
- * {@code EntityManagerHolder} của giao dịch vừa commit vẫn còn gắn vào thread -- nên một
- * {@code @Transactional} propagation mặc định (REQUIRED) sẽ THAM GIA vào giao dịch đã chết thay vì
- * mở giao dịch mới, và câu DELETE bị Hibernate từ chối với
- * {@code No active transaction for update or delete query}.
+ * <p>Why a real transaction is needed: the original bug sits EXACTLY on the transaction boundary, not in any
+ * logic. {@code NotificationDeviceRevokeListener} runs in the AFTER_COMMIT phase, and at that moment the
+ * {@code EntityManagerHolder} of the transaction that just committed is still bound to the thread -- so a
+ * default-propagation (REQUIRED) {@code @Transactional} JOINS the dead transaction instead of opening a new
+ * one, and Hibernate rejects the DELETE with {@code No active transaction for update or delete query}.
  *
- * <p>Hỏng này IM LẶNG hoàn toàn: {@code TransactionSynchronizationUtils} bắt Throwable và chỉ log
- * ERROR, nên /logout vẫn trả 200 và phiên vẫn bị thu hồi đúng. Thứ duy nhất mất đi là việc gỡ
- * thiết bị -- tức là trên máy phòng lab, thông báo điểm của học sinh vừa rời ghế vẫn hiện lên cho
- * học sinh ngồi xuống sau. Không có test nào ở tầng dưới thấy được điều đó:
- * {@code LogoutUseCaseTests} và {@code DeviceSessionProviderTests} đều dựng đối tượng bằng
- * {@code new} với mock, nên không có proxy, không có giao dịch, và listener không bao giờ chạy.
+ * <p>This failure is completely SILENT: {@code TransactionSynchronizationUtils} catches the Throwable and only
+ * logs an ERROR, so /logout still returns 200 and the session is still revoked correctly. The only thing
+ * lost is removing the device -- meaning that on a lab computer, the grade notifications of the student who
+ * just left the seat still pop up for the student who sits down next. No test at a lower level can see that:
+ * {@code LogoutUseCaseTests} and {@code DeviceSessionProviderTests} both build the objects with {@code new}
+ * and mocks, so there is no proxy, no transaction, and the listener never runs.
  *
- * <p>Lớp này CỐ Ý không {@code @Transactional}: một test bọc trong giao dịch rollback thì không bao
- * giờ commit, mà không commit thì pha AFTER_COMMIT không xảy ra -- test sẽ xanh mà chẳng kiểm được
- * gì.
+ * <p>This class is DELIBERATELY not {@code @Transactional}: a test wrapped in a rollback transaction never
+ * commits, and without a commit the AFTER_COMMIT phase never happens -- the test would be green and check
+ * nothing.
  *
- * <p>Mỗi test dùng {@code userId} và {@code installationId} sinh mới, nên các dòng còn sót lại
- * không ảnh hưởng lẫn nhau; schema vốn cũng bị dựng lại theo vòng đời context.
+ * <p>Each test uses a freshly generated {@code userId} and {@code installationId}, so leftover rows do not
+ * affect each other; the schema is rebuilt with the context lifecycle anyway.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
-// application-test.yaml ghim pool ở 2, mà một lần đăng xuất giữ tới BA kết nối cùng lúc: giao dịch
-// ngoài của LogoutUseCase, giao dịch REQUIRES_NEW của revoke (giao dịch ngoài bị treo nhưng vẫn giữ
-// kết nối), rồi giao dịch REQUIRES_NEW của listener -- kết nối của revoke chưa được trả lại lúc
-// callback AFTER_COMMIT chạy, vì Spring chỉ trả ở cleanupAfterCompletion. Với pool 2 thì listener
-// chờ hết 30 giây rồi chết vì "Connection is not available", chứ không phải vì lỗi giao dịch.
+// application-test.yaml pins the pool at 2, but one logout holds up to THREE connections at once: the outer
+// transaction of LogoutUseCase, the REQUIRES_NEW transaction of revoke (the outer transaction is suspended
+// but keeps its connection), then the REQUIRES_NEW transaction of the listener -- the revoke connection has
+// not been returned when the AFTER_COMMIT callback runs, because Spring only returns it in
+// cleanupAfterCompletion. With a pool of 2 the listener waits 30 seconds and dies with "Connection is not
+// available", not with a transaction error.
 @TestPropertySource(properties = "spring.datasource.hikari.maximum-pool-size=5")
 class LogoutNotificationDeviceCleanUpTests {
 
@@ -85,16 +85,16 @@ class LogoutNotificationDeviceCleanUpTests {
     private TransactionTemplate transactionTemplate;
 
     /**
-     * Rỗng = người gọi không mang access token còn hạn. Đó là trạng thái của một phiên bị bỏ quên
-     * và là đường đi mà {@link LogoutUseCase} chỉ còn cookie làm bằng chứng -- cũng là đường ngắn
-     * nhất tới listener đang được kiểm ở đây.
+     * Empty = the caller carries no valid access token. That is the state of an abandoned session and the path
+     * where {@link LogoutUseCase} has only the cookie as evidence -- also the shortest path to the listener
+     * being checked here.
      */
     @MockitoBean
     private UserContextPort userContextPort;
 
     private UUID userId;
     private UUID sessionId;
-    /** Sinh mới mỗi test: {@code refresh_tokens.token_hash} có unique index (idx_refresh_token_hash). */
+    /** Fresh for every test: {@code refresh_tokens.token_hash} has a unique index (idx_refresh_token_hash). */
     private String rawRefreshToken;
 
     @BeforeEach
@@ -124,8 +124,8 @@ class LogoutNotificationDeviceCleanUpTests {
     void should_remove_the_notification_device_of_the_logged_out_device() {
         logoutUseCase.execute(new LogoutCommand(rawRefreshToken, DEVICE_ID));
 
-        // Phiên bị thu hồi là điều kiện để listener chạy -- kiểm luôn để một ngày nào đó test này
-        // hỏng vì logout không còn thu hồi được gì thì không bị đọc nhầm thành "đã gỡ thiết bị".
+        // The session being revoked is the condition for the listener to run -- also checked here so that if this
+        // test ever breaks because logout no longer revokes anything, it is not misread as "device removed".
         assertThat(deviceSessionRepository.findById(sessionId).orElseThrow().isRevoked()).isTrue();
         assertThat(notificationDeviceRepository.findByUserId(userId)).isEmpty();
     }

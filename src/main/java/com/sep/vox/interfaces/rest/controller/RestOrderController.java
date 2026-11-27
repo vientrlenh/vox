@@ -49,8 +49,8 @@ public class RestOrderController {
     private final RenewSchoolSubscriptionUseCase renewSchoolSubscriptionUseCase;
 
     /**
-     * Đặt đơn mua một chu kỳ gói. Trả về id đơn ở trạng thái PENDING -- gói CHƯA được cấp, bước tiếp
-     * theo là phát link thanh toán cho đơn này.
+     * Places an order to buy one subscription plan cycle. Returns the id of the order in PENDING status -- the plan
+     * is NOT granted yet; the next step is to issue a payment link for this order.
      */
     @PostMapping("/subscription")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -59,12 +59,12 @@ public class RestOrderController {
         UUID data = createSubscriptionOrderUseCase.execute(
             new CreateSubscriptionOrderCommand(request.subscriptionPlanId()));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Đặt đơn đăng ký gói thành công", data));
+            .body(ApiResponse.success("Subscription order placed successfully", data));
     }
 
     /**
-     * Đặt đơn nạp thêm số dư. Trả về id đơn ở trạng thái PENDING -- số dư CHƯA được cộng, chỉ cộng khi
-     * tiền về thật (khác hẳn BuyTokensUseCase cũ, cộng hạn mức ngay lúc gọi).
+     * Places a balance top-up order. Returns the id of the order in PENDING status -- the balance is NOT credited yet,
+     * only when the money really arrives (unlike the old BuyTokensUseCase, which credited the quota at call time).
      */
     @PostMapping("/topup")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -72,7 +72,7 @@ public class RestOrderController {
             @Valid @RequestBody CreateTopUpOrderRequest request) {
         UUID data = createTopUpOrderUseCase.execute(new CreateTopUpOrderCommand(request.creditAmountVnd()));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Đặt đơn nạp thêm thành công", data));
+            .body(ApiResponse.success("Top-up order placed successfully", data));
     }
 
     /**
@@ -90,22 +90,22 @@ public class RestOrderController {
             @Valid @RequestBody RenewSchoolSubscriptionRequest request) {
         UUID data = renewSchoolSubscriptionUseCase.execute(new RenewSchoolSubscriptionCommand(request.acceptedPlanId()));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Đặt đơn gia hạn thành công", data));
+            .body(ApiResponse.success("Renewal order placed successfully", data));
     }
 
     /**
-     * Hủy một đơn chưa trả tiền.
+     * Cancels an unpaid order.
      *
-     * <p>PATCH chứ không DELETE: đơn KHÔNG bị xóa, nó chuyển sang trạng thái CANCELLED và ở lại
-     * trong lịch sử mua hàng của trường. DELETE sẽ hứa hẹn một thứ không xảy ra.
+     * <p>PATCH rather than DELETE: the order is NOT deleted, it moves to the CANCELLED status and stays in the
+     * school's purchase history. DELETE would promise something that does not happen.
      *
-     * <p>Có thể thất bại dù đơn còn PENDING -- xem CancelOrderUseCase: đơn đang có phiên thanh toán
-     * sống ở cổng không cho hủy sớm (SePay) thì phải đợi hết hạn.
+     * <p>Can fail even while the order is still PENDING -- see CancelOrderUseCase: an order that has a live payment
+     * session at a gateway that does not allow early cancellation (SePay) must wait until it expires.
      */
     @PatchMapping("/{orderId}/cancellation")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> cancelOrder(@PathVariable(name = "orderId") UUID orderId) {
         UUID data = cancelOrderUseCase.execute(new CancelOrderCommand(orderId));
-        return ResponseEntity.ok(ApiResponse.success("Hủy đơn hàng thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Order cancelled successfully", data));
     }
 }

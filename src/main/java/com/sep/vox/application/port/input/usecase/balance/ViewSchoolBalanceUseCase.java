@@ -12,10 +12,10 @@ import com.sep.vox.domain.dto.SchoolBalanceDto;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 
 /**
- * Số dư ví của một trường.
+ * The balance of a school.
  *
- * <p>Không bao giờ trả null: trường chưa từng chạm vào ví nhận một bản 0 đồng dựng tại chỗ -- xem
- * {@link SchoolBalanceDto#emptyFor}.
+ * <p>Never returns null: a school that has never touched the balance gets a zero-VND instance built on the spot
+ * -- see {@link SchoolBalanceDto#emptyFor}.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,9 +29,9 @@ public class ViewSchoolBalanceUseCase implements IUseCase<UUID, SchoolBalanceDto
     public SchoolBalanceDto execute(UUID schoolId) {
         schoolScopedReadGuard.requireCanRead(schoolId);
 
-        // findBySchoolId, KHÔNG phải findBySchoolIdForUpdateOrCreate: bản kia khoá dòng và TẠO nếu
-        // chưa có, nên dùng ở đường đọc sẽ đẻ ra một dòng số dư rỗng cho mọi trường chỉ vì có người
-        // mở trang -- và làm thế trong một transaction readOnly.
+        // findBySchoolId, NOT findBySchoolIdForUpdateOrCreate: the latter locks the row and CREATES it if missing, so
+        // using it on a read path would spawn an empty balance row for every school just because somebody opened the
+        // page -- and do so inside a readOnly transaction.
         return schoolBalanceRepository.findBySchoolId(schoolId)
             .map(SchoolBalanceDto::toDto)
             .orElseGet(() -> SchoolBalanceDto.emptyFor(schoolId));

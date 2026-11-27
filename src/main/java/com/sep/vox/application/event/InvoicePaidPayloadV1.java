@@ -8,15 +8,16 @@ import java.util.UUID;
 import com.sep.vox.domain.model.invoice.InvoiceSourceType;
 
 /**
- * Hóa đơn đã thu tiền. Người nhận là mọi SCHOOL_ADMIN của trường.
+ * An invoice has been paid. Every SCHOOL_ADMIN of the school is a recipient.
  *
- * <p>{@code schoolAdminIds} được chốt ngay lúc phát sự kiện chứ không truy vấn lại ở
- * consumer: nhờ vậy mỗi lần chạy lại (retry, replay từ DLT) đều ra đúng tập người nhận cũ
- * và ràng buộc uk_notifications_user_event chặn được trùng. Nếu resolve tại consumer, một
- * admin mới thêm giữa hai lần retry sẽ nhận thông báo về hóa đơn đã cũ.
+ * <p>{@code schoolAdminIds} is fixed when the event is published and is not queried again in
+ * the consumer: every re-run (retry, replay from the DLT) then produces the same recipient set
+ * and the uk_notifications_user_event constraint rejects duplicates. If it were resolved in the
+ * consumer, an admin added between two retries would receive a notification about an old invoice.
  *
- * <p>Phần chi tiết hạn mức đã mua KHÔNG nằm ở đây: chỉ mail cần tới nó, và nó cần vài lượt
- * truy vấn để dựng. Consumer mail tự lấy từ {@code subscriptionId}/{@code sourceId}.
+ * <p>The details of the purchased quota are NOT carried here: only the mail needs them, and
+ * building them takes a few queries. The mail consumer loads them from
+ * {@code subscriptionId}/{@code sourceId}.
  */
 public record InvoicePaidPayloadV1(
     List<UUID> schoolAdminIds,

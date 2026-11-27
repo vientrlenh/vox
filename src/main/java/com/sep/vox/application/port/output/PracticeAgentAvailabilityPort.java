@@ -1,14 +1,15 @@
 package com.sep.vox.application.port.output;
 
 /**
- * Kiểm tra dịch vụ AI có sẵn sàng nhận phiên luyện nói hay không. Implement bởi
+ * Checks whether the AI service is ready to accept a speaking-practice session. Implemented by
  * PracticeAgentAvailabilityClient.
  */
 public interface PracticeAgentAvailabilityPort {
 
     /**
-     * Ném IllegalStateException nếu dịch vụ AI chưa sẵn sàng -- KHÔNG suy giảm êm như các port AI
-     * khác, vì vào phiên mà agent chưa sống thì học sinh ngồi chờ vô ích, thà chặn ngay từ đầu.
+     * Throws IllegalStateException if the AI service is not ready -- does NOT degrade gracefully
+     * like the other AI ports, because entering a session while the agent is not alive makes the
+     * student wait for nothing, so it is better to block right from the start.
      */
     void requireReady();
 }

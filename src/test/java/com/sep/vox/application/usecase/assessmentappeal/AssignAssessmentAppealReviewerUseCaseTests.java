@@ -38,8 +38,8 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 /**
- * Luật xung đột lợi ích là điểm nghiệp vụ mới quan trọng nhất của vòng phúc khảo:
- * người đã ra phán quyết điểm cho bài này không được ngồi soi lại chính phán quyết đó.
+ * The conflict-of-interest rule is the most important new business point of the appeal round:
+ * the person who ruled on the score of this submission must not sit and re-examine that same ruling.
  */
 class AssignAssessmentAppealReviewerUseCaseTests {
 
@@ -137,7 +137,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
     void should_refuse_a_teacher_who_already_scored_this_paper() {
         assertThatThrownBy(() -> useCase.execute(command(teacherWhoGraded, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã từng chấm");
+            .hasMessageContaining("has graded this submission before");
 
         verify(assessmentGradingAssignmentRepository, never()).save(any());
     }
@@ -146,7 +146,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
     void should_allow_that_teacher_when_the_admin_gives_a_reason() {
         useCase.execute(command(teacherWhoGraded, "Trường chỉ có 2 giáo viên tiếng Anh"));
 
-        // Trường nhỏ không đủ người là có thật; nhưng lý do phải nằm lại trên đơn.
+        // A small school with too few people is real; but the reason must stay on the appeal.
         assertThat(appeal.getReviewerOverrideReason()).isEqualTo("Trường chỉ có 2 giáo viên tiếng Anh");
         assertThat(captureSaved().getTeacherId()).isEqualTo(teacherWhoGraded);
     }
@@ -155,8 +155,8 @@ class AssignAssessmentAppealReviewerUseCaseTests {
     void should_not_record_an_override_reason_for_a_teacher_with_no_conflict() {
         useCase.execute(command(freshTeacher, "lý do thừa"));
 
-        // Người chỉ UPHOLD (không ghi evaluation) không bị coi là xung đột, nên không
-        // có gì để override và đơn không mang tiếng là đã phải phá luật.
+        // A person who only UPHELD (wrote no evaluation) is not treated as conflicted, so there is
+        // nothing to override and the appeal is not branded as having broken the rule.
         assertThat(appeal.getReviewerOverrideReason()).isNull();
     }
 
@@ -166,7 +166,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(freshTeacher, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã được duyệt");
+            .hasMessageContaining("approved appeal");
     }
 
     @Test
@@ -175,7 +175,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
             .thenReturn(Optional.of(AssessmentGradingAssignment.open(candidateResultId, UUID.randomUUID(),
                 GradingRoundType.SPOT_CHECK, null, null, java.time.Instant.now(), adminId, null)));
 
-        // Hai người cùng ghi điểm một bài là nguồn gốc của review BE-4.
+        // Two people scoring the same submission is the origin of review BE-4.
         assertThatThrownBy(() -> useCase.execute(command(freshTeacher, null)))
             .isInstanceOf(ResourceDuplicatedException.class);
     }
@@ -184,7 +184,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
     void should_reject_assigning_the_student_themselves() {
         assertThatThrownBy(() -> useCase.execute(command(studentId, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chính thí sinh");
+            .hasMessageContaining("The candidate cannot be assigned");
     }
 
     @Test
@@ -193,7 +193,7 @@ class AssignAssessmentAppealReviewerUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(freshTeacher, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("cùng trường");
+            .hasMessageContaining("same school");
     }
 
     @Test

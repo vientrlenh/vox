@@ -34,7 +34,7 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionAsset sourceAsset = questionEditAccessService.requireAssetOf(question, input.assetId());
         boolean immutable = questionEditAccessService.authorizeRegeneration(question, currentUserId);
 
@@ -52,7 +52,7 @@ public class RegenerateQuestionAssetAnalysisUseCase implements IUseCase<Regenera
     }
 
     private void resetForAnalysis(QuestionAsset asset) {
-        // Explicit user action ("Tạo lại bằng AI") -- always overwrites, regardless of whether
+        // Explicit user action ("Regenerate with AI") -- always overwrites, regardless of whether
         // the current content was typed by a person or previously written by AI. Clearing the
         // field to blank here is what lets publishIfNeeded/the completed-consumer's blank-check
         // write into it again.

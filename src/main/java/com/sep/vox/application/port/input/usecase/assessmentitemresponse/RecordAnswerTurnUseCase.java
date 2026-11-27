@@ -31,7 +31,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         requireValidTurnInput(input);
 
         if (!assessmentSessionRepository.existsById(input.sessionId())) {
-            throw new ResourceNotFoundException("Không tìm thấy phiên thi cho turn đã ghi nhận");
+            throw new ResourceNotFoundException("Assessment session not found for the recorded turn");
         }
 
         Instant answeredAt = input.answeredAt() == null ? Instant.now() : input.answeredAt();
@@ -45,13 +45,13 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
 
     private void requireValidTurnInput(RecordAnswerTurnCommand input) {
         if (input.sessionId() == null) {
-            throw new IllegalArgumentException("Thiếu sessionId trong dữ liệu turn");
+            throw new IllegalArgumentException("sessionId is missing from the turn payload");
         }
         if (input.answerId() == null) {
-            throw new IllegalArgumentException("Thiếu answerId trong dữ liệu turn");
+            throw new IllegalArgumentException("answerId is missing from the turn payload");
         }
         if (input.turnOrder() <= 0) {
-            throw new IllegalArgumentException("turnOrder phải lớn hơn 0");
+            throw new IllegalArgumentException("turnOrder must be greater than 0");
         }
     }
 
@@ -156,7 +156,7 @@ public class RecordAnswerTurnUseCase implements IUseCase<RecordAnswerTurnCommand
         try {
             return TurnType.valueOf(normalized);
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("turnType không hợp lệ");
+            throw new IllegalArgumentException("turnType is invalid");
         }
     }
 }

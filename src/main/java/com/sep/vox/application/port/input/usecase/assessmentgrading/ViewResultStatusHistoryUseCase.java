@@ -22,14 +22,14 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 /**
- * Dòng thời gian điểm của một bài: ai, lúc nào, từ trạng thái nào sang trạng thái nào,
- * vì sao, điểm trước → sau.
+ * The score timeline of a submission: who, when, from which status to which status,
+ * why, score before → after.
  *
- * <p>Ba nhóm người xem, ba lý do khác nhau: school admin cần nó để giải trình tranh
- * chấp, học sinh cần nó để hiểu vì sao điểm mình thay đổi, và giáo viên ĐÃ TỪNG được
- * giao bài cần nó làm ngữ cảnh — nhất là ở vòng phúc khảo, nơi câu hỏi đúng là "điểm
- * này đã đi qua những tay nào". Học sinh chỉ xem được bài của chính mình; giáo viên chỉ
- * xem được bài mình từng cầm, kể cả khi phân công đó đã đóng.
+ * <p>Three groups of viewers, three different reasons: a school admin needs it to justify a
+ * dispute, a student needs it to understand why their score changed, and a teacher WHO WAS EVER
+ * assigned the submission needs it as context -- especially in the appeal round, where the right question is "which
+ * hands has this score passed through". A student can only see their own submission; a teacher can only
+ * see submissions they once held, even if that assignment is already closed.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
     public List<ResultStatusHistoryInfo> execute(UUID candidateResultId) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         AssessmentCandidateResult result = assessmentCandidateResultRepository.findById(candidateResultId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Submission result not found."));
 
         // The owner of the attempt can always see their own history -- checked first so a student does not
         // go through the admin authorization branch and receive ForbiddenException.
@@ -83,7 +83,7 @@ public class ViewResultStatusHistoryUseCase implements IUseCase<UUID, List<Resul
             return;
         }
         Assessment assessment = assessmentRepository.findById(result.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found."));
         assessmentGradingAccessService.authorizeSchoolAdmin(assessment.getSchoolId(), currentUserId);
     }
 }

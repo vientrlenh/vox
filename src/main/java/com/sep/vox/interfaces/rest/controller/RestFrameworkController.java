@@ -78,7 +78,7 @@ public class RestFrameworkController {
         CreateFrameworkCommand command = CreateFrameworkRequest.toCommand(request);
         UUID id = createFrameworkUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo framework thành công", id));
+            .body(ApiResponse.success("Framework created successfully", id));
     }
 
     @PatchMapping("/{frameworkId}")
@@ -88,21 +88,21 @@ public class RestFrameworkController {
             @Valid @RequestBody UpdateFrameworkRequest request) {
         UpdateFrameworkCommand command = UpdateFrameworkRequest.toCommand(frameworkId, request);
         UUID id = updateFrameworkUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật framework thành công", id));
+        return ResponseEntity.ok(ApiResponse.success("Framework updated successfully", id));
     }
 
     @PatchMapping("/{frameworkId}/activate")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> activateFramework(@PathVariable(name = "frameworkId") UUID frameworkId) {
         UUID id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, true));
-        return ResponseEntity.ok(ApiResponse.success("Kích hoạt framework thành công", id));
+        return ResponseEntity.ok(ApiResponse.success("Framework activated successfully", id));
     }
 
     @PatchMapping("/{frameworkId}/deactivate")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> deactivateFramework(@PathVariable(name = "frameworkId") UUID frameworkId) {
         UUID id = updateFrameworkStatusUseCase.execute(new UpdateFrameworkActiveStatusCommand(frameworkId, false));
-        return ResponseEntity.ok(ApiResponse.success("Vô hiệu hóa framework thành công", id));
+        return ResponseEntity.ok(ApiResponse.success("Framework deactivated successfully", id));
     }
 
     @DeleteMapping("/{frameworkId}")
@@ -120,7 +120,7 @@ public class RestFrameworkController {
         CreateFrameworkVersionCommand command = CreateFrameworkVersionRequest.toCommand(frameworkId, request);
         CreateFrameworkVersionResponse data = createFrameworkVersionUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo phiên bản framework thành công", data));
+            .body(ApiResponse.success("Framework version created successfully", data));
     }
 
     @PatchMapping("/{frameworkId}/versions/{versionId}/status")
@@ -131,7 +131,7 @@ public class RestFrameworkController {
             @Valid @RequestBody UpdateFrameworkVersionStatusRequest request) {
         UpdateFrameworkVersionStatusCommand command = UpdateFrameworkVersionStatusRequest.toCommand(frameworkId, versionId, request);
         UUID updatedVersionId = updateFrameworkVersionStatusUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái phiên bản framework thành công", updatedVersionId));
+        return ResponseEntity.ok(ApiResponse.success("Framework version status updated successfully", updatedVersionId));
     }
 
     @DeleteMapping("/{frameworkId}/versions/{versionId}")
@@ -152,7 +152,7 @@ public class RestFrameworkController {
         CreateFrameworkCriteriaCommand command = CreateFrameworkCriteriaRequest.toCommand(frameworkId, versionId, request);
         List<UUID> ids = createFrameworkCriteriaUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Thêm tiêu chí thành công", ids));
+            .body(ApiResponse.success("Criteria added successfully", ids));
     }
 
     @DeleteMapping("/{frameworkId}/versions/{versionId}/criteria/{criterionId}")
@@ -174,7 +174,7 @@ public class RestFrameworkController {
         CreateFrameworkCriterionBandsCommand command = CreateFrameworkCriterionBandsRequest.toCommand(frameworkId, versionId, criterionId, request);
         List<UUID> ids = createFrameworkCriterionBandsUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Thêm mức đánh giá cho tiêu chí thành công", ids));
+            .body(ApiResponse.success("Criterion bands added successfully", ids));
     }
 
     @PostMapping("/{frameworkId}/versions/{versionId}/result-bands")
@@ -186,7 +186,7 @@ public class RestFrameworkController {
         CreateFrameworkResultBandsCommand command = CreateFrameworkResultBandsRequest.toCommand(frameworkId, versionId, request);
         List<UUID> ids = createFrameworkResultBandsUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Thêm mức kết quả thành công", ids));
+            .body(ApiResponse.success("Result bands added successfully", ids));
     }
 
     @DeleteMapping("/{frameworkId}/versions/{versionId}/result-bands/{bandId}")

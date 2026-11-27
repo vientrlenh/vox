@@ -15,32 +15,32 @@ public interface PracticeTopicRepository {
 
     PracticeTopic save(PracticeTopic topic);
 
-    /** topicId -> interestDimension, cho toàn bộ topic active. Dùng để quy đổi sự kiện chủ đề sang điểm theo dimension. */
+    /** topicId -> interestDimension, for every active topic. Used to convert topic events into per-dimension scores. */
     /**
-     * Chiều sở thích của ĐÚNG những chủ đề được hỏi tới, khoá theo id.
+     * The interest dimension of EXACTLY the topics asked about, keyed by id.
      *
-     * <p>Thay cho {@code findAllTopicDimensions()} cũ (gỡ 2026-08-11) vốn gọi {@code findAll()}
-     * thuần: nạp MỌI chủ đề, KỂ CẢ đã tắt, dưới dạng entity đầy đủ (gồm cột {@code description}
-     * kiểu TEXT) chỉ để dựng một map hai trường -- và chạy sau MỖI buổi luyện.
+     * <p>Replaces the old {@code findAllTopicDimensions()} (removed 2026-08-11) which called plain
+     * {@code findAll()}: loading EVERY topic, INCLUDING disabled ones, as full entities (including the TEXT column {@code description})
+     * just to build a two-field map -- and it ran after EVERY practice session.
      *
-     * <p>Cố ý KHÔNG lọc {@code active}: bản cũ cũng không lọc, và sự kiện quan tâm nằm trên chủ đề
-     * đã tắt vẫn phải được tính. Thêm lọc ở đây là đổi kết quả điểm chiều một cách âm thầm.
+     * <p>Deliberately does NOT filter on {@code active}: the old version did not filter either, and interest events attached to a
+     * disabled topic must still be counted. Adding a filter here would silently change the dimension score result.
      *
-     * @param topicIds rỗng thì trả map rỗng -- không được hiểu thành "lấy tất cả"
+     * @param topicIds empty returns an empty map -- must not be read as "take all"
      */
     Map<UUID, String> findDimensionsByIds(java.util.Collection<UUID> topicIds);
 
-    /** Cỡ kho chủ đề nuôi lô chào (đã trừ chủ đề vật chất hoá từ ngân hàng đề của trường). */
+    /** Size of the topic pool feeding the greeting batch (minus topics materialized from the school's question bank). */
     long countOfferablePool();
 
-    // GỠ 2026-08-11: findAllActiveOrderByName(). Chỗ dùng duy nhất là TopicSuggestionService
-    // .topicNames(), vốn gửi cả danh sách tên xuống prompt LLM -- đã bỏ cùng đợt.
+    // REMOVED 2026-08-11: findAllActiveOrderByName(). Its only user was TopicSuggestionService
+    // .topicNames(), which sent the whole name list into the LLM prompt -- also removed in the same change.
 
     Optional<PracticeTopic> findByNormalizedName(String normalizedName);
 
     List<String> findExhaustedTopicNames(UUID studentId);
 
-    /** dimension -> điểm sở thích hiện tại của học sinh, theo hồ sơ mới nhất. */
+    /** dimension -> current interest score of the student, per the latest profile. */
     Map<String, Double> findInterestScoresByDimension(UUID studentId);
 
     Optional<PracticeTopic> findBySourceQuestionTopicId(UUID sourceQuestionTopicId);

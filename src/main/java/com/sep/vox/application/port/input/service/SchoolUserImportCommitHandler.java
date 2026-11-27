@@ -73,7 +73,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         UUID schoolId = session.getSchoolId();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         return commitRowsAndCountOutcomes(rows, mapping, schoolId, school.getName());
     }
 
@@ -131,7 +131,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         User existingUser = lookups.existingUsersByEmail().get(normalized.get("email"));
         if (belongsToAnotherSchool(existingUser, lookups)) {
             row.setErrorsJson(jsonSerializationPort.toJson(
-                    List.of(error("email", "Email đã được sử dụng bởi người dùng ở trường khác"))));
+                    List.of(error("email", "Email is already used by a user at another school"))));
             row.setStatus(ImportRowStatus.INVALID);
             return RowOutcome.INVALID;
         }
@@ -146,7 +146,7 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             row.setStatus(ImportRowStatus.IMPORTED);
             return outcome;
         } catch (DataConflictException | IllegalArgumentException e) {
-            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email hoặc số điện thoại đã tồn tại hoặc dữ liệu không hợp lệ"))));
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Email or phone number already exists or the data is invalid"))));
             row.setStatus(ImportRowStatus.FAILED);
             return RowOutcome.INVALID;
         }
@@ -297,15 +297,15 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
         addEmailErrors(errors, data.get("email"), seenEmails);
         addRoleErrors(errors, data.get("roleCode"), rolesByCode);
 
-        validateDateField(errors, data, "dateOfBirth", "Ngày sinh không hợp lệ");
-        validateDateField(errors, data, "startDate", "Ngày bắt đầu không hợp lệ");
-        validateDateField(errors, data, "endDate", "Ngày kết thúc không hợp lệ");
+        validateDateField(errors, data, "dateOfBirth", "Date of birth is invalid");
+        validateDateField(errors, data, "startDate", "Start date is invalid");
+        validateDateField(errors, data, "endDate", "End date is invalid");
 
         if (SchoolRoleCodes.STUDENT.equals(data.get("roleCode"))) {
             LocalDate start = parseDate(data.get("startDate"));
             LocalDate end = parseDate(data.get("endDate"));
             if (start != null && end != null && !start.isBefore(end)) {
-                errors.add(error("startDate", "Ngày bắt đầu phải trước ngày kết thúc"));
+                errors.add(error("startDate", "Start date must be before end date"));
             }
         }
 
@@ -313,16 +313,16 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
     }
 
     private void addRequiredFieldErrors(List<Map<String, String>> errors, Map<String, String> data) {
-        addMissingError(errors, data, "email", "Email không được để trống");
-        addMissingError(errors, data, "fullName", "Họ tên không được để trống");
-        addMissingError(errors, data, "roleCode", "Vai trò không được để trống");
-        addMissingError(errors, data, "phone", "Số điện thoại không được để trống");
-        addMissingError(errors, data, "dateOfBirth", "Ngày sinh không được để trống");
-        addMissingError(errors, data, "address", "Địa chỉ không được để trống");
+        addMissingError(errors, data, "email", "Email must not be blank");
+        addMissingError(errors, data, "fullName", "Full name must not be blank");
+        addMissingError(errors, data, "roleCode", "Role must not be blank");
+        addMissingError(errors, data, "phone", "Phone number must not be blank");
+        addMissingError(errors, data, "dateOfBirth", "Date of birth must not be blank");
+        addMissingError(errors, data, "address", "Address must not be blank");
 
         if (SchoolRoleCodes.STUDENT.equals(data.get("roleCode"))) {
-            addMissingError(errors, data, "startDate", "Ngày bắt đầu không được để trống");
-            addMissingError(errors, data, "endDate", "Ngày kết thúc không được để trống");
+            addMissingError(errors, data, "startDate", "Start date must not be blank");
+            addMissingError(errors, data, "endDate", "End date must not be blank");
         }
     }
 
@@ -331,9 +331,9 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             return;
         }
         if (!email.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
-            errors.add(error("email", "Email không hợp lệ"));
+            errors.add(error("email", "Email is invalid"));
         } else if (!seenEmails.add(email)) {
-            errors.add(error("email", "Email bị trùng trong file import"));
+            errors.add(error("email", "Email is duplicated in the import file"));
         }
     }
 
@@ -342,9 +342,9 @@ public class SchoolUserImportCommitHandler implements ImportCommitHandler {
             return;
         }
         if (!SchoolRoleCodes.ALL.contains(roleCode)) {
-            errors.add(error("roleCode", "Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER"));
+            errors.add(error("roleCode", "Role is invalid; only STUDENT or TEACHER is accepted"));
         } else if (rolesByCode.get(roleCode) == null) {
-            errors.add(error("roleCode", "Không tìm thấy vai trò"));
+            errors.add(error("roleCode", "Role not found"));
         }
     }
 

@@ -9,6 +9,6 @@ public interface SchoolSubscriptionEventRepository {
 
     SchoolSubscriptionEvent save(SchoolSubscriptionEvent event);
 
-    /** Lịch sử can thiệp của System Admin lên gói của một trường, mới nhất trước. */
+    /** History of System Admin interventions on the plan of a school, newest first. */
     List<SchoolSubscriptionEvent> findBySchoolId(UUID schoolId);
 }

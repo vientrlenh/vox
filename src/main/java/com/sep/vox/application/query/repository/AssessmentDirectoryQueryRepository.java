@@ -8,32 +8,32 @@ import com.sep.vox.application.query.dto.AssessmentDirectoryUserInfo;
 import com.sep.vox.domain.common.PageResult;
 
 /**
- * Read model của danh bạ nguồn thí sinh / giám thị cho một kỳ thi.
+ * The read model of the candidate / proctor source directory for an assessment.
  *
- * <p>Tách khỏi các repository ghi vì đây là projection phẳng (đã join sẵn users) —
- * bề mặt GraphQL của danh bạ không được lồng type `User`/`SchoolUser` (những type đó
- * có field resolver gated SCHOOL_ADMIN).
+ * <p>Kept apart from the write repositories because this is a flat projection (with users already
+ * joined) -- the GraphQL surface of the directory must not nest the `User`/`SchoolUser` types (those types
+ * have field resolvers gated by SCHOOL_ADMIN).
  *
- * <p>`page` là **1-based**, khớp với mọi repository phân trang khác trong repo này.
+ * <p>`page` is **1-based**, matching every other paged repository in this repo.
  */
 public interface AssessmentDirectoryQueryRepository {
 
-    /** Niên khóa của một trường, lọc theo mã/tên. */
+    /** The school years of a school, filtered by code/name. */
     PageResult<AssessmentDirectoryGradeInfo> findGradesBySchoolId(UUID schoolId, String search, int page, int size);
 
     /**
-     * Người dùng của một trường theo mã vai trò (STUDENT / TEACHER).
+     * The users of a school by role code (STUDENT / TEACHER).
      *
-     * <p>{@code excludeUserIds} loại người ngay trong SQL để {@code content} và
-     * {@code totalElements}/{@code totalPages} khớp nhau — lọc sau khi phân trang sẽ cho ra trang
-     * ngắn (thậm chí rỗng) kèm số đếm vẫn tính cả người đã bị loại.
+     * <p>{@code excludeUserIds} removes people inside the SQL so that {@code content} and
+     * {@code totalElements}/{@code totalPages} agree -- filtering after paging would give a short
+     * (even empty) page with a count that still includes the excluded people.
      */
     PageResult<AssessmentDirectoryUserInfo> findUsersBySchoolId(UUID schoolId, String roleCode, String search,
         Collection<UUID> excludeUserIds, int page, int size);
 
     /**
-     * Người dùng đang active trong một tập lớp, theo mã vai trò. Tập lớp rỗng trả về
-     * trang rỗng — không được suy thành "toàn trường".
+     * The active users in a set of classes, by role code. An empty set of classes returns an empty
+     * page -- it must not be read as "the whole school".
      */
     PageResult<AssessmentDirectoryUserInfo> findUsersByClassIds(Collection<UUID> schoolClassIds, String roleCode,
         String search, Collection<UUID> excludeUserIds, int page, int size);

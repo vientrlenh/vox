@@ -50,7 +50,7 @@ public class ViewAssessmentAppealsByAssessmentUseCase
     public PageResult<AppealSummaryInfo> execute(SearchAppealsByAssessmentQuery input) {
         UUID currentUserId = assessmentAppealAccessService.requireActiveUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found."));
         assessmentGradingAccessService.authorizeSchoolAdminOrAssessmentChair(
             assessment.getSchoolId(), assessment.getId(), currentUserId);
 

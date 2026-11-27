@@ -25,13 +25,13 @@ public class ViewRegisterFormDetailsUseCase implements IUseCase<ViewRegisterForm
     @Transactional(readOnly = true)
     public RegisterFormDto execute(ViewRegisterFormDetailsQuery input) {
         RegisterForm registerForm = registerFormRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Register form not found"));
         String schoolDomain = null;
         String schoolName = null;
         String schoolAddress = null;
         if (registerForm.getSchoolDirectoryId() != null) {
             SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(registerForm.getSchoolDirectoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường"));
+                .orElseThrow(() -> new ResourceNotFoundException("School directory entry not found"));
             schoolDomain = schoolDirectory.getDomain();
             schoolName = schoolDirectory.getName();
             schoolAddress = schoolDirectory.getAddress();

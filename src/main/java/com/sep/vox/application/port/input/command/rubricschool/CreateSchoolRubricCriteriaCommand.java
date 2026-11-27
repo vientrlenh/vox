@@ -14,7 +14,7 @@ public record CreateSchoolRubricCriteriaCommand(
             String code,
             String name,
             String description,
-            List<CriterionExampleCommand> examples, // Dùng List ở tầng này
+            List<CriterionExampleCommand> examples, // Uses List at this layer
             BigDecimal weight,
             BigDecimal minScore,
             BigDecimal maxScore,

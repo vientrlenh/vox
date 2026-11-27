@@ -49,16 +49,16 @@ public class UpdateAssessmentSessionRemainingTimeUseCase
     public Integer execute(UpdateAssessmentSessionRemainingTimeCommand input) {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
-        // RESUMABLE chứ không phải findById: checkpoint cho một phiên đã nộp hoặc đã chấm là vô
-        // nghĩa, và nhận nó vào sẽ làm bẩn dữ liệu của lần chấm.
+        // RESUMABLE and not findById: a checkpoint for a session that is already submitted or graded is
+        // meaningless, and accepting it would pollute the data of the grading run.
         AssessmentSession session = assessmentSessionRepository.findByIdAndResumable(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found or already ended"));
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
         if (!candidate.getStudentId().equals(userId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         assessmentSessionRepository.checkpointRemainingSeconds(session.getId(), clamp(session, input.remainingSeconds()));

@@ -40,8 +40,8 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.support.OutboxTestSupport;
 
 /**
- * Hành động phức tạp nhất trong bốn: nó vừa gỡ chặn thí sinh, vừa đổi trạng thái bài,
- * vừa tự mở một vòng chấm mới — và cả ba việc phải xong trong cùng một transaction.
+ * The most complex of the four actions: it unblocks the candidate, changes the submission status,
+ * and opens a new grading round by itself -- and all three must finish in the same transaction.
  */
 class ClearInvalidResultUseCaseTests {
 
@@ -110,8 +110,8 @@ class ClearInvalidResultUseCaseTests {
     void should_unblock_the_candidate() {
         useCase.execute(command());
 
-        // resolveDefaultStatus ép INVALID khi thí sinh còn bị chặn; không gỡ thì mọi
-        // lần tính lại điểm sau này sẽ âm thầm huỷ quyết định của giáo viên.
+        // resolveDefaultStatus forces INVALID while the candidate is still blocked; without unblocking, every
+        // later score recalculation would silently cancel the teacher's decision.
         assertThat(candidate.getBlockedAt()).isNull();
         verify(assessmentCandidateRepository).save(candidate);
     }

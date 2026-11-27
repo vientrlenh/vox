@@ -4,10 +4,11 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Mã bài hiển thị trên màn chấm. BE không có cột mã riêng cho bài nộp, nên mã là
- * 8 ký tự hex đầu của {@code candidateResultId} viết hoa (vd {@code A2041F3C}).
+ * The submission code shown on the grading screen. The backend has no dedicated column for a
+ * submission code, so the code is the first 8 hex characters of {@code candidateResultId},
+ * uppercased (e.g. {@code A2041F3C}).
  *
- * <p>Chỉ để người dùng đọc/tìm kiếm — KHÔNG dùng làm khoá: 8 hex có thể trùng.
+ * <p>For people to read/search only -- NOT to be used as a key: 8 hex characters can collide.
  */
 public final class GradingResultCode {
 

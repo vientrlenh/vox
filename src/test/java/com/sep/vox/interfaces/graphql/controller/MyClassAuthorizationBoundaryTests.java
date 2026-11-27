@@ -18,11 +18,11 @@ import com.sep.vox.domain.dto.SchoolClassUserDto;
 import graphql.schema.DataFetchingEnvironment;
 
 /**
- * Ranh giới phân quyền của bề mặt "lớp của tôi".
+ * Authorization boundary of the "my classes" surface.
  *
- * Các resolver dùng lại DataLoader của admin nên chỉ @PreAuthorize mới ngăn được
- * giáo viên đọc dữ liệu ngoài phạm vi lớp mình. Hai bài dưới đây khoá ranh giới
- * đó lại: mọi resolver mới phải gated TEACHER, và bề mặt admin không được nới ra.
+ * The resolvers reuse the admin DataLoaders, so only @PreAuthorize can stop a
+ * teacher from reading data outside their own classes. The two tests below lock that boundary:
+ * every new resolver must be gated to TEACHER, and the admin surface must not be widened.
  */
 class MyClassAuthorizationBoundaryTests {
 
@@ -34,12 +34,12 @@ class MyClassAuthorizationBoundaryTests {
             .toList();
 
         assertThat(resolvers)
-            .as("GraphQLMyClassController phải có 3 query + 5 field resolver")
+            .as("GraphQLMyClassController must have 3 queries + 5 field resolvers")
             .hasSize(8);
 
         assertThat(resolvers)
             .allSatisfy(method -> assertThat(preAuthorizeValue(method))
-                .as("%s phải gated TEACHER", method.getName())
+                .as("%s must be gated to TEACHER", method.getName())
                 .isEqualTo("hasRole('TEACHER')"));
     }
 
@@ -56,7 +56,7 @@ class MyClassAuthorizationBoundaryTests {
 
         assertThat(adminOnly)
             .allSatisfy(method -> assertThat(preAuthorizeValue(method))
-                .as("%s không được nới quyền cho TEACHER", method.getName())
+                .as("%s must not widen permission to TEACHER", method.getName())
                 .isEqualTo("hasRole('SCHOOL_ADMIN')"));
     }
 

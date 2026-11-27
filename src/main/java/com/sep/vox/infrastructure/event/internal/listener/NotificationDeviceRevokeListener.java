@@ -52,7 +52,7 @@ public class NotificationDeviceRevokeListener {
     public void removeDevicesOfRevokedSession(DeviceSessionRevokedEvent event) {
         int removed = notificationDeviceRepository.deleteByUserIdAndDeviceId(event.userId(), event.deviceId());
         if (removed > 0) {
-            log.info("Đã gỡ {} thiết bị nhận thông báo theo phiên bị thu hồi: sessionId={}, userId={}",
+            log.info("Removed {} notification devices of the revoked session: sessionId={}, userId={}",
                 removed, event.sessionId(), event.userId());
         }
     }

@@ -124,7 +124,7 @@ public interface SpringDataAssessmentPolicyRepository extends JpaRepository<Asse
     );
 
     /**
-     * Một phạm vi chỉ được có đúng một chính sách còn hiệu lực, bất kể nó trỏ vào phiên bản Rubric nào.
+     * A scope may have exactly one policy in force, regardless of which Rubric version it points to.
      */
     @Query("""
         SELECT COUNT(p) > 0 FROM AssessmentPolicyJpaEntity p

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * @param paperId mã đề nhận section mới. Bỏ trống chỉ hợp lệ khi bài có đúng một mã đề.
+ * @param paperId the paper that receives the new section. May be left empty only when the assessment has exactly one paper.
  */
 public record CreateClassTestSectionCommand(
     UUID assessmentId,

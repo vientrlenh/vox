@@ -21,9 +21,9 @@ import com.sep.vox.application.port.output.InterestQuizGenerationPort;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 
 /**
- * Sinh quiz sở thích (Tier 1) theo tình huống bằng AI -- gói 13, xem
- * task/implement/13-quiz-so-thich-sinh-theo-tinh-huong.md. Mẫu y hệt TopicGenerationClient,
- * chỉ khác endpoint/payload.
+ * Generates the interest quiz (Tier 1) by scenario using AI -- package 13, see
+ * task/implement/13-quiz-so-thich-sinh-theo-tinh-huong.md. Exactly the same mould as TopicGenerationClient,
+ * only the endpoint/payload differ.
  */
 @Service
 @Slf4j

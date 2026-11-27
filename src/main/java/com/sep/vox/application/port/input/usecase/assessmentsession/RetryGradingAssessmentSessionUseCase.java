@@ -39,11 +39,11 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
     @Transactional
     public UUID execute(RetryGradingAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the assessment session not found"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of the session not found"));
 
         moderationAccessService.authorize(assessment, candidate);
         requireRetryable(assessment, session, candidate);
@@ -55,7 +55,7 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
 
     private void requireRetryable(Assessment assessment, AssessmentSession session, AssessmentCandidate candidate) {
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalArgumentException("Kỳ thi đã công bố điểm, không thể chấm lại");
+            throw new IllegalArgumentException("The assessment scores have been published, so it cannot be re-graded");
         }
         // G.4: besides GRADING_FAILED (a technical grading error), it also allows the first AI grading for 1
         // session that was wrongly flagged as a violation (INVALID) -- already unblocked -- and has NEVER had any
@@ -66,7 +66,7 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
             && result.getStatus() == AssessmentCandidateResultStatus.INVALID
             && candidate.getBlockedAt() == null;
         if (session.getStatus() != AssessmentSessionStatus.GRADING_FAILED && !isUnblockedInvalidRetry) {
-            throw new IllegalArgumentException("Chỉ có thể chấm lại phiên thi đang lỗi chấm");
+            throw new IllegalArgumentException("Only a session with a grading error can be re-graded");
         }
     }
 
@@ -85,7 +85,7 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
         if (schoolInitiated && session.getStatus() == AssessmentSessionStatus.GRADING_FAILED) {
             if (!session.canSchoolRequestAiRegrade()) {
                 throw new IllegalArgumentException(
-                    "Đã dùng hết lượt nhờ AI chấm lại cho phiên thi này, vui lòng chuyển sang chấm tay"
+                    "The AI re-grading attempts for this session have been used up, please switch to manual grading"
                 );
             }
             session.setSchoolRegradeCount(session.getSchoolRegradeCount() + 1);

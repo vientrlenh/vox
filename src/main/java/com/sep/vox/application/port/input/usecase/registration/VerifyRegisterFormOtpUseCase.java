@@ -43,12 +43,12 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
         String key = CacheKey.registerVerificationKey(command.email());
         CachePayload.RegisterVerificationPayload payload = cacheManagerPort.get(key, CachePayload.RegisterVerificationPayload.class);
         if (payload == null) {
-            throw new UnauthorizedException("Yêu cầu xác thực thất bại");
+            throw new UnauthorizedException("Verification request failed");
         }
         requireMatchingOtp(payload, command.otp());
 
         SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(payload.schoolDirectoryId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường"));
+            .orElseThrow(() -> new ResourceNotFoundException("School directory entry not found"));
 
         Instant now = Instant.now();
         provisionSchoolService.provision(toProvisionSchoolCommand(schoolDirectory, payload, now));
@@ -66,7 +66,7 @@ public class VerifyRegisterFormOtpUseCase implements IUseCase<VerifyRegisterForm
 
         String hashedFromRequest = oneTimePasswordPort.hash(otp);
         if (!hashedFromRequest.equals(otpHash)) {
-            throw new UnauthorizedException("Yêu cầu xác thực thất bại");
+            throw new UnauthorizedException("Verification request failed");
         }
     }
 

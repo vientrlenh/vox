@@ -5,13 +5,13 @@ import org.hibernate.boot.model.FunctionContributor;
 import org.hibernate.type.StandardBasicTypes;
 
 /**
- * Cho JPQL gọi được hàm SQL {@code vn_search_key(text)} (tạo ở migration V7).
+ * Lets JPQL call the SQL function {@code vn_search_key(text)} (created in migration V7).
  *
- * <p>Hibernate từ chối mọi hàm nó chưa biết kiểu trả về, nên không đăng ký ở đây thì mọi câu JPQL
- * có {@code vn_search_key(...)} sẽ chết ngay lúc dựng metamodel — tức là hỏng lúc khởi động chứ
- * không phải lúc chạy query.
+ * <p>Hibernate rejects every function whose return type it does not know, so without registering it here every JPQL
+ * statement containing {@code vn_search_key(...)} fails while the metamodel is built -- that is, at startup
+ * and not at query time.
  *
- * <p>Nạp qua ServiceLoader: {@code META-INF/services/org.hibernate.boot.model.FunctionContributor}.
+ * <p>Loaded through ServiceLoader: {@code META-INF/services/org.hibernate.boot.model.FunctionContributor}.
  */
 public class VnSearchKeyFunctionContributor implements FunctionContributor {
 

@@ -44,13 +44,13 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
         AssessmentBlueprintSlot slot = editable.slot();
         AssessmentBlueprintVersion version = editable.version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được sửa slot khi version đang DRAFT");
+            throw new IllegalArgumentException("A slot can only be edited while the version is DRAFT");
         }
 
         if (command.order() != slot.getOrder()) {
             List<AssessmentBlueprintSlot> siblings = assessmentBlueprintSlotRepository.findBySectionId(slot.getSectionId());
             if (siblings.stream().anyMatch(s -> !s.getId().equals(slot.getId()) && s.getOrder() == command.order())) {
-                throw new IllegalArgumentException("Thứ tự slot đã tồn tại trong section này");
+                throw new IllegalArgumentException("The slot order already exists in this section");
             }
         }
         validateSlot(command);
@@ -76,23 +76,23 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
         AssessmentBlueprintSlotType slotType = command.slotType();
         if (slotType == AssessmentBlueprintSlotType.FIXED) {
             if (command.fixedQuestionId() == null) {
-                throw new IllegalArgumentException("Slot FIXED bắt buộc phải có fixedQuestionId");
+                throw new IllegalArgumentException("A FIXED slot must have a fixedQuestionId");
             }
             if (command.selectionSpec() != null) {
-                throw new IllegalArgumentException("Slot FIXED không được có selectionSpec");
+                throw new IllegalArgumentException("A FIXED slot must not have a selectionSpec");
             }
             Question question = questionRepository.findById(command.fixedQuestionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
+                .orElseThrow(() -> new ResourceNotFoundException("Fixed question for the slot not found"));
             if (question.getStatus() != QuestionStatus.PUBLISHED) {
-                throw new IllegalArgumentException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
+                throw new IllegalArgumentException("The fixed question of the slot must be PUBLISHED");
             }
             return;
         }
         if (command.fixedQuestionId() != null) {
-            throw new IllegalArgumentException("Slot SELECTION không được có fixedQuestionId");
+            throw new IllegalArgumentException("A SELECTION slot must not have a fixedQuestionId");
         }
         if (command.selectionSpec() == null) {
-            throw new IllegalArgumentException("Slot SELECTION bắt buộc phải có selectionSpec");
+            throw new IllegalArgumentException("A SELECTION slot must have a selectionSpec");
         }
     }
 

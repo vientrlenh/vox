@@ -4,14 +4,14 @@ import java.text.Normalizer;
 import java.util.Locale;
 
 /**
- * Bỏ dấu tiếng Việt cho từ khoá tìm kiếm, phía Java.
+ * Strips Vietnamese diacritics from a search keyword, on the Java side.
  *
- * <p>Phải cho ra ĐÚNG kết quả như hàm SQL {@code vn_search_key} và như
- * {@code toVnSearchKey} phía frontend: từ khoá được chuẩn hoá ở đây rồi so với cột đã chuẩn hoá
- * bằng hàm SQL kia, lệch thuật toán là tìm không ra.
+ * <p>Must produce EXACTLY the same result as the SQL function {@code vn_search_key} and the frontend
+ * {@code toVnSearchKey}: the keyword is normalised here and then compared with the column normalised by that SQL
+ * function, so a mismatch in the algorithm means nothing is found.
  *
- * <p>NFD tách nguyên âm có dấu thành "chữ gốc + dấu tổ hợp" (U+0300–U+036F) để bỏ dấu đi, NHƯNG
- * chữ "đ" là một CHỮ CÁI riêng (U+0111) chứ không phải "d" cộng dấu nên NFD không đụng tới.
+ * <p>NFD splits an accented vowel into "base letter + combining mark" (U+0300–U+036F) so the mark can be removed,
+ * BUT the letter "đ" is a separate LETTER (U+0111), not "d" plus a mark, so NFD does not touch it.
  */
 public final class VnSearchKey {
 

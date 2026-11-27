@@ -18,32 +18,32 @@ import jakarta.validation.constraints.NotNull;
 // (e.g. conditionType = DURATION_LESS_THAN requires conditionParams to have the field "seconds").
 public record CreateScoringRuleRequest(
 
-        @NotBlank(message = "Mã Rule (code) không được để trống")
+        @NotBlank(message = "Rule code must not be blank")
         String code,
 
-        @NotBlank(message = "Tên Rule không được để trống")
+        @NotBlank(message = "Rule name must not be blank")
         String name,
 
         String description,
 
-        @NotNull(message = "Loại điều kiện (conditionType) không được để trống")
+        @NotNull(message = "Condition type (conditionType) must not be blank")
         ScoringRuleConditionType conditionType,
 
         // Example: conditionType=DURATION_LESS_THAN -> {"seconds": 3}
-        @NotNull(message = "Tham số điều kiện (conditionParams) không được để trống")
+        @NotNull(message = "Condition parameters (conditionParams) must not be blank")
         Map<String, Object> conditionParams,
 
-        @NotNull(message = "Loại hành động (actionType) không được để trống")
+        @NotNull(message = "Action type (actionType) must not be blank")
         ScoringRuleActionType actionType,
 
         // Example: actionType=CAP_FINAL_SCORE -> {"maxScore": 0}
-        @NotNull(message = "Tham số hành động (actionParams) không được để trống")
+        @NotNull(message = "Action parameters (actionParams) must not be blank")
         Map<String, Object> actionParams,
 
-        @Min(value = 1, message = "Độ ưu tiên (priority) phải lớn hơn 0")
+        @Min(value = 1, message = "Priority must be greater than 0")
         int priority,
 
-        @NotNull(message = "Mức độ nghiêm trọng (severity) không được để trống")
+        @NotNull(message = "Severity must not be blank")
         ScoringRuleSeverity severity,
 
         // true = if this rule matches, stop right away and do not evaluate the rules with lower priority

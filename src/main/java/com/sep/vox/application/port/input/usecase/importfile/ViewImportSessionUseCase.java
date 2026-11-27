@@ -41,16 +41,16 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
     @Transactional(readOnly = true)
     public ImportSessionDetailsResponse execute(ViewImportSessionQuery input) {
         if (input == null || input.importSessionId() == null) {
-            throw new IllegalArgumentException("Phiên import không được để trống");
+            throw new IllegalArgumentException("Import session must not be empty");
         }
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = findCurrentUser(currentUserId);
         ImportSession session = findSession(input.importSessionId());
 
-        // SCHOOL_ADMIN giữ nguyên hành vi cũ: xem được mọi phiên import trong trường mình (không chỉ phiên
-        // tự tạo) để giám sát import hàng loạt. Caller khác (TEACHER/SYSTEM_ADMIN, vd import Question) chỉ
-        // xem được đúng phiên do chính mình tạo - không cần thuộc trường nào (System Admin không có trường).
+        // SCHOOL_ADMIN keeps the old behaviour: may see every import session of their school (not only the ones they
+        // created) to supervise bulk imports. Any other caller (TEACHER/SYSTEM_ADMIN, e.g. a Question import) may only
+        // see the sessions they created themselves - no school is required (System Admin has no school).
         boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (isSchoolAdmin) {
@@ -58,7 +58,7 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
             validateSchool(schoolId);
             validateSessionBelongsToSchool(session, schoolId);
         } else if (!session.isCreatedBy(currentUserId)) {
-            throw new ForbiddenException("Phiên import không thuộc về bạn");
+            throw new ForbiddenException("The import session does not belong to you");
         }
 
         return importSessionResponseMapper.toDetails(session);
@@ -66,35 +66,35 @@ public class ViewImportSessionUseCase implements IUseCase<ViewImportSessionQuery
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("Current user is not active");
         }
         return user;
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("Current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("School is not active");
         }
     }
 
     private ImportSession findSession(UUID importSessionId) {
         return importSessionRepository.findById(importSessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import"));
+            .orElseThrow(() -> new ResourceNotFoundException("Import session not found"));
     }
 
     private void validateSessionBelongsToSchool(ImportSession session, UUID schoolId) {
         if (!Objects.equals(session.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Phiên import không thuộc trường hiện tại");
+            throw new IllegalArgumentException("The import session does not belong to the current school");
         }
     }
 }

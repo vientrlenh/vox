@@ -5,29 +5,29 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Cấu hình kiểm chứng ID token Google cho ứng dụng native.
+ * Configuration for verifying Google ID tokens for native apps.
  *
- * <p>Chỉ có một giá trị thật sự phải đặt theo môi trường: {@code allowed-audiences}. Bộ khoá công
- * khai và danh sách {@code iss} là hằng số của chính Google, không phải thứ mỗi deployment tự chọn,
- * nên chúng nằm ở đây dưới dạng mặc định thay vì thành hai biến môi trường không ai từng đổi -- cùng
- * lối nghĩ với {@link CorsProperties}.
+ * <p>Only one value truly has to be set per environment: {@code allowed-audiences}. The public key set and the
+ * list of {@code iss} are constants of Google itself, not something each deployment chooses, so they are here as
+ * defaults instead of becoming two environment variables nobody ever changes -- same
+ * thinking as {@link CorsProperties}.
  *
- * @param allowedAudiences các client ID CỦA MÌNH được chấp nhận trong {@code aud}, phân tách bằng
- *                         dấu phẩy qua biến môi trường {@code GOOGLE_ALLOWED_AUDIENCES}.
- *                         <p>Phải liệt kê ĐỦ, và đây là chỗ dễ cấu hình thiếu nhất vì mỗi client
- *                         gửi lên một {@code aud} khác nhau:
+ * @param allowedAudiences OUR OWN client IDs accepted in {@code aud}, comma-separated through
+ *                         the environment variable {@code GOOGLE_ALLOWED_AUDIENCES}.
+ *                         <p>They must ALL be listed, and this is the easiest place to under-configure because each client
+ *                         sends a different {@code aud}:
  *                         <ul>
- *                           <li>Flutter (Android/iOS) gửi client ID <b>WEB</b> -- đó chính là việc
- *                               mà {@code serverClientId} của {@code google_sign_in} làm, nên nó
- *                               trùng với {@code GOOGLE_CLIENT_ID} của luồng web;</li>
- *                           <li>WPF gửi client ID <b>DESKTOP</b> riêng của nó.</li>
+ *                           <li>Flutter (Android/iOS) sends the <b>WEB</b> client ID -- that is exactly what
+ *                               {@code serverClientId} of {@code google_sign_in} does, so it
+ *                               equals the {@code GOOGLE_CLIENT_ID} of the web flow;</li>
+ *                           <li>WPF sends its own <b>DESKTOP</b> client ID.</li>
  *                         </ul>
- *                         Đặt đúng một giá trị là một trong hai client luôn bị từ chối.
- * @param jwkSetUri        nơi lấy khoá công khai của Google. Bộ khoá này xoay định kỳ; NimbusJwtDecoder
- *                         tự tải lại nên không cần làm gì thêm.
- * @param allowedIssuers   Google phát {@code iss} theo HAI dạng cho cùng một token -- có và không có
- *                         {@code https://}. Chấp nhận đúng một dạng là từ chối ngẫu nhiên một nửa số
- *                         lần đăng nhập, và triệu chứng ("thỉnh thoảng sai") che mất nguyên nhân.
+ *                         Setting only one value means one of the two clients is always rejected.
+ * @param jwkSetUri        where to fetch Google's public keys. This key set rotates periodically; NimbusJwtDecoder
+ *                         reloads it by itself so nothing more needs to be done.
+ * @param allowedIssuers   Google issues {@code iss} in TWO forms for the same token -- with and without
+ *                         {@code https://}. Accepting only one form randomly rejects half of
+ *                         the sign-ins, and the symptom ("sometimes wrong") hides the cause.
  */
 @ConfigurationProperties(prefix = "app.oauth2.google")
 public record GoogleIdTokenProperties(
@@ -49,10 +49,10 @@ public record GoogleIdTokenProperties(
     }
 
     /**
-     * Bỏ qua phần tử null, không chỉ chuỗi rỗng: một biến môi trường dạng
-     * {@code GOOGLE_ALLOWED_AUDIENCES=id-web,,id-desktop} hay một danh sách YAML có mục để trống đều
-     * ra được phần tử null, và {@code List.of} phía dưới sẽ ném NPE thay vì bỏ qua nó. Chết lúc khởi
-     * động vì một dấu phẩy thừa là một cách hỏng rất khó đoán từ thông báo lỗi.
+     * Skips null elements, not only empty strings: an environment variable such as
+     * {@code GOOGLE_ALLOWED_AUDIENCES=id-web,,id-desktop} or a YAML list with a blank entry both
+     * yield a null element, and the {@code List.of} below would throw an NPE instead of skipping it. Dying at
+     * startup because of a stray comma is a failure that is very hard to guess from the error message.
      */
     private static List<String> trimmed(List<String> values) {
         return values == null

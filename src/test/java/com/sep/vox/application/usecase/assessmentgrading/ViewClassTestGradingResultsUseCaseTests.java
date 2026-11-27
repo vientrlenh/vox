@@ -27,11 +27,11 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResultStatus;
 
 /**
- * Danh sách MỌI bài của một bài kiểm tra trên lớp — kể cả bài chưa có phân công.
+ * The list of EVERY submission of a class test -- including submissions that have no assignment yet.
  *
- * <p>Đây là chỗ duy nhất phát ra {@code candidateResultId} của những bài AI chấm sạch
- * (đi thẳng RELEASED nên không được mở phân công tự động). Không có nó thì lượt thi thứ
- * hai của một học sinh không có đường nào vào màn chấm.
+ * <p>This is the only place that emits the {@code candidateResultId} of cleanly AI-graded submissions
+ * (they go straight to RELEASED so no assignment is opened automatically). Without it, a student's second
+ * attempt has no way into the grading screen.
  */
 class ViewClassTestGradingResultsUseCaseTests {
 
@@ -95,12 +95,12 @@ class ViewClassTestGradingResultsUseCaseTests {
     }
 
     /**
-     * Quyền đóng đúng bằng bài mà người gọi làm CHAIR. Thiếu ca này thì một giáo viên bất
-     * kỳ đọc được danh sách học sinh kèm điểm của mọi bài kiểm tra trong trường.
+     * The permission closes to exactly the tests the caller is CHAIR of. Without this case, any teacher
+     * could read the student list with scores of every test in the school.
      */
     @Test
     void should_reject_a_teacher_who_is_not_the_chair_of_the_class_test() {
-        doThrow(new ForbiddenException("Quyền truy cập bị từ chối"))
+        doThrow(new ForbiddenException("Access denied"))
             .when(assessmentGradingAccessService).authorizeClassTestChair(assessmentId, teacherId);
 
         assertThatThrownBy(() -> useCase.execute(

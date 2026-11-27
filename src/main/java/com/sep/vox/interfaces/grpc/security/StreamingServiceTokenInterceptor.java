@@ -30,9 +30,9 @@ public class StreamingServiceTokenInterceptor implements ClientInterceptor {
                 next.newCall(method, callOptions)) {
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
-                // Token rỗng thì KHÔNG gắn header: để vox-streaming trả UNAUTHENTICATED với lý
-                // do rõ ràng, thay vì gửi "Bearer " cụt và nhận PERMISSION_DENIED -- hai lỗi đó
-                // dẫn người đọc log đi hai hướng khác nhau.
+                // An empty token does NOT attach the header: so vox-streaming answers UNAUTHENTICATED with a clear
+                // reason, instead of sending a truncated "Bearer " and getting PERMISSION_DENIED -- the two errors
+                // send whoever reads the log in two different directions.
                 if (token != null && !token.isBlank()) {
                     headers.put(AUTHORIZATION_KEY, BEARER_PREFIX + token);
                 }

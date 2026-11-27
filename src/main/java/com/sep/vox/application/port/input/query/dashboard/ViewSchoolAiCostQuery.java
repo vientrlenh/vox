@@ -3,15 +3,15 @@ package com.sep.vox.application.port.input.query.dashboard;
 import java.time.Instant;
 
 /**
- * Cửa sổ thời gian của thẻ chi phí AI.
+ * The time window of the AI cost card.
  *
- * <p>Không có {@code schoolId}: phạm vi lấy từ người đang đăng nhập. Bản cũ
- * ({@code schoolTokenUsageTimeseries}) nhận schoolId từ client — một quản trị trường gửi id trường
- * khác lên là đọc được chi tiêu của họ. Bỏ tham số đó là sửa luôn chỗ đó.
+ * <p>No {@code schoolId}: the scope comes from the logged-in user. The old version
+ * ({@code schoolTokenUsageTimeseries}) took schoolId from the client -- a school admin who sent another school's id
+ * could read its spending. Dropping the parameter fixes that very spot.
  *
- * @param from bao gồm; null = lùi 30 ngày kể từ {@code to}.
- * @param to   KHÔNG bao gồm; null = ngay lúc gọi. Cùng quy ước nửa mở với mọi cửa sổ khác trong hệ
- *             thống — hai dải liền nhau dùng {@code <=} sẽ đếm trùng khoản rơi đúng ranh giới.
+ * @param from inclusive; null = go back 30 days from {@code to}.
+ * @param to   EXCLUSIVE; null = right now. The same half-open convention as every other window in the
+ *             system -- two adjacent ranges using {@code <=} would count an amount that lands on the boundary twice.
  */
 public record ViewSchoolAiCostQuery(
     Instant from,
@@ -20,8 +20,8 @@ public record ViewSchoolAiCostQuery(
 ) {
 
     /**
-     * Đơn vị gom nhóm. Enum ĐÓNG chứ không phải chuỗi tự do: giá trị này ghép thẳng vào
-     * {@code date_trunc} nên nó không bao giờ được đến từ dữ liệu người dùng.
+     * The grouping unit. A CLOSED enum and not a free string: this value is spliced straight into
+     * {@code date_trunc} so it must never come from user data.
      */
     public enum AiCostGranularity {
         DAY("day"),

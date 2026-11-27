@@ -5,11 +5,11 @@ import java.time.Instant;
 import com.sep.vox.application.port.input.usecase.dashboard.ViewPlatformOperationalHealthUseCase;
 
 /**
- * @param dateFrom  mốc đầu BAO GỒM; bỏ trống = lùi
- *                  {@value ViewPlatformOperationalHealthUseCase#DEFAULT_WINDOW_DAYS} ngày từ mốc cuối
- * @param dateTo    mốc cuối KHÔNG bao gồm; bỏ trống = ngay lúc này
- * @param signature chữ ký nhóm nguyên nhân. {@code null} KHÔNG phải "bỏ lọc" mà chọn đúng nhóm
- *                  "không rõ nguyên nhân" — nhóm đó có chữ ký null, và nó là một nhóm thật
+ * @param dateFrom  the start, INCLUSIVE; empty = go back
+ *                  {@value ViewPlatformOperationalHealthUseCase#DEFAULT_WINDOW_DAYS} days from the end
+ * @param dateTo    the end, EXCLUSIVE; empty = right now
+ * @param signature the cause group's signature. {@code null} is NOT "no filter" but selects exactly the
+ *                  "unknown cause" group -- that group has a null signature, and it is a real group
  */
 public record ViewGradingFailureSessionsQuery(
     Instant dateFrom,

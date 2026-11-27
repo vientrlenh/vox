@@ -21,9 +21,9 @@ import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
 
 /**
- * Thiếu địa chỉ người gửi thì JavaMail ném "can't determine local email address" và KHÔNG mail nào
- * ra khỏi hệ thống. Lỗi đó từng sống rất lâu vì {@code @Async} nuốt mất exception -- test này khoá
- * lại cả hai điều: From luôn được set, và lỗi SMTP phải ném ra cho consumer thấy.
+ * Without a sender address JavaMail throws "can't determine local email address" and NO mail
+ * leaves the system. That error lived for a long time because {@code @Async} swallowed the exception -- this test locks
+ * down both things: From is always set, and an SMTP error must be thrown out for the consumer to see.
  */
 class SmtpEmailSendingServiceTests {
 
@@ -51,7 +51,7 @@ class SmtpEmailSendingServiceTests {
 
         MimeMessage sent = captor.getValue();
         assertThat(sent.getFrom())
-            .as("thiếu From là JavaMail ném can't determine local email address")
+            .as("a missing From makes JavaMail throw can't determine local email address")
             .isNotNull()
             .hasSize(1);
         assertThat(sent.getFrom()[0].toString()).contains(FROM);
@@ -90,8 +90,8 @@ class SmtpEmailSendingServiceTests {
     }
 
     /**
-     * Lỗi SMTP phải NÉM RA, không được nuốt. Consumer dựa vào đúng điều này để không ack và để
-     * @RetryableTopic đưa event qua retry/DLT -- nuốt ở đây là mail mất vĩnh viễn.
+     * An SMTP error must be THROWN OUT, not swallowed. The consumer relies on exactly this to not ack and to let
+     * @RetryableTopic send the event through retry/DLT -- swallowing here means the mail is lost forever.
      */
     @Test
     void loi_smtp_phai_nem_ra_cho_consumer_thay() {

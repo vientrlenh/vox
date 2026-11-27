@@ -13,7 +13,7 @@ public class RestStatusController {
 
     @GetMapping("/v1/status")
     public ResponseEntity<ApiResponse<Object>> ping() {
-        ApiResponse<Object> response = ApiResponse.success("Máy chủ đang hoạt động");
+        ApiResponse<Object> response = ApiResponse.success("Server is running");
         return ResponseEntity.ok(response);
     }
 }

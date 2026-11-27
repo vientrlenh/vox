@@ -16,14 +16,14 @@ public class SubscriptionPlanQuotaAmountValidator {
 
     public void requireValidIncludedAmount(QuotaType quotaType, @Nullable BigDecimal includedAmountVnd) {
         if (includedAmountVnd == null) {
-            throw new IllegalArgumentException("Định mức của hạn mức \"" + quotaType + "\" không được để trống");
+            throw new IllegalArgumentException("The amount of quota \"" + quotaType + "\" must not be blank");
         }
         if (includedAmountVnd.signum() < 0) {
-            throw new IllegalArgumentException("Định mức của hạn mức \"" + quotaType + "\" không được âm");
+            throw new IllegalArgumentException("The amount of quota \"" + quotaType + "\" must not be negative");
         }
         if (includedAmountVnd.compareTo(MAX_INCLUDED_AMOUNT_VND) > 0) {
             throw new IllegalArgumentException(
-                "Định mức của hạn mức \"" + quotaType + "\" vượt quá giới hạn cho phép (tối đa 999.999.999.999 VND)");
+                "The amount of quota \"" + quotaType + "\" exceeds the allowed limit (maximum 999,999,999,999 VND)");
         }
     }
 }

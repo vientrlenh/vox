@@ -39,9 +39,9 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 /**
- * Thu hồi quá hạn là một trong ba đường đóng phân công KHÔNG đi qua
- * {@code GradingActionSupport.finish()}, nên nó phải tự nhả đơn phúc khảo (review BE-1)
- * — và chỉ nhả khi không có người thay (review BE-8 cho phần phạm vi quét).
+ * Reclaiming overdue assignments is one of three paths that close an assignment WITHOUT going through
+ * {@code GradingActionSupport.finish()}, so it must release the appeal by itself (review BE-1)
+ * -- and only when there is no replacement (review BE-8 for the scan scope).
  */
 class ReclaimOverdueAssignmentsUseCaseTests {
 
@@ -107,8 +107,8 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
         useCase.execute(reclaimAll(null));
 
-        // Không nhả thì đơn đứng ở GRADING vĩnh viễn: giao lại đòi APPROVED, duyệt lại
-        // đòi PENDING — không còn đường nào ngoài sửa tay dưới DB.
+        // Without the release the appeal stays in GRADING forever: reassigning needs APPROVED, approving again
+        // needs PENDING -- there is no way out except fixing it by hand in the DB.
         assertThat(appeal.getStatus()).isEqualTo(AssessmentAppealStatus.APPROVED);
         verify(assessmentResultAppealRepository).save(appeal);
     }
@@ -143,7 +143,7 @@ class ReclaimOverdueAssignmentsUseCaseTests {
         // by row: bulk reassignment must not be a back door around it.
         assertThatThrownBy(() -> useCase.execute(reclaimAll(List.of(conflicted))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã từng chấm");
+            .hasMessageContaining("has graded a submission");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -230,8 +230,8 @@ class ReclaimOverdueAssignmentsUseCaseTests {
 
         useCase.execute(reclaimAll(null));
 
-        // Bản cũ gọi findOverdue toàn hệ thống rồi load() từng dòng để đọc schoolId —
-        // 4N+1 query và chạm cả dữ liệu trường khác.
+        // The old version called findOverdue across the whole system and then load() row by row to read schoolId --
+        // 4N+1 queries, and it touched other schools' data.
         verify(assessmentGradingAssignmentRepository).findOverdueInSchool(any(), any(), any(), anyInt());
         verify(assessmentGradingAssignmentRepository, never()).findOverdue(any());
         verify(assessmentGradingAccessService, never()).load(any());

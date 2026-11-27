@@ -31,17 +31,17 @@ public class DeleteFrameworkVersionUseCase implements IUseCase<DeleteFrameworkVe
     @Transactional
     public Void execute(DeleteFrameworkVersionCommand input) {
         FrameworkVersion version = frameworkVersionRepository.findByIdForUpdate(input.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
 
         if (!version.getFrameworkId().equals(input.frameworkId())) {
-            throw new IllegalArgumentException("Phiên bản không thuộc framework này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
         }
 
         if (version.getStatus() == FrameworkVersionStatus.DRAFT) {
             deleteVersionAndChildren(input.versionId());
         } else {
             if (assessmentPolicyRepository.existsByFrameworkVersionId(input.versionId())) {
-                throw new IllegalArgumentException("Không thể lưu trữ phiên bản framework đang được sử dụng trong policy");
+                throw new IllegalArgumentException("Cannot archive a framework version that a policy is using");
             }
             frameworkVersionRepository.updateStatus(input.versionId(), FrameworkVersionStatus.ARCHIVED);
         }

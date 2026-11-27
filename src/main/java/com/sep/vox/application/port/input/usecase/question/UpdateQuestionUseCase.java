@@ -38,7 +38,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         EditAccess access = requireEditAccess(question, currentUserId);
 
         // Sharing is a private setting, not content -- it can be changed at any time.
@@ -58,10 +58,10 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
 
     private EditAccess requireEditAccess(Question question, UUID currentUserId) {
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         EditAccess access = questionEditAccessService.resolveEditAccess(question, bank, currentUserId);
         if (!access.allowed()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return access;
     }
@@ -78,16 +78,16 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED || question.isLocked() || usedInAssessment;
         if (immutable) {
             throw new IllegalArgumentException(
-                "Câu hỏi đã publish hoặc đã dùng trong bài kiểm tra, không thể sửa trực tiếp — dùng nút Nhân bản để tạo bản có thể sửa");
+                "The question is published or already used in an assessment and cannot be edited directly — use the Clone button to create an editable copy");
         }
         if (!access.systemAdminOnSystemBank()
                 && (access.owner() || access.editorCollaborator())
                 && question.getStatus() != QuestionStatus.DRAFT
                 && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException("Chỉ được sửa câu hỏi khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+            throw new ForbiddenException("A question can only be edited in DRAFT or REVISION_REQUESTED status");
         }
         if (command.preparationTimeSeconds() == null || command.minResponseSeconds() == null || command.maxResponseSeconds() == null) {
-            throw new IllegalArgumentException("Phải nhập đầy đủ thời gian chuẩn bị, thời gian trả lời tối thiểu và tối đa");
+            throw new IllegalArgumentException("The preparation time and the minimum and maximum answer times must all be provided");
         }
     }
 
@@ -101,7 +101,7 @@ public class UpdateQuestionUseCase implements IUseCase<UpdateQuestionCommand, Up
         if (command.minResponseSeconds() != null) question.setMinResponseSeconds(command.minResponseSeconds());
         if (command.maxResponseSeconds() != null) question.setMaxResponseSeconds(command.maxResponseSeconds());
         if (question.getMinResponseSeconds() > question.getMaxResponseSeconds()) {
-            throw new IllegalArgumentException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
+            throw new IllegalArgumentException("The minimum answer time must not be greater than the maximum answer time");
         }
     }
 

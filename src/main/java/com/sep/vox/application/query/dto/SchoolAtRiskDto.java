@@ -5,16 +5,16 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Một dòng trên danh sách "trường cần chú ý".
+ * One row of the "schools needing attention" list.
  *
- * @param planName         tên gói của kỳ LIÊN QUAN tới nhóm: kỳ đang phủ nếu trường còn gói, kỳ gần
- *                         nhất nếu không. {@code null} khi gói đã bị xoá khỏi danh mục
- * @param relevantEndDate  ngày hết hạn của chính kỳ đó — với nhóm sắp hết hạn thì đây là con số
- *                         người vận hành đang đếm ngược
- * @param suspendedReason  lý do đình chỉ gần nhất; chỉ có nghĩa ở nhóm {@link SchoolRiskBucket#SUSPENDED},
- *                         và là thông tin đáng giá nhất của nhóm đó
- * @param balanceVnd       số dư ví tự nạp; âm nghĩa là trường đang bị chặn mở ca thi. Không bao giờ
- *                         null — trường chưa từng nạp coi như 0, cùng quy ước với
+ * @param planName         the plan name of the period RELEVANT to the bucket: the covering period if the school still has
+ *                         a plan, otherwise the nearest period. {@code null} when the plan has been removed from the catalog
+ * @param relevantEndDate  the end date of that same period -- for the expiring-soon bucket this is the number
+ *                         operators are counting down
+ * @param suspendedReason  the most recent suspension reason; only meaningful for the {@link SchoolRiskBucket#SUSPENDED} bucket,
+ *                         and the most valuable information of that bucket
+ * @param balanceVnd       the top-up balance; negative means the school is blocked from opening assessment sessions. Never
+ *                         null -- a school that has never topped up counts as 0, the same convention as
  *                         {@code SchoolBalance.emptyFor}
  */
 public record SchoolAtRiskDto(

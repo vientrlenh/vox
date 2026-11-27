@@ -4,11 +4,11 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Một người và số tiền AI họ đã tiêu của trường trong cửa sổ.
+ * A person and the amount of AI money they spent for the school within the window.
  *
- * <p>{@code allocatedAmountVnd} là TRẦN CHI cá nhân nhà trường tự chia, không phải một ví: nó không
- * giữ tiền và vượt trần không sinh bút toán nào. null nghĩa là người này không bị chia trần — vẫn
- * tiêu được, chỉ là không có mức nào để so.
+ * <p>{@code allocatedAmountVnd} is the personal SPENDING CAP that the school divides up itself, not a wallet: it
+ * holds no money and exceeding the cap produces no ledger entry. null means this person has no cap --
+ * they can still spend, there is just no level to compare against.
  */
 public record UserAiSpendDto(
     UUID userId,

@@ -20,7 +20,7 @@ public class DeleteSupportedLanguageUseCase implements IUseCase<DeleteSupportedL
     @Transactional
     public Void execute(DeleteSupportedLanguageCommand input) {
         SupportedLanguage language = supportedLanguageRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngôn ngữ"));
+            .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
 
         language.setActive(false);
         supportedLanguageRepository.save(language);

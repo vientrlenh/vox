@@ -42,9 +42,9 @@ import vn.payos.model.v2.paymentRequests.CreatePaymentLinkResponse;
 import vn.payos.model.v2.paymentRequests.PaymentLink;
 import vn.payos.model.v2.paymentRequests.PaymentLinkStatus;
 
-// Tự tính chữ ký thay vì gọi payOSClient.webhooks().verify(...) vì SDK payos-java 2.0.1 bind Map
-// sang WebhookData (có field Instant) bằng ObjectMapper nội bộ không có JavaTimeModule,
-// luôn ném InvalidDefinitionException với mọi webhook thật (có transactionDateTime).
+// Computes the signature itself instead of calling payOSClient.webhooks().verify(...) because the payos-java 2.0.1 SDK binds Map
+// to WebhookData (which has an Instant field) with an internal ObjectMapper that has no JavaTimeModule,
+// and always throws InvalidDefinitionException for every real webhook (which carries transactionDateTime).
 @Service
 @Slf4j
 public class PayOSService implements PaymentProcessPort {
@@ -60,10 +60,10 @@ public class PayOSService implements PaymentProcessPort {
     private final String returnUrl;
     private final String cancelUrl;
 
-    // clientId và apiKey KHÔNG được dùng ở đâu khác trong class này -- chúng đi vào PayOS client ở
-    // PayOSConfig. Nhận thêm vào đây chỉ để isConfigured() trả lời được đầy đủ: cả năm giá trị đều
-    // mặc định rỗng trong application.yaml, và new PayOS("", "", "") dựng bean thành công, nên
-    // thiếu credential không lộ ra lúc khởi động mà chỉ lộ ra giữa một lần thanh toán thật.
+    // clientId and apiKey are NOT used anywhere else in this class -- they go into the PayOS client in
+    // PayOSConfig. They are accepted here only so isConfigured() can answer completely: all five values
+    // default to empty in application.yaml, and new PayOS("", "", "") builds the bean successfully, so
+    // missing credentials do not show up at startup but only in the middle of a real payment.
     public PayOSService(
             PayOS payOSClient,
             JsonMapper jsonMapper,
@@ -100,9 +100,9 @@ public class PayOSService implements PaymentProcessPort {
     }
 
     /**
-     * PayOS bắt buộc orderCode là số nên không dùng lại được invoiceNumber dạng chuỗi. Sinh từ mốc
-     * thời gian mili giây nhân 1000 cộng phần ngẫu nhiên: đủ tăng dần để dễ tra theo thời gian, và
-     * phần ngẫu nhiên chặn hai hóa đơn tạo trong cùng một mili giây trùng mã.
+     * PayOS requires orderCode to be a number so the string invoiceNumber cannot be reused. Generated from the millisecond
+     * timestamp times 1000 plus a random part: increasing enough to look up by time, and the
+     * random part stops two invoices created in the same millisecond from colliding on code.
      */
     @Override
     public String newOrderRef() {
@@ -120,7 +120,7 @@ public class PayOSService implements PaymentProcessPort {
         // Without qrCode we fall back to REDIRECT instead of building an empty QR page -- the FE does not have to guess, and
         // an SDK version without this field does not break the payment flow either.
         if (!hasText(response.getQrCode())) {
-            log.warn("PayOS không trả về qrCode cho orderCode={} -- lùi về điều hướng sang trang checkout",
+            log.warn("PayOS did not return a qrCode for orderCode={} -- falling back to redirecting to the checkout page",
                 command.orderRef());
             return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
         }
@@ -165,7 +165,7 @@ public class PayOSService implements PaymentProcessPort {
             // caller must be able to tell "the gateway says there is no session" from "could not ask the gateway" -- mapping
             // the latter to NOT_FOUND would allow us to fail an attempt that may still be alive and about to
             // bring in money.
-            log.warn("PayOS không có phiên thanh toán nào mang mã {} -- coi như lần thử đã chết",
+            log.warn("PayOS has no payment session with code {} -- treating the attempt as dead",
                 providerOrderRef, e);
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
         }
@@ -180,7 +180,7 @@ public class PayOSService implements PaymentProcessPort {
             // is waiting for a definitive answer before daring to close the order.
             boolean confirmed = toRemoteStatus(cancelled.getStatus()) == PaymentLinkRemoteStatus.CANCELLED;
             if (!confirmed) {
-                log.warn("PayOS nhận lệnh hủy link {} nhưng trạng thái trả về là {}",
+                log.warn("PayOS accepted the cancel command for link {} but the returned status is {}",
                     providerOrderRef, cancelled.getStatus());
             }
             return confirmed;
@@ -188,7 +188,7 @@ public class PayOSService implements PaymentProcessPort {
             // Do not throw: to the caller "cancel failed" and "the gateway does not support cancel" lead to the same
             // decision -- do not close the order. Throwing here would only turn a case that can be handled
             // into a 500 error for the user.
-            log.warn("Không hủy được link thanh toán PayOS {}", providerOrderRef, e);
+            log.warn("Could not cancel the PayOS payment link {}", providerOrderRef, e);
             return false;
         }
     }
@@ -206,7 +206,7 @@ public class PayOSService implements PaymentProcessPort {
         }
 
         if (!(data.get("orderCode") instanceof Number orderCode)) {
-            log.warn("Webhook PayOS có chữ ký hợp lệ nhưng thiếu orderCode");
+            log.warn("PayOS webhook has a valid signature but is missing orderCode");
             return CallbackVerificationResult.invalid();
         }
 
@@ -245,9 +245,9 @@ public class PayOSService implements PaymentProcessPort {
             : PaymentLinkRemoteStatus.FAILED;
     }
 
-    // Decode UTF-8 kiểu lenient (thay ký tự lỗi thay vì crash) vì payload test/webhook của PayOS
-    // đôi khi chứa byte UTF-8 không hợp lệ ở phần text tiếng Việt (desc), làm Jackson mặc định
-    // ném StreamReadException. Trả null nếu payload không dùng được.
+    // Lenient UTF-8 decoding (replace bad characters instead of crashing) because PayOS test/webhook payloads
+    // sometimes contain invalid UTF-8 bytes in the Vietnamese text part (desc), which makes the default Jackson
+    // throw StreamReadException. Returns null if the payload is unusable.
     private Map<String, Object> parseBody(byte[] rawBody) {
         CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder()
             .onMalformedInput(CodingErrorAction.REPLACE)
@@ -256,13 +256,13 @@ public class PayOSService implements PaymentProcessPort {
             String json = decoder.decode(ByteBuffer.wrap(rawBody)).toString();
             return jsonMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (CharacterCodingException | RuntimeException e) {
-            log.warn("Không đọc được payload webhook PayOS", e);
+            log.warn("Could not read the PayOS webhook payload", e);
             return null;
         }
     }
 
-    // Switch tường minh thay vì valueOf(status.name()): nếu SDK PayOS thêm trạng thái mới, ta muốn
-    // biết bằng lỗi compile ở đây chứ không phải IllegalArgumentException giữa lúc đối soát tiền.
+    // An explicit switch instead of valueOf(status.name()): if the PayOS SDK adds a new status, we want to
+    // find out through a compile error here and not an IllegalArgumentException in the middle of money reconciliation.
     private PaymentLinkRemoteStatus toRemoteStatus(PaymentLinkStatus status) {
         return switch (status) {
             case PENDING -> PaymentLinkRemoteStatus.PENDING;
@@ -275,8 +275,8 @@ public class PayOSService implements PaymentProcessPort {
         };
     }
 
-    // So sánh constant-time: String.equals thoát sớm ở byte lệch đầu tiên, để lộ thông tin cho
-    // kiểu tấn công dò chữ ký theo thời gian phản hồi.
+    // Constant-time comparison: String.equals exits at the first differing byte, leaking information to
+    // signature-probing attacks based on response time.
     boolean verifySignature(Map<String, Object> data, String signature) {
         return MessageDigest.isEqual(
             signature.getBytes(StandardCharsets.UTF_8),
@@ -305,7 +305,7 @@ public class PayOSService implements PaymentProcessPort {
             }
             return hex.toString();
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new WebhookException("Không thể tính chữ ký webhook", e);
+            throw new WebhookException("Cannot compute the webhook signature", e);
         }
     }
 }

@@ -17,11 +17,12 @@ import com.sep.vox.application.response.input.dashboard.GradingFailureOverviewRe
 import com.sep.vox.domain.common.ZoneConstant;
 
 /**
- * Trang phân loại phiên chấm lỗi — chỗ đáp của ô "Phiên AI chấm lỗi" trên trang tổng quan.
+ * The triage page for failed grading sessions -- the landing place of the "AI grading failed sessions" box on the
+ * overview page.
  *
- * <p>Cửa sổ mặc định LẤY ĐÚNG của {@link ViewPlatformOperationalHealthUseCase}: người dùng bấm vào
- * một con số rồi mong thấy đúng những phiên tạo ra con số đó. Hai mặc định lệch nhau thì ngay lần
- * mở đầu tiên hai màn hình đã nói hai số khác nhau, và không ai biết số nào đúng.
+ * <p>The default window is taken EXACTLY from {@link ViewPlatformOperationalHealthUseCase}: a user clicks a
+ * number and expects to see precisely the sessions that produced it. If the two defaults differ, the very first
+ * time they are opened the two screens show different numbers and nobody knows which is right.
  */
 @Service
 @RequiredArgsConstructor
@@ -61,11 +62,11 @@ public class ViewGradingFailureOverviewUseCase
     }
 
     /**
-     * Cửa sổ đọc, dùng chung cho cả trang tóm tắt lẫn danh sách phiên.
+     * The reading window, shared by the summary page and the session list.
      *
-     * <p>Tách ra vì hai use case phải giải khoảng GIỐNG HỆT nhau: người dùng bấm vào một thẻ nhóm
-     * đang hiện 1.147 phiên và mong danh sách sau đó cũng có 1.147 phiên. Hai bản sao của cùng phép
-     * mặc định là hai chỗ để lệch.
+     * <p>Split out because the two use cases must resolve the range IDENTICALLY: a user clicks a group card showing
+     * 1,147 sessions and expects the list that follows to hold 1,147 sessions too. Two copies of the same default
+     * are two places to drift apart.
      */
     record GradingFailureWindow(Instant from, Instant to) {
 

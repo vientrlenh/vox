@@ -7,9 +7,8 @@ import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleSeverity;
 
-// Lệnh tạo mới 1 Scoring Rule (luật chấm điểm tự động) cho 1 Assessment Policy hệ thống.
-// conditionParams/actionParams giữ nguyên dạng Map thô (JSON) từ Request, UseCase sẽ tự
-// convert sang Value Object cụ thể dựa theo conditionType/actionType đã chọn.
+// conditionParams/actionParams keep the raw Map form (JSON) from the Request, and the UseCase converts
+// them to concrete Value Objects based on the chosen conditionType/actionType.
 public record CreateScoringRuleCommand(
         UUID policyId,
         String code,

@@ -40,10 +40,10 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
         String action = StringNormalization.normalizeCode(input.action());
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentSecurePool pool = assessmentSecurePoolRepository.findByAssessmentId(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Bài kiểm tra chưa có câu hỏi nào cần giữ kín"));
+            .orElseThrow(() -> new ResourceNotFoundException("The assessment has no question that needs to be kept secret"));
 
         if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(input.assessmentId(), currentUserId, AssessmentMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         requireManualReleasePossible(action, pool);
 
@@ -60,10 +60,10 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
 
     private void requireManualReleasePossible(String action, AssessmentSecurePool pool) {
         if (!"RELEASE".equals(action)) {
-            throw new IllegalArgumentException("Action không hợp lệ");
+            throw new IllegalArgumentException("Invalid action");
         }
         if (pool.getReleaseMode() != AssessmentSecurePoolReleaseMode.MANUAL || pool.getStatus() != AssessmentSecurePoolStatus.SEALED) {
-            throw new IllegalArgumentException("Secure pool không ở trạng thái có thể release thủ công");
+            throw new IllegalArgumentException("The secure pool is not in a state that can be released manually");
         }
     }
 

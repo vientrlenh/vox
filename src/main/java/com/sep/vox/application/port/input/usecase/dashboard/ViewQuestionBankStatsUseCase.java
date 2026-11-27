@@ -10,7 +10,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.QuestionBankStatsDto;
 import com.sep.vox.application.query.repository.QuestionBankStatsQueryRepository;
 
-/** Thống kê câu hỏi & ngân hàng câu hỏi của trường hiện tại — dùng cho dashboard school admin. */
+/** Statistics of questions & question banks of the current school -- used by the school admin dashboard. */
 @Service
 @RequiredArgsConstructor
 public class ViewQuestionBankStatsUseCase implements IUseCase<Void, QuestionBankStatsDto> {

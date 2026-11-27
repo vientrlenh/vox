@@ -9,6 +9,6 @@ import com.sep.vox.domain.model.assessment.AssessmentResultAppealItem;
 public interface AssessmentResultAppealItemRepository {
     List<AssessmentResultAppealItem> saveAll(List<AssessmentResultAppealItem> items);
     List<AssessmentResultAppealItem> findByAppealId(UUID appealId);
-    /** Dọn tay khi xoá phiên thi — không có FK nào chặn. */
+    /** Manual cleanup when an assessment session is deleted — no FK blocks it. */
     void deleteByAppealIdIn(Collection<UUID> appealIds);
 }

@@ -70,7 +70,7 @@ public class RestAssessmentCandidateController {
             @Valid @RequestBody AddAssessmentCandidateRequest request) {
         AssessmentCandidateDto data = addAssessmentCandidateUseCase.execute(AddAssessmentCandidateRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Thêm thí sinh thành công", data));
+            .body(ApiResponse.success("Candidate added successfully", data));
     }
 
     @PostMapping("/import-class")
@@ -81,7 +81,7 @@ public class RestAssessmentCandidateController {
         List<AssessmentCandidateDto> data = importAssessmentCandidatesFromClassUseCase.execute(
             ImportAssessmentCandidatesFromClassRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Nhập thí sinh theo lớp thành công", data));
+            .body(ApiResponse.success("Candidates imported by class successfully", data));
     }
 
     @PostMapping("/import-grade")
@@ -92,7 +92,7 @@ public class RestAssessmentCandidateController {
         List<AssessmentCandidateDto> data = importAssessmentCandidatesFromGradeUseCase.execute(
             ImportAssessmentCandidatesFromGradeRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Nhập thí sinh theo khối thành công", data));
+            .body(ApiResponse.success("Candidates imported by grade successfully", data));
     }
 
     @PutMapping("/{candidateId}/schedule")
@@ -103,10 +103,10 @@ public class RestAssessmentCandidateController {
             @RequestBody AssignAssessmentCandidateScheduleRequest request) {
         AssessmentCandidateDto data = assignAssessmentCandidateScheduleUseCase.execute(
             AssignAssessmentCandidateScheduleRequest.toCommand(assessmentId, candidateId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Candidate schedule updated successfully", data));
     }
 
-    /** Xếp/gỡ cả nhóm trong một transaction — dùng cho màn tick chọn nhiều thí sinh. */
+    /** Assigns or removes a whole group in one transaction -- used by the multi-select screen for candidates. */
     @PutMapping("/schedule")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<List<AssessmentCandidateDto>>> bulkAssignSchedule(
@@ -114,7 +114,7 @@ public class RestAssessmentCandidateController {
             @Valid @RequestBody BulkAssignAssessmentCandidateScheduleRequest request) {
         List<AssessmentCandidateDto> data = bulkAssignAssessmentCandidateScheduleUseCase.execute(
             BulkAssignAssessmentCandidateScheduleRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật ca thi của thí sinh thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Candidate schedule updated successfully", data));
     }
 
     @PostMapping("/auto-fill")
@@ -124,7 +124,7 @@ public class RestAssessmentCandidateController {
             @RequestBody(required = false) AutoFillAssessmentCandidatesRequest request) {
         List<AssessmentCandidateDto> data = autoFillAssessmentCandidatesUseCase.execute(
             AutoFillAssessmentCandidatesRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Tự động xếp thí sinh thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Candidates arranged automatically successfully", data));
     }
 
     @PutMapping("/assign-papers")
@@ -133,7 +133,7 @@ public class RestAssessmentCandidateController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody AssignAssessmentPapersRequest request) {
         AssignAssessmentPapersResponse data = assignAssessmentPapersUseCase.execute(AssignAssessmentPapersRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Phân đề thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Papers assigned successfully", data));
     }
 
     @PutMapping("/{candidateId}/status")
@@ -146,7 +146,7 @@ public class RestAssessmentCandidateController {
             candidateId,
             request.status()
         ));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái thí sinh thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Candidate status updated successfully", data));
     }
 
     @PostMapping("/{candidateId}/unblock")
@@ -156,7 +156,7 @@ public class RestAssessmentCandidateController {
             @PathVariable("candidateId") UUID candidateId,
             @Valid @RequestBody SessionReasonRequest request) {
         AssessmentCandidateDto data = unblockAssessmentCandidateUseCase.execute(new UnblockAssessmentCandidateCommand(candidateId, request.reason()));
-        return ResponseEntity.ok(ApiResponse.success("Dỡ chặn thí sinh thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Candidate unblocked successfully", data));
     }
 
     @DeleteMapping("/{candidateId}")
@@ -165,14 +165,14 @@ public class RestAssessmentCandidateController {
             @PathVariable("assessmentId") UUID assessmentId,
             @PathVariable("candidateId") UUID candidateId) {
         deleteAssessmentCandidateUseCase.execute(new DeleteAssessmentCandidateCommand(assessmentId, candidateId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa thí sinh khỏi kỳ thi thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Candidate removed from the assessment successfully"));
     }
 
     /**
-     * Xoá cả nhóm thí sinh trong một transaction — dùng cho màn tick chọn nhiều thí sinh.
+     * Removes a whole group of candidates in one transaction -- used by the multi-select screen for candidates.
      *
-     * <p>Danh sách id đi trong body: DELETE với hàng chục UUID trên query string vừa chạm giới hạn
-     * độ dài URL vừa đổ hết id vào access log.
+     * <p>The ids travel in the body: a DELETE with dozens of UUIDs on the query string both hits the URL length
+     * limit and dumps every id into the access log.
      */
     @DeleteMapping
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
@@ -181,6 +181,6 @@ public class RestAssessmentCandidateController {
             @Valid @RequestBody BulkDeleteAssessmentCandidatesRequest request) {
         bulkDeleteAssessmentCandidatesUseCase.execute(
             new BulkDeleteAssessmentCandidatesCommand(assessmentId, request.candidateIds()));
-        return ResponseEntity.ok(ApiResponse.success("Xóa thí sinh khỏi kỳ thi thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Candidate removed from the assessment successfully"));
     }
 }

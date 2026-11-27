@@ -56,7 +56,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
     public AssessmentDto execute(UpdateClassTestQuestionsCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         classTestDirectEditGuard.requireDirectlyEditable(assessment, currentUserId);
         requireDistinctQuestionsInSections(input.sections());
@@ -77,16 +77,16 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
 
     private void requireDistinctQuestionsInSections(List<ClassTestSectionCommand> sections) {
         if (sections == null || sections.isEmpty()) {
-            throw new IllegalArgumentException("Bài kiểm tra trên lớp phải có ít nhất 1 section");
+            throw new IllegalArgumentException("A class test must have at least 1 section");
         }
         Set<UUID> seenQuestionIds = new java.util.HashSet<UUID>();
         for (ClassTestSectionCommand section : sections) {
             if (section.questions() == null || section.questions().isEmpty()) {
-                throw new IllegalArgumentException("Mỗi section phải có ít nhất 1 câu hỏi");
+                throw new IllegalArgumentException("Every section must have at least 1 question");
             }
             for (ClassTestQuestionCommand questionCommand : section.questions()) {
                 if (!seenQuestionIds.add(questionCommand.questionId())) {
-                    throw new IllegalArgumentException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 bài kiểm tra");
+                    throw new IllegalArgumentException("A question cannot appear more than once in the same assessment");
                 }
             }
         }
@@ -116,7 +116,7 @@ public class UpdateClassTestQuestionsUseCase implements IUseCase<UpdateClassTest
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             candidateDurationSeconds,
-            "Mã đề trên lớp"
+            "Class test paper"
         );
     }
 

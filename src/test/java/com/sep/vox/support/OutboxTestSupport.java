@@ -13,10 +13,11 @@ import com.sep.vox.infrastructure.service.JacksonJsonSerializationService;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Tiện ích cho các test của use case đã chuyển từ {@code EventPublisherPort} sang outbox.
+ * Helpers for the tests of use cases that moved from {@code EventPublisherPort} to the outbox.
  *
- * <p>Dùng adapter JSON THẬT chứ không mock: mock trả {@code null} thì cột payload rỗng và
- * test sẽ xanh kể cả khi use case dựng sai payload — đúng thứ cần bắt được ở đây.
+ * <p>Uses the REAL JSON adapter, not a mock: a mock returns {@code null}, so the payload column
+ * would be empty and the test would stay green even when the use case builds a wrong payload,
+ * which is exactly what must be caught here.
  */
 public final class OutboxTestSupport {
 
@@ -39,11 +40,11 @@ public final class OutboxTestSupport {
             .filter(outbox -> eventType.equals(outbox.getEventType()))
             .findFirst()
             .orElseThrow(() -> new AssertionError(
-                "Không có outbox nào với eventType=" + eventType
-                    + ", đã ghi: " + captor.getAllValues().stream().map(outbox -> outbox.getEventType()).toList()));
+                "No outbox row with eventType=" + eventType
+                    + ", written: " + captor.getAllValues().stream().map(outbox -> outbox.getEventType()).toList()));
     }
 
-    /** Giải payload của dòng outbox có đúng {@code eventType} về record tương ứng. */
+    /** Deserializes the payload of the outbox row with exactly this {@code eventType} into the given record type. */
     public static <T> T capturePayload(OutboxRepository outboxRepository, String eventType, Class<T> type) {
         return JSON_MAPPER.readValue(captureOutbox(outboxRepository, eventType).getPayload(), type);
     }

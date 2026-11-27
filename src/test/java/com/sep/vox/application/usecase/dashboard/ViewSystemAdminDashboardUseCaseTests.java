@@ -34,12 +34,12 @@ import com.sep.vox.domain.repository.SchoolRepository;
 import com.sep.vox.domain.repository.UserRoleRepository;
 
 /**
- * Doanh thu giờ đọc từ ĐƠN HÀNG đã thu tiền (OrderStatus.SUCCESS), không còn từ hóa đơn PAID: hóa đơn
- * chỉ phát cho đơn đã thu đủ nên "lọc hóa đơn PAID" vốn là điều kiện luôn đúng, còn đơn thì mang sẵn
- * trạng thái thu tiền.
+ * Revenue is now read from ORDERS whose money was collected (OrderStatus.SUCCESS), no longer from PAID invoices: an
+ * invoice is only issued for a fully collected order, so "filter PAID invoices" was always a true condition, while the
+ * order carries the collection status itself.
  *
- * <p>Cắt tháng theo ZoneConstant.BUSINESS_ZONE chứ không UTC -- cắt theo UTC đẩy 7 tiếng đầu mỗi
- * tháng sang tháng trước, tức doanh thu ngày mùng 1 rơi nhầm kỳ.
+ * <p>The month is cut in ZoneConstant.BUSINESS_ZONE, not UTC -- cutting in UTC pushes the first 7 hours of every
+ * month into the previous month, i.e. revenue of the 1st lands in the wrong period.
  */
 class ViewSystemAdminDashboardUseCaseTests {
 
@@ -117,7 +117,7 @@ class ViewSystemAdminDashboardUseCaseTests {
         assertThat(result.monthlyRevenue()).allSatisfy(m -> assertThat(m.amount()).isEqualByComparingTo(BigDecimal.ZERO));
     }
 
-    /** Tổng doanh thu là một phép SUM riêng ở tầng DB, không phải cộng lại danh sách theo tháng. */
+    /** Total revenue is a separate SUM at the DB layer, not an addition over the monthly list. */
     @Test
     void should_read_total_revenue_from_the_repository_sum() {
         when(orderRepository.sumTotalAmountByStatusInRange(any(), any(), any()))
@@ -127,8 +127,8 @@ class ViewSystemAdminDashboardUseCaseTests {
     }
 
     /**
-     * Hàng đợi rỗng phải là null, không phải 0: ở chỉ số này 0 là trạng thái TỐT NHẤT ("có đơn, vừa
-     * nộp hôm nay"), nên trả 0 cho hàng đợi rỗng khiến hai tình huống ngược nhau in ra cùng một dòng.
+     * An empty queue must be null, not 0: for this metric 0 is the BEST state ("there is an order, just submitted
+     * today"), so returning 0 for an empty queue makes two opposite situations print the same line.
      */
     @Test
     void should_report_no_oldest_pending_day_count_when_the_queue_is_empty() {
@@ -173,7 +173,7 @@ class ViewSystemAdminDashboardUseCaseTests {
         return monthly.stream()
             .filter(m -> m.month().equals(month))
             .findFirst()
-            .orElseThrow(() -> new AssertionError("Không có cột doanh thu cho tháng " + month))
+            .orElseThrow(() -> new AssertionError("No revenue column for month " + month))
             .amount();
     }
 

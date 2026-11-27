@@ -51,9 +51,9 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         // thread is assigning people to this very schedule the two must run one after the other instead of
         // both reading the same stale state.
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -73,10 +73,10 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
 
     private void requireEditableForKind(AssessmentSchedule schedule, Assessment assessment, boolean isClassTest) {
         if (isClassTest && assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException("Chỉ có thể sửa lịch bài kiểm tra trên lớp trước khi bắt đầu");
+            throw new IllegalArgumentException("The schedule of a class test can only be edited before it starts");
         }
         if (!isClassTest && !schedule.isModifiable()) {
-            throw new IllegalArgumentException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
+            throw new IllegalArgumentException("An assessment schedule can only be edited while it is a draft");
         }
     }
 
@@ -89,7 +89,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
 
     private void requireWindowValid(Assessment assessment, ScheduleWindow window, boolean isClassTest) {
         if (!window.end().isAfter(window.start())) {
-            throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
+            throw new IllegalArgumentException("The end time must be after the start time");
         }
         if (assessment.isScheduleWindowShorterThanAssessmentTime(window.start(), window.end())) {
             throw new IllegalArgumentException(AssessmentScheduleWindowMessages.tooShortForAssessmentTime(assessment));
@@ -177,7 +177,7 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
             input.startDate(),
             input.endDate());
         if (updated == 0) {
-            throw new IllegalArgumentException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
+            throw new IllegalArgumentException("The assessment schedule cannot be updated (its status has changed)");
         }
     }
 
@@ -194,6 +194,6 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

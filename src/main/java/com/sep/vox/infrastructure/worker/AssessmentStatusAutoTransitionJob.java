@@ -53,7 +53,7 @@ public class AssessmentStatusAutoTransitionJob {
         assessment.setStatus(AssessmentStatus.IN_PROGRESS);
         assessmentRepository.save(assessment);
         lockPapers(assessment, now);
-        log.info("Tự động mở bài kiểm tra {} (openAt đã tới)", assessment.getId());
+        log.info("Automatically opened assessment {} (openAt reached)", assessment.getId());
     }
 
     /**
@@ -89,7 +89,7 @@ public class AssessmentStatusAutoTransitionJob {
             assessmentScheduleClosureService.requireNoActiveSessionInOngoingSchedule(assessment.getId(), now);
             return false;
         } catch (IllegalArgumentException ex) {
-            log.info("Hoãn tự đóng bài kiểm tra {}: {}", assessment.getId(), ex.getMessage());
+            log.info("Postponed auto-closing assessment {}: {}", assessment.getId(), ex.getMessage());
             return true;
         }
     }
@@ -108,6 +108,6 @@ public class AssessmentStatusAutoTransitionJob {
         // Matches the side-effect of UpdateAssessmentStatusUseCase.CLOSE: most class tests are closed through
         // this path, and missing it here means teachers are never told there is an attempt waiting for grading.
         assessmentHumanGradingNotificationService.publishIfPendingReview(assessment, now);
-        log.info("Tự động đóng bài kiểm tra {} (closeAt đã tới)", assessment.getId());
+        log.info("Automatically closed assessment {} (closeAt reached)", assessment.getId());
     }
 }

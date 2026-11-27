@@ -37,7 +37,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         Rubric rubric = rubricRepository.findById(session.getImportedEntityId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found during background processing."));
         CommitRun run = buildCommitRun(rubric, resolveMapping(session));
 
         List<RubricVersion> versionsToSave = new ArrayList<>();
@@ -109,7 +109,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
             row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
             return true;
         } catch (Exception ex) {
-            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            errors.add(error("general", "Background processing error: " + ex.getMessage()));
             markInvalid(row, errors);
             return false;
         }
@@ -141,7 +141,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
         int versionNum = parseVersionNumber(fields, run, errors);
         RubricVersion targetVersion = errors.isEmpty() ? run.existingVersionMap().get(versionNum) : null;
         if (targetVersion != null && targetVersion.getStatus() != RubricStatus.DRAFT) {
-            errors.add(error("version", "Chỉ có thể sửa Version " + versionNum + " qua import khi đang ở trạng thái DRAFT."));
+            errors.add(error("version", "Only Version " + versionNum + " can be edited via import when it is in DRAFT status."));
         }
         ScoreScale scale = parseScoreScale(fields, errors);
         RubricTotalScoreMethod method = parseTotalScoreMethod(fields, errors);
@@ -150,10 +150,10 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
     }
 
     private static void addMissingFieldErrors(RowFields fields, List<Map<String, String>> errors) {
-        if (fields.version() == null || fields.version().isBlank()) errors.add(error("version", "Thiếu số Version."));
-        if (fields.scoringScaleMin() == null || fields.scoringScaleMin().isBlank()) errors.add(error("scoringScaleMin", "Thiếu điểm sàn (Min Score)."));
-        if (fields.scoringScaleMax() == null || fields.scoringScaleMax().isBlank()) errors.add(error("scoringScaleMax", "Thiếu điểm trần (Max Score)."));
-        if (fields.totalScoreMethod() == null || fields.totalScoreMethod().isBlank()) errors.add(error("totalScoreMethod", "Thiếu phương pháp tính điểm tổng."));
+        if (fields.version() == null || fields.version().isBlank()) errors.add(error("version", "Version number is missing."));
+        if (fields.scoringScaleMin() == null || fields.scoringScaleMin().isBlank()) errors.add(error("scoringScaleMin", "Minimum score (Min Score) is missing."));
+        if (fields.scoringScaleMax() == null || fields.scoringScaleMax().isBlank()) errors.add(error("scoringScaleMax", "Maximum score (Max Score) is missing."));
+        if (fields.totalScoreMethod() == null || fields.totalScoreMethod().isBlank()) errors.add(error("totalScoreMethod", "Total score method is missing."));
     }
 
     private static int parseVersionNumber(RowFields fields, CommitRun run, List<Map<String, String>> errors) {
@@ -164,13 +164,13 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
         int versionNum = 0;
         try {
             versionNum = Integer.parseInt(safeVersionStr);
-            if (versionNum <= 0) errors.add(error("version", "Version phải lớn hơn 0."));
+            if (versionNum <= 0) errors.add(error("version", "Version must be greater than 0."));
 
             if (!run.versionsInThisFile().add(versionNum)) {
-                errors.add(error("version", "Bị trùng số Version " + versionNum + " ngay trong file Excel."));
+                errors.add(error("version", "Duplicate Version number " + versionNum + " within the Excel file."));
             }
         } catch (NumberFormatException e) {
-            errors.add(error("version", "Số Version không hợp lệ (Phải là số nguyên)."));
+            errors.add(error("version", "Version number is invalid (must be an integer)."));
         }
         return versionNum;
     }
@@ -184,10 +184,10 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
         try {
             BigDecimal minScore = new BigDecimal(safeMinStr);
             BigDecimal maxScore = new BigDecimal(safeMaxStr);
-            if (minScore.compareTo(maxScore) > 0) errors.add(error("scoringScaleMin", "Điểm sàn không được lớn hơn điểm trần."));
+            if (minScore.compareTo(maxScore) > 0) errors.add(error("scoringScaleMin", "Minimum score must not exceed maximum score."));
             return new ScoreScale(minScore, maxScore);
         } catch (NumberFormatException e) {
-            errors.add(error("scoringScaleMin", "Điểm sàn hoặc điểm trần không đúng định dạng số."));
+            errors.add(error("scoringScaleMin", "Minimum or maximum score is not a valid number."));
             return ScoreScale.DEFAULT;
         }
     }
@@ -200,7 +200,7 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
         try {
             return RubricTotalScoreMethod.valueOf(safeMethodStr.toUpperCase(Locale.ROOT));
         } catch (Exception e) {
-            errors.add(error("totalScoreMethod", "Phương pháp tính điểm không hợp lệ (Chỉ nhận SUM hoặc WEIGHTED_AVERAGE)."));
+            errors.add(error("totalScoreMethod", "Scoring method is invalid (accepts only SUM or WEIGHTED_AVERAGE)."));
             return null;
         }
     }
@@ -221,10 +221,10 @@ public class RubricVersionImportCommitHandler implements ImportCommitHandler {
 
             if (effectiveFrom == null) effectiveFrom = now;
             if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
-                errors.add(error("effectiveTo", "Ngày kết thúc không được trước ngày bắt đầu."));
+                errors.add(error("effectiveTo", "End date must not be before start date."));
             }
         } catch (Exception e) {
-            errors.add(error("effectiveFrom", "Định dạng ngày tháng không hợp lệ."));
+            errors.add(error("effectiveFrom", "Date format is invalid."));
         }
         return new EffectivePeriod(effectiveFrom, effectiveTo);
     }

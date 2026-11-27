@@ -36,7 +36,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
         requireActiveSystemAdmin();
 
         if (gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-            throw new ResourceNotFoundException("Không tìm thấy khối học.");
+            throw new ResourceNotFoundException("Grade level not found.");
         }
 
         String name = command.name() != null ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
@@ -50,7 +50,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
         int updatedRows = updateAtomically(command, name, description);
 
         if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Không tìm thấy khối học.");
+            throw new ResourceNotFoundException("Grade level not found.");
         }
 
         return command.gradeLevelId();
@@ -59,10 +59,10 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
     private void requireActiveSystemAdmin() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
         if (!userContextPort.isSystemAdmin()) {
-            throw new ForbiddenException("Chỉ quản trị hệ thống mới được sửa khối học.");
+            throw new ForbiddenException("Only a system admin can edit a grade level.");
         }
     }
 
@@ -77,7 +77,7 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
                     command.order()
             );
         } catch (DataConflictException e) {
-            throw new ResourceDuplicatedException("Thứ tự khối học đã được sử dụng.");
+            throw new ResourceDuplicatedException("Grade level order is already in use.");
         }
     }
 
@@ -86,22 +86,22 @@ public class UpdateGradeLevelUseCase implements IUseCase<UpdateGradeLevelCommand
             return;
         }
         if (name.isBlank()) {
-            throw new IllegalArgumentException("Tên khối học không được để trống");
+            throw new IllegalArgumentException("Grade level name must not be empty");
         }
         if (name.length() > MAX_NAME_LENGTH) {
-            throw new IllegalArgumentException("Tên khối học không được vượt quá 255 ký tự");
+            throw new IllegalArgumentException("Grade level name must not exceed 255 characters");
         }
     }
 
     private void validateDescription(String description) {
         if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new IllegalArgumentException("Mô tả không được vượt quá 2048 ký tự");
+            throw new IllegalArgumentException("Description must not exceed 2048 characters");
         }
     }
 
     private void validateOrder(Integer order) {
         if (order != null && order <= 0) {
-            throw new IllegalArgumentException("Thứ tự khối học phải lớn hơn 0");
+            throw new IllegalArgumentException("Grade level order must be greater than 0");
         }
     }
 }

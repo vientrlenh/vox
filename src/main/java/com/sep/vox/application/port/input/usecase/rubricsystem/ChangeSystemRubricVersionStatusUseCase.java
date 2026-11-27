@@ -46,25 +46,25 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
 
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Account error."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
     }
 
     private RubricVersion loadVersionToChange(ChangeSystemRubricVersionStatusCommand command) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric version not found."));
 
         if (version.getStatus() == command.status()) {
-            throw new IllegalArgumentException("Phiên bản đã đang ở trạng thái " + command.status() + ".");
+            throw new IllegalArgumentException("The version is already in status " + command.status() + ".");
         }
         return version;
     }
 
     private Rubric loadSystemOwnedRubric(RubricVersion version) {
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Không thể chuyển trạng thái Rubric thuộc về Trường học (School).");
+            throw new ForbiddenException("Action denied: cannot change the status of a Rubric that belongs to a school.");
         }
         return rubric;
     }
@@ -73,10 +73,10 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
         if (targetStatus == RubricStatus.PUBLISHED) {
             requirePublishable(version, rubric);
         } else if (targetStatus == RubricStatus.ARCHIVED) {
-            throw new IllegalArgumentException("Hành động bị từ chối: Vui lòng dùng chức năng Lưu trữ (Archive) riêng để chuyển phiên bản sang ARCHIVED.");
+            throw new IllegalArgumentException("Action denied: use the separate Archive function to move a version to ARCHIVED.");
         } else if (targetStatus == RubricStatus.DRAFT) {
             // Block the loophole of moving a version back to an earlier status
-            throw new IllegalArgumentException("Hành động bị từ chối: Không thể chuyển một phiên bản đã Ban hành/Lưu trữ quay ngược lại trạng thái Nháp (DRAFT). Vui lòng tạo phiên bản mới.");
+            throw new IllegalArgumentException("Action denied: a published/archived version cannot go back to DRAFT status. Please create a new version.");
         }
     }
 
@@ -93,21 +93,21 @@ public class ChangeSystemRubricVersionStatusUseCase implements IUseCase<ChangeSy
 
     private void requireDraftWithCriteria(RubricVersion version) {
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể ban hành (PUBLISH) phiên bản đang ở trạng thái Nháp (DRAFT).");
+            throw new IllegalArgumentException("Only a version in DRAFT status can be published (PUBLISH).");
         }
 
         // A version without criteria or a scoring scale cannot grade anything: once published it would be
         // useless and could no longer be edited (only archived).
         if (rubricCriterionRepository.findByRubricVersionId(version.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Không thể ban hành phiên bản này vì chưa có tiêu chí (Criterion) nào.");
+            throw new IllegalArgumentException("Cannot publish this version because it has no criterion yet.");
         }
     }
 
     private void requireActiveFramework(Rubric rubric) {
         Framework framework = frameworkRepository.findById(rubric.getFrameworkId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework) liên kết."));
+                .orElseThrow(() -> new ResourceNotFoundException("The linked Framework was not found."));
         if (!framework.isActive()) {
-            throw new IllegalArgumentException("Không thể ban hành Rubric này vì Khung tiêu chuẩn (Framework) gốc đang bị vô hiệu hóa.");
+            throw new IllegalArgumentException("Cannot publish this Rubric because its parent Framework is disabled.");
         }
     }
 }

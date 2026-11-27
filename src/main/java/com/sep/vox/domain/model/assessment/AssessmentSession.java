@@ -178,9 +178,9 @@ public class AssessmentSession {
     }
 
     /**
-     * Xóa dấu vết lần chấm hỏng trước. Phải gọi ở MỌI đường rời khỏi {@code GRADING_FAILED}: giữ lại
-     * thông điệp cũ thì một phiên đã chấm lại thành công vẫn nằm trong nhóm sự cố trên trang phân
-     * loại, và người trực xử lý lại đúng thứ đã xong.
+     * Clears the traces of the previous failed grading. Must be called on EVERY path that leaves {@code GRADING_FAILED}:
+     * if the old message stayed, a session that was re-graded successfully would still sit in the incident group on the
+     * triage page, and the person on duty would handle something that is already done.
      */
     public int getSchoolRegradeCount() {
         return schoolRegradeCount;
@@ -191,17 +191,17 @@ public class AssessmentSession {
     }
 
     /**
-     * Trường còn được nhờ AI chấm lại phiên này nữa không.
+     * Whether the school may still ask the AI to re-grade this session.
      *
-     * <p>Một lượt: lỗi tạm thời gần như luôn hết ngay ở lần thử đầu, nên lượt thứ hai hỏng tiếp là
-     * bằng chứng khá chắc rằng nguyên nhân mang tính tất định (âm thanh hỏng, cấu hình rubric sai) —
-     * thử thêm chỉ đốt tiền cho một thất bại đã biết trước. Đường ra lúc đó là giao người chấm.
+     * <p>One attempt: a transient error almost always disappears on the first retry, so a failure on the second attempt
+     * is fairly strong evidence that the cause is deterministic (corrupt audio, wrong rubric configuration) —
+     * trying more only burns money on a failure already known in advance. The way out at that point is to hand it to a grader.
      */
     public boolean canSchoolRequestAiRegrade() {
         return schoolRegradeCount < MAX_SCHOOL_REGRADES;
     }
 
-    /** Số lượt AI chấm lại tối đa mà phía trường được yêu cầu cho một phiên. */
+    /** Maximum number of AI re-grades the school may request for one session. */
     public static final int MAX_SCHOOL_REGRADES = 1;
 
     public void clearGradingFailure() {

@@ -9,10 +9,10 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.application.port.output.PaymentProcessPort;
 import com.sep.vox.domain.model.payment.PaymentProvider;
 
-// Chọn đúng adapter theo PaymentMethod, thay vì use case inject thẳng 1 implementation cụ thể.
-// Lập chỉ mục theo PaymentProcessPort.provider() chứ không theo tên bean dạng chuỗi: gõ sai tên
-// bean chỉ lộ ra lúc chạy, còn sai enum thì compiler bắt ngay. Thêm cổng mới = thêm 1 class
-// implements PaymentProcessPort, không phải sửa gì ở đây.
+// Picks the right adapter by PaymentMethod, instead of the use case injecting one concrete implementation directly.
+// Indexed by PaymentProcessPort.provider() rather than by a string bean name: a mistyped bean
+// name only shows up at runtime, while a wrong enum is caught by the compiler right away. Adding a new gateway = adding 1 class
+// that implements PaymentProcessPort, with nothing to change here.
 @Service
 public class PaymentProcessResolver {
 
@@ -24,8 +24,8 @@ public class PaymentProcessResolver {
             PaymentProcessPort existing = this.paymentProcessors.put(processor.provider(), processor);
             if (existing != null) {
                 throw new IllegalStateException(
-                    "Có hai adapter cùng khai provider() = " + processor.provider() + ": "
-                        + existing.getClass().getName() + " và " + processor.getClass().getName());
+                    "Two adapters declare the same provider() = " + processor.provider() + ": "
+                        + existing.getClass().getName() + " and " + processor.getClass().getName());
             }
         }
     }
@@ -33,7 +33,7 @@ public class PaymentProcessResolver {
     public PaymentProcessPort resolve(PaymentProvider provider) {
         PaymentProcessPort port = paymentProcessors.get(provider);
         if (port == null) {
-            throw new IllegalArgumentException("Chưa hỗ trợ cổng thanh toán: " + provider);
+            throw new IllegalArgumentException("Payment gateway not supported: " + provider);
         }
         return port;
     }

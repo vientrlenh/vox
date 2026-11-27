@@ -19,19 +19,19 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Gia hạn: đặt một đơn mua tiếp một chu kỳ của gói trường đang dùng.
+ * Renewal: places an order to buy one more cycle of the plan the school is using.
  *
- * <p>Use case này KHÔNG tự tạo đơn -- nó chỉ làm đúng phần riêng của gia hạn (tìm gói đang dùng, đi
- * theo chuỗi thay thế, đối chiếu xác nhận của trường) rồi giao lại cho
- * {@link CreateSubscriptionOrderUseCase}. Gia hạn cố ý KHÔNG có OrderType riêng và KHÔNG có nhánh
- * settlement riêng: với hệ thống, "mua tiếp một chu kỳ" giống hệt "mua lần đầu" -- xem
- * CreateSubscriptionOrderUseCase.orderTypeFor. Nhân bản logic đặt đơn ở đây chỉ tạo ra một bản sao
- * sẽ lệch dần khỏi bản gốc.
+ * <p>This use case does NOT create the order itself -- it only does the part specific to renewal (find the plan in
+ * use, follow the replacement chain, check the school's confirmation) and hands over to
+ * {@link CreateSubscriptionOrderUseCase}. Renewal deliberately has NO OrderType of its own and NO settlement
+ * branch of its own: to the system, "buy one more cycle" is identical to "buy for the first time" -- see
+ * CreateSubscriptionOrderUseCase.orderTypeFor. Duplicating the ordering logic here would only create a copy that
+ * drifts away from the original.
  *
- * <p>Đây cũng là thứ thay cho RenewSubscriptionUseCase cũ, vốn tự tạo thẳng subscription mới mà
- * không có cổng nào xác nhận đã thu được tiền, và tự xóa hạn mức cũ -- chính là lỗi "mua token xong
- * gia hạn là mất sạch" mà cả refactor này sinh ra để sửa. Giờ tiền phải về trước, và số dư tự nạp
- * nằm ở ví cấp trường nên không kỳ nào đụng tới được.
+ * <p>This also replaces the old RenewSubscriptionUseCase, which created the new subscription directly without any
+ * gateway confirming the money had been collected, and deleted the old quotas itself -- exactly the "buy tokens,
+ * renew, lose everything" bug that this whole refactor was born to fix. Now the money must arrive first, and the
+ * self-funded balance sits in the school-level pool so no period can touch it.
  */
 @Service
 @RequiredArgsConstructor
@@ -50,23 +50,23 @@ public class RenewSchoolSubscriptionUseCase implements IUseCase<RenewSchoolSubsc
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findMostRecentBySchoolId(schoolId)
             .orElseThrow(() -> new ResourceNotFoundException(
-                "Trường chưa từng đăng ký gói nào, hãy chọn gói từ danh sách thay vì gia hạn."));
+                "The school has never subscribed to a plan; choose a plan from the list instead of renewing."));
 
         SubscriptionPlan currentPlan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
         SubscriptionPlan renewalPlan = subscriptionPlanResolver.resolveActivePlan(currentPlan);
 
-        // Đối chiếu với gói trường ĐÃ XÁC NHẬN ở màn xem trước. Không phải thủ tục cho có: giữa lúc
-        // trường xem màn đó và lúc bấm gia hạn, System Admin hoàn toàn có thể lưu trữ gói hoặc đổi
-        // gói thay thế -- và vì gia hạn TỰ đi theo chuỗi thay thế, không có bước này thì trường trả
-        // tiền cho một gói khác hẳn gói vừa nhìn thấy.
+        // Check against the plan the school CONFIRMED on the preview screen. This is not a formality: between the moment
+        // the school looks at that screen and the moment it clicks renew, a System Admin can perfectly well archive the
+        // plan or change its replacement -- and since renewal follows the replacement chain by itself, without this
+        // step the school would pay for a plan completely different from the one it just saw.
         if (!renewalPlan.getId().equals(input.acceptedPlanId())) {
             throw new IllegalArgumentException(
-                "Gói gia hạn đã thay đổi kể từ lúc bạn xem, vui lòng xem lại thông tin gia hạn trước khi tiếp tục.");
+                "The renewal plan has changed since you viewed it; please review the renewal information again before continuing.");
         }
 
-        // Từ đây trở đi giống hệt mua mới: gói phải đang mở bán, trường không bị đình chỉ, không có
-        // đơn đăng ký nào còn dở dang. Tất cả đã nằm sẵn trong CreateSubscriptionOrderUseCase.
+        // From here on identical to a new purchase: the plan must be on sale, the school not suspended, and no
+        // subscription order left unfinished. All of that already lives in CreateSubscriptionOrderUseCase.
         return createSubscriptionOrderUseCase.execute(new CreateSubscriptionOrderCommand(renewalPlan.getId()));
     }
 }

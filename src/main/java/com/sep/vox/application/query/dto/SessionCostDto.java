@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Tổng cost_usd của MỘT phiên -- chỉ là một dòng của báo cáo calibrate giá, không phải ảnh chụp của
- * aggregate nào. Vì thế nó nằm ở query/dto chứ không phải domain: QuotaPricingCalibrationService đọc
- * nó để suy ra giá ước tính mỗi giây, và không có lệnh nào ghi lại theo hình dạng này.
+ * The total cost_usd of ONE session -- just one row of the price-calibration report, not a snapshot of any
+ * aggregate. That is why it lives in query/dto and not in the domain: QuotaPricingCalibrationService reads
+ * it to derive the estimated price per second, and no command writes it back in this shape.
  */
 public record SessionCostDto(UUID sessionId, BigDecimal totalCostUsd) {
 }

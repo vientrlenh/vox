@@ -50,7 +50,7 @@ public class RestAssessmentPaperController {
             @Valid @RequestBody(required = false) CreateAssessmentPaperRequest request) {
         AssessmentPaperDto data = createAssessmentPaperUseCase.execute(CreateAssessmentPaperRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo đề thi thành công", data));
+            .body(ApiResponse.success("Assessment paper created successfully", data));
     }
 
     @PutMapping("/assessment-papers/{id}/items/{itemId}")
@@ -60,7 +60,7 @@ public class RestAssessmentPaperController {
             @PathVariable("itemId") UUID itemId,
             @Valid @RequestBody UpdateAssessmentPaperItemRequest request) {
         AssessmentPaperItemDto data = updateAssessmentPaperItemUseCase.execute(UpdateAssessmentPaperItemRequest.toCommand(id, itemId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật câu hỏi trong đề thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Question in the assessment paper updated successfully", data));
     }
 
     @PatchMapping("/assessment-papers/{id}/sections/{sectionId}")
@@ -70,7 +70,7 @@ public class RestAssessmentPaperController {
             @PathVariable("sectionId") UUID sectionId,
             @RequestBody UpdateAssessmentPaperSectionRequest request) {
         AssessmentPaperSectionDto data = updateAssessmentPaperSectionUseCase.execute(UpdateAssessmentPaperSectionRequest.toCommand(id, sectionId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật phần đề thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Assessment paper section updated successfully", data));
     }
 
     @PatchMapping("/assessment-papers/{id}/status")
@@ -79,13 +79,13 @@ public class RestAssessmentPaperController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentPaperStatusRequest request) {
         AssessmentPaperDto data = updateAssessmentPaperStatusUseCase.execute(UpdateAssessmentPaperStatusRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái đề thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Assessment paper status updated successfully", data));
     }
 
     @DeleteMapping("/assessment-papers/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteAssessmentPaperUseCase.execute(new DeleteAssessmentPaperCommand(id));
-        return ResponseEntity.ok(ApiResponse.success("Xóa đề thi thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Assessment paper deleted successfully"));
     }
 }

@@ -36,7 +36,7 @@ public class ApproveAndClaimAssessmentAppealUseCase implements IUseCase<UUID, UU
 
     /** Fixed reason for the conflict-of-interest rule: a class test can only be graded by its owner. */
     static final String SELF_CLAIM_OVERRIDE_REASON =
-        "Bài kiểm tra trên lớp: giáo viên phụ trách bài tự nhận chấm phúc khảo.";
+        "Class test: the teacher in charge of the test claims the appeal grading.";
     static final int DEFAULT_DEADLINE_DAYS = 3;
     static final LocalTime DEFAULT_DEADLINE_TIME = LocalTime.of(17, 0);
 
@@ -44,19 +44,19 @@ public class ApproveAndClaimAssessmentAppealUseCase implements IUseCase<UUID, UU
     private final AssignAssessmentAppealReviewerUseCase assignAssessmentAppealReviewerUseCase;
     private final AssessmentAppealAccessService assessmentAppealAccessService;
 
-    /** @return id DÒNG PHÂN CÔNG vừa mở (giống {@code /reviewer}), không phải id đơn. */
+    /** @return the id of the ASSIGNMENT ROW just opened (same as {@code /reviewer}), not the appeal id. */
     @Override
     @Transactional
     public UUID execute(UUID appealId) {
         UUID currentUserId = assessmentAppealAccessService.requireActiveUserId();
         AssessmentAppealAccessService.AppealContext context = assessmentAppealAccessService.load(appealId);
-        // Chỉ chủ bài trên lớp tự nhận chấm được. Không chặn ở đây thì school admin sẽ
-        // rơi xuống tận Assign và nhận thông báo "người chấm phải là giáo viên cùng
-        // trường" — đọc không ra vấn đề thật.
+        // Only the owner of the class test can claim the grading. Without this check here a school admin would fall
+        // all the way into Assign and get the message "the grader must be a teacher of the same school" --
+        // which does not explain the real problem.
         if (!assessmentAppealAccessService.isClassTestChair(context, currentUserId)) {
             throw new ForbiddenException(
-                "Chỉ giáo viên phụ trách bài mới tự nhận chấm được. "
-                    + "Quản trị trường hãy duyệt rồi phân công người chấm.");
+                "Only the teacher in charge of the test can claim the grading. "
+                    + "A school admin should approve the appeal and then assign a grader.");
         }
 
         Instant deadline = defaultDeadline();
@@ -65,7 +65,7 @@ public class ApproveAndClaimAssessmentAppealUseCase implements IUseCase<UUID, UU
             appealId, currentUserId, SELF_CLAIM_OVERRIDE_REASON, deadline));
     }
 
-    /** Cùng mặc định với hộp thoại duyệt cũ: T+3 lúc 17:00 giờ Việt Nam. */
+    /** Same default as the old approval dialog: T+3 at 17:00 Vietnam time. */
     private Instant defaultDeadline() {
         return LocalDate.now(DateMapper.DEFAULT_INPUT_ZONE)
             .plusDays(DEFAULT_DEADLINE_DAYS)

@@ -3,25 +3,24 @@ package com.sep.vox.domain.model.assessment;
 /**
  * PENDING -&gt; APPROVED -&gt; GRADING -&gt; PUBLISHED
  * PENDING -&gt; REJECTED
- * PENDING -&gt; WITHDRAWN (học sinh tự rút, hoàn lại lượt phúc khảo)
+ * PENDING -&gt; WITHDRAWN (the student withdraws, the appeal allowance is refunded)
  *
- * <p>{@code COMPARING} đã bị bỏ cùng với bước admin công bố: chỉ còn MỘT người chấm
- * phúc khảo nên không có gì để "đối chiếu" giữa các báo cáo, và người đủ thông tin
- * để quyết chính là người vừa chấm. Giáo viên nộp điểm là điểm lên luôn.
+ * <p>{@code COMPARING} was dropped together with the admin publish step: there is only ONE appeal grader left,
+ * so there is nothing to "compare" between reports, and the person with enough information to decide is the one
+ * who just graded. When the teacher submits the score, it goes live right away.
  *
- * <p>{@code WITHDRAWN} là trạng thái riêng chứ không phải một cờ {@code withdrawn_at}
- * trên đơn còn PENDING: đơn đã rút phải ngừng chặn đơn mới, mà mọi chỗ kiểm "còn đơn
- * đang mở" đều đọc {@code status}.
+ * <p>{@code WITHDRAWN} is its own status and not a {@code withdrawn_at} flag on a PENDING appeal: a withdrawn
+ * appeal must stop blocking new ones, and every "is there an open appeal" check reads {@code status}.
  *
- * <p>⚠️ CHECK constraint trên cột {@code status} phải sửa bằng SQL tay —
- * {@code ddl-auto} không alter được. Xem
+ * <p>⚠️ The CHECK constraint on the {@code status} column must be changed with hand-written SQL —
+ * {@code ddl-auto} cannot alter it. See
  * {@code AI/doc/migration/2026-07-26-grading-rework.sql}.
  */
 public enum AssessmentAppealStatus {
-    PENDING,    // học sinh đã gửi đơn, chờ duyệt
-    APPROVED,   // school admin đã duyệt, chờ phân công người chấm
-    GRADING,    // đã phân công, giáo viên đang chấm lại
-    PUBLISHED,  // giáo viên đã nộp điểm -> công bố luôn
-    REJECTED,   // admin từ chối ở bước duyệt
-    WITHDRAWN   // học sinh tự rút khi đơn còn PENDING
+    PENDING,    // the student submitted the appeal, awaiting review
+    APPROVED,   // the school admin approved it, awaiting assignment of a grader
+    GRADING,    // assigned, the teacher is re-grading
+    PUBLISHED,  // the teacher submitted the score -> published right away
+    REJECTED,   // the admin rejected it at the review step
+    WITHDRAWN   // the student withdrew while the appeal was still PENDING
 }

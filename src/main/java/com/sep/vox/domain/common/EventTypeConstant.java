@@ -24,10 +24,10 @@ public final class EventTypeConstant {
     public static final String GRADING_ASSIGNMENT_DECLINED = "GradingAssignmentDeclined";
     public static final String ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED = "AssessmentBlueprintVersionPublished";
 
-    /** Bài thi đóng lại mà còn bài ở PENDING_REVIEW ("Chờ soát điểm AI") -- cần người chấm tay. */
+    /** An assessment closed while a session is still in PENDING_REVIEW ("Awaiting AI score review") -- needs a manual grader. */
     public static final String ASSESSMENT_HUMAN_GRADING_REQUIRED = "AssessmentHumanGradingRequired";
 
-    /** Giáo viên vừa được giao một vòng chấm cụ thể (chấm lần đầu, hậu kiểm, phúc khảo...). */
+    /** A teacher was just given a specific grading round (first grading, spot check, appeal...). */
     public static final String GRADING_ASSIGNMENT_OPENED = "GradingAssignmentOpened";
 
     public static final String INVOICE_PAID = "InvoicePaid";
@@ -40,10 +40,10 @@ public final class EventTypeConstant {
     public static final String SCHOOL_SUBSCRIPTION_SUSPENDED = "SchoolSubscriptionSuspended";
     public static final String SCHOOL_SUBSCRIPTION_UNSUSPENDED = "SchoolSubscriptionUnsuspended";
 
-    // Hai event OTP dưới đây CỐ TÌNH không mang mã OTP trong payload -- chúng chỉ nói "cần gửi
-    // OTP cho địa chỉ này". Mã được sinh tại consumer ngay trước lúc gửi mail, giống hệt token
-    // đặt mật khẩu ở UserCreatedEventConsumer. Nhờ vậy credential không bao giờ nằm trong
-    // outboxes.payload (có backup) hay trong topic Kafka (giữ theo retention).
+    // The two OTP events below DELIBERATELY do not carry the OTP code in the payload -- they only say "an OTP needs to
+    // be sent to this address". The code is generated at the consumer right before the mail is sent, exactly like the
+    // password-setting token in UserCreatedEventConsumer. That way the credential never sits in
+    // outboxes.payload (which is backed up) or in the Kafka topic (kept per retention).
     public static final String RESET_PASSWORD_OTP_REQUESTED = "ResetPasswordOtpRequested";
     public static final String REGISTER_VERIFICATION_OTP_REQUESTED = "RegisterVerificationOtpRequested";
 

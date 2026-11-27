@@ -12,11 +12,11 @@ public interface AssessmentScheduleRepository {
     Optional<AssessmentSchedule> findById(UUID id);
 
     /**
-     * (gán thí sinh thủ công / auto-fill). Dùng trong cùng một transaction.
+     * (manual candidate assignment / auto-fill). Used within the same transaction.
      */
     Optional<AssessmentSchedule> findByIdForUpdate(UUID id);
 
-    /** Danh sách ca thi của một bài kiểm tra (đã loại các ca DELETED). */
+    /** Schedules of a class test (excluding DELETED ones). */
     List<AssessmentSchedule> findByAssessmentId(UUID assessmentId);
 
     /**
@@ -25,10 +25,10 @@ public interface AssessmentScheduleRepository {
      */
     List<AssessmentSchedule> findByAssessmentIdIn(Collection<UUID> assessmentIds);
 
-    /** Danh sách ca thi của toàn trường (đã loại các ca DELETED). */
+    /** Schedules of the whole school (excluding DELETED ones). */
     List<AssessmentSchedule> findBySchoolId(UUID schoolId);
 
-    /** Tìm nhiều ca thi theo id (dùng cho DataLoader batch). */
+    /** Finds several schedules by id (used for the DataLoader batch). */
     List<AssessmentSchedule> findByIdIn(java.util.Collection<UUID> ids);
 
     /**
@@ -38,14 +38,14 @@ public interface AssessmentScheduleRepository {
      */
     List<UUID> findAllIdsByAssessmentId(UUID assessmentId);
 
-    /** Xoá cứng mọi ca thi của kỳ thi (kể cả ca đã xoá mềm). */
+    /** Hard-deletes every schedule of the assessment (including soft-deleted ones). */
     void deleteByAssessmentId(UUID assessmentId);
 
     AssessmentSchedule save(AssessmentSchedule schedule);
 
     /**
-     * Có ca thi nào (DRAFT/PUBLISHED) trùng phòng và giao thời gian với khoảng [start, end) hay không.
-     * {@code excludeScheduleId} (nếu khác null) được loại khỏi phép kiểm tra (dùng khi sửa chính ca đó).
+     * Whether any schedule (DRAFT/PUBLISHED) uses the same room and overlaps in time with the range [start, end).
+     * {@code excludeScheduleId} (if not null) is excluded from the check (used when editing that schedule itself).
      */
     boolean existsOverlapping(UUID schoolRoomId, Instant start, Instant end, UUID excludeScheduleId);
 
@@ -56,9 +56,9 @@ public interface AssessmentScheduleRepository {
      */
     int updateAtomic(UUID id, UUID schoolRoomId, boolean schoolRoomIdProvided, Instant start, Instant end);
     /**
-     * Ca đã công bố nhưng đã qua giờ kết thúc, cũ nhất trước, tối đa {@code limit} dòng — dùng cho
-     * job tự chuyển ca sang COMPLETED. Có trần vì lần chạy đầu sau khi triển khai phải quét cả tồn
-     * đọng lịch sử.
+     * Schedules that are published but already past their end time, oldest first, at most {@code limit} rows — used by
+     * the job that moves a schedule to COMPLETED automatically. Capped because the first run after deployment has to sweep the whole
+     * historical backlog.
      */
     List<AssessmentSchedule> findPublishedEndedBefore(Instant now, int limit);
 

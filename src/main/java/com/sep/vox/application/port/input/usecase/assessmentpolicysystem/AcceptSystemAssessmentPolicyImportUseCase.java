@@ -55,19 +55,19 @@ public class AcceptSystemAssessmentPolicyImportUseCase implements IUseCase<Accep
 
     private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
     }
 
     private ImportSession loadPreviewedSystemSession(AcceptSystemAssessmentPolicyImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Import session not found (invalid session ID)."));
 
         if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() != null) {
-            throw new IllegalArgumentException("Phiên làm việc này không phải là Import Assessment Policy hệ thống.");
+            throw new IllegalArgumentException("This session is not a system Assessment Policy import.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
+            throw new IllegalArgumentException("Only a session in the PREVIEWED status can be accepted.");
         }
         return session;
     }

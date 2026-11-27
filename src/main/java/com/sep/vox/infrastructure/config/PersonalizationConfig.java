@@ -7,13 +7,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
 /**
- * Cấu hình cá nhân hoá. Mọi con số về SỐ LƯỢNG CÂU khai ở application.yaml dưới
- * {@code app.personalization.*}, không rải hằng số trong mã -- xem hai lớp properties bên dưới.
+ * Personalization configuration. Every number about the NUMBER OF QUESTIONS is declared in application.yaml under
+ * {@code app.personalization.*}, with no constants scattered in code -- see the two properties classes below.
  *
- * <p>Đăng ký tường minh dù {@code VoxApplication} đã có {@code @ConfigurationPropertiesScan}:
- * ba lớp properties có sẵn của repo (S3, outbox, SePay) đều làm vậy. Dựa vào mỗi scan thì ngày
- * ai đó gỡ annotation kia đi, Spring báo "not registered as a bean" lúc KHỞI ĐỘNG -- mà
- * compileJava không bắt được loại lỗi đó.
+ * <p>Registered explicitly even though {@code VoxApplication} already has {@code @ConfigurationPropertiesScan}:
+ * the repo's three existing properties classes (S3, outbox, SePay) all do so. Relying on the scan alone means the day
+ * someone removes that annotation, Spring reports "not registered as a bean" at STARTUP -- and
+ * compileJava cannot catch that kind of error.
  */
 @Configuration
 @EnableConfigurationProperties({

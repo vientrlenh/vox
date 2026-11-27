@@ -15,12 +15,12 @@ import jakarta.persistence.PersistenceContext;
 import com.sep.vox.support.RepositoryTest;
 
 /**
- * Chạy SQL THẬT: toàn bộ giá trị của V9 nằm ở chỗ hai câu UPDATE không giẫm lên nhau, và điều đó chỉ
- * kiểm được trên một database thật với ràng buộc thật.
+ * Runs REAL SQL: the whole value of V9 is that the two UPDATE statements do not step on each other, and that can only be
+ * checked on a real database with real constraints.
  *
- * <p>Quy tắc đang bảo vệ: trường bị thu tiền cho phần việc AI đã TẠO RA KẾT QUẢ DÙNG ĐƯỢC. Một lượt
- * chấm hỏng không tạo ra gì nên không có gì để thu — nhưng lượt chấm THÀNH CÔNG trước đó thì có, và
- * không được hoàn lại.
+ * <p>The rule being protected: a school is charged for AI work that PRODUCED A USABLE RESULT. A failed grading attempt
+ * produces nothing so there is nothing to charge -- but an earlier SUCCESSFUL grading attempt does, and
+ * must not be refunded.
  */
 @RepositoryTest
 class AiUsageRecordChargeWaiverTests {

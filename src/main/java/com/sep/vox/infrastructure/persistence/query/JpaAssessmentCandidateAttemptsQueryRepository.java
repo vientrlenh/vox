@@ -18,10 +18,10 @@ public class JpaAssessmentCandidateAttemptsQueryRepository implements Assessment
     @PersistenceContext
     private EntityManager em;
 
-    // LEFT JOIN tới rubric_versions để mang THANG ĐIỂM theo từng lượt: lượt chưa có kết quả
-    // (r null) hoặc kết quả không gắn rubric version thì thang là null, và client bỏ phần tô
-    // màu thay vì tô sai. Không đặt chú thích này trong chuỗi JPQL -- HQL không nhận cú pháp
-    // chú thích của SQL, và query dạng chuỗi chỉ vỡ lúc chạy chứ không vỡ lúc biên dịch.
+    // LEFT JOIN to rubric_versions to carry the SCORE SCALE of each attempt: an attempt with no result
+    // (r null) or a result not tied to a rubric version has a null scale, and the client skips the
+    // colouring instead of colouring wrongly. This note is not placed inside the JPQL string -- HQL does not accept
+    // SQL comment syntax, and a query written as a string breaks only at runtime, not at compile time.
     private static final String SELECT_ATTEMPTS = """
         SELECT NEW com.sep.vox.application.query.dto.AssessmentAttemptSummary(
             s.candidateId,

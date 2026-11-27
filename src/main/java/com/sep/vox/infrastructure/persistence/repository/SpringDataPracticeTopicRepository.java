@@ -31,20 +31,20 @@ public interface SpringDataPracticeTopicRepository
      */
     long countByActiveTrueAndSourceNot(String source);
 
-    // GỠ 2026-08-11: findByActiveTrueOrderByName() và findByActiveTrue(). Cả hai trả entity đầy đủ
-    // (kèm cột description kiểu TEXT) cho những chỗ chỉ cần tên -- nay dùng findActiveNameCards()
-    // bên dưới.
+    // REMOVED 2026-08-11: findByActiveTrueOrderByName() and findByActiveTrue(). Both returned full entities
+    // (including the TEXT description column) to places that only need the name -- now they use findActiveNameCards()
+    // below.
 
     Optional<PracticeTopicJpaEntity> findByNormalizedName(String normalizedName);
 
     boolean existsByIdAndActiveTrue(UUID id);
 
     /**
-     * Chiều sở thích của đúng những chủ đề được hỏi tới -- thay cho {@code findAll()} thuần mà
-     * {@code findAllTopicDimensions()} cũ dùng (gỡ 2026-08-11).
+     * Interest dimensions of exactly the topics asked about -- replacing the plain {@code findAll()} that the old
+     * {@code findAllTopicDimensions()} used (removed 2026-08-11).
      *
-     * <p>KHÔNG lọc {@code active}: bản cũ cũng không lọc, và sự kiện quan tâm nằm trên chủ đề đã
-     * tắt vẫn phải được tính vào điểm chiều. Thêm lọc là đổi kết quả một cách âm thầm.
+     * <p>Does NOT filter {@code active}: the old version did not either, and interest events on a topic that is
+     * switched off must still count toward the dimension score. Adding a filter silently changes the result.
      */
     @Query(value = """
         SELECT topic.id AS id, topic.interest_dimensions AS interestDimension
@@ -75,9 +75,9 @@ public interface SpringDataPracticeTopicRepository
 
     @Query(value = """
         WITH profile AS (
-            -- Không còn ORDER BY version: hồ sơ nay 1-1 với học sinh (unique index
-            -- idx_learner_profile_student), nên chỉ có đúng một dòng để lấy. LIMIT 1 giữ lại
-            -- làm chốt chặn cho LEFT JOIN bên dưới -- hai dòng ở đây sẽ nhân đôi mọi chủ đề.
+            -- No ORDER BY version any more: the profile is now 1-1 with the student (unique index
+            -- idx_learner_profile_student), so there is exactly one row to take. LIMIT 1 stays
+            -- as a safety stop for the LEFT JOIN below -- two rows here would double every topic.
             SELECT id
             FROM learner_profiles
             WHERE student_id = :studentId
@@ -155,11 +155,11 @@ public interface SpringDataPracticeTopicRepository
     );
 
     /**
-     * Nạp lại chủ đề theo danh sách id -- dùng cho kết quả tìm bằng vector.
+     * Reloads topics by a list of ids -- used for vector search results.
      *
-     * Chroma chỉ trả id; tên và mô tả bên đó là bản chụp lúc index nên có thể đã cũ, và chủ đề
-     * có thể đã bị tắt active sau đó. Đọc lại từ Postgres để hiển thị đúng hiện trạng, đồng thời
-     * lọc luôn chủ đề không còn dùng được.
+     * Chroma only returns ids; the name and description there are a snapshot from index time so may be stale, and the topic
+     * may have been switched off since. Re-read from Postgres to show the current state, and at the same time
+     * filter out topics that are no longer usable.
      */
     @Query(value = """
         SELECT topic.id AS id, topic.name AS name, topic.interest_dimensions AS interestDimension,

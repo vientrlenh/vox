@@ -10,7 +10,7 @@ public record PostalCode(
 
     public PostalCode {
         if (value != null && !POSTAL_CODE_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Định dạng mã bưu chính không hợp lệ");
+            throw new IllegalArgumentException("The postal code format is invalid");
         }
     }
 }

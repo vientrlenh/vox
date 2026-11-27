@@ -67,7 +67,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         List<UUID> candidateResultIds = items.stream()
             .map(item -> item.candidateResultId()).toList();
         if (new HashSet<>(candidateResultIds).size() != candidateResultIds.size()) {
-            throw new ResourceDuplicatedException("Không được phân công trùng bài thi.");
+            throw new ResourceDuplicatedException("The same submission must not be assigned twice.");
         }
 
         AssignmentLookups lookups = loadLookups(items, candidateResultIds, currentUserId);
@@ -90,11 +90,11 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         List<AssignGradingCommand.AssignmentItem> items = requestedItems == null
             ? List.<AssignGradingCommand.AssignmentItem>of() : requestedItems;
         if (items.isEmpty()) {
-            throw new IllegalArgumentException("Phải chọn ít nhất một bài thi để phân công.");
+            throw new IllegalArgumentException("At least one submission must be selected for assignment.");
         }
         for (AssignGradingCommand.AssignmentItem item : items) {
             if (item.candidateResultId() == null || item.teacherId() == null) {
-                throw new IllegalArgumentException("Thiếu bài thi hoặc giáo viên cần phân công.");
+                throw new IllegalArgumentException("The submission or teacher to assign is missing.");
             }
         }
         return items;
@@ -118,7 +118,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             .collect(Collectors.toMap(result -> result.getId(), Function.identity(), (left, right) -> left));
         for (UUID candidateResultId : candidateResultIds) {
             if (!resultsById.containsKey(candidateResultId)) {
-                throw new ResourceNotFoundException("Không tìm thấy kết quả bài thi.");
+                throw new ResourceNotFoundException("Submission result not found.");
             }
         }
         return resultsById;
@@ -133,7 +133,7 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
         for (AssessmentCandidateResult result : resultsById.values()) {
             UUID schoolId = schoolIdByAssessmentId.get(result.getAssessmentId());
             if (schoolId == null) {
-                throw new ResourceNotFoundException("Không tìm thấy bài kiểm tra của kết quả này.");
+                throw new ResourceNotFoundException("The assessment of this result was not found.");
             }
             schoolIdByResultId.put(result.getId(), schoolId);
         }
@@ -201,30 +201,30 @@ public class AssignGradingUseCase implements IUseCase<AssignGradingCommand, List
             AssignmentLookups lookups) {
         if (!GradingRoundPolicy.isAssignable(roundType, result.getStatus())) {
             throw new IllegalArgumentException(
-                "Bài thi không ở trạng thái phù hợp với vòng chấm " + roundType.name() + ".");
+                "The submission is not in a status suitable for the grading round " + roundType.name() + ".");
         }
         // Pre-check so the error message is in Vietnamese instead of letting the unique index throw
         // DataIntegrityViolation; the index remains the last safeguard when there is a race.
         if (lookups.alreadyAssigned().contains(item.candidateResultId())) {
-            throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm.");
+            throw new ResourceDuplicatedException("This submission is being graded by a teacher.");
         }
         UUID schoolId = lookups.schoolIdByResultId().get(item.candidateResultId());
         if (!lookups.validTeachersBySchool().getOrDefault(schoolId, Set.of()).contains(item.teacherId())) {
-            throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
+            throw new IllegalArgumentException("The grader must be a teacher of the same school as the assessment.");
         }
     }
 
     private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {
         if (roundType == GradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
-                "Vòng phúc khảo được phân công từ màn đơn phúc khảo, không phân công ở đây.");
+                "Appeal rounds are assigned from the appeal screen, not here.");
         }
         return roundType;
     }
 
     private Instant validateDeadline(Instant deadlineAt) {
         if (deadlineAt != null && deadlineAt.isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
+            throw new IllegalArgumentException("The grading deadline must be in the future.");
         }
         return deadlineAt;
     }

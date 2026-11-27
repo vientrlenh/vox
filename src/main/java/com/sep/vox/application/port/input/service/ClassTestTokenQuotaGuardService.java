@@ -84,7 +84,7 @@ public class ClassTestTokenQuotaGuardService {
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
             .orElseThrow(() -> new BusinessRuleViolationException(
-                "Trường chưa có gói subscription đang hoạt động, không thể lên lịch kỳ thi"));
+                "The school has no active subscription, so the assessment cannot be scheduled"));
 
         // A school in debt (negative self-top-up wallet balance) is blocked right here, even before the
         // worst-case estimate is looked at -- see SchoolSubscriptionDebtGuardService.
@@ -212,13 +212,13 @@ public class ClassTestTokenQuotaGuardService {
     }
 
     /**
-     * Tổng tiền trường còn chi được cho loại hạn mức này = hạn mức kèm gói còn lại + số dư ví tự nạp.
-     * null = trường chưa cấu hình ví này (khác hẳn với "đã cấu hình nhưng còn 0đ").
+     * The total money the school can still spend on this quota type = the remaining plan quota + the self-funded balance.
+     * null = the school has not configured this quota record (very different from "configured but 0 VND left").
      *
-     * <p>Số dư âm được kẹp về 0 chứ không cộng thẳng: số âm là NỢ, mà nợ đã do
-     * {@link SchoolSubscriptionDebtGuardService} chặn ở một cửa riêng với thông báo riêng. Cộng nó
-     * vào đây sẽ biến một trường đang bị khóa thành một trường "hết hạn mức", tức báo sai lý do và
-     * chỉ sai cách khắc phục.
+     * <p>A negative balance is clamped to 0 instead of being added directly: a negative number is DEBT, and debt is already
+     * blocked by {@link SchoolSubscriptionDebtGuardService} at a separate gate with its own message. Adding it
+     * here would turn a locked school into a school that "ran out of quota", i.e. report the wrong reason and
+     * point to the wrong remedy.
      */
     private BigDecimal spendableSchoolFundsVnd(UUID subscriptionId, UUID schoolId, QuotaType quotaType) {
         return subscriptionQuotaRepository.findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
@@ -227,7 +227,7 @@ public class ClassTestTokenQuotaGuardService {
             .orElse(null);
     }
 
-    /** Chỉ ĐỌC số dư (không phải đường ghi) nên dùng findBySchoolId -- xem javadoc SchoolBalanceRepository. */
+    /** Only READS the balance (not a write path), so findBySchoolId is used -- see the SchoolBalanceRepository Javadoc. */
     private BigDecimal spendableBalanceVnd(UUID schoolId) {
         return schoolBalanceRepository.findBySchoolId(schoolId)
             .map(balance -> balance.getBalanceVnd())
@@ -235,7 +235,7 @@ public class ClassTestTokenQuotaGuardService {
             .orElse(BigDecimal.ZERO);
     }
 
-    /** null = giáo viên không có hạn mức cá nhân riêng, tức chỉ tiền của trường áp dụng. */
+    /** null = the teacher has no personal quota of their own, i.e. only the school's money applies. */
     private BigDecimal remainingUserAllocation(UUID subscriptionId, UUID teacherId) {
         return subscriptionQuotaUserAllocationRepository
             .findBySchoolSubscriptionIdAndQuotaTypeAndUserId(subscriptionId, QuotaType.ASSESSMENT, teacherId)
@@ -247,29 +247,29 @@ public class ClassTestTokenQuotaGuardService {
             BigDecimal estimatedCostVnd) {
         BigDecimal remaining = spendableSchoolFundsVnd(subscriptionId, schoolId, quotaType);
         if (remaining == null) {
-            throw new BusinessRuleViolationException("Không tìm thấy hạn mức " + quotaType + " của gói đăng ký");
+            throw new BusinessRuleViolationException("Quota " + quotaType + " of the subscription not found");
         }
         if (estimatedCostVnd.compareTo(remaining) > 0) {
             throw new BusinessRuleViolationException(
-                "Chi phí ước tính cần dùng (" + estimatedCostVnd + "đ) vượt quá số tiền trường còn chi được cho "
-                    + quotaType + " (" + remaining + "đ, gồm hạn mức kèm gói và số dư ví), vui lòng nạp thêm tiền"
-                    + " hoặc nâng cấp gói"
+                "Estimated required cost (" + estimatedCostVnd + " VND) exceeds the amount the school can still spend on "
+                    + quotaType + " (" + remaining + " VND, including the plan quota and the balance), please top up"
+                    + " or upgrade the plan"
             );
         }
     }
 
     /**
-     * Trần chi CÁ NHÂN mà trường tự chia nội bộ. KHÔNG cộng số dư ví trường vào đây: đây là một giới
-     * hạn nội bộ chứ không phải một túi tiền, nên cộng tiền của trường vào sẽ xóa sạch chính cái trần
-     * mà quản trị trường vừa đặt ra -- xem ConsumeQuotaService.consumeUserAllocation và QuotaType.
+     * The PERSONAL spending cap that the school divides internally. Do NOT add the school balance here: this is an
+     * internal limit, not a pocket of money, so adding the school's money would wipe out the very cap
+     * the school admin just set -- see ConsumeQuotaService.consumeUserAllocation and QuotaType.
      */
     private void requireWithinUserAllocation(UUID subscriptionId, UUID teacherId, BigDecimal estimatedCostVnd) {
         BigDecimal remaining = remainingUserAllocation(subscriptionId, teacherId);
         if (remaining != null && estimatedCostVnd.compareTo(remaining) > 0) {
             throw new BusinessRuleViolationException(
-                "Chi phí ước tính cần dùng (" + estimatedCostVnd
-                    + "đ) vượt quá hạn mức bài kiểm tra trên lớp cá nhân còn lại (" + remaining
-                    + "đ), vui lòng liên hệ quản trị trường để cấp thêm hạn mức"
+                "Estimated required cost (" + estimatedCostVnd
+                    + " VND) exceeds the remaining personal class-test quota (" + remaining
+                    + " VND), please contact the school admin to allocate more quota"
             );
         }
     }

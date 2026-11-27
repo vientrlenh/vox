@@ -23,18 +23,18 @@ import com.sep.vox.domain.repository.SchoolDebtEventRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Hai repository này dựng câu bằng {@code @Query} viết tay, và Spring Data chỉ phân tích chúng lúc
- * khởi động context -- nhưng một câu chạy được vẫn có thể trả về SAI thứ tự hoặc sai bộ lọc. Lớp này
- * chạy từng câu trên Postgres THẬT với dữ liệu thật để chốt ba thứ không phép kiểm nào khác bắt được:
- * bộ lọc theo loại bút toán, khoảng nửa mở {@code [from, to)}, và khoá sắp xếp phụ theo id.
+ * These two repositories build their statements with hand-written {@code @Query}, and Spring Data only parses them at
+ * context startup -- but a statement that runs can still return the WRONG order or the wrong filter. This class
+ * runs each statement on a REAL Postgres with real data to pin down three things no other check catches:
+ * the filter by entry type, the half-open range {@code [from, to)}, and the secondary sort key by id.
  *
- * <p>Không kiểm nghiệp vụ -- đó là việc của test use case.
+ * <p>It does not check business rules -- that is the job of the use case tests.
  *
- * <p>{@code @SpringBootTest} chứ KHÔNG phải {@code @DataJpaTest}, dù lớp này chỉ đụng tới hai
- * repository. Đã đo cả hai: chạy riêng một mình thì slice nhanh hơn (8,4s so với 11,5s), nhưng chạy
- * cùng bộ thì ngược hẳn -- 8 test ở đây mất 0,06s khi dùng chung context đã ấm với chục lớp
- * ...SmokeTests anh em, và 2,1s khi {@code @DataJpaTest} bắt Spring dựng thêm một context THỨ HAI chỉ
- * cho riêng nó. Trong CI không ai chạy lẻ một lớp, nên con số thứ hai mới là con số thật.
+ * <p>{@code @SpringBootTest} and NOT {@code @DataJpaTest}, even though this class only touches two
+ * repositories. Both were measured: run alone the slice is faster (8.4s vs 11.5s), but run
+ * in the whole suite it is the opposite -- the 8 tests here take 0.06s when sharing the already warm context with the dozen
+ * sibling ...SmokeTests classes, and 2.1s when {@code @DataJpaTest} makes Spring build a SECOND context just
+ * for itself. In CI nobody runs a single class alone, so the second number is the real one.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport

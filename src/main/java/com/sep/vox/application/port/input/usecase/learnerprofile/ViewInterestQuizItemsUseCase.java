@@ -22,8 +22,8 @@ import com.sep.vox.domain.repository.InterestQuizItemRepository;
 import com.sep.vox.domain.repository.TopicInterestEventRepository;
 
 /**
- * Gói 13 -- sinh quiz sở thích theo tình huống bằng AI (Verbalized Sampling, không cá nhân hoá
- * theo lịch sử). Xem task/implement/13-quiz-so-thich-sinh-theo-tinh-huong.md mục 3.
+ * Package 13 -- generates the interest quiz from situations with AI (Verbalized Sampling, not personalized by
+ * history). See task/implement/13-quiz-so-thich-sinh-theo-tinh-huong.md section 3.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,10 +38,10 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     private final InterestQuizConfigPort quizConfig;
     private final LearnerProfileRepository learnerProfileRepository;
 
-    // Không @Transactional -- quizGenerationPort.generate() gọi LLM chậm (Python agents,
-    // 10-20s). Bọc trong transaction từng gây HikariCP cạn pool dưới tải (xem
-    // BuildPracticePaperUseCase/PracticeQuestionGenerationService, cùng đợt sửa). Mỗi lệnh gọi
-    // repository bên dưới tự transact riêng qua Spring Data proxy.
+    // Not @Transactional -- quizGenerationPort.generate() calls a slow LLM (Python agents, 10-20s). Wrapping it in a
+    // transaction once exhausted the HikariCP pool under load (see BuildPracticePaperUseCase/
+    // PracticeQuestionGenerationService, fixed in the same round). Each repository call below runs its own
+    // transaction through the Spring Data proxy.
     @Override
     public List<InterestQuizItem> execute(Void input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
@@ -52,9 +52,9 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
 
         List<InterestQuizSeedItem> sharedPool = selectBalanced(quizItemRepository.findAllActiveQuizItems());
 
-        // Đã có tín hiệu interest thật (từ tương tác/luyện tập trước đó) -- không cần sinh quiz
-        // riêng nữa, dùng bộ tĩnh gốc. Cá nhân hoá không nên nằm ở bước sinh quiz (mục 0 của
-        // task 13), nó thuộc bước chọn chủ đề luyện tập (đã đúng, không đụng vào).
+        // There is already a real interest signal (from earlier interactions/practice) -- no need to generate a separate
+        // quiz, use the original static set. Personalization should not live in the quiz generation step (section 0 of
+        // task 13), it belongs to the practice topic selection step (already correct, left untouched).
         if (!topicInterestEventRepository.findByStudent(studentId).isEmpty()) {
             return toResponse(sharedPool);
         }
@@ -63,14 +63,15 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     }
 
     /**
-     * Làm lại quiz theo yêu cầu của học sinh.
+     * Redo the quiz at the student's request.
      *
-     * <p>Luật: bộ cũ CHƯA nộp xong thì trả lại ĐÚNG bộ đó để làm tiếp -- sinh bộ mới giữa chừng
-     * là vứt công em ấy đã làm, và những đáp án đã chọn sẽ trỏ tới các item vừa bị tắt. Chỉ khi
-     * {@code quizCompletedAt} đã có mới tắt bộ cũ và sinh bộ mới.
+     * <p>Rule: if the old set is NOT yet fully submitted, return EXACTLY that set to continue -- generating a new set
+     * midway throws away the work the student already did, and the answers already chosen would point to items that
+     * were just switched off. Only when {@code quizCompletedAt} is set is the old set switched off and a new one
+     * generated.
      *
-     * <p>Không {@code @Transactional}: giống {@link #execute} -- có lời gọi LLM 10-20 giây bên
-     * trong, giữ transaction suốt quãng đó từng làm cạn pool kết nối.
+     * <p>Not {@code @Transactional}: same as {@link #execute} -- there is an LLM call of 10-20 seconds inside, and
+     * holding a transaction for that long once exhausted the connection pool.
      */
     public List<InterestQuizItem> regenerate() {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
@@ -79,7 +80,7 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
             .map(profile -> profile.getQuizCompletedAt() != null)
             .orElse(false);
         if (!completed) {
-            // Chưa xong -> làm tiếp bộ cũ, không đụng gì tới dữ liệu.
+            // Not finished -> continue with the old set, touch no data.
             return execute(null);
         }
 
@@ -123,17 +124,17 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
     }
 
     /**
-     * Ứng viên = item sinh riêng cho học sinh này + CẢ kho dùng chung.
+     * Candidates = the items generated for this student + the WHOLE shared pool.
      *
-     * Không chỉ lấy item riêng, vì hai lý do đều làm học sinh kẹt cứng:
-     * 1. Item riêng của học sinh cũ chỉ gắn các chiều CÓ Ở THỜI ĐIỂM sinh. Admin thêm chiều
-     *    mới về sau thì kho dùng chung được bổ sung, nhưng item riêng thì không -- chiều mới
-     *    sẽ không bao giờ được hỏi những học sinh đã onboard.
-     * 2. Nếu một chiều bị tắt, mọi item riêng chứa chiều đó bị loại; học sinh có thể còn lại
-     *    dưới 5 item, mà submitQuiz bắt buộc 5-7 câu -> không nộp được, không có đường ra.
+     * Not only the student's own items, for two reasons that both leave the student stuck:
+     * 1. An older student's own items only carry the dimensions that EXISTED WHEN THEY WERE GENERATED. When an admin
+     *    adds a new dimension later, the shared pool is topped up but the own items are not -- the new dimension
+     *    would never be asked of students who already onboarded.
+     * 2. If a dimension is switched off, every own item containing it is dropped; the student may be left with
+     *    fewer than 5 items, while submitQuiz requires 5-7 answers -> cannot submit, no way out.
      *
-     * Item riêng xếp TRƯỚC nên khi điểm phủ bằng nhau chúng vẫn được ưu tiên (bộ chọn chỉ
-     * thay ứng viên khi điểm CAO HƠN hẳn, nên hoà thì giữ cái đứng trước).
+     * Own items are placed FIRST so that when the coverage score ties they still win (the selector only replaces a
+     * candidate when the score is strictly HIGHER, so on a tie the earlier one is kept).
      */
     private List<InterestQuizSeedItem> selectForStudent(UUID studentId) {
         Map<UUID, InterestQuizSeedItem> pool = new LinkedHashMap<UUID, InterestQuizSeedItem>();
@@ -146,9 +147,9 @@ public class ViewInterestQuizItemsUseCase implements IUseCase<Void, List<Interes
         return selectBalanced(List.copyOf(pool.values()));
     }
 
-    /** Loại item chứa chiều không còn hỏi được + phủ đều các chiều trong đúng ngân sách câu
-     * hỏi (app.personalization.quiz.item-count) -- xem InterestQuizItemSelector để biết vì sao
-     * cần cả hai. */
+    /** Drops items that contain a dimension that can no longer be asked + covers the dimensions evenly within the exact
+     * question budget (app.personalization.quiz.item-count) -- see InterestQuizItemSelector for why both are
+     * needed. */
     private List<InterestQuizSeedItem> selectBalanced(List<InterestQuizSeedItem> pool) {
         return itemSelector.select(pool, quizConfig.itemCount());
     }

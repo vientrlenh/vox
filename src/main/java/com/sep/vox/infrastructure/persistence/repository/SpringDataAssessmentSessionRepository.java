@@ -16,10 +16,10 @@ import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentSessio
 
 public interface SpringDataAssessmentSessionRepository extends JpaRepository<AssessmentSessionJpaEntity, UUID> {
 
-    // Bốn câu dưới đây LOẠI phiên đã xoá mềm: chúng phục vụ luồng nghiệp vụ (vào thi, đếm lượt,
-    // chốt điểm, đóng kỳ thi) chứ không phải màn tra cứu của quản trị, nên một phiên đã xoá không
-    // được tính là "thí sinh đã có bài". Các câu còn lại trong file đã lọc theo danh sách trạng
-    // thái dương (IN_PROGRESS, SUBMITTED...) nên tự khắc không dính DELETED.
+    // The four statements below EXCLUDE soft-deleted sessions: they serve business flows (entering the assessment, counting attempts,
+    // finalizing scores, closing the assessment) rather than the admin lookup screen, so a deleted session must not
+    // count as "the candidate already has a result". The other statements in the file already filter by a list of positive
+    // statuses (IN_PROGRESS, SUBMITTED...) and so naturally never touch DELETED.
     @Query("""
         SELECT s FROM AssessmentSessionJpaEntity s
         WHERE s.assessmentId = :assessmentId AND s.candidateId = :candidateId AND s.status <> 'DELETED'
@@ -46,15 +46,15 @@ public interface SpringDataAssessmentSessionRepository extends JpaRepository<Ass
     List<AssessmentSessionJpaEntity> findByCandidateIdIn(@Param("candidateIds") Collection<UUID> candidateIds);
 
     /**
-     * CỐ Ý tính cả phiên đã xoá mềm: dòng đã xoá vẫn giữ {@code paper_id}, nên nếu cho xoá mã đề đi
-     * thì phiên ấy trỏ vào một mã đề không còn tồn tại và quản trị hết đường mở lại để đối chiếu —
-     * đúng thứ mà xoá mềm sinh ra để bảo toàn.
+     * INTENTIONALLY counts soft-deleted sessions too: a deleted row still keeps {@code paper_id}, so if the paper could be deleted
+     * that session would point to a paper that no longer exists and the admin would have no way to reopen it for cross-checking --
+     * exactly what soft delete exists to preserve.
      */
     boolean existsByPaperId(UUID paperId);
 
     /**
-     * Đếm phiên còn đang làm bài của một kỳ thi. Bỏ qua thí sinh đã bị đình chỉ giống
-     * {@code findPastScheduleEndCandidates} bên dưới -- phiên của họ không tự kết thúc.
+     * Counts sessions still in progress for an assessment. Skips suspended candidates the same way
+     * as {@code findPastScheduleEndCandidates} below -- their sessions do not end on their own.
      */
     @Query("""
         SELECT COUNT(s)
@@ -119,15 +119,15 @@ public interface SpringDataAssessmentSessionRepository extends JpaRepository<Ass
     int tryTransitionStatus(@Param("id") UUID id, @Param("from") String from, @Param("to") String to);
 
     /**
-     * Chốt loại stream cho phiên thi, chỉ khi chưa từng chốt (compare-and-set).
+     * Fixes the stream type of an assessment session, only if it was never fixed (compare-and-set).
      *
-     * <p>Điều kiện {@code chosenStreamType IS NULL} chính là phần khóa: hai request phát token
-     * chạy song song (bootstrap lúc vào thi và lần gia hạn credential đầu tiên) sẽ chỉ có một cái
-     * ghi được, cái còn lại nhận 0 dòng và phải đọc lại giá trị đã thắng. Nếu dùng
-     * {@code save(entity)} thay cho câu lệnh này thì vừa mất tính nguyên tử, vừa ghi đè cả những
-     * cột khác của phiên thi (status, flagged...) bằng bản snapshot cũ đã đọc trước đó.
+     * <p>The condition {@code chosenStreamType IS NULL} is the lock itself: two token requests
+     * running in parallel (bootstrap on entering the assessment and the first credential renewal) will have only one
+     * able to write, the other gets 0 rows and must re-read the value that won. Using
+     * {@code save(entity)} instead of this statement would lose atomicity and also overwrite the other
+     * columns of the session (status, flagged...) with an old snapshot read earlier.
      *
-     * @return số dòng được cập nhật: 1 nếu chốt thành công, 0 nếu phiên thi đã chốt từ trước.
+     * @return the number of rows updated: 1 if fixed successfully, 0 if the session was already fixed.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
@@ -138,16 +138,16 @@ public interface SpringDataAssessmentSessionRepository extends JpaRepository<Ass
     int lockChosenStreamType(@Param("id") UUID id, @Param("chosenStreamType") String chosenStreamType);
 
     /**
-     * Ghi checkpoint đồng hồ đếm ngược, chỉ khi giá trị mới nhỏ hơn giá trị đang có.
+     * Writes the countdown clock checkpoint, only if the new value is smaller than the current one.
      *
-     * <p>Điều kiện {@code remainingSeconds > :remainingSeconds} không phải để tối ưu mà là ràng
-     * buộc bảo mật: giá trị này do máy học viên gửi lên, nên nếu cho phép ghi đè tự do thì endpoint
-     * checkpoint trở thành API tự gia hạn thời gian thi. Đồng hồ chỉ được đi lùi.
+     * <p>The condition {@code remainingSeconds > :remainingSeconds} is not an optimization but a security
+     * constraint: this value is sent by the student's machine, so if free overwriting were allowed the checkpoint
+     * endpoint would become a self-extension API for the assessment time. The clock may only go backwards.
      *
-     * <p>Đồng thời xử lý luôn chuyện đua: client checkpoint 10 giây một lần và các request có thể
-     * đến không đúng thứ tự, một gói cũ đến muộn sẽ bị chính điều kiện này loại.
+     * <p>It also handles races: the client checkpoints every 10 seconds and requests may
+     * arrive out of order; an old packet arriving late is rejected by this very condition.
      *
-     * @return 1 nếu ghi được, 0 nếu giá trị gửi lên không nhỏ hơn giá trị đã lưu.
+     * @return 1 if written, 0 if the submitted value is not smaller than the stored one.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
@@ -159,13 +159,13 @@ public interface SpringDataAssessmentSessionRepository extends JpaRepository<Ass
     int checkpointRemainingSeconds(@Param("id") UUID id, @Param("remainingSeconds") int remainingSeconds);
 
     /**
-     * Xoá mềm phiên thi: đánh dấu {@code DELETED} kèm mốc thời gian và lý do.
+     * Soft-deletes an assessment session: marks it {@code DELETED} with a timestamp and a reason.
      *
-     * <p>Điều kiện {@code deletedAt IS NULL} làm thao tác này idempotent — bấm xoá hai lần (hoặc hai
-     * người cùng bấm) thì lần sau nhận 0 dòng chứ không ghi đè lý do và thời điểm của lần đầu, vốn
-     * là thứ cần giữ nguyên khi phải giải trình.
+     * <p>The condition {@code deletedAt IS NULL} makes this idempotent -- clicking delete twice (or two
+     * people clicking) makes the later call get 0 rows instead of overwriting the reason and time of the first,
+     * which must be preserved when an explanation is needed.
      *
-     * @return 1 nếu vừa xoá, 0 nếu phiên đã bị xoá từ trước.
+     * @return 1 if just deleted, 0 if the session was already deleted.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

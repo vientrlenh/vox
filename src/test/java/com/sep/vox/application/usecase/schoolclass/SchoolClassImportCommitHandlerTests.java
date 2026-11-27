@@ -318,6 +318,6 @@ class SchoolClassImportCommitHandlerTests {
         assertThat(result.created()).isZero();
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.FAILED);
-        assertThat(rows.get(0).getErrorsJson()).contains("Mã lớp đã tồn tại hoặc không hợp lệ");
+        assertThat(rows.get(0).getErrorsJson()).contains("Class code already exists or is invalid");
     }
 }

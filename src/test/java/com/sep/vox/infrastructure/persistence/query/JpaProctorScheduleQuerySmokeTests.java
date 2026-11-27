@@ -64,7 +64,7 @@ class JpaProctorScheduleQuerySmokeTests {
             assertThat(schedule.assessmentId()).isEqualTo(assessmentId);
             assertThat(schedule.assessmentName()).isEqualTo("Kỳ thi khói");
             assertThat(schedule.status()).isEqualTo(AssessmentScheduleStatus.PUBLISHED);
-            // LEFT JOIN phòng thi: ca chưa xếp phòng vẫn phải ra dòng, không bị join nuốt mất.
+            // LEFT JOIN on the exam room: a schedule with no room assigned must still produce a row, not be swallowed by the join.
             assertThat(schedule.roomName()).isNull();
             assertThat(schedule.startDate()).isEqualTo(now.minus(Duration.ofMinutes(10)));
         });
@@ -72,8 +72,8 @@ class JpaProctorScheduleQuerySmokeTests {
     }
 
     /**
-     * Ca đã publish nhưng KỲ THI còn nháp: nhà trường chưa chốt thì màn điểm danh chưa được hiện.
-     * Đây là ca tái hiện đúng lỗi đã báo.
+     * A schedule that is published while its ASSESSMENT is still a draft: the school has not finalized, so the attendance screen must not show yet.
+     * This reproduces exactly the reported bug.
      */
     @Test
     void should_hide_a_schedule_of_an_assessment_still_in_draft() {
@@ -83,7 +83,7 @@ class JpaProctorScheduleQuerySmokeTests {
         assertThat(repository.findBySchoolId(schoolId)).isEmpty();
     }
 
-    /** Ca chưa publish là ca chưa xếp xong (chưa đủ giám thị, chưa gán đề) -- chưa có gì để điểm danh. */
+    /** An unpublished schedule is one not fully arranged (not enough proctors, no paper assigned) -- nothing to take attendance of yet. */
     @Test
     void should_hide_a_schedule_still_in_draft() {
         seed("SCHEDULED", "DRAFT");
@@ -92,7 +92,7 @@ class JpaProctorScheduleQuerySmokeTests {
         assertThat(repository.findBySchoolId(schoolId)).isEmpty();
     }
 
-    /** Chỉ ẩn DRAFT: kỳ thi bị huỷ vẫn hiện kèm trạng thái để giám thị biết mà không tới phòng. */
+    /** Only DRAFT is hidden: a cancelled assessment still shows with its status so the proctor knows not to go to the room. */
     @Test
     void should_still_list_a_cancelled_assessment() {
         seed("CANCELLED", "CANCELLED");
@@ -102,7 +102,7 @@ class JpaProctorScheduleQuerySmokeTests {
         assertThat(repository.findBySchoolId(schoolId)).hasSize(1);
     }
 
-    /** Ca đã dời hoặc đã xoá mềm không còn là ca thật -- hành vi cũ, giữ khỏi bị gỡ nhầm. */
+    /** A schedule that was moved or soft-deleted is no longer a real schedule -- old behavior, kept so it is not removed by mistake. */
     @Test
     void should_hide_moved_and_deleted_schedules() {
         seed("SCHEDULED", "MOVED");
@@ -126,8 +126,8 @@ class JpaProctorScheduleQuerySmokeTests {
         assertThat(repository.findBySchoolId(UUID.randomUUID())).isEmpty();
     }
 
-    // Chèn thẳng bằng SQL: entity ở đây có constructor rất dài, và test này chỉ cần đúng những cột mà
-    // câu truy vấn đọc. Baseline không khai foreign key nào nên id trường/giáo viên tự do.
+    // Inserted directly with SQL: the entity here has a very long constructor, and this test only needs the columns that
+    // the query reads. The baseline declares no foreign keys so the school/teacher ids are free.
     private void seed(String assessmentStatus, String scheduleStatus) {
         UUID scheduleId = UUID.randomUUID();
         em.createNativeQuery("""

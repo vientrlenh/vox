@@ -40,7 +40,7 @@ public class ViewSystemRubricCriterionDetailsUseCase implements IUseCase<ViewSys
         requireActiveCurrentUser();
 
         RubricCriterion criterion = rubricCriterionRepository.findById(query.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Criterion not found."));
         requireSystemOwnedCriterion(criterion);
 
         return rubricCriterionDtoMapper.toDto(criterion);
@@ -49,19 +49,19 @@ public class ViewSystemRubricCriterionDetailsUseCase implements IUseCase<ViewSys
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
     }
 
     private void requireSystemOwnedCriterion(RubricCriterion criterion) {
         RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
+                .orElseThrow(() -> new ResourceNotFoundException("The Rubric Version containing this criterion was not found."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học, không phải của Hệ thống.");
+            throw new ForbiddenException("Action denied: this criterion belongs to a School, not to the System.");
         }
     }
 }

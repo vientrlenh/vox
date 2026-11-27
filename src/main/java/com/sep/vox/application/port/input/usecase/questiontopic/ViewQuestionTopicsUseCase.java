@@ -38,7 +38,7 @@ public class ViewQuestionTopicsUseCase implements IUseCase<ViewQuestionTopicsQue
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         PageResult<QuestionTopic> result = questionTopicRepository.findAccessible(

@@ -27,22 +27,22 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 /**
- * Thu hồi phân công quá hạn, và giao lại ngay nếu admin đã chọn người thay.
+ * Reclaims overdue assignments, and reassigns right away if the admin has chosen a replacement.
  *
- * <p>Thu hồi = đóng dòng cũ với {@code outcome = DECLINED} chứ không xoá: cần giữ vết
- * "người này đã được giao và không làm kịp", cả để giao lại cho đúng người lẫn để
- * nhìn ra ai đang quá tải.
+ * <p>Reclaim = close the old row with {@code outcome = DECLINED} instead of deleting it: the trace
+ * "this person was assigned and did not finish in time" must be kept, both to reassign to the right person and to
+ * see who is overloaded.
  *
- * <p>Đóng dòng cũ TRƯỚC rồi mới mở dòng mới, và {@code save} của adapter flush ngay
- * — nếu không, unique index trên {@code active_result_id} sẽ chặn dòng mới vì dòng cũ
- * chưa kịp nhả chỗ.
+ * <p>Close the old row FIRST and only then open the new one, and the adapter's {@code save} flushes immediately
+ * -- otherwise the unique index on {@code active_result_id} would block the new row because the old one
+ * has not yet released the slot.
  */
 @Service
 @RequiredArgsConstructor
 public class ReclaimOverdueAssignmentsUseCase
         implements IUseCase<ReclaimOverdueAssignmentsCommand, ReclaimOverdueResponse> {
 
-    private static final String RECLAIM_REASON = "Thu hồi do quá hạn chấm.";
+    private static final String RECLAIM_REASON = "Reclaimed because the grading deadline passed.";
 
     /**
      * Cap on one reclaim run. The "unassigned" branch runs inside a WRITE transaction, so without
@@ -95,7 +95,7 @@ public class ReclaimOverdueAssignmentsUseCase
 
     private void requireFutureDeadline(Instant newDeadlineAt, Instant now) {
         if (newDeadlineAt != null && newDeadlineAt.isBefore(now)) {
-            throw new IllegalArgumentException("Hạn chấm mới phải ở tương lai.");
+            throw new IllegalArgumentException("The new grading deadline must be in the future.");
         }
     }
 
@@ -103,11 +103,11 @@ public class ReclaimOverdueAssignmentsUseCase
         List<UUID> teacherIds = requestedTeacherIds == null ? List.<UUID>of() : requestedTeacherIds;
         if (!teacherIds.isEmpty()) {
             if (new HashSet<>(teacherIds).size() != teacherIds.size()) {
-                throw new ResourceDuplicatedException("Không được chọn trùng giáo viên.");
+                throw new ResourceDuplicatedException("The same teacher must not be selected twice.");
             }
             Set<UUID> validTeachers = assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
             if (!validTeachers.containsAll(teacherIds)) {
-                throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
+                throw new IllegalArgumentException("The grader must be a teacher of the same school as the assessment.");
             }
         }
         return teacherIds;
@@ -152,25 +152,25 @@ public class ReclaimOverdueAssignmentsUseCase
     }
 
     /**
-     * Một lượt thu hồi cùng với câu trả lời "còn nữa không".
+     * One reclaim batch together with the answer to "is there more".
      *
-     * @param hasMore đã chạm trần {@link #MAX_RECLAIM_BATCH}, còn dòng chưa xử lý
+     * @param hasMore the cap {@link #MAX_RECLAIM_BATCH} was reached and some rows are still unprocessed
      */
     private record OverdueBatch(List<AssessmentGradingAssignment> assignments, boolean hasMore) {}
 
     /**
-     * Vòng {@code APPEAL} chịu chung luật xung đột lợi ích với
-     * {@code ReassignGradingUseCase}: người đã từng ghi phán quyết điểm cho bài không
-     * được ngồi soi lại chính mình. Giao lại HÀNG LOẠT không được là cửa sau để lách
-     * thứ mà giao lại từng dòng đã chặn — và sau khi
-     * {@code AutoAssignGradingUseCase} cấm hẳn vòng phúc khảo, đây là cửa cuối cùng.
+     * The {@code APPEAL} round shares the conflict-of-interest rule with
+     * {@code ReassignGradingUseCase}: a person who has given a score ruling on a submission must not
+     * sit and re-examine themselves. BULK reassignment must not be a back door around
+     * what row-by-row reassignment already blocks -- and since
+     * {@code AutoAssignGradingUseCase} forbids the appeal round entirely, this is the last door.
      *
-     * <p>Chặn cả lô thay vì lọc lẻ từng người là lựa chọn cố ý: round-robin chia bài
-     * sau khi danh sách đã chốt, nên lọc lẻ sẽ làm kết quả chia phụ thuộc vào dữ liệu
-     * ẩn mà admin không nhìn thấy lúc bấm.
+     * <p>Blocking the whole batch instead of filtering person by person is deliberate: round-robin distributes the
+     * submissions after the list is fixed, so filtering person by person would make the distribution depend on hidden
+     * data that the admin cannot see when clicking.
      *
-     * <p>Chỉ hỏi khi trong lô thật sự có vòng phúc khảo — ba vòng còn lại không có luật
-     * này, hỏi thừa là thêm query cho mọi lượt thu hồi.
+     * <p>Only asks when the batch really contains an appeal round -- the other three rounds have no such
+     * rule, and asking needlessly adds a query to every reclaim.
      */
     private void rejectConflictedReplacements(List<AssessmentGradingAssignment> overdue, List<UUID> teacherIds) {
         if (teacherIds.isEmpty()) {
@@ -185,19 +185,19 @@ public class ReclaimOverdueAssignmentsUseCase
             Set<UUID> conflicted = assessmentGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResultId);
             if (conflicted.stream().anyMatch(teacherIds::contains)) {
                 throw new IllegalArgumentException(
-                    "Danh sách giáo viên thay thế có người đã từng chấm một bài đang phúc khảo "
-                        + "nên không được chấm phúc khảo bài đó. Bỏ người này ra, hoặc giao lại "
-                        + "ở màn đơn phúc khảo nếu cần ghi lý do ngoại lệ.");
+                    "The replacement teacher list contains someone who has graded a submission that is under appeal "
+                        + "so they cannot grade that appeal. Remove this person, or reassign it "
+                        + "on the appeal screen if an exception reason has to be recorded.");
             }
         }
     }
 
     /**
-     * Nhả đơn phúc khảo về {@code APPROVED} để admin giao lại được. Chỉ gọi ở nhánh
-     * thu hồi suông: khi có người thay, dòng mới mở ngay với cùng {@code appealId}
-     * trong cùng transaction nên đơn ở {@code GRADING} vẫn đúng.
+     * Releases the appeal back to {@code APPROVED} so the admin can reassign it. Only called on the
+     * plain-reclaim branch: when there is a replacement, the new row is opened right away with the same {@code appealId}
+     * in the same transaction, so the appeal staying in {@code GRADING} is still correct.
      *
-     * <p>Ba vòng còn lại không gắn đơn nên là no-op.
+     * <p>The other three rounds are not attached to an appeal, so this is a no-op for them.
      */
     private void releaseAppeal(AssessmentGradingAssignment assignment) {
         if (assignment.getRoundType() != GradingRoundType.APPEAL || assignment.getAppealId() == null) {
@@ -212,16 +212,16 @@ public class ReclaimOverdueAssignmentsUseCase
     }
 
     /**
-     * Danh sách chỉ định thì phân quyền + kiểm quá hạn từng dòng; không chỉ định thì
-     * để SQL lọc sẵn theo trường (và kỳ thi nếu có).
+     * With a designated list: authorize + check overdue row by row; without one, let
+     * SQL pre-filter by school (and by assessment if given).
      *
-     * <p>Nhánh "không chỉ định" trước đây quét {@code findOverdue} toàn hệ thống rồi
-     * gọi {@code load()} từng dòng chỉ để đọc {@code schoolId} — 4 query mỗi dòng, và
-     * chạm cả dữ liệu trường khác. Bộ lọc đã xuống SQL nên ở đây là MỘT query.
+     * <p>The "not designated" branch used to scan {@code findOverdue} across the whole system and then
+     * call {@code load()} row by row just to read {@code schoolId} -- 4 queries per row, and it
+     * touched other schools' data. The filter now lives in SQL, so here it is ONE query.
      *
-     * <p>Nhánh đó lấy dư đúng MỘT dòng so với trần: nếu về đủ {@code MAX + 1} thì biết
-     * chắc còn việc, mà không phải chạy thêm câu COUNT trên cùng vị ngữ. Danh sách chỉ
-     * định thì admin đã tự chọn nên không áp trần.
+     * <p>That branch fetches exactly ONE row more than the cap: if {@code MAX + 1} comes back, we know
+     * for sure there is more work, without running an extra COUNT on the same predicate. For a
+     * designated list the admin picked the rows themselves, so no cap applies.
      */
     private List<AssessmentGradingAssignment> excludeClassTest(List<AssessmentGradingAssignment> assignments) {
         if (assignments.isEmpty()) {
@@ -262,7 +262,7 @@ public class ReclaimOverdueAssignmentsUseCase
             AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.load(assignmentId);
             assessmentGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
             if (!context.assignment().isOverdue(now)) {
-                throw new IllegalArgumentException("Chỉ thu hồi được phân công đang mở và đã quá hạn.");
+                throw new IllegalArgumentException("Only an open and overdue assignment can be reclaimed.");
             }
             selected.add(context.assignment());
         }

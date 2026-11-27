@@ -33,7 +33,7 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
     @Transactional
     public UUID execute(CreateSubscriptionPlanCommand input) {
         if (input.quotas() == null || input.quotas().isEmpty()) {
-            throw new IllegalArgumentException("Gói phải có ít nhất một hạn mức");
+            throw new IllegalArgumentException("A plan must have at least one quota");
         }
 
         CreateSubscriptionPlanCommand command = normalize(input);
@@ -58,7 +58,7 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
             // Postgres returns them in.
             if (includedAmountByQuotaType.containsKey(quotaType)) {
                 throw new IllegalArgumentException(
-                    "Loại hạn mức \"" + quotaType + "\" bị khai báo nhiều lần trong cùng một gói");
+                    "Quota type \"" + quotaType + "\" is declared more than once in the same plan");
             }
             quotaAmountValidator.requireValidIncludedAmount(quotaType, quota.includedAmountVnd());
             includedAmountByQuotaType.put(quotaType, quota.includedAmountVnd());
@@ -77,8 +77,9 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
     }
 
     /**
-     * Tên/mô tả gói hiện thẳng lên trang bán hàng nên phải gom khoảng trắng thừa: "Gói  Cơ   bản " và
-     * "Gói Cơ bản" là cùng một gói, để nguyên thì admin nhìn danh sách tưởng có hai gói khác nhau.
+     * The plan name/description go straight onto the sales page, so extra whitespace has to be collapsed:
+     * "Basic  Plan " and "Basic Plan" are the same plan, and left as they are an admin looking at the list would
+     * think there are two different plans.
      */
     private static CreateSubscriptionPlanCommand normalize(CreateSubscriptionPlanCommand input) {
         return new CreateSubscriptionPlanCommand(

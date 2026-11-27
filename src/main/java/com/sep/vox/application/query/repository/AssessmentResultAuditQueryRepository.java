@@ -7,20 +7,20 @@ import com.sep.vox.application.query.dto.AiQualityReportInfo;
 import com.sep.vox.application.query.dto.ResultStatusHistoryInfo;
 
 /**
- * Read side cho hai màn "nhìn lại": dòng thời gian điểm của một bài, và báo cáo chất
- * lượng AI của cả kỳ thi.
+ * The read side for two "look back" screens: the score timeline of one submission, and the AI quality
+ * report for a whole assessment.
  *
- * <p>Cả hai đều join sang {@code users} để lấy tên người thao tác, nên đi lối query
- * repository thay vì domain repository.
+ * <p>Both join to {@code users} to get the name of the person who acted, so they go through a query
+ * repository rather than a domain repository.
  */
 public interface AssessmentResultAuditQueryRepository {
 
-    /** Dòng thời gian của một bài, cũ trước. */
+    /** The timeline of one submission, oldest first. */
     List<ResultStatusHistoryInfo> findHistory(UUID candidateResultId);
 
     /**
-     * Báo cáo chất lượng AI trong phạm vi trường, lọc thêm theo kỳ thi nếu có.
-     * Mẫu số là các vòng hậu kiểm đã hoàn thành.
+     * The AI quality report within a school, additionally filtered by assessment if given.
+     * The denominator is the completed post-review rounds.
      */
     AiQualityReportInfo aiQualityReport(UUID schoolId, UUID assessmentId);
 }

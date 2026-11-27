@@ -7,7 +7,7 @@ public interface DimensionInterestScoreRepository {
 
     void primeBaselineFromScoreWhereMissing(UUID learnerProfileId);
 
-    /** Điểm hiện tại theo dimension — ưu tiên baseline nếu có, không thì dùng score. */
+    /** Current score per dimension — baseline first if present, otherwise score. */
     Map<String, Double> findByLearnerProfile(UUID learnerProfileId);
 
     void upsertScore(UUID learnerProfileId, String dimension, double score);

@@ -17,9 +17,9 @@ import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
-// Query gốc cho School Admin: chỉ được xem Criteria của FrameworkVersion đã PUBLISHED
-// (Framework là tài nguyên toàn hệ thống, School không sở hữu nên không cần chốt chặn theo schoolId,
-// chỉ cần chặn không cho lộ Version còn DRAFT/ARCHIVED chưa sẵn sàng dùng).
+// Root query for School Admin: may only see the Criteria of a PUBLISHED FrameworkVersion
+// (a Framework is a system-wide resource that a School does not own, so no schoolId guard is needed;
+// it only has to keep DRAFT/ARCHIVED Versions, which are not ready for use, from leaking).
 @Service
 @RequiredArgsConstructor
 public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCriteriaQuery, List<FrameworkCriterionDto>> {
@@ -30,14 +30,12 @@ public class ViewSchoolFrameworkCriteriaUseCase implements IUseCase<ViewFramewor
     @Override
     @Transactional(readOnly = true)
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
-        // 1. Kiểm tra FrameworkVersion tồn tại và đã PUBLISHED
         FrameworkVersion version = frameworkVersionRepository.findById(query.frameworkVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Framework."));
+                .orElseThrow(() -> new ResourceNotFoundException("Framework version not found."));
         if (version.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-            throw new ResourceNotFoundException("Không tìm thấy phiên bản Framework.");
+            throw new ResourceNotFoundException("Framework version not found.");
         }
 
-        // 2. Lấy Criteria + Band tương ứng, map sang DTO
         List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(query.frameworkVersionId());
 
         return criteria.stream()

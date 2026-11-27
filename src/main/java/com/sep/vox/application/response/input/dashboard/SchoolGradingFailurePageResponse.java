@@ -3,13 +3,13 @@ package com.sep.vox.application.response.input.dashboard;
 import java.util.List;
 
 /**
- * Một trang bài AI chấm lỗi, kèm số đếm của hai nhóm định mức.
+ * One page of submissions with failed AI grading, with the counts of the two quota groups.
  *
- * <p>{@code retryLeftCount}/{@code noRetryLeftCount} ĐÃ áp bộ lọc kỳ thi nhưng CHƯA áp bộ lọc định
- * mức — chúng đứng trên chính hai nút lọc nên phải dự đoán đúng kết quả của cú bấm.
+ * <p>{@code retryLeftCount}/{@code noRetryLeftCount} HAVE the assessment filter applied but NOT the quota
+ * filter -- they sit on the two filter buttons themselves so they must predict the result of the click correctly.
  *
- * <p>Khi không lọc kỳ nào, hai số này khớp đúng {@code unscored.aiFailedRetryLeft} và
- * {@code unscored.aiFailedNoRetryLeft} trên trang tổng quan: cùng một CTE sinh ra cả hai.
+ * <p>When no assessment is filtered, these two numbers match {@code unscored.aiFailedRetryLeft} and
+ * {@code unscored.aiFailedNoRetryLeft} on the overview page exactly: one CTE produces both.
  */
 public record SchoolGradingFailurePageResponse(
     List<SchoolGradingFailureResponse> content,

@@ -3,11 +3,12 @@ package com.sep.vox.application.query.dto;
 import java.util.UUID;
 
 /**
- * Ba cột mà phép chống trùng theo TÊN của {@code TopicSuggestionService} cần, và chỉ ba cột đó.
+ * The three columns that the NAME-based duplicate check of {@code TopicSuggestionService} needs, and
+ * only those three.
  *
- * <p>Tồn tại để thay việc nạp {@code PracticeTopicJpaEntity} đầy đủ: phép so là
- * {@code normalize(name)} bằng nhau hoặc {@code tokenSimilarity(name) >= 0.90}, nên 8 cột còn lại
- * của entity -- kể cả {@code description} kiểu TEXT -- không bao giờ được đọc tới.
+ * <p>It exists to replace loading the full {@code PracticeTopicJpaEntity}: the comparison is
+ * {@code normalize(name)} equality or {@code tokenSimilarity(name) >= 0.90}, so the other 8 columns of
+ * the entity -- including the TEXT {@code description} -- are never read.
  */
 public interface TopicNameCardInfo {
 

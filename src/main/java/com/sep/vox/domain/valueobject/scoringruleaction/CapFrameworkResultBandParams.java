@@ -7,7 +7,7 @@ public record CapFrameworkResultBandParams(
 ) implements ScoringRuleActionParams {
     public CapFrameworkResultBandParams {
         if (maxResultBandId == null) {
-            throw new IllegalArgumentException("ID của khung chuẩn kết quả band tối đa không được để trống");
+            throw new IllegalArgumentException("The id of the maximum framework result band must not be blank");
         }
     }
 }

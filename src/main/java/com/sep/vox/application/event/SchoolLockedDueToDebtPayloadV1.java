@@ -5,9 +5,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Trường vừa CHUYỂN sang trạng thái bị khóa vì nợ hạn mức AI (xem SchoolSubscriptionDebtGuardService).
- * Người nhận là mọi SCHOOL_ADMIN của trường -- CHỐT NGAY lúc phát sự kiện, cùng lý do với
- * InvoicePaidPayloadV1.schoolAdminIds.
+ * A school has just moved to the locked state because of AI quota debt (see
+ * SchoolSubscriptionDebtGuardService).
+ * Every SCHOOL_ADMIN of the school is a recipient -- FIXED when the event is published, for the
+ * same reason as InvoicePaidPayloadV1.schoolAdminIds.
  */
 public record SchoolLockedDueToDebtPayloadV1(
     List<UUID> schoolAdminIds,

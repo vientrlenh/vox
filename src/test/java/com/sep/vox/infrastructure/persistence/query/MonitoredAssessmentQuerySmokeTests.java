@@ -23,15 +23,15 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Câu đọc của màn giám sát, chạy trên Postgres thật.
+ * The read statements of the monitoring screen, running on a real Postgres.
  *
- * <p>Dựng bằng {@code em.createQuery} nên nó chỉ được phân tích lúc GỌI: sai ở đây lọt qua compile,
- * lọt qua cả context load, và chỉ nổ khi giám thị bấm vào màn hình. Đúng chuyện đã xảy ra --
- * {@code (:leadUntil IS NULL OR ...)} dịch sang SQL hợp lệ nhưng Postgres từ chối vì không suy ra
- * được kiểu của tham số thời gian đứng trơ trong {@code IS NULL}.
+ * <p>Built with {@code em.createQuery} so it is only parsed at CALL time: a mistake here slips through compile,
+ * slips through context load, and only blows up when a proctor opens the screen. Exactly what happened --
+ * {@code (:leadUntil IS NULL OR ...)} translates to valid SQL but Postgres rejects it because it cannot infer
+ * the type of a time parameter standing alone in {@code IS NULL}.
  *
- * <p>Bốn tổ hợp dưới đây là bốn CÂU khác nhau, không phải bốn cách gọi một câu: mỗi tham số nullable
- * ghép hoặc bỏ một mệnh đề, nên chỉ chạy một tổ hợp là để ba câu còn lại không ai đọc.
+ * <p>The four combinations below are four different STATEMENTS, not four ways of calling one statement: each nullable parameter
+ * adds or drops a clause, so running only one combination leaves the other three statements unread by anyone.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
@@ -91,7 +91,7 @@ class MonitoredAssessmentQuerySmokeTests {
             .satisfies(assessment -> assertThat(assessment.liveScheduleCount()).isZero());
     }
 
-    /** Ngoài cửa sổ thì im -- nếu không thì "đang diễn ra" chỉ còn là cái nhãn. */
+    /** Outside the window it stays silent -- otherwise "in progress" is just a label. */
     @Test
     void should_ignore_a_schedule_that_starts_after_the_lead_window() {
         seedSchedule(now.plus(Duration.ofHours(3)), now.plus(Duration.ofHours(4)));
@@ -142,11 +142,11 @@ class MonitoredAssessmentQuerySmokeTests {
     }
 
     /**
-     * Ca đã publish nhưng KỲ THI còn nháp thì màn giám sát phải im.
+     * A schedule that is published while its ASSESSMENT is still a draft must keep the monitoring screen silent.
      *
-     * <p>Không phải tổ hợp bịa: luồng chuẩn bắt publish từng ca TRƯỚC rồi mới đẩy kỳ thi sang
-     * SCHEDULED, nên đây đúng là trạng thái mọi kỳ thi đều đi qua. Lọc theo {@code sch.status} thôi
-     * thì cả hai vai đều thấy kỳ thi nhà trường chưa chốt.
+     * <p>Not a made-up combination: the standard flow publishes each schedule FIRST and only then moves the assessment to
+     * SCHEDULED, so this is exactly a state every assessment passes through. Filtering by {@code sch.status} alone
+     * would let both roles see an assessment the school has not finalized.
      */
     @Test
     void should_hide_an_assessment_still_in_draft() {
@@ -155,7 +155,7 @@ class MonitoredAssessmentQuerySmokeTests {
 
         assertThat(repository.findMonitorableByTeacher(teacherId, null, now, now.plus(LEAD))).isEmpty();
         assertThat(repository.findMonitorableBySchool(schoolId, null, now, now.plus(LEAD))).isEmpty();
-        // Cả đường đọc một kỳ thi (bỏ cửa sổ thời gian) cũng phải câm -- đó là đường mở thẳng bằng URL.
+        // The single-assessment read path (without the time window) must be silent too -- that is the path opened directly by URL.
         assertThat(repository.findMonitorableBySchool(schoolId, assessmentId, now, null)).isEmpty();
     }
 
@@ -177,8 +177,8 @@ class MonitoredAssessmentQuerySmokeTests {
         seedAssessment("IN_PROGRESS");
     }
 
-    // Chèn thẳng bằng SQL: entity ở đây có constructor ~25 tham số, và test này chỉ cần đúng những
-    // cột mà câu truy vấn đọc. Baseline không khai foreign key nào nên id trường/giáo viên tự do.
+    // Inserted directly with SQL: the entity here has a constructor with ~25 parameters, and this test only needs the
+    // columns that the query reads. The baseline declares no foreign keys so the school/teacher ids are free.
     private void seedAssessment(String status) {
         em.createNativeQuery("""
             INSERT INTO assessments (id, code, name, kind, status, language_id, school_id, requires_otp,

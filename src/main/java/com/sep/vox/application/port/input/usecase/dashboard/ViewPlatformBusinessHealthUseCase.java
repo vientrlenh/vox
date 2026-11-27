@@ -23,11 +23,10 @@ import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.repository.OrderRepository;
 
 /**
- * Trường còn gói / sắp rụng / đang nợ, cùng doanh thu đặt cạnh giá vốn AI.
+ * Schools that still have a plan / are about to churn / are in debt, plus revenue set beside AI cost of goods.
  *
- * <p>Doanh thu đọc từ ĐƠN HÀNG đã thu tiền ({@code OrderStatus.SUCCESS}) — cùng nguồn với
- * {@link ViewSystemAdminDashboardUseCase}, để hai chỗ trên cùng một màn hình không nói hai con số
- * khác nhau.
+ * <p>Revenue is read from ORDERS that have been paid ({@code OrderStatus.SUCCESS}) -- the same source as
+ * {@link ViewSystemAdminDashboardUseCase}, so two places on the same screen do not show two different numbers.
  */
 @Service
 @RequiredArgsConstructor
@@ -98,9 +97,9 @@ public class ViewPlatformBusinessHealthUseCase
     }
 
     /**
-     * {@code null} khi chưa thu được đồng nào: biên lợi nhuận của doanh thu 0 không phải là 0%, và
-     * cũng không phải -∞ — nó không tồn tại. Ép thành 0% sẽ vẽ ra một tháng "biên 0%" trông như đang
-     * lỗ, trong khi thật ra chỉ là chưa có hóa đơn nào rơi vào cửa sổ.
+     * {@code null} when not a single dong has been collected: the margin of zero revenue is not 0%, and not -infinity
+     * either -- it does not exist. Forcing it to 0% would draw a "0% margin" month that looks like a loss, when in
+     * fact no invoice has fallen into the window yet.
      */
     private static Double grossMarginPercent(BigDecimal revenue, BigDecimal aiCost) {
         if (revenue.signum() <= 0) {

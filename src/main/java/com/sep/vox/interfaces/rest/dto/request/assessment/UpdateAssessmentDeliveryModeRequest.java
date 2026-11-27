@@ -7,7 +7,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateAssessmentDeliveryModeRequest(
-    @NotNull(message = "Hình thức làm bài là bắt buộc")
+    @NotNull(message = "Answering format is required")
     AssessmentDeliveryMode deliveryMode
 ) {
 

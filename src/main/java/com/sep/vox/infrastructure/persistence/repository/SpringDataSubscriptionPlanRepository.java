@@ -13,13 +13,13 @@ public interface SpringDataSubscriptionPlanRepository extends JpaRepository<Subs
     List<SubscriptionPlanJpaEntity> findByStatus(String status);
 
     /**
-     * Có gói nào đang trỏ replacedByPlanId vào gói này không -- tức gói này đang là ĐÍCH của một
-     * chuỗi thay thế. Dùng để không cho lưu trữ nó mà không chỉ định gói thay thế tiếp theo, vì làm
-     * vậy sẽ cắt cụt chuỗi và những trường ở đầu chuỗi mất luôn đường gia hạn.
+     * Whether any plan points its replacedByPlanId at this plan -- that is, this plan is the TARGET of a
+     * replacement chain. Used to not allow archiving it without specifying the next replacement plan, because doing
+     * so would cut the chain and the schools at its head would lose their renewal path.
      */
     boolean existsByReplacedByPlanId(UUID replacedByPlanId);
 
-    /** Gói nào (nếu có) đang trỏ replacedByPlanId vào gói này -- xem existsByReplacedByPlanId. */
+    /** The plan (if any) pointing its replacedByPlanId at this plan -- see existsByReplacedByPlanId. */
     List<SubscriptionPlanJpaEntity> findByReplacedByPlanId(UUID replacedByPlanId);
     Page<SubscriptionPlanJpaEntity> findByStatus(String status, Pageable pageable);
 }

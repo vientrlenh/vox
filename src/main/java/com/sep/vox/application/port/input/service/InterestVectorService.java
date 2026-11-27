@@ -25,10 +25,10 @@ import com.sep.vox.domain.repository.TopicInterestScoreRepository;
 import com.sep.vox.domain.service.personalization.SessionDiagnosisPolicy;
 
 /**
- * Tính vector sở thích chủ đề (EMA theo topic) và vector sở thích theo dimension.
- * Gộp từ PracticePlanningRepositoryImpl vì đây là thuật toán chạm nhiều bảng/nhiều aggregate
- * (interest event, interest score, dimension score, learner profile, topic) -- không phải
- * việc của một adapter CRUD đơn lẻ.
+ * Computes the topic interest vector (EMA per topic) and the interest vector per dimension.
+ * Merged from PracticePlanningRepositoryImpl because this is an algorithm touching many tables/aggregates
+ * (interest event, interest score, dimension score, learner profile, topic) -- not
+ * the job of a single CRUD adapter.
  */
 @Service
 @RequiredArgsConstructor

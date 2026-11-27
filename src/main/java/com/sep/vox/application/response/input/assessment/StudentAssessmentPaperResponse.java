@@ -16,8 +16,8 @@ public record StudentAssessmentPaperResponse(
     String scheduleEndAt,
     String startedAt,
     /**
-     * Checkpoint đồng hồ đếm ngược, null nếu phiên thi chưa checkpoint lần nào - client hiểu là
-     * "đếm từ durationSeconds". Không suy ra được từ startedAt vì đồng hồ dừng lúc avatar nói.
+     * The countdown clock checkpoint, null if the session has never checkpointed -- the client reads that as
+     * "count from durationSeconds". It cannot be derived from startedAt because the clock stops while the avatar speaks.
      */
     Integer remainingSeconds,
     List<StudentAssessmentPaperQuestionResponse> paperQuestions

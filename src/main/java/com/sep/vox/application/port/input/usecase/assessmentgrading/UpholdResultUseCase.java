@@ -28,15 +28,15 @@ import com.sep.vox.domain.repository.AssessmentItemResponseRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Giáo viên xác nhận điểm đang có là đúng — không nhập điểm mới.
+ * A teacher confirms that the current score is correct -- no new score is entered.
  *
- * <p>Đây là hành động gộp của bản rework: "admin release bài chờ chấm" và "hậu kiểm
- * rồi giữ nguyên" hoá ra là cùng một quyết định (điểm hiện có đúng), chỉ khác vòng.
- * Vòng {@code INITIAL} thì bài chuyển sang RELEASED; vòng {@code SPOT_CHECK} thì bài
- * vốn đã RELEASED nên không đổi gì và <em>không</em> gửi mail.
+ * <p>This is the merged action of the rework: "admin releases a submission waiting for grading" and "post-check
+ * and keep as is" turned out to be the same decision (the current score is right), differing only in the round.
+ * In the {@code INITIAL} round the submission moves to RELEASED; in the {@code SPOT_CHECK} round the submission
+ * is already RELEASED so nothing changes and <em>no</em> mail is sent.
  *
- * <p>Không tính lại điểm: không có item nào thay đổi, nên tổng vẫn là hàm của đúng
- * các item cũ. Bất biến {@code total = f(items)} được giữ mà không phải chạm gì.
+ * <p>The score is not recomputed: no item changes, so the total is still a function of exactly
+ * the old items. The invariant {@code total = f(items)} is preserved without touching anything.
  */
 @Service
 @RequiredArgsConstructor
@@ -207,8 +207,8 @@ public class UpholdResultUseCase implements IUseCase<GradingDecisionCommand, Gra
             .count();
         if (answeredButUngraded > 0) {
             throw new IllegalArgumentException(
-                "Còn " + answeredButUngraded + " câu thí sinh có trả lời nhưng chưa được chấm. "
-                    + "Hãy chấm những câu đó trước khi giữ nguyên điểm."
+                "There are still " + answeredButUngraded + " answers given by the candidate that have not been graded. "
+                    + "Grade them before keeping the score."
             );
         }
     }

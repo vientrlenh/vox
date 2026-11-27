@@ -41,7 +41,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
     public UpdateSchoolUserResponse execute(UpdateSchoolUserCommand input) {
         if (!input.fullNameProvided() && !input.phoneProvided() && !input.addressProvided()
                 && !input.dateOfBirthProvided() && !input.avatarUrlProvided()) {
-            throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
+            throw new IllegalArgumentException("At least one field must be provided to update");
         }
 
         requireCallerBelongsToSchool(input);
@@ -53,7 +53,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         try {
             userRepository.saveAndFlush(target);
         } catch (DataConflictException e) {
-            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Phone number already exists");
         }
 
         return new UpdateSchoolUserResponse(target.getId());
@@ -61,12 +61,12 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
 
     private User findLockedTargetInSchool(UpdateSchoolUserCommand input) {
         User target = userRepository.findByIdForUpdate(input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
-            throw new ResourceNotFoundException("Không tìm thấy người dùng");
+            throw new ResourceNotFoundException("User not found");
         }
         return target;
     }
@@ -75,12 +75,12 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+            .orElseThrow(() -> new IllegalArgumentException("You are not allowed to perform this action"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
-            throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
+            throw new IllegalArgumentException("You are not allowed to perform this action");
         }
     }
 
@@ -118,7 +118,7 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
     private void applyFullName(User target, UpdateSchoolUserCommand input) {
         String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
         if (normalized == null || normalized.isBlank()) {
-            throw new IllegalArgumentException("Họ tên không được để trống");
+            throw new IllegalArgumentException("Full name must not be empty");
         }
         target.setFullName(new FullName(normalized));
     }
@@ -126,11 +126,11 @@ public class UpdateSchoolUserUseCase implements IUseCase<UpdateSchoolUserCommand
     private void applyPhone(User target, UpdateSchoolUserCommand input) {
         String normalized = StringNormalization.normalizePhone(input.phone());
         if (normalized == null || normalized.isBlank()) {
-            throw new IllegalArgumentException("Số điện thoại không được để trống");
+            throw new IllegalArgumentException("Phone number must not be empty");
         }
         Optional<User> existing = userRepository.findByPhone(normalized);
         if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
-            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Phone number already exists");
         }
         target.setPhone(new Phone(normalized));
     }

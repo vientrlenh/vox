@@ -39,7 +39,7 @@ public class ViewSystemRubricResultBandDetailsUseCase implements IUseCase<ViewSy
         requireActiveCurrentUser();
 
         RubricResultBand resultBand = rubricResultBandRepository.findById(query.resultBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Result Band was not found."));
         requireSystemOwnedResultBand(resultBand);
 
         return RubricResultBandDtoMapper.toDto(resultBand);
@@ -48,19 +48,19 @@ public class ViewSystemRubricResultBandDetailsUseCase implements IUseCase<ViewSy
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
     }
 
     private void requireSystemOwnedResultBand(RubricResultBand resultBand) {
         RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa Dải điểm Kết quả này."));
+                .orElseThrow(() -> new ResourceNotFoundException("The Rubric Version containing this Result Band was not found."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Dải điểm Kết quả này thuộc về Trường học, không phải của Hệ thống.");
+            throw new ForbiddenException("Action denied: this Result Band belongs to a School, not to the System.");
         }
     }
 }

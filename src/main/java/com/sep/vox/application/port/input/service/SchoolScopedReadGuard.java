@@ -9,13 +9,13 @@ import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.output.UserContextPort;
 
 /**
- * "Được đọc dữ liệu của trường nào" -- quản trị hệ thống đọc mọi trường, quản trị trường chỉ đọc
- * trường của chính mình.
+ * "Which school's data may be read" -- a system admin reads every school, a school admin reads only
+ * their own school.
  *
- * <p>Tách thành một chỗ vì đây KHÔNG phải một vai trò mà là quan hệ giữa người gọi và {@code schoolId}
- * họ hỏi, nên {@code @PreAuthorize} trên controller không diễn đạt được: {@code hasRole('SYSTEM_ADMIN')}
- * chặn mất chính quản trị trường, còn bỏ trống thì trường này đọc được ví của trường kia. Phép kiểm
- * phải nằm ở use case, nơi biết cả hai vế -- và vì thế nó bị chép lại ở mọi use case đọc theo trường.
+ * <p>Split into one place because this is NOT a role but a relationship between the caller and the {@code schoolId}
+ * they ask for, so {@code @PreAuthorize} on the controller cannot express it: {@code hasRole('SYSTEM_ADMIN')}
+ * would block the school admin itself, and leaving it open would let one school read another school's balance. The check
+ * must live in the use case, which knows both sides -- and so it was copied into every use case that reads by school.
  */
 @Service
 @RequiredArgsConstructor
@@ -25,7 +25,7 @@ public class SchoolScopedReadGuard {
 
     public void requireCanRead(UUID schoolId) {
         if (!userContextPort.isSystemAdmin() && !schoolId.equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 }

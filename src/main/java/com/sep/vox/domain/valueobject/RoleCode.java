@@ -8,7 +8,7 @@ public record RoleCode(String value) {
 
     public RoleCode {
         if (value != null && !UPPERCASE_SNAKE_CASE_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Định dạng mã vai trò không hợp lệ");
+            throw new IllegalArgumentException("The role code format is invalid");
         }
     }
 }

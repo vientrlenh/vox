@@ -37,9 +37,9 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         boolean owner = question.isCreatedBy(currentUserId);
         boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
@@ -79,7 +79,7 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             && currentSchoolId != null
             && currentSchoolId.equals(bank.getSchoolId());
         if (!systemAdminOnSystemBank && !schoolAdminOnSchoolBank) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 }

@@ -1,16 +1,16 @@
 package com.sep.vox.domain.service.question;
 
 /**
- * Luật đổi trạng thái dùng chung cho NGÂN HÀNG và CHỦ ĐỀ câu hỏi.
+ * Status transition rule shared by question BANKS and question TOPICS.
  *
- * <p>Hai thực thể có cùng bộ trạng thái ({@code DRAFT / PUBLISHED / ARCHIVED}) và cùng luật, chỉ
- * khác kiểu enum. Nhận vào TÊN trạng thái thay vì enum để một hàm phục vụ được cả hai — đổi lại
- * mất kiểm tra kiểu, nên bên gọi luôn truyền {@code status.name()} chứ đừng dựng chuỗi bằng tay.
+ * <p>The two entities have the same set of statuses ({@code DRAFT / PUBLISHED / ARCHIVED}) and the same rule, differing only in
+ * the enum type. It takes the status NAME instead of the enum so one function serves both — in exchange
+ * type checking is lost, so callers always pass {@code status.name()} and never build the string by hand.
  *
- * <p>Hàm THUẦN, trả về lý do từ chối thay vì ném exception — bắt buộc cho luồng hàng loạt. Nếu ném,
- * mục đầu tiên bị từ chối sẽ làm Spring đánh dấu transaction rollback-only và nuốt luôn những mục
- * đã cập nhật thành công ở vòng lặp trước đó; {@code BulkUpdateQuestionStatusUseCase} đã dính đúng
- * cái bẫy này và javadoc của nó ghi lại đầy đủ.
+ * <p>A PURE function that returns the reason for rejection instead of throwing — mandatory for the bulk flow. If it threw,
+ * the first rejected item would make Spring mark the transaction rollback-only and swallow the items
+ * already updated successfully in earlier loop iterations; {@code BulkUpdateQuestionStatusUseCase} fell into exactly
+ * this trap and its javadoc records it in full.
  */
 public final class QuestionScopeStatusTransition {
 
@@ -24,18 +24,18 @@ public final class QuestionScopeStatusTransition {
     public record Rejection(RejectionCode code, String reason) {
     }
 
-    public static final String NOT_FOUND_BANK = "Không tìm thấy ngân hàng câu hỏi";
-    public static final String NOT_FOUND_TOPIC = "Không tìm thấy chủ đề câu hỏi";
-    public static final String NO_PERMISSION = "Bạn không có quyền đổi trạng thái mục này";
+    public static final String NOT_FOUND_BANK = "Question bank not found";
+    public static final String NOT_FOUND_TOPIC = "Question topic not found";
+    public static final String NO_PERMISSION = "You do not have permission to change the status of this item";
 
     private QuestionScopeStatusTransition() {
     }
 
     /**
-     * @param currentStatusName {@code status.name()} của mục đang xét
-     * @param action {@code PUBLISH} hoặc {@code ARCHIVE}, đã chuẩn hoá hoa
-     * @param label "ngân hàng câu hỏi" / "chủ đề câu hỏi", chỉ để ghép câu thông báo
-     * @return {@code null} nếu được phép đổi
+     * @param currentStatusName {@code status.name()} of the item under consideration
+     * @param action {@code PUBLISH} or {@code ARCHIVE}, already normalised to uppercase
+     * @param label "question bank" / "question topic", only used to compose the message
+     * @return {@code null} if the change is allowed
      */
     public static Rejection rejectionFor(String currentStatusName, String action, String label) {
         return switch (action == null ? "" : action) {
@@ -43,15 +43,15 @@ public final class QuestionScopeStatusTransition {
                 ? null
                 : new Rejection(
                     RejectionCode.INVALID_STATUS,
-                    "Chỉ publish được " + label + " đang ở trạng thái DRAFT (hiện tại: "
+                    "Only a DRAFT " + label + " can be published (current: "
                         + currentStatusName + ")");
-            // Lưu trữ được từ mọi trạng thái, khớp đúng nhánh ARCHIVE của luồng đổi từng mục.
+            // Can be archived from any status, matching exactly the ARCHIVE branch of the per-item change flow.
             case "ARCHIVE" -> null;
-            default -> new Rejection(RejectionCode.INVALID_ACTION, "Action không hợp lệ");
+            default -> new Rejection(RejectionCode.INVALID_ACTION, "Invalid action");
         };
     }
 
-    /** Tên trạng thái sau khi áp dụng {@code action}. Chỉ gọi khi {@link #rejectionFor} trả null. */
+    /** The status name after applying {@code action}. Only call when {@link #rejectionFor} returned null. */
     public static String nextStatusName(String action) {
         return "PUBLISH".equals(action) ? "PUBLISHED" : "ARCHIVED";
     }

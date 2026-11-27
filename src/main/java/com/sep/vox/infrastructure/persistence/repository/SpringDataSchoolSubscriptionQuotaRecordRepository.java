@@ -17,17 +17,17 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     List<SchoolSubscriptionQuotaRecordJpaEntity> findBySchoolSubscriptionId(UUID schoolSubscriptionId);
     Optional<SchoolSubscriptionQuotaRecordJpaEntity> findBySchoolSubscriptionIdAndQuotaType(UUID schoolSubscriptionId, String quotaType);
 
-    // clearAutomatically=true vì lý do y hệt addUsage bên dưới, và nó áp cho CẢ HAI kết quả của câu
-    // này: ConsumeQuotaService đọc lại chính dòng vừa đụng tới trong cùng transaction -- lọt qua thì
-    // buildResponse đọc để trả về ví SAU khi trừ, hỏng thì chargeOverage đọc lại để tính phần hạn mức
-    // còn lại. Thiếu cờ, cả hai lần đọc đó trúng entity CACHE từ lần load đầu method: nhánh lọt qua
-    // trả về used CŨ (fundsExhausted vì thế trượt đúng lượt tiêu vừa vặn hết hạn mức), còn nhánh hỏng
-    // thì lần đọc lại thành vô nghĩa vì không bao giờ thấy được gì mới.
+    // clearAutomatically=true for the exact same reason as addUsage below, and it applies to BOTH outcomes of this
+    // statement: ConsumeQuotaService re-reads the row it just touched in the same transaction -- the success path
+    // has buildResponse read it to return the balance AFTER deduction, the failure path has chargeOverage re-read it to compute the remaining
+    // quota. Without the flag, both reads hit the CACHED entity from the first load in the method: the success path
+    // returns the OLD used (so fundsExhausted misses exactly the spend that uses up the quota), and the failure path's
+    // re-read becomes meaningless because it can never see anything new.
     //
-    // flushAutomatically=true đi kèm theo đúng quy tắc chung của repo này: hễ có clearAutomatically
-    // thì phải có flush, vì em.clear() vứt mọi thay đổi CHƯA đẩy xuống DB chứ không riêng của bảng
-    // này. Xem SpringDataSchoolSubscriptionQuotaUserAllocationRepository.addUsage để biết ca đã suýt
-    // mất tiền vì thiếu đúng cặp cờ này.
+    // flushAutomatically=true goes with it, following the general rule of this repo: whenever there is clearAutomatically
+    // there must be a flush, because em.clear() discards every change NOT yet pushed to the DB, not only of this
+    // table. See SpringDataSchoolSubscriptionQuotaUserAllocationRepository.addUsage for the case that nearly
+    // lost money for lack of exactly this pair of flags.
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE SchoolSubscriptionQuotaRecordJpaEntity q
@@ -36,12 +36,12 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
         """)
     int tryConsume(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
-    // clearAutomatically=true BẮT BUỘC: nơi gọi luôn đọc lại entity này (before/after) trong CÙNG
-    // transaction để so sánh trạng thái khóa/nợ (SchoolLockedDueToDebt/SchoolDebtCapExceeded/
-    // SchoolDebtCleared) -- thiếu cờ này, Hibernate trả về entity CACHE cũ từ lần load trước thay vì
-    // đọc lại DB sau bulk update, khiến so sánh trước/sau luôn sai (dù DB đã đúng).
+    // clearAutomatically=true is REQUIRED: the caller always re-reads this entity (before/after) in the SAME
+    // transaction to compare the lock/debt state (SchoolLockedDueToDebt/SchoolDebtCapExceeded/
+    // SchoolDebtCleared) -- without the flag, Hibernate returns the old CACHED entity from the earlier load instead of
+    // re-reading the DB after the bulk update, so the before/after comparison is always wrong (even though the DB is right).
     //
-    // flushAutomatically=true: cùng quy tắc cặp cờ như tryConsume ở trên.
+    // flushAutomatically=true: same flag-pair rule as tryConsume above.
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE SchoolSubscriptionQuotaRecordJpaEntity q SET q.totalAllocatedAmountVnd = q.totalAllocatedAmountVnd + :amount WHERE q.id = :id")
     void addAllocation(@Param("id") UUID id, @Param("amount") BigDecimal amount);
@@ -51,17 +51,17 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
     /**
-     * Nạp tiền tự nạp vào ví hạn mức: cộng vào total VÀ ghi nhận phần đến từ ví, trong CÙNG MỘT câu
-     * lệnh.
+     * Top-up from the self-funded balance into the quota wallet: adds to total AND records the part that came from the wallet, in ONE
+     * statement.
      *
-     * <p>KHÔNG tách thành addAllocation() rồi cộng funded riêng: hai câu lệnh là hai cơ hội để một cái
-     * chạy còn cái kia không, và hậu quả không đối xứng. Cộng total mà quên funded thì tiền trường bỏ
-     * ra biến mất vào ngày gia hạn (đúng lỗi mà V12 sinh ra để chặn); cộng funded mà quên total thì vi
-     * phạm thẳng chk_..._funded_within_total. Một câu lệnh thì không có trạng thái ở giữa.
+     * <p>Do NOT split into addAllocation() followed by a separate add of funded: two statements are two chances for one to
+     * run and not the other, and the consequences are asymmetric. Adding total but forgetting funded makes the money the school
+     * paid vanish on renewal day (exactly the bug V12 was created to prevent); adding funded but forgetting total
+     * directly violates chk_..._funded_within_total. With one statement there is no in-between state.
      *
-     * <p>Cặp cờ clearAutomatically/flushAutomatically theo đúng quy tắc chung của repo này: use case
-     * đọc lại chính dòng vừa cộng trong cùng transaction để trả về ví SAU khi nạp, và bút toán trừ ví
-     * đang nằm chờ trong persistence context lúc câu này chạy.
+     * <p>The clearAutomatically/flushAutomatically pair follows the general rule of this repo: the use case
+     * re-reads the row it just added in the same transaction to return the balance AFTER top-up, and the wallet deduction entry
+     * is waiting in the persistence context when this statement runs.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
@@ -73,15 +73,15 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     void addFundingFromBalance(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
     /**
-     * Những cái hẹn mang tiền sang ĐÃ TỚI HẠN: ví của một kỳ đã bắt đầu chạy mà còn trỏ về kỳ nguồn.
+     * The carry-over appointments that have COME DUE: the wallet of a period that has already started running but still points back to the source period.
      *
-     * <p>Lọc theo {@code startDate} chứ không theo status của kỳ nguồn: kỳ mới bắt đầu tiêu được ngay
-     * khi tới ngày (findInForceBySchoolId soi khoảng ngày), trong khi SubscriptionExpiryJob có thể mất
-     * tới một giờ mới đưa kỳ cũ sang EXPIRED. Bám vào status là để tiền hiện ra muộn hơn cả lúc nó
-     * đáng được tiêu.
+     * <p>Filters by {@code startDate} rather than by the status of the source period: the new period can spend right
+     * when its date arrives (findInForceBySchoolId checks the date range), while SubscriptionExpiryJob may take
+     * up to an hour to move the old period to EXPIRED. Relying on status would make the money appear later than it
+     * deserves to be spendable.
      *
-     * <p>Không lọc kỳ nguồn phải kết thúc rồi: tới ngày kỳ mới bắt đầu thì kỳ cũ hết hạn theo đúng
-     * định nghĩa (kỳ mới nối vào endDate của nó -- xem nextPeriodStart).
+     * <p>Does not require the source period to have ended: when the new period's start date arrives the old period expires by
+     * definition (the new period continues from its endDate -- see nextPeriodStart).
      */
     @Query("""
         SELECT q FROM SchoolSubscriptionQuotaRecordJpaEntity q
@@ -92,10 +92,10 @@ public interface SpringDataSchoolSubscriptionQuotaRecordRepository extends JpaRe
     List<SchoolSubscriptionQuotaRecordJpaEntity> findDueFundingCarries(@Param("now") Instant now);
 
     /**
-     * Xoá cái hẹn -- biến phép mang sang thành ĐÚNG MỘT LẦN.
+     * Deletes the appointment -- makes the carry-over happen EXACTLY ONCE.
      *
-     * <p>clearAutomatically vì job đọc bản ghi rồi mới cộng tiền rồi mới gọi câu này; để entity cũ nằm
-     * lại trong persistence context là mở đường cho một lần đọc sau đó thấy cái hẹn vẫn còn.
+     * <p>clearAutomatically because the job reads the record, then adds the money, then calls this statement; leaving the stale entity in
+     * the persistence context opens the way for a later read to see the appointment still there.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

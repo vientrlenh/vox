@@ -36,18 +36,18 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
         // exists call instead of loading the user, for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("Your account does not exist or has been locked.");
         }
 
         SchoolRoom room = schoolRoomRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("No room found with the given ID."));
 
         requireSameSchoolForSchoolUser(currentUserId, room);
 
         int updatedRows = updateAtomically(command);
 
         if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi nào.");
+            throw new ResourceNotFoundException("Update failed or there was no change.");
         }
 
         return command.id();
@@ -59,7 +59,7 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
         if (schoolUserOpt.isPresent()) {
             SchoolUser schoolUser = schoolUserOpt.get();
             if (!schoolUser.getSchoolId().equals(room.getSchoolId())) {
-                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa thông tin phòng học của trường khác.");
+                throw new ForbiddenException("SECURITY: You are not allowed to edit another school's room information.");
             }
         }
     }

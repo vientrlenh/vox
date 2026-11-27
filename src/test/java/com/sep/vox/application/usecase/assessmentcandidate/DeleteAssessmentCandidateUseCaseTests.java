@@ -84,7 +84,7 @@ class DeleteAssessmentCandidateUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentCandidateCommand(assessmentId, candidateId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã có bài thi");
+            .hasMessageContaining("already has a submission");
         verify(assessmentCandidateRepository, never()).deleteById(any());
     }
 

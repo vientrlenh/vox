@@ -27,25 +27,25 @@ public interface FrameworkVersionRepository {
     boolean existsByFrameworkId(UUID frameworkId);
 
     /**
-     * Bản khung đánh giá đang hiệu lực của toàn hệ -- nguồn framework cho LUYỆN TẬP.
+     * The framework version in effect system-wide -- the framework source for PRACTICE.
      *
-     * <p>Khác đường thi (tra qua assessment policy theo lớp học sinh): luyện tập không phụ
-     * thuộc policy, xem V13 và {@code SpringDataFrameworkVersionRepository.findActiveVersionId}.
+     * <p>Different from the assessment path (looked up through the assessment policy by student class): practice does not
+     * depend on a policy, see V13 and {@code SpringDataFrameworkVersionRepository.findActiveVersionId}.
      *
-     * @param code chỉ định thẳng một mã version; null = tự chọn bản đang hoạt động
+     * @param code points directly at one version code; null = automatically choose the active version
      */
     Optional<UUID> findActiveVersionId(String code);
 
     /**
-     * Mọi khung đánh giá còn hiệu lực, mỗi khung kèm bản ĐÃ BAN HÀNH mới nhất -- nguồn cho ô
-     * chọn khung trước khi chọn bậc ở màn luyện tập.
+     * Every framework in effect, each with its latest PUBLISHED version -- the source for the
+     * framework picker shown before choosing a band on the practice screen.
      *
-     * <p>Cùng bộ điều kiện hiệu lực với {@link #findActiveVersionId}, chỉ khác là không thu về
-     * một khung duy nhất.
+     * <p>Same effectiveness conditions as {@link #findActiveVersionId}, except that it does not collect down to
+     * a single framework.
      */
     List<ActiveFramework> findActiveFrameworks();
 
-    /** Một khung còn hiệu lực kèm bản mới nhất của nó. */
+    /** A framework in effect together with its latest version. */
     record ActiveFramework(
         UUID frameworkId,
         String frameworkCode,

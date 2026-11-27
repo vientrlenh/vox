@@ -14,44 +14,44 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record RegisterFromSchoolDirectoryRequest(
-    @NotNull(message = "Danh mục trường không được để trống")
+    @NotNull(message = "School directory must not be blank")
     UUID schoolDirectoryId,
 
-    @NotBlank(message = "Tên liên hệ không được để trống")
-    @Size(max = 255, message = "Tên liên hệ không được vượt quá 255 ký tự")
+    @NotBlank(message = "Contact name must not be blank")
+    @Size(max = 255, message = "Contact name must not exceed 255 characters")
     String contactFullName,
 
-    @NotBlank(message = "Mã định danh không được để trống")
-    @Size(max = 20, message = "Mã định danh không được vượt quá 20 ký tự")
+    @NotBlank(message = "Identifier code must not be blank")
+    @Size(max = 20, message = "Identifier code must not exceed 20 characters")
     String identityNumber,
 
-    @NotBlank(message = "Số điện thoại liên hệ không được để trống")
-    @Size(max = 20, message = "Số điện thoại không được vượt quá 20 ký tự")
+    @NotBlank(message = "Contact phone number must not be blank")
+    @Size(max = 20, message = "Phone number must not exceed 20 characters")
     String contactPhone,
 
-    @NotBlank(message = "Email liên hệ không được để trống")
-    @Size(max = 255, message = "Email liên hệ không được vượt quá 255 ký tự")
-    @Email(message = "Email không hợp lệ")
+    @NotBlank(message = "Contact email must not be blank")
+    @Size(max = 255, message = "Contact email must not exceed 255 characters")
+    @Email(message = "Email is invalid")
     String contactEmail,
 
-    @NotNull(message = "Ngày sinh không được để trống")
+    @NotNull(message = "Date of birth must not be blank")
     LocalDate dateOfBirth,
 
-    @NotBlank(message = "Địa chỉ liên hệ không được để trống")
-    @Size(max = 512, message = "Địa chỉ liên hệ không được vượt quá 512 ký tự")
+    @NotBlank(message = "Contact address must not be blank")
+    @Size(max = 512, message = "Contact address must not exceed 512 characters")
     String contactAddress,
 
-    @NotBlank(message = "Mã bưu chính không được để trống")
-    @Size(max = 10, message = "Mã bưu chính không được vượt quá 10 ký tự")
+    @NotBlank(message = "Postal code must not be blank")
+    @Size(max = 10, message = "Postal code must not exceed 10 characters")
     String postalCode,
 
-    @NotBlank(message = "Chức vụ không được để trống")
-    @Size(max = 50, message = "Chức vụ không được vượt quá 50 ký tự")
+    @NotBlank(message = "Position must not be blank")
+    @Size(max = 50, message = "Position must not exceed 50 characters")
     String position,
 
-    @NotNull(message = "Số học sinh không được để trống")
-    @Min(value = 1, message = "Số học sinh không được nhỏ hơn 1")   
-    @Max(value = Integer.MAX_VALUE, message = "Số học sinh không được vượt quá " + Integer.MAX_VALUE)
+    @NotNull(message = "Student count must not be blank")
+    @Min(value = 1, message = "Student count must not be less than 1")   
+    @Max(value = Integer.MAX_VALUE, message = "Student count must not exceed " + Integer.MAX_VALUE)
     Integer studentCount, 
 
     List<String> documentUrls

@@ -40,13 +40,13 @@ public final class PracticeSessionResponses {
             List<TurnCorrection> corrections,
             boolean quotaExhausted,
             /**
-             * Tổng số giây học sinh ĐÃ NÓI trong phiên (đã cộng cả lượt này) và ngân sách nói
-             * của phiên. Client hiện "đã nói / ngân sách" từ hai số này.
+             * The total seconds the student HAS SPOKEN in the session (including this turn) and the speaking
+             * budget of the session. The client shows "spoken / budget" from these two numbers.
              *
-             * Cố ý KHÔNG phải thời gian trôi trên đồng hồ: quota chỉ trừ đúng khoảng VAD nghe
-             * thấy tiếng, nên lúc AI nói / học sinh nghĩ / chờ chấm đều không tính. Màn hình
-             * trước đây đếm đồng hồ suông nên trông như đang đếm hạn mức mà thật ra không liên
-             * quan gì tới hạn mức.
+             * Deliberately NOT elapsed clock time: the quota only deducts the span in which VAD hears
+             * sound, so while the AI speaks / the student thinks / grading waits nothing is counted. The screen
+             * used to count plain clock time so it looked like counting the quota while actually having
+             * nothing to do with the quota.
              */
             int sessionSpokenSeconds,
             int sessionBudgetSeconds) {

@@ -11,8 +11,8 @@ public interface AssessmentRecordingRepository {
     List<AssessmentRecording> findByAssessmentSessionId(UUID assessmentSessionId);
 
     /**
-     * Mỗi nguồn ingest giữ hàng riêng của mình, nên source là một phần khoá: hai đường ingest của
-     * cùng một phiên thi không tranh nhau một hàng nữa. source không được null -- xem
+     * Each ingest source keeps its own row, so source is part of the key: two ingest paths of the
+     * same session no longer fight over one row. source must not be null -- see
      * RecordingPartChangedCommandMapper.
      */
     Optional<AssessmentRecording> findByAssessmentSessionIdAndStreamTypeAndSource(
@@ -21,8 +21,8 @@ public interface AssessmentRecordingRepository {
     AssessmentRecording save(AssessmentRecording recording);
 
     /**
-     * Xoá bản ghi hình/tiếng của một phiên thi. Chỉ xoá dòng trong DB: file trên S3 để lifecycle
-     * rule của bucket dọn, vì xoá file không rollback được cùng transaction.
+     * Deletes the video/audio recording of an assessment session. Only the DB row is deleted: the file on S3 is left to the bucket
+     * lifecycle rule to clean up, because deleting a file cannot be rolled back with the transaction.
      */
     void deleteByAssessmentSessionId(UUID assessmentSessionId);
 }

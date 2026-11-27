@@ -25,7 +25,7 @@ public class SaveTopicUseCase implements IUseCase<SaveTopicCommand, Boolean> {
     public Boolean execute(SaveTopicCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         if (!practiceTopicRepository.existsActiveById(input.topicId())) {
-            throw new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập.");
+            throw new ResourceNotFoundException("Practice topic not found.");
         }
         if (!savedTopicRepository.existsForStudent(studentId, input.topicId())) {
             savedTopicRepository.save(studentId, input.topicId());

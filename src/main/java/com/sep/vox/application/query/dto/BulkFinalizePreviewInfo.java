@@ -4,19 +4,20 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Ảnh chụp trước khi admin chốt sổ cả kỳ thi.
+ * A snapshot before the admin closes out a whole assessment.
  *
- * <p>Tồn tại vì {@code finalizeForPublish} bỏ qua bài {@code PENDING_REVIEW}: chỉ một
- * bài chưa ai chấm là cả kỳ thi không công bố được, mà trước đây admin không có cách
- * nào thấy bài đó là bài nào (review BE-5). Preview trả về đúng con số và danh sách
- * để họ quyết: chấm nốt, hay chấp nhận công bố theo điểm AI đang có.
+ * <p>It exists because {@code finalizeForPublish} skips {@code PENDING_REVIEW} submissions: a single
+ * submission that nobody has graded is enough to stop the whole assessment from being published, and
+ * before this the admin had no way to see which submission it was (review BE-5). The preview returns
+ * exactly the numbers and the list so they can decide: finish grading, or accept publishing with the
+ * AI scores currently held.
  *
- * @param pendingUnassigned  bài chờ chấm và CHƯA có ai nhận
- * @param pendingAssigned    bài chờ chấm và đang có người cầm
- * @param openAppeals        đơn phúc khảo chưa kết thúc
- * @param invalid            bài đã bị vô hiệu (chốt sổ không đụng tới; sẽ thành FAILED
- *                           với điểm 0 khi kỳ thi công bố kết quả)
- * @param blockingResultIds  danh sách bài đang chặn, cắt ngắn cho UI
+ * @param pendingUnassigned  submissions waiting for grading with NO one having taken them
+ * @param pendingAssigned    submissions waiting for grading that someone is holding
+ * @param openAppeals        appeals that are not yet finished
+ * @param invalid            submissions already invalidated (the close-out does not touch them; they become FAILED
+ *                           with score 0 when the assessment publishes its results)
+ * @param blockingResultIds  the list of blocking submissions, truncated for the UI
  */
 public record BulkFinalizePreviewInfo(
     int total,
@@ -27,7 +28,7 @@ public record BulkFinalizePreviewInfo(
     int invalid,
     List<UUID> blockingResultIds
 ) {
-    /** Có thể chốt thẳng mà không cần admin chọn cách xử lý bài dở. */
+    /** Can be finalized directly without the admin choosing how to handle unfinished submissions. */
     public boolean isClean() {
         return pendingUnassigned == 0 && pendingAssigned == 0 && openAppeals == 0;
     }

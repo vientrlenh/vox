@@ -23,9 +23,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Chạy SQL THẬT: cả hai câu đều dựa vào thứ không mock được — {@code date_trunc} trên múi giờ nghiệp
- * vụ, {@code COALESCE(SUM(...))} trên tập rỗng, và một {@code LEFT JOIN} phải không được nhân đôi
- * tổng tiền.
+ * Runs REAL SQL: both statements rely on things that cannot be mocked -- {@code date_trunc} on the business
+ * time zone, {@code COALESCE(SUM(...))} on an empty set, and a {@code LEFT JOIN} that must not double
+ * the total amount.
  */
 @RepositoryTest
 @Import(JpaSchoolAiCostQueryRepository.class)
@@ -137,7 +137,7 @@ class JpaSchoolAiCostQueryRepositoryTests {
         assertThat(repository.sumSchoolWideCost(school, FROM, TO, null)).isEqualByComparingTo("5000000");
     }
 
-    /** Trường chưa tiêu gì thì tổng phải là 0, không phải null làm hỏng một field non-null. */
+    /** A school that has spent nothing must have a total of 0, not null, which would break a non-null field. */
     @Test
     void shouldReturnZeroSchoolWideSpendingWhenNothingWasSpent() {
         assertThat(repository.sumSchoolWideCost(insertSchool(), FROM, TO, null))

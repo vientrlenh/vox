@@ -57,10 +57,10 @@ import com.sep.vox.infrastructure.service.PoiSpreadsheetWriterService;
 class QuestionSpreadsheetServiceTests {
 
     private static final List<String> IMPORT_HEADERS = List.of(
-        "Mã câu hỏi", "Loại câu hỏi", "Nội dung câu hỏi", "Hướng dẫn", "Gợi ý", "Văn bản chuẩn bị",
-        "Thời gian chuẩn bị", "Thời gian trả lời tối thiểu", "Thời gian trả lời tối đa", "Chia sẻ",
-        "Nội dung mong đợi", "Ý chính", "Câu trả lời chấp nhận", "Ví dụ lạc đề", "Gợi ý chấm điểm",
-        "Lỗi thường gặp");
+        "Question code", "Question type", "Question text", "Instruction", "Prompt", "Preparation text",
+        "Prep time", "Min response", "Max response", "Sharing",
+        "Expected content", "Key points", "Acceptable responses", "Off topic examples", "Scoring hints",
+        "Common mistakes");
 
     @Mock
     private QuestionRepository questionRepository;
@@ -216,7 +216,7 @@ class QuestionSpreadsheetServiceTests {
 
         assertThat(cellTexts(sheet.getRow(0))).containsExactlyElementsOf(
             Stream.concat(IMPORT_HEADERS.stream(),
-                Stream.of("Mã ngân hàng", "Chủ đề", "Trạng thái", "Người tạo", "Ngày tạo")).toList());
+                Stream.of("Bank code", "Topic", "Status", "Created by", "Created at")).toList());
     }
 
     @Test

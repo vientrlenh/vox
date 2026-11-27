@@ -61,14 +61,14 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
             .filter(key -> !validHeaders.contains(key))
             .toList();
         if (!invalidKeys.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
+            throw new IllegalArgumentException("Mapping contains a column that does not exist in the file: " + String.join(", ", invalidKeys));
         }
         List<String> invalidValues = confirmedMapping.values().stream()
             .map(value -> value == null ? null : value.strip())
             .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
         if (!invalidValues.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa trường hệ thống không hợp lệ: " + String.join(", ", invalidValues));
+            throw new IllegalArgumentException("Mapping contains an invalid system field: " + String.join(", ", invalidValues));
         }
     }
 
@@ -134,7 +134,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
             row.setStatus(ImportRowStatus.IMPORTED);
             return outcome;
         } catch (DataConflictException | IllegalArgumentException exception) {
-            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã năm học đã tồn tại hoặc không hợp lệ"))));
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "School-year grade code already exists or is invalid"))));
             row.setStatus(ImportRowStatus.FAILED);
             return RowOutcome.INVALID;
         }
@@ -170,7 +170,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         schoolGradeRepository.save(existing);
     }
 
-    // Catalog khối lớp dùng chung nên tra theo code là đủ, không còn lọc theo trường.
+    // The grade-level catalog is shared, so looking up by code is enough; no filtering by school any more.
     private Map<String, GradeLevel> findGradeLevelsByCode(Set<String> codes) {
         Map<String, GradeLevel> levelsByCode = new LinkedHashMap<String, GradeLevel>();
         gradeLevelRepository.findByCodeIn(codes)
@@ -207,20 +207,20 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
             Map<String, GradeLevel> levelsByCode) {
         List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
 
-        addMissingError(errors, data, "schoolGradeLevelCode", "Mã khối không được để trống");
-        addMissingError(errors, data, "code", "Mã năm học không được để trống");
-        addMissingError(errors, data, "name", "Tên năm học không được để trống");
-        addMissingError(errors, data, "startDate", "Ngày bắt đầu không được để trống");
-        addMissingError(errors, data, "endDate", "Ngày kết thúc không được để trống");
+        addMissingError(errors, data, "schoolGradeLevelCode", "Grade code must not be blank");
+        addMissingError(errors, data, "code", "School-year grade code must not be blank");
+        addMissingError(errors, data, "name", "School-year grade name must not be blank");
+        addMissingError(errors, data, "startDate", "Start date must not be blank");
+        addMissingError(errors, data, "endDate", "End date must not be blank");
 
         String levelCode = data.get("schoolGradeLevelCode");
         if (isPresent(levelCode) && !levelsByCode.containsKey(levelCode)) {
-            errors.add(error("schoolGradeLevelCode", "Không tìm thấy khối lớp"));
+            errors.add(error("schoolGradeLevelCode", "Grade level not found"));
         }
 
         String code = data.get("code");
         if (isPresent(levelCode) && isPresent(code) && !seenKeys.add(levelCode + "::" + code)) {
-            errors.add(error("code", "Mã năm học bị trùng trong file import"));
+            errors.add(error("code", "School-year grade code is duplicated in the import file"));
         }
 
         addDateErrors(errors, data);
@@ -230,14 +230,14 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
     private void addDateErrors(List<Map<String, String>> errors, Map<String, String> data) {
         LocalDate startDate = parseDateOrNull(data.get("startDate"));
         if (isPresent(data.get("startDate")) && startDate == null) {
-            errors.add(error("startDate", "Ngày bắt đầu không hợp lệ"));
+            errors.add(error("startDate", "Start date is invalid"));
         }
         LocalDate endDate = parseDateOrNull(data.get("endDate"));
         if (isPresent(data.get("endDate")) && endDate == null) {
-            errors.add(error("endDate", "Ngày kết thúc không hợp lệ"));
+            errors.add(error("endDate", "End date is invalid"));
         }
         if (startDate != null && endDate != null && !startDate.isBefore(endDate)) {
-            errors.add(error("endDate", "Ngày kết thúc phải sau ngày bắt đầu"));
+            errors.add(error("endDate", "End date must be after start date"));
         }
     }
 

@@ -3,30 +3,31 @@ package com.sep.vox.application.query.dto;
 import java.time.Instant;
 
 /**
- * Bài đã thi xong mà học sinh CHƯA có điểm, chia theo thứ đang chặn.
+ * Submissions that are finished but the student has NO score yet, split by what is blocking them.
  *
- * <p>Năm nhóm LOẠI TRỪ NHAU và phủ kín — cộng lại đúng bằng {@link #total()}. Đó là điều kiện để thẻ
- * trên trang tổng quan cộng được năm dòng thành một con số mà không đếm trùng ai.
+ * <p>The five buckets are MUTUALLY EXCLUSIVE and exhaustive -- they add up to exactly {@link #total()}.
+ * That is the condition for the card on the overview page to add five rows into one number without
+ * counting anyone twice.
  *
- * <p>KHÔNG dùng {@code gradingStats.unassigned} cho nhóm "chờ phân công" dù nghe giống hệt: bên đó
- * đếm bài ĐỦ ĐIỀU KIỆN nhận thêm một vòng chấm, tập ấy gồm cả RELEASED / INVALID / APPEALED — tức
- * mọi bài đã công bố điểm cũng nằm trong đó. Dùng nhầm là biến "học sinh chưa có điểm" thành "gần
- * như mọi bài của trường".
+ * <p>Do NOT use {@code gradingStats.unassigned} for the "waiting for assignment" bucket even though it
+ * sounds identical: that one counts submissions ELIGIBLE for one more grading round, a set that also
+ * includes RELEASED / INVALID / APPEALED -- that is, every submission whose score is already published
+ * is in it. Using it by mistake turns "students without a score" into "almost every submission of the school".
  */
 public record SchoolUnscoredWorkloadDto(
-    /** AI chấm lỗi, chưa ai đụng tới, và trường vẫn còn lượt nhờ AI chấm lại. */
+    /** AI grading failed, nobody has touched it, and the school still has AI re-grade attempts. */
     int aiFailedRetryLeft,
-    /** AI chấm lỗi, đã dùng hết lượt AI — chỉ còn đường chấm tay. */
+    /** AI grading failed and the AI attempts are used up -- only manual grading is left. */
     int aiFailedNoRetryLeft,
-    /** Đã có dòng kết quả chờ người chấm nhưng chưa phân công cho ai. */
+    /** A result row already waits for a grader but has not been assigned to anyone. */
     int awaitingAssignment,
-    /** Đã phân công, quá hạn chấm. */
+    /** Assigned and past the grading deadline. */
     int assignedOverdue,
-    /** Đã phân công, còn trong hạn. */
+    /** Assigned and still within the deadline. */
     int assignedInProgress,
-    /** Mốc nộp bài của bài chờ LÂU NHẤT; null khi không còn bài nào chưa có điểm. */
+    /** The submission time of the LONGEST-waiting submission; null when no submission is left without a score. */
     Instant oldestSubmittedAt,
-    /** Số kỳ thi KHÁC NHAU đang có bài chưa ra điểm. */
+    /** The number of DISTINCT assessments that have submissions without a score. */
     int assessmentCount
 ) {
 
@@ -35,7 +36,7 @@ public record SchoolUnscoredWorkloadDto(
             + assignedInProgress;
     }
 
-    /** Tổng số bài AI chấm lỗi chưa ai xử lý — hai nhóm con gộp lại thành một dòng trên giao diện. */
+    /** The total number of submissions with failed AI grading that nobody has handled -- the two sub-buckets combined into one row on the UI. */
     public int aiFailed() {
         return aiFailedRetryLeft + aiFailedNoRetryLeft;
     }

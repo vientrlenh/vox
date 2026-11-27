@@ -82,7 +82,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
 
     @Test
     void should_reject_user_from_other_school() {
-        // Chặn IDOR: SCHOOL_ADMIN của trường khác không được xem chi tiết năm học của trường này.
+        // Blocks IDOR: a SCHOOL_ADMIN of another school must not view the school year details of this school.
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.of(UUID.randomUUID()));
 
@@ -113,7 +113,7 @@ class ViewSchoolGradeDetailsUseCaseTests {
 
     @Test
     void should_reject_when_grade_belongs_to_another_school() {
-        // Năm học thuộc trường khác → không được lộ dữ liệu.
+        // The school year belongs to another school -> its data must not leak.
         grantAccess();
         when(schoolGradeRepository.findById(gradeId))
             .thenReturn(Optional.of(grade(UUID.randomUUID())));

@@ -69,9 +69,9 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 public class BulkFinalizeAssessmentResultsUseCase
         implements IUseCase<BulkFinalizeAssessmentResultsCommand, Integer> {
 
-    private static final String BULK_REASON = "Chốt sổ hàng loạt theo kỳ thi.";
+    private static final String BULK_REASON = "Bulk finalization by assessment.";
     private static final String BULK_AI_REASON =
-        "Chốt sổ hàng loạt: công bố theo điểm AI vì chưa có người chấm.";
+        "Bulk finalization: published with the AI score because nobody has graded it yet.";
 
     /**
      * Pending score dispute: blocks the whole finalize run, and no flag can skip it.
@@ -114,7 +114,7 @@ public class BulkFinalizeAssessmentResultsUseCase
 
     private Assessment requireAuthorizedAssessment(UUID assessmentId, UUID currentUserId) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found."));
         // A class test: the school does not grade it, so if only the school admin could close the
         // books the teacher would be stuck -- publishing results requires EVERY attempt to be RELEASED
         // or INVALID (UpdateAssessmentStatusUseCase.requirePublishReadiness).
@@ -133,8 +133,8 @@ public class BulkFinalizeAssessmentResultsUseCase
     private void requireNoOpenAppeals(BulkFinalizePreviewInfo preview) {
         if (preview.openAppeals() > 0) {
             throw new IllegalArgumentException(
-                "Kỳ thi còn " + preview.openAppeals() + " đơn phúc khảo chưa xong. "
-                    + "Hãy xử lý hoặc từ chối các đơn này trước khi chốt sổ.");
+                "The assessment still has " + preview.openAppeals() + " unfinished appeals. "
+                    + "Resolve or reject these appeals before finalizing.");
         }
     }
 
@@ -146,9 +146,9 @@ public class BulkFinalizeAssessmentResultsUseCase
         }
         if (!preview.isClean() && !releasePendingWithAiScores) {
             throw new IllegalArgumentException(
-                "Kỳ thi còn " + preview.pendingUnassigned() + " bài chưa ai chấm và "
-                    + preview.pendingAssigned() + " bài đang chấm dở. "
-                    + "Hãy xử lý nốt, hoặc xác nhận công bố theo điểm AI hiện có.");
+                "The assessment still has " + preview.pendingUnassigned() + " submissions that nobody has graded and "
+                    + preview.pendingAssigned() + " submissions that are partly graded. "
+                    + "Finish them, or confirm publishing with the current AI score.");
         }
     }
 
@@ -193,14 +193,14 @@ public class BulkFinalizeAssessmentResultsUseCase
     }
 
     /**
-     * Đóng phân công còn mở trên các bài VỪA được công bố. Bài đã rời
-     * {@code PENDING_REVIEW} nên vòng {@code INITIAL} không còn xử lý được nó nữa
-     * ({@code GradingRoundPolicy.isAssignable} trả false); không đóng thì phân công treo
-     * vĩnh viễn trong hàng đợi của giáo viên.
+     * Closes the assignments still open on the submissions JUST published. A submission that has left
+     * {@code PENDING_REVIEW} can no longer be handled by the {@code INITIAL} round
+     * ({@code GradingRoundPolicy.isAssignable} returns false); if they were not closed the assignments would hang
+     * forever in the teacher's queue.
      *
-     * <p>Chỉ đụng đúng những bài use case này chuyển trạng thái. Vòng {@code SPOT_CHECK}
-     * trên bài {@code RELEASED} và vòng {@code REMEDIATION} trên bài {@code INVALID} vẫn
-     * còn nguyên việc để làm — đóng chúng là xoá một quyết định chưa được đưa ra.
+     * <p>Only touches the submissions this use case moved. A {@code SPOT_CHECK} round
+     * on a {@code RELEASED} submission and a {@code REMEDIATION} round on an {@code INVALID} submission still
+     * have work to do -- closing them would erase a decision that has not been made yet.
      */
     private void closeSettledAssignments(List<AssessmentCandidateResult> released, Instant now) {
         if (released.isEmpty()) {
@@ -214,7 +214,7 @@ public class BulkFinalizeAssessmentResultsUseCase
         }
     }
 
-    /** {@code EnumMap} để thứ tự kể trong thông báo bám theo thứ tự khai báo của enum. */
+    /** An {@code EnumMap} so that the order mentioned in the message follows the declaration order of the enum. */
     private Map<AssessmentCandidateResultStatus, Integer> countBlocking(List<AssessmentCandidateResult> results) {
         Map<AssessmentCandidateResultStatus, Integer> counts = new EnumMap<AssessmentCandidateResultStatus, Integer>(AssessmentCandidateResultStatus.class);
         for (AssessmentCandidateResult result : results) {
@@ -228,18 +228,18 @@ public class BulkFinalizeAssessmentResultsUseCase
     }
 
     /**
-     * Kể HẾT mọi thứ đang chặn trong một thông báo: báo từng thứ một là bắt admin bấm lại
-     * nhiều lần mới biết còn gì phải xử lý.
+     * Lists EVERYTHING that is blocking in one message: reporting them one at a time forces the admin to click again
+     * many times before knowing what is left to handle.
      */
     private String describeBlocking(Map<AssessmentCandidateResultStatus, Integer> counts) {
         List<String> parts = new ArrayList<String>();
         counts.forEach((status, count) -> parts.add(switch (status) {
-            case APPEALED -> count + " bài có đơn phúc khảo chờ xử lý";
-            case RE_GRADING -> count + " bài đang được chấm phúc khảo";
-            default -> count + " bài ở trạng thái " + status.name();
+            case APPEALED -> count + " submissions with an appeal awaiting processing";
+            case RE_GRADING -> count + " submissions being graded on appeal";
+            default -> count + " submissions in status " + status.name();
         }));
-        return "Kỳ thi còn " + String.join(", ", parts)
-            + ". Chốt sổ không quyết thay tranh chấp điểm — hãy xử lý dứt điểm các bài này trước.";
+        return "The assessment still has " + String.join(", ", parts)
+            + ". Finalization does not decide score disputes for you: resolve these submissions first.";
     }
 
     private record ReleaseOutcome(

@@ -3,11 +3,11 @@ package com.sep.vox.domain.repository;
 import com.sep.vox.domain.model.school.SchoolAiSpendEntry;
 
 /**
- * Sổ chỉ-ghi-thêm: chỉ có {@code save}, không có sửa, không có xoá.
+ * An append-only ledger: only {@code save}, no update, no delete.
  *
- * <p>Đường ĐỌC không đi qua đây mà qua {@code SchoolAiCostQueryRepository} — mọi màn hình đều hỏi số
- * đã gom nhóm (theo ngày, theo người), không bao giờ hỏi từng dòng lẻ, nên nạp aggregate về Java rồi
- * cộng ở đó là kéo hàng vạn dòng để in ra ba mươi con số.
+ * <p>The READ path does not go through here but through {@code SchoolAiCostQueryRepository} — every screen asks for
+ * grouped figures (by day, by person) and never for individual rows, so loading rows into Java and
+ * summing there would pull tens of thousands of rows to print thirty numbers.
  */
 public interface SchoolAiSpendEntryRepository {
 

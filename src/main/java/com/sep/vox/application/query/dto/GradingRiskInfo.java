@@ -4,14 +4,13 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Tín hiệu rủi ro của một bài, lấy trong MỘT query cho cả tập ứng viên rồi mới xếp
- * hạng trong Java — xếp hạng trong SQL sẽ khoá logic vào một dialect và không test
- * đơn vị được.
+ * The risk signals of a submission, fetched in ONE query for the whole set of candidates and only then
+ * ranked in Java -- ranking in SQL would lock the logic into one dialect and could not be unit tested.
  *
- * @param minConfidence độ tự tin thấp nhất trong các phần đã chấm ({@code null} khi
- *                      bài chưa có bản AI nào, ví dụ đã bị chấm tay đè hết)
- * @param passingScore  ngưỡng đạt của chính sách; {@code null} khi trường không đặt
- *                      ngưỡng, lúc đó "sát ngưỡng" không có nghĩa
+ * @param minConfidence the lowest confidence among the graded parts ({@code null} when
+ *                      the submission has no AI grade at all, e.g. all of it was overridden by manual grading)
+ * @param passingScore  the policy's passing threshold; {@code null} when the school sets no
+ *                      threshold, in which case "near the threshold" has no meaning
  */
 public record GradingRiskInfo(
     UUID candidateResultId,

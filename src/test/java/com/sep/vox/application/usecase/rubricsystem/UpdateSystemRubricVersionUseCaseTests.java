@@ -107,6 +107,6 @@ class UpdateSystemRubricVersionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Không thể cập nhật Rubric Version do dữ liệu bị trùng hoặc không hợp lệ.");
+            .hasMessage("Cannot update the Rubric Version because the data is duplicated or invalid.");
     }
 }

@@ -46,19 +46,19 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 
 /**
- * Bất biến DUY NHẤT mà lớp test này tồn tại vì nó: dòng payment_records phải được COMMIT trước khi
- * gọi sang cổng tạo link.
+ * The ONE invariant this test class exists for: the payment_records row must be COMMITTED before the gateway is
+ * called to create the link.
  *
- * <p>Bản trước bọc cả use case trong một {@code @Transactional}, nên thứ tự "ghi rồi mới gọi" chỉ
- * đúng trong bộ nhớ: cổng dựng phiên xong mà phản hồi rơi là rollback xóa luôn dòng mang
- * provider_order_ref, trường trả tiền vào trang checkout vẫn sống và callback không tra ra đơn nào.
- * Tiền về, không giao gì, không còn dấu vết.
+ * <p>The earlier version wrapped the whole use case in a single {@code @Transactional}, so the order "write, then
+ * call" was only true in memory: the gateway built the session and then the response was lost, the rollback
+ * deleted the row carrying provider_order_ref, the school paid on the checkout page that was still alive, and
+ * the callback found no order. Money arrives, nothing is delivered, no trace is left.
  *
- * <p>PHẠM VI của phép kiểm dưới đây, nói cho đúng: nó soi thẳng vào lần {@code commit} của
- * transaction manager, nên nó bắt được mọi cách sắp xếp lại các giai đoạn khiến lời gọi cổng lọt vào
- * TRONG một transaction đang mở. Nó KHÔNG bắt được việc ai đó gắn lại {@code @Transactional} lên
- * {@code execute}: unit test gọi thẳng đối tượng nên không có proxy nào của Spring, annotation đó
- * hoàn toàn trơ ở đây. Chốt chặn cho ca ấy vẫn là người đọc code -- xem javadoc của chính use case.
+ * <p>The SCOPE of the check below, stated precisely: it looks straight at the {@code commit} of the transaction
+ * manager, so it catches every way of reordering the phases that puts the gateway call INSIDE an open
+ * transaction. It does NOT catch someone putting {@code @Transactional} back on {@code execute}: a unit test
+ * calls the object directly so there is no Spring proxy, and that annotation is completely inert here. The guard
+ * for that case is still the code reader -- see the Javadoc of the use case itself.
  */
 class CreatePaymentCheckoutUrlUseCaseTests {
 
@@ -133,13 +133,14 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     /**
-     * Mặt trái của "commit trước rồi mới gọi cổng": nếu cổng thiếu cấu hình thì lời gọi chắc chắn
-     * chết, và dòng PENDING vừa commit ở lại vĩnh viễn -- hủy đơn phải hỏi cổng nên hỏng theo, phát
-     * link mới cũng vậy, còn expireIfOverdue từ chối đóng đơn khi còn lần thử treo. Đơn kẹt PENDING
-     * mãi mãi và trường không đặt được đơn đăng ký nào khác.
+     * The flip side of "commit first, then call the gateway": if the gateway is not configured the call is bound
+     * to fail, and the PENDING row that was just committed stays forever -- cancelling the order has to ask the
+     * gateway and so fails too, issuing a new link does the same, and expireIfOverdue refuses to close the order
+     * while an attempt is pending. The order is stuck PENDING for good and the school cannot place any other
+     * subscription order.
      *
-     * <p>Nhánh NOT_FOUND không cứu được ca này vì nó cần cổng TRẢ LỜI được. Nên phải chặn TRƯỚC khi
-     * ghi, và test này khoá đúng điều đó: không có dòng nào được lưu.
+     * <p>The NOT_FOUND branch cannot save this case because it needs the gateway to ANSWER. So the check must come
+     * BEFORE the write, and this test locks exactly that: no row is saved.
      */
     @Test
     void should_refuse_before_writing_anything_when_the_gateway_is_not_configured() {
@@ -147,7 +148,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa được cấu hình");
+            .hasMessageContaining("is not configured");
 
         verify(paymentRecordRepository, never()).save(any());
         verify(paymentProcessPort, never()).createPaymentLink(any());
@@ -261,15 +262,15 @@ class CreatePaymentCheckoutUrlUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("thử lại sau vài phút");
+            .hasMessageContaining("try again in a few minutes");
 
         assertThat(justOpened.getStatus()).isEqualTo(PaymentStatus.PENDING);
         verify(paymentProcessPort, never()).createPaymentLink(any());
     }
 
     /**
-     * Cổng nói đã thu tiền cho lần thử đang treo: KHÔNG được phát thêm link nào. Phát nữa là hai phiên
-     * cùng sống trên một đơn, tức mời trường trả lần thứ hai.
+     * The gateway says the money was collected for the pending attempt: NO further link may be issued. Issuing
+     * another would put two sessions alive on one order, i.e. invite the school to pay a second time.
      */
     @Test
     void should_refuse_to_issue_a_second_link_when_the_gateway_says_the_attempt_is_paid() {
@@ -279,7 +280,7 @@ class CreatePaymentCheckoutUrlUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CreatePaymentCheckoutUrlCommand(ORDER_ID, PaymentProvider.PAYOS)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã được thanh toán");
+            .hasMessageContaining("already been paid");
 
         verify(paymentProcessPort, never()).createPaymentLink(any());
     }
@@ -353,8 +354,8 @@ class CreatePaymentCheckoutUrlUseCaseTests {
     }
 
     private static PaymentRecord existingAttempt() {
-        // Mặc định là lần thử ĐÃ QUA ân hạn: phần lớn phép kiểm dưới đây nói về hành vi ở trạng thái
-        // ổn định, không phải về cửa sổ vài phút ngay sau lúc mở lần thử.
+        // Default is an attempt that is PAST the grace period: most of the checks below are about steady-state
+        // behaviour, not about the few-minute window right after an attempt is opened.
         return existingAttempt(Instant.now().minus(10, ChronoUnit.MINUTES));
     }
 

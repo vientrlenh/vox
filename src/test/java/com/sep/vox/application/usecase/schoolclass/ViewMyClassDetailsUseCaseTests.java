@@ -93,7 +93,7 @@ class ViewMyClassDetailsUseCaseTests {
             () -> useCase.execute(new ViewMyClassDetailsQuery(classId))
         );
 
-        assertThat(exception.getMessage()).isEqualTo("Không tìm thấy lớp học");
+        assertThat(exception.getMessage()).isEqualTo("Class not found");
         verify(schoolClassRepository, never()).findById(classId);
     }
 
@@ -107,7 +107,7 @@ class ViewMyClassDetailsUseCaseTests {
             () -> useCase.execute(new ViewMyClassDetailsQuery(classId))
         );
 
-        assertThat(exception.getMessage()).isEqualTo("Không tìm thấy lớp học");
+        assertThat(exception.getMessage()).isEqualTo("Class not found");
     }
 
     @Test

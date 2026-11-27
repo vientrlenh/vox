@@ -40,7 +40,7 @@ public class DeleteQuestionBankUseCase implements IUseCase<DeleteQuestionBankCom
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         QuestionBank questionBank = questionBankRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         questionBankManageAccessService.requireManageAccess(questionBank, currentUserId);
 

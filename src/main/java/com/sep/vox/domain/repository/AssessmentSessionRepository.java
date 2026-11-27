@@ -38,9 +38,9 @@ public interface AssessmentSessionRepository {
     void deleteById(UUID id);
 
     /**
-     * Xoá mềm: đánh dấu {@code DELETED} kèm thời điểm và lý do, giữ nguyên toàn bộ dữ liệu bài làm.
+     * Soft delete: marks {@code DELETED} with a timestamp and reason, keeping all of the answer data.
      *
-     * @return 1 nếu vừa xoá, 0 nếu phiên đã bị xoá từ trước (idempotent).
+     * @return 1 if just deleted, 0 if the session was already deleted earlier (idempotent).
      */
     int softDelete(UUID id, Instant deletedAt, String reason);
     /**
@@ -54,16 +54,16 @@ public interface AssessmentSessionRepository {
     boolean tryTransitionStatus(UUID sessionId, AssessmentSessionStatus from, AssessmentSessionStatus to);
 
     /**
-     * Chốt loại stream cho phiên thi nếu chưa chốt.
+     * Fixes the stream type of the assessment session if not yet fixed.
      *
-     * @return 1 nếu ghi được, 0 nếu phiên thi đã chốt loại stream từ trước.
+     * @return 1 if written, 0 if the assessment session had already fixed its stream type.
      */
     int lockChosenStreamType(UUID id, AssessmentRequiredStreamType chosenStreamType);
 
     /**
-     * Ghi checkpoint đồng hồ đếm ngược, chỉ khi giá trị mới nhỏ hơn giá trị đang có.
+     * Writes the countdown clock checkpoint, only when the new value is smaller than the current one.
      *
-     * @return 1 nếu ghi được, 0 nếu bị từ chối vì không nhỏ hơn.
+     * @return 1 if written, 0 if rejected because it is not smaller.
      */
     int checkpointRemainingSeconds(UUID id, int remainingSeconds);
 }

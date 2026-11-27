@@ -5,10 +5,10 @@ import java.util.UUID;
 import jakarta.validation.constraints.Size;
 
 public record UpdateQuestionBankRequest(
-    @Size(max = 255, message = "Tên ngân hàng câu hỏi không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Question bank name must not exceed 255 characters")
     String name,
 
-    @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Description must not exceed 2048 characters")
     String description
 ) {
 

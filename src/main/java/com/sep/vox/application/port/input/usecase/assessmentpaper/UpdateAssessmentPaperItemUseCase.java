@@ -71,9 +71,9 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaperItem item = findItemOfPaper(input);
         AssessmentPaper paper = assessmentPaperRepository.findById(item.getPaperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         requirePaperEditable(assessment, paper);
         assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
 
@@ -89,9 +89,9 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
 
     private AssessmentPaperItem findItemOfPaper(UpdateAssessmentPaperItemCommand input) {
         AssessmentPaperItem item = assessmentPaperItemRepository.findById(input.itemId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found in the assessment paper"));
         if (!item.getPaperId().equals(input.paperId())) {
-            throw new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi");
+            throw new ResourceNotFoundException("Question not found in the assessment paper");
         }
         return item;
     }
@@ -100,10 +100,10 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         // A class test locks its paper with a single DRAFT -> LOCKED step and reopens it freely, so LOCKED there is
         // a normal working state; only in a centralized assessment does it mean "finalized, no more edits".
         if (assessment.getKind() == AssessmentKind.CENTRALIZED && paper.getStatus() == AssessmentPaperStatus.LOCKED) {
-            throw new IllegalArgumentException("Đề thi đã bị khoá, không thể sửa câu hỏi");
+            throw new IllegalArgumentException("The paper is locked, its questions cannot be edited");
         }
         if (assessment.getStatus() == AssessmentStatus.IN_PROGRESS) {
-            throw new IllegalArgumentException("Không thể sửa câu hỏi khi bài kiểm tra đang diễn ra");
+            throw new IllegalArgumentException("Questions cannot be edited while the assessment is in progress");
         }
     }
 
@@ -119,7 +119,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             : assessmentBlueprintSlotRepository.findById(item.getBlueprintSlotId()).orElse(null);
         if (slot != null && slot.getSlotType() == AssessmentBlueprintSlotType.FIXED) {
             throw new IllegalArgumentException(
-                "Ô câu hỏi này cố định theo blueprint, không thể đổi câu hỏi trực tiếp - phải qua đổi version blueprint");
+                "This question slot is fixed by the blueprint, its question cannot be changed directly: change the blueprint version instead");
         }
         return slot;
     }
@@ -133,10 +133,10 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         Question question = questionRepository.findAccessibleById(input.questionId(), currentUserId, currentSchoolId, false, false)
-            .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi này"));
+            .orElseThrow(() -> new ForbiddenException("You have no permission to use this question"));
         if ((assessment.getKind() == AssessmentKind.CENTRALIZED || slot != null)
                 && question.getStatus() != QuestionStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được gán câu hỏi đã PUBLISHED vào đề thi");
+            throw new IllegalArgumentException("Only a PUBLISHED question can be assigned to a paper");
         }
         if (slot != null && slot.getSlotType() == AssessmentBlueprintSlotType.SELECTION) {
             requireMatchesSelectionSpec(slot.getSelectionSpec(), question);
@@ -150,7 +150,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         if (!isOwner && !isSchoolShared) {
             Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
             if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
-                throw new ForbiddenException("Quyền READ_ONLY không được phép gán câu hỏi vào đề thi");
+                throw new ForbiddenException("The READ_ONLY permission does not allow assigning questions to a paper");
             }
         }
     }
@@ -160,7 +160,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             candidateDurationSeconds,
-            "Mã đề " + paper.getCode()
+            "Paper " + paper.getCode()
         );
     }
 
@@ -188,7 +188,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
     }
 
     /**
-     * Câu hỏi của bài trên lớp tự mở khoá khi đóng bài; kỳ thi tập trung do người quản lý tự mở.
+     * Questions of a class test unlock themselves when the test closes; for a centralized assessment the manager unlocks them.
      */
     private AssessmentSecurePoolReleaseMode releaseModeFor(Assessment assessment) {
         return assessment.getKind() == AssessmentKind.CLASS_TEST
@@ -197,12 +197,12 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
     }
 
     /**
-     * Ô SELECTION chỉ mô tả tiêu chí, nên câu được gán phải khớp tiêu chí đó. Picker ở client đã
-     * lọc sẵn, nhưng endpoint REST gọi thẳng được nên vẫn phải chặn ở đây.
+     * A SELECTION slot only describes criteria, so the assigned question must match them. The client-side picker
+     * already filters, but the REST endpoint can be called directly so it must still be blocked here.
      *
-     * <p>Chỉ kiểm được {@code questionType} và {@code topicId}: {@link com.sep.vox.domain.model.question.Question}
-     * không có difficulty/skillCode/targetBandLevel nên 3 tiêu chí còn lại chỉ mang tính tham khảo
-     * cho người ra đề.
+     * <p>Only {@code questionType} and {@code topicId} can be checked: {@link Question}
+     * has no difficulty/skillCode/targetBandLevel, so the other 3 criteria are only informational
+     * for the person authoring the paper.
      */
     private void requireMatchesSelectionSpec(QuestionSelectionSpec spec, Question question) {
         if (spec == null) {
@@ -210,10 +210,10 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         }
         if (spec.questionType() != null && question.getType() != spec.questionType()) {
             throw new IllegalArgumentException(
-                "Ô câu hỏi này yêu cầu câu hỏi loại " + spec.questionType() + ", câu hỏi đã chọn không khớp tiêu chí");
+                "This question slot requires a question of type " + spec.questionType() + ", the selected question does not match the criteria");
         }
         if (spec.topicId() != null && !spec.topicId().equals(question.getQuestionTopicId())) {
-            throw new IllegalArgumentException("Câu hỏi đã chọn không thuộc chủ đề mà ô câu hỏi yêu cầu");
+            throw new IllegalArgumentException("The selected question does not belong to the topic required by the question slot");
         }
     }
 
@@ -234,8 +234,8 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             }
             questionRepository.findById(candidateItem.getQuestionId()).ifPresent(questions::add);
         }
-        // totalSeconds (đã gồm thời lượng phát AUDIO/VIDEO) vì đây là thước đo ĐỘ DÀI so với gói --
-        // xem PaperTimeCalculator để rõ vì sao ước tính CHI PHÍ lại dùng số khác.
+        // totalSeconds (including AUDIO/VIDEO playback time) because this is the measure of LENGTH against the plan --
+        // see PaperTimeCalculator for why the COST estimate uses a different number.
         Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(questionAssetRepository
             .findByQuestionIdIn(questions.stream().map(q -> q.getId()).distinct().toList()));
         return PaperTimeCalculator.breakdownOf(questions, assetByQuestionId).totalSeconds();

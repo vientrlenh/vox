@@ -57,7 +57,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
         }
 
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of the assessment schedule not found"));
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         requireAttendanceAccess(assessment, schedule, currentUserId);
@@ -75,16 +75,16 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
 
     private AssessmentSchedule requireAttendableSchedule(UUID scheduleId) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (schedule.getStatus() != null && !schedule.getStatus().allowsAttendance()) {
-            throw new IllegalArgumentException("Không thể điểm danh ca thi đã bị huỷ, dời hoặc xoá");
+            throw new IllegalArgumentException("Attendance cannot be marked for an assessment schedule that was cancelled, moved or deleted");
         }
         return schedule;
     }
 
     private void requireAttendanceAccess(Assessment assessment, AssessmentSchedule schedule, UUID currentUserId) {
         if (!hasAttendanceAccess(assessment, schedule.getId(), currentUserId)) {
-            throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
+            throw new ForbiddenException("You are not a proctor of this assessment schedule");
         }
     }
 
@@ -92,7 +92,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
         Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
         Instant windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
-            throw new IllegalArgumentException("Chỉ được điểm danh trong khoảng 30 phút trước giờ bắt đầu đến khi kết thúc ca thi");
+            throw new IllegalArgumentException("Attendance can only be marked from 30 minutes before the start until the assessment schedule ends");
         }
     }
 
@@ -101,7 +101,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
         Set<UUID> absentIds = new HashSet<>(input.candidateIds() == null ? List.<UUID>of() : input.candidateIds());
         Set<UUID> scheduleCandidateIds = candidates.stream().map(candidate -> candidate.getId()).collect(Collectors.toSet());
         if (!scheduleCandidateIds.containsAll(absentIds)) {
-            throw new IllegalArgumentException("Danh sách thí sinh điểm danh không hợp lệ");
+            throw new IllegalArgumentException("The list of candidates to mark is invalid");
         }
         return absentIds;
     }
@@ -134,8 +134,8 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
         if (assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, currentUserId)) {
             return true;
         }
-        // CHAIR của bài kiểm tra cũng điểm danh được — đồng bộ với mọi chỗ authorize khác của bài
-        // trên lớp, nơi giáo viên chủ bài là CHAIR chứ không nhất thiết là giám thị của từng ca.
+        // The CHAIR of the assessment can also mark attendance -- consistent with every other authorization point of a
+        // class test, where the teacher who owns the test is the CHAIR, not necessarily the proctor of each schedule.
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return true;
         }

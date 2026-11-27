@@ -196,7 +196,7 @@ class UpdateAssessmentStatusPublishReadinessTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "PUBLISH_RESULTS", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("RELEASED hoặc INVALID");
+            .hasMessageContaining("neither RELEASED nor INVALID");
     }
 
     private Assessment closedAssessment() {

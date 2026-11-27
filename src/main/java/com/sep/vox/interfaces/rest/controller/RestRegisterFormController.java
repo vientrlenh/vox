@@ -34,7 +34,7 @@ public class RestRegisterFormController {
     public ResponseEntity<ApiResponse<Object>> approve(@PathVariable("id") UUID id, @Valid @RequestBody ApproveRegisterFormRequest request) {
         ApproveRegisterFormCommand command = ApproveRegisterFormRequest.toCommand(id, request);
         approveRegisterFormUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Đơn đăng ký đã được phê duyệt");
+        ApiResponse<Object> response = ApiResponse.success("Registration form approved");
         return ResponseEntity.ok(response);
     }
 
@@ -44,7 +44,7 @@ public class RestRegisterFormController {
     public ResponseEntity<ApiResponse<Object>> reject(@PathVariable("id") UUID id, @Valid @RequestBody RejectRegisterFormRequest request) {
         RejectRegisterFormCommand command = RejectRegisterFormRequest.toCommand(id, request);
         rejectRegisterFormUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Đơn đăng ký đã từ chối thành công");
+        ApiResponse<Object> response = ApiResponse.success("Registration form rejected successfully");
         return ResponseEntity.ok(response);
     }
 }

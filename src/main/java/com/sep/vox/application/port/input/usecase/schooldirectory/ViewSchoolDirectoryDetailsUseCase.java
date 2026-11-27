@@ -21,7 +21,7 @@ public class ViewSchoolDirectoryDetailsUseCase implements IUseCase<ViewSchoolDir
     @Override
     @Transactional(readOnly = true)
     public SchoolDirectoryDto execute(ViewSchoolDirectoryDetailsQuery input) {
-        SchoolDirectory directory = schoolDirectoryRepository.findById(input.id()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+        SchoolDirectory directory = schoolDirectoryRepository.findById(input.id()).orElseThrow(() -> new ResourceNotFoundException("The requested school directory entry was not found"));
         return SchoolDirectoryDtoMapper.toSchoolDirectoryDto(directory);
     }
     

@@ -46,7 +46,7 @@ public class QuestionAssetAnalysisRequestPublisher {
         try {
             externalEventPublisherPort.publish(event);
         } catch (Exception ex) {
-            log.warn("Không thể publish yêu cầu phân tích asset questionAssetId={}", asset.getId(), ex);
+            log.warn("Cannot publish the asset analysis request questionAssetId={}", asset.getId(), ex);
         }
     }
 

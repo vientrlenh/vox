@@ -6,8 +6,8 @@ import java.util.UUID;
 
 /**
  * @param source     {@code blueprint} | {@code copy} | {@code questions}.
- * @param sections   chỉ dùng khi {@code source = questions} (soạn câu hỏi trực tiếp — riêng bài
- *                   kiểm tra trên lớp).
+ * @param sections   only used when {@code source = questions} (composing questions directly -- for
+ *                   class tests only).
  */
 public record CreateAssessmentPaperCommand(
     UUID assessmentId,

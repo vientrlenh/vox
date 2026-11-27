@@ -36,12 +36,11 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Thêm nhiều người dùng vào một lớp học trong một lần gọi.
+ * Adds several users to a class in a single call.
  *
- * <p>Bối cảnh (người gọi, trường học, lớp học) chỉ được kiểm tra một lần và lỗi ở bước này làm
- * hỏng cả request. Ngược lại, lỗi của từng người dùng (không tồn tại, không hoạt động, khác
- * trường, đã ở trong lớp) chỉ loại người đó ra và được trả về trong danh sách {@code failed} —
- * những người hợp lệ vẫn được thêm.
+ * <p>The context (caller, school, class) is checked only once, and an error at that step fails the whole
+ * request. In contrast, a per-user error (does not exist, not active, different school, already in the class)
+ * only drops that user and is returned in the {@code failed} list -- the valid users are still added.
  */
 @Service
 @RequiredArgsConstructor
@@ -130,7 +129,7 @@ public class BulkCreateSchoolClassUsersUseCase
             schoolClassUserRepository.saveAll(toSave);
         } catch (DataConflictException e) {
             // Race-condition guard: another request just added the same member and hit the unique index.
-            throw new ResourceDuplicatedException("Một số người dùng đã thuộc lớp học");
+            throw new ResourceDuplicatedException("Some users already belong to the class");
         }
     }
 
@@ -154,78 +153,78 @@ public class BulkCreateSchoolClassUsersUseCase
             UUID schoolId) {
         User targetUser = usersById.get(userId);
         if (targetUser == null) {
-            return "Không tìm thấy người dùng";
+            return "User not found";
         }
         if (!targetUser.canBeAssignedToSchoolClass()) {
-            return "Người dùng đã bị khoá hoặc vô hiệu hoá";
+            return "The user has been locked or deactivated";
         }
         if (!Objects.equals(schoolIdsByUserId.get(userId), schoolId)) {
-            return "Người dùng không thuộc trường hiện tại";
+            return "The user does not belong to the current school";
         }
         SchoolClassUser existing = membershipsByUserId.get(userId);
         if (existing != null && existing.isActive()) {
-            return "Người dùng đã thuộc lớp học";
+            return "The user already belongs to the class";
         }
         return null;
     }
 
     private List<UUID> validateCommand(BulkCreateSchoolClassUsersCommand input) {
         if (input.schoolId() == null) {
-            throw new IllegalArgumentException("Trường học không được để trống");
+            throw new IllegalArgumentException("The school must not be empty");
         }
         if (input.classId() == null) {
-            throw new IllegalArgumentException("Lớp học không được để trống");
+            throw new IllegalArgumentException("The class must not be empty");
         }
         if (input.userIds() == null || input.userIds().isEmpty()) {
-            throw new IllegalArgumentException("Danh sách người dùng không được để trống");
+            throw new IllegalArgumentException("The user list must not be empty");
         }
 
         Set<UUID> distinctUserIds = input.userIds().stream()
             .filter(Objects::nonNull)
             .collect(Collectors.toCollection(LinkedHashSet::new));
         if (distinctUserIds.isEmpty()) {
-            throw new IllegalArgumentException("Danh sách người dùng không được để trống");
+            throw new IllegalArgumentException("The user list must not be empty");
         }
         return List.copyOf(distinctUserIds);
     }
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("The current user is not active");
         }
         return user;
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("The current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
         if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
-            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
+            throw new IllegalArgumentException("The school does not match the current user");
         }
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("The school is not active");
         }
     }
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
         SchoolClass schoolClass = schoolClassRepository.findById(classId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new ResourceNotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Class not found");
         }
         if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
-            throw new IllegalArgumentException("Lớp học không hoạt động");
+            throw new IllegalArgumentException("The class is not active");
         }
         return schoolClass;
     }

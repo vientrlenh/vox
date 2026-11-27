@@ -19,19 +19,19 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
     Optional<SchoolSubscriptionJpaEntity> findFirstBySchoolIdAndStatus(UUID schoolId, String status);
 
     /**
-     * Kỳ thuê bao ĐANG CÓ HIỆU LỰC tại {@code at} -- lọc theo NGÀY chứ không chỉ theo status.
+     * The subscription period IN FORCE at {@code at} -- filters by DATE and not only by status.
      *
-     * <p>Bắt buộc phải lọc theo ngày kể từ khi cho phép gia hạn sớm: lúc đó trường có HAI dòng cùng
-     * ACTIVE, một dòng đang chạy và một dòng đã trả tiền nhưng chỉ bắt đầu khi dòng kia hết hạn.
-     * {@code findFirstBySchoolIdAndStatus} sẽ trả về một trong hai một cách tùy ý, và mọi thứ đọc từ
-     * nó -- hạn mức, guard kỳ thi, trừ tiêu dùng -- sẽ bám vào nhầm kỳ.
+     * <p>Filtering by date is mandatory since early renewal was allowed: then a school has TWO rows both
+     * ACTIVE, one running and one already paid for but only starting when the other expires.
+     * {@code findFirstBySchoolIdAndStatus} would return one of the two arbitrarily, and everything read from
+     * it -- quota, assessment guard, spend deduction -- would attach to the wrong period.
      *
-     * <p>Cũng vá luôn khe hở của SubscriptionExpiryJob: job chạy mỗi giờ nên ngay sau thời điểm hết
-     * hạn vẫn còn một quãng dòng cũ mang status ACTIVE. Lọc theo ngày thì quãng đó không tồn tại --
-     * cùng lý do SubscriptionPeriodGuardService đã cố ý so thẳng start_date/end_date.
+     * <p>It also closes a gap in SubscriptionExpiryJob: the job runs every hour, so right after the expiry time
+     * there is still a stretch where the old row has status ACTIVE. With a date filter that stretch does not exist --
+     * the same reason SubscriptionPeriodGuardService deliberately compares start_date/end_date directly.
      *
-     * <p>ORDER BY start_date DESC: nếu vì lỗi dữ liệu mà có hai dòng cùng phủ {@code at} thì lấy
-     * dòng mới nhất, thay vì để thứ tự phụ thuộc vào cách Postgres trả về.
+     * <p>ORDER BY start_date DESC: if a data error makes two rows both cover {@code at}, take the
+     * newest, instead of letting the order depend on how Postgres returns rows.
      */
     @Query("""
         SELECT s FROM SchoolSubscriptionJpaEntity s
@@ -45,10 +45,10 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         @Param("schoolId") UUID schoolId, @Param("at") Instant at);
 
     /**
-     * Kỳ có endDate xa nhất còn chưa kết thúc -- mốc để một lần gia hạn mới nối tiếp vào.
+     * The period with the farthest endDate that has not yet ended -- the anchor for a new renewal to continue from.
      *
-     * <p>Lấy theo endDate lớn nhất chứ không phải kỳ đang chạy: trường gia hạn hai lần liên tiếp thì
-     * lần thứ hai phải nối sau lần thứ nhất, không phải chồng lên nó.
+     * <p>Takes the largest endDate rather than the running period: a school renewing twice in a row must have the
+     * second renewal follow the first, not overlap it.
      */
     @Query("""
         SELECT s FROM SchoolSubscriptionJpaEntity s
@@ -61,11 +61,11 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         @Param("schoolId") UUID schoolId, @Param("at") Instant at);
 
     /**
-     * Kỳ gần đây nhất của trường, KHÔNG lọc theo trạng thái hay ngày -- để biết trường đang/từng
-     * dùng gói nào mà đề xuất gia hạn.
+     * The most recent period of the school, with NO filter by status or date -- to know which plan the school is/was
+     * using in order to propose a renewal.
      *
-     * <p>Phải nhận cả kỳ đã EXPIRED: gia hạn muộn (gói hết hạn tuần trước, giờ trường mới quay lại)
-     * là đường đi phổ biến nhất, và ở đó không còn kỳ nào ACTIVE để mà hỏi.
+     * <p>It must accept EXPIRED periods too: a late renewal (the plan expired last week and the school only came back now)
+     * is the most common path, and there is no ACTIVE period left to ask about.
      */
     @Query("""
         SELECT s FROM SchoolSubscriptionJpaEntity s
@@ -76,22 +76,22 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
     List<SchoolSubscriptionJpaEntity> findBySchoolId(UUID schoolId);
     boolean existsBySubscriptionPlanIdAndStatus(UUID subscriptionPlanId, String status);
 
-    // Bulk update bỏ qua persistence context nên KHÔNG tự tăng cột @Version — phải tăng tay
-    // (s.version = s.version + 1) để bất kỳ bản ghi nào đang được load ở nơi khác (vd
-    // CancelSubscriptionUseCase) mà save() sau khi job này chạy sẽ bị Hibernate phát hiện lệch
-    // version và ném OptimisticLockException, thay vì âm thầm ghi đè EXPIRED ngược lại ACTIVE.
+    // A bulk update bypasses the persistence context so it does NOT increment the @Version column on its own -- it must be incremented by hand
+    // (s.version = s.version + 1) so that any record loaded elsewhere (e.g.
+    // CancelSubscriptionUseCase) and then save()d after this job runs is detected by Hibernate as a
+    // version mismatch and throws OptimisticLockException, instead of silently overwriting EXPIRED back to ACTIVE.
     //
-    // Hết hạn áp cho CẢ SUSPENDED, không riêng ACTIVE. Đình chỉ là cắt quyền dùng trong phần CÒN LẠI
-    // của một kỳ đã trả tiền; kỳ đó kết thúc thì không còn gì để đình chỉ nữa, và giữ nguyên trạng
-    // thái SUSPENDED là lẫn giữa "kỳ này từng bị đình chỉ" (lịch sử) với "trường đang bị chế tài"
-    // (trạng thái). Trước đây chỉ lọc ACTIVE nên dòng SUSPENDED không bao giờ rời trạng thái đó, mà
-    // CreateSubscriptionOrderUseCase lại soi TOÀN BỘ lịch sử -- một lần đình chỉ 3 ngày ở kỳ năm
-    // ngoái cũng cấm trường mua lại VĨNH VIỄN.
+    // Expiry applies to SUSPENDED too, not only ACTIVE. Suspension cuts off usage for the REMAINING part
+    // of a paid period; once that period ends there is nothing left to suspend, and keeping the SUSPENDED
+    // status would mix up "this period was once suspended" (history) with "the school is under sanction"
+    // (state). Before, only ACTIVE was filtered so a SUSPENDED row never left that state, while
+    // CreateSubscriptionOrderUseCase looks at the WHOLE history -- a 3-day suspension in last year's
+    // period would forbid the school from buying again FOREVER.
     //
-    // Hết hạn KHÔNG phải là gỡ đình chỉ: cột suspended_* giữ nguyên, sổ school_subscription_events
-    // giữ nguyên, và trường không lấy lại quyền dùng gì cả (quyền đến từ một kỳ ACTIVE còn hiệu lực,
-    // mà EXPIRED thì không phải). Nó chỉ trả lại quyền MUA kỳ mới. Muốn cấm mua vĩnh viễn thì phải là
-    // một cờ cấp TRƯỜNG, không phải một dòng đăng ký nằm mãi ở SUSPENDED.
+    // Expiring is NOT lifting the suspension: the suspended_* columns stay as they are, the school_subscription_events
+    // ledger stays as it is, and the school regains no right to use anything (the right comes from an ACTIVE period
+    // still in force, and EXPIRED is not one). It only gives back the right to BUY a new period. To forbid buying permanently it must be
+    // a SCHOOL-level flag, not a subscription row sitting forever in SUSPENDED.
     @Modifying
     @Query("""
         UPDATE SchoolSubscriptionJpaEntity s
@@ -116,20 +116,20 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         Pageable pageable
     );
 
-    // CÁC NATIVE QUERY DƯỚI ĐÂY đã theo tên bảng/cột ĐÍCH của V2, giống hệt các @Column của
+    // THE NATIVE QUERIES BELOW follow the TARGET table/column names of V2, exactly like the @Column of
     // SchoolSubscriptionQuotaRecordJpaEntity / SchoolSubscriptionQuotaUserAllocationJpaEntity. Native
-    // query không được Hibernate soi lúc khởi động nên sai tên ở đây chỉ nổ vào đúng request đầu tiên
-    // chạm tới -- mà findActiveSubscriptionIdForUser thì chạy ở MỌI lượt nói luyện tập.
+    // queries are not checked by Hibernate at startup, so a wrong name here only blows up on the first request
+    // that touches it -- and findActiveSubscriptionIdForUser runs on EVERY practice speaking turn.
     //
-    // Khoảng hiệu lực so bằng CURRENT_TIMESTAMP, KHÔNG phải CURRENT_DATE. V2 (mục 19) đã đổi
-    // start_date/end_date sang timestamptz, mà Postgres nâng CURRENT_DATE thành nửa đêm ĐẦU ngày --
-    // nên "CURRENT_DATE BETWEEN start AND end" trả false suốt phần còn lại của ngày kích hoạt: trường
-    // vừa trả tiền lúc 15h thì tới nửa đêm mới luyện nói được. Đầu kia thì ngược lại, kỳ đã hết hạn
-    // lúc 15h vẫn được tính sống hết ngày hôm đó.
+    // The validity range is compared with CURRENT_TIMESTAMP, NOT CURRENT_DATE. V2 (section 19) changed
+    // start_date/end_date to timestamptz, and Postgres promotes CURRENT_DATE to the START of the day's midnight --
+    // so "CURRENT_DATE BETWEEN start AND end" returns false for the rest of the activation day: a school
+    // that just paid at 3pm could only practice speaking after midnight. The other end is the opposite: a period that expired
+    // at 3pm would still be counted alive for the rest of that day.
     //
-    // Nửa mở (start <= now < end) để khớp ĐÚNG findInForceBySchoolId ở trên. Hai vế này là hai cửa
-    // song song cho cùng một câu hỏi "kỳ nào đang hiệu lực" -- đường thi hỏi bằng JPQL, đường luyện
-    // tập hỏi bằng native query -- nên chúng lệch nhau là hệ thống tự mâu thuẫn với chính mình.
+    // Half-open (start <= now < end) to match EXACTLY findInForceBySchoolId above. The two are two
+    // parallel doors to the same question "which period is in force" -- the assessment path asks with JPQL, the practice
+    // path asks with a native query -- so if they disagree the system contradicts itself.
     @Query(value = """
         SELECT subscription.id
         FROM school_users school_user
@@ -145,24 +145,24 @@ public interface SpringDataSchoolSubscriptionRepository extends JpaRepository<Sc
         """, nativeQuery = true)
     Optional<UUID> findActiveSubscriptionIdForUser(@Param("userId") UUID userId);
 
-    // Phải LEFT JOIN thêm school_subscription_quota_user_allocations và lấy LEAST(...): ConsumeQuotaService
-    // trừ CẢ hạn mức trường LẪN hạn mức cá nhân (khi có allocation row cho user) cho PRACTICE, nên
-    // cửa chặn ở BuildPracticePaperUseCase phải soi đúng 2 thước đó -- trước đây chỉ soi hạn mức
-    // trường, học sinh hết hạn mức cá nhân nhưng trường còn dư sẽ lọt cửa, dựng đề xong mới chết ở
-    // lượt nói đầu. COALESCE về 0 khi user CHƯA có allocation row: trường phải chủ động phân hạn mức
-    // riêng (thủ công hoặc "Chia đều tự động") thì học sinh mới luyện tập được -- chưa phân nghĩa là
-    // chặn hẳn, không còn rơi về pool chung của trường như trước. Không được LEAST thẳng với NULL,
-    // Postgres trả NULL cho cả biểu thức.
+    // It must also LEFT JOIN school_subscription_quota_user_allocations and take LEAST(...): ConsumeQuotaService
+    // deducts BOTH the school quota AND the personal quota (when an allocation row exists for the user) for PRACTICE, so
+    // the gate in BuildPracticePaperUseCase must check exactly those 2 measures -- before, it only checked the school
+    // quota, so a student who ran out of personal quota while the school still had some would slip through and the paper would be built, only to die at the
+    // first speaking turn. COALESCE to 0 when the user has NO allocation row yet: the school must proactively allocate
+    // a separate quota (manually or "Distribute evenly automatically") before the student can practice -- not allocated means
+    // fully blocked, no longer falling back to the school's shared pool as before. LEAST must not be taken directly with NULL,
+    // Postgres returns NULL for the whole expression.
     //
-    // Vế của TRƯỜNG cộng thêm số dư ví tự nạp, vế CÁ NHÂN thì không: từ khi ConsumeQuotaService trừ
-    // phần vượt hạn mức sang ví tự nạp, "trường còn trả được bao nhiêu" = hạn mức còn lại + số dư,
-    // nên soi mỗi hạn mức sẽ chặn học sinh của một trường vẫn còn tiền. Còn hạn mức cá nhân là TRẦN
-    // CHI nội bộ chứ không phải túi tiền -- cộng tiền của trường vào đó là xóa sạch chính cái trần
-    // quản trị trường vừa đặt. Xem ClassTestTokenQuotaGuardService, cửa chặn song song bên đường thi.
+    // The SCHOOL side adds the self-funded wallet balance, the PERSONAL side does not: since ConsumeQuotaService charges
+    // the part over the quota to the self-funded wallet, "how much the school can still pay" = remaining quota + balance,
+    // so checking the quota alone would block students of a school that still has money. The personal quota is an internal
+    // SPENDING CEILING and not a wallet -- adding the school's money to it would wipe out the very ceiling
+    // the school admin just set. See ClassTestTokenQuotaGuardService, the parallel gate on the assessment path.
     //
-    // GREATEST(..., 0) kẹp số dư âm về 0: âm là NỢ, đã bị SchoolSubscriptionDebtGuardService chặn ở
-    // một cửa riêng; cộng thẳng số âm vào đây sẽ trừ lần thứ hai vào hạn mức còn lại của trường.
-    // LATERAL để biểu thức đó chỉ được viết MỘT lần dù LEAST cần nó ở cả hai vế.
+    // GREATEST(..., 0) clamps a negative balance to 0: negative is DEBT, already blocked by SchoolSubscriptionDebtGuardService at
+    // a separate gate; adding the negative directly here would deduct a second time from the school's remaining quota.
+    // LATERAL so that expression is written only ONCE even though LEAST needs it on both sides.
     @Query(value = """
         SELECT LEAST(
             school_funds.amount_vnd,

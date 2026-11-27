@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
  * {@link com.sep.vox.application.port.input.command.order.CreateSubscriptionOrderCommand}.
  */
 public record CreateSubscriptionOrderRequest(
-    @NotNull(message = "Gói đăng ký muốn mua không được để trống")
+    @NotNull(message = "Subscription plan to buy must not be blank")
     UUID subscriptionPlanId
 ) {
 }

@@ -34,7 +34,7 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
 
     private FrameworkVersion getVersion(UpdateFrameworkVersionCommand input) {
         return frameworkVersionRepository.findByIdForUpdate(input.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
     }
 
     private FrameworkVersion updateVersion(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
@@ -50,14 +50,14 @@ public class UpdateFrameworkVersionUseCase implements IUseCase<UpdateFrameworkVe
 
     private void checkValidRequest(UpdateFrameworkVersionCommand input, FrameworkVersion version) {
         if (!version.getFrameworkId().equals(input.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc framework này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể cập nhật phiên bản framework ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Only a framework version in DRAFT status can be updated");
 
         Instant effectiveTo = effectiveTo(input, version);
         if (effectiveTo != null && !effectiveTo.isAfter(input.effectiveFrom()))
-            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
+            throw new IllegalArgumentException("The expiry date must be after the effective date");
     }
 
     private Instant effectiveTo(UpdateFrameworkVersionCommand input, FrameworkVersion version) {

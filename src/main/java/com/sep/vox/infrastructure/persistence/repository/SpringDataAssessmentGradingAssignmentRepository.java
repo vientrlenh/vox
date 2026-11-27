@@ -20,21 +20,21 @@ public interface SpringDataAssessmentGradingAssignmentRepository
         extends JpaRepository<AssessmentGradingAssignmentJpaEntity, UUID> {
 
     /**
-     * Đọc kèm khoá ghi cho các luồng SỬA phân công.
+     * Read with a write lock for the flows that MODIFY an assignment.
      *
-     * <p>Domain được map ra POJO detached nên {@code save} là {@code merge} ghi đè TOÀN
-     * BỘ cột — không có dirty checking để phát hiện ai đó vừa đổi dòng này. Khoá ở đây
-     * là thứ buộc hai luồng cùng sửa một phân công phải nối đuôi nhau, nhờ đó các kiểm
-     * tra kiểu {@code isCompleted()} đọc được trạng thái mới nhất thay vì ảnh chụp cũ.
+     * <p>The domain is mapped to a detached POJO, so {@code save} is a {@code merge} that overwrites ALL
+     * columns -- there is no dirty checking to detect that someone just changed this row. The lock here
+     * is what forces two flows editing the same assignment to queue up, so checks such as
+     * {@code isCompleted()} read the latest state instead of a stale snapshot.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT ga FROM AssessmentGradingAssignmentJpaEntity ga WHERE ga.id = :id")
     Optional<AssessmentGradingAssignmentJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 
     /**
-     * Dòng đang mở của một bài. Lọc bằng {@code active_result_id} chứ không bằng
-     * {@code candidate_result_id + status}: cột active chính là thứ unique index đang
-     * canh, nên hai chỗ luôn nói cùng một chuyện.
+     * The open row of a result. Filters by {@code active_result_id} rather than by
+     * {@code candidate_result_id + status}: the active column is exactly what the unique index
+     * guards, so the two places always say the same thing.
      */
     Optional<AssessmentGradingAssignmentJpaEntity> findByActiveResultId(UUID activeResultId);
 
@@ -44,7 +44,7 @@ public interface SpringDataAssessmentGradingAssignmentRepository
 
     List<AssessmentGradingAssignmentJpaEntity> findByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 
-    /** Đi thẳng vào {@code idx_grading_assignments_result} rồi lọc teacher trên vài dòng của bài. */
+    /** Goes straight into {@code idx_grading_assignments_result} and then filters the teacher on the few rows of the result. */
     boolean existsByCandidateResultIdAndTeacherId(UUID candidateResultId, UUID teacherId);
 
     List<AssessmentGradingAssignmentJpaEntity> findByAppealId(UUID appealId);
@@ -57,14 +57,14 @@ public interface SpringDataAssessmentGradingAssignmentRepository
     List<AssessmentGradingAssignmentJpaEntity> findOverdue(@Param("now") Instant now);
 
     /**
-     * Quá hạn TRONG một trường (và một kỳ thi nếu có). Thu hồi hàng loạt đi lối này
-     * thay vì {@link #findOverdue} + lọc ở Java: bản cũ quét toàn hệ thống rồi gọi
-     * access service từng dòng để đọc ra schoolId — 4N+1 query, và thời gian phản hồi
-     * của một trường phụ thuộc vào dữ liệu của các trường khác.
+     * Overdue WITHIN a school (and an assessment, if given). Bulk revocation goes this way
+     * instead of {@link #findOverdue} + filtering in Java: the old version scanned the whole system and then called the
+     * access service per row to read the schoolId -- 4N+1 queries, and the response time
+     * of one school depended on the data of other schools.
      *
-     * <p>{@code Pageable} ở đây là TRẦN của một lượt thu hồi, không phải phân trang cho
-     * UI: một cú bấm "Thu hồi toàn bộ" không được ôm cả trường vào một transaction ghi.
-     * Cũ nhất trước để lượt sau tiếp đúng chỗ lượt trước dừng.
+     * <p>{@code Pageable} here is the CAP of one revocation run, not pagination for the
+     * UI: one click on "Revoke all" must not pull a whole school into one write transaction.
+     * Oldest first so the next run continues exactly where the previous one stopped.
      */
     @Query("""
         SELECT ga FROM AssessmentGradingAssignmentJpaEntity ga
@@ -82,13 +82,13 @@ public interface SpringDataAssessmentGradingAssignmentRepository
         Pageable pageable);
 
     /**
-     * Sắp/đã tới hạn mà chưa nhắc lần nào — {@code reminded_at} là chốt chống trùng.
+     * Approaching or past due and not yet reminded even once -- {@code reminded_at} is the duplicate guard.
      *
-     * <p>Native + {@code FOR UPDATE SKIP LOCKED} vì {@code reminded_at} một mình chỉ
-     * chống trùng qua các LƯỢT chạy, không chống trùng giữa các INSTANCE: hai replica
-     * cùng đọc trước khi bên nào commit thì cả hai đều thấy {@code NULL} và cùng gửi
-     * mail. {@code SKIP LOCKED} cho chúng chia nhau các dòng khác nhau; {@code LIMIT}
-     * chặn một lượt chạy ôm cả nghìn dòng trong một transaction.
+     * <p>Native + {@code FOR UPDATE SKIP LOCKED} because {@code reminded_at} alone only
+     * prevents duplicates across RUNS, not across INSTANCES: two replicas
+     * both reading before either commits both see {@code NULL} and both send
+     * the mail. {@code SKIP LOCKED} lets them split different rows; {@code LIMIT}
+     * stops one run from taking thousands of rows in one transaction.
      */
     @Query(value = """
         SELECT * FROM assessment_grading_assignments

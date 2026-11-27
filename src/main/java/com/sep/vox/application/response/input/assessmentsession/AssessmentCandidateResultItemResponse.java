@@ -6,13 +6,13 @@ import java.util.UUID;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 
 /**
- * @param questionText đề bài của câu này, lấy thẳng từ {@code questions.question_text}.
- *                     Trước đây không có field này nên trang kết quả học sinh phải suy ra nội
- *                     dung câu hỏi từ {@code turns[].promptText} -- vừa đòi mở thẻ ra mới nạp
- *                     (đóng thì hiện "Không có nội dung câu hỏi." dù dữ liệu vẫn còn nguyên),
- *                     vừa lấy nhầm lời dẫn của AI ("You have 10 seconds to prepare...") thay vì
- *                     đề bài. Null khi paper item không trỏ tới câu hỏi nào, hoặc câu hỏi đã bị
- *                     xoá khỏi ngân hàng.
+ * @param questionText the prompt of this question, taken straight from {@code questions.question_text}.
+ *                     Before, this field did not exist so the student result page had to derive the question
+ *                     content from {@code turns[].promptText} -- which both required opening the card before loading
+ *                     (when closed it showed "No question content." even though the data was intact),
+ *                     and picked up the AI's lead-in ("You have 10 seconds to prepare...") instead of
+ *                     the prompt. Null when the paper item points to no question, or the question was
+ *                     removed from the bank.
  */
 public record AssessmentCandidateResultItemResponse(
     UUID paperItemId,
@@ -20,12 +20,12 @@ public record AssessmentCandidateResultItemResponse(
     UUID sectionId,
     String questionText,
     /**
-     * Tài nguyên đi kèm câu hỏi, {@code null} khi câu không có.
+     * The resource that comes with the question, {@code null} when the question has none.
      *
-     * <p>Cùng lý do với màn chấm: đọc lại bài mà không thấy tấm ảnh / không nghe lại được đoạn
-     * nghe thì không đối chiếu nổi câu trả lời với đề. Hiện cho CẢ giáo viên lẫn học sinh —
-     * trang này vốn đã trả {@code questionText}, nên asset không làm lộ thêm gì, và thí sinh
-     * thì vừa nhìn tấm ảnh đó xong trong phòng thi.
+     * <p>The same reason as the grading screen: reviewing a submission without seeing the image / being able to replay the
+     * listening passage makes it impossible to check the answer against the prompt. Shown to BOTH teachers and students --
+     * this page already returns {@code questionText}, so the asset reveals nothing extra, and the
+     * candidate has just looked at that very image in the exam room.
      */
     QuestionAssetDto asset,
     BigDecimal itemScore,

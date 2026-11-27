@@ -36,12 +36,12 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
 
         // Lock the school data (avoids a clash when someone is updating it)
         School school = schoolRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("No school found with the given ID."));
 
         requireActiveCurrentUser();
 
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học này đã bị vô hiệu hóa (xóa) từ trước rồi.");
+            throw new IllegalArgumentException("This school was already deactivated (deleted).");
         }
 
         rejectWhenSchoolHasActiveDependencies(school);
@@ -56,27 +56,27 @@ public class DeleteSchoolUseCase implements IUseCase<DeleteSchoolCommand, UUID> 
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản của bạn."));
+                .orElseThrow(() -> new UnauthorizedException("Your account was not found."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
     }
 
     private void rejectWhenSchoolHasActiveDependencies(School school) {
         boolean hasActiveRooms = schoolRoomRepository.existsBySchoolIdAndIsActive(school.getId(), true);
         if (hasActiveRooms) {
-            throw new IllegalArgumentException("Không thể xóa. Trường này vẫn còn Phòng học đang hoạt động.");
+            throw new IllegalArgumentException("Cannot delete. This school still has active rooms.");
         }
 
         boolean hasActiveGrades = schoolGradeRepository.existsBySchoolIdAndStatus(school.getId(), SchoolGradeStatus.ACTIVE.name());
         if (hasActiveGrades) {
-            throw new IllegalArgumentException("Không thể xóa. Trường này vẫn còn Khối/Năm học đang hoạt động.");
+            throw new IllegalArgumentException("Cannot delete. This school still has active grades/school years.");
         }
 
         boolean hasActiveClasses = schoolClassRepository.existsBySchoolIdAndStatus(school.getId(), SchoolClassStatus.ACTIVE.name());
         if (hasActiveClasses) {
-            throw new IllegalArgumentException("Không thể xóa. Trường này vẫn còn Lớp học đang hoạt động.");
+            throw new IllegalArgumentException("Cannot delete. This school still has active classes.");
         }
     }
 }

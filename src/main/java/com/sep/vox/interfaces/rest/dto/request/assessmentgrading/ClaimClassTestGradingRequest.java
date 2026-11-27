@@ -10,10 +10,10 @@ import com.sep.vox.application.port.input.command.assessmentgrading.ClaimClassTe
 import com.sep.vox.domain.model.assessment.GradingRoundType;
 
 public record ClaimClassTestGradingRequest(
-    @NotNull(message = "Vòng chấm là bắt buộc")
+    @NotNull(message = "Grading round is required")
     GradingRoundType roundType,
 
-    @NotEmpty(message = "Phải chọn ít nhất một bài để nhận chấm")
+    @NotEmpty(message = "At least one result must be selected to claim for grading")
     List<UUID> candidateResultIds
 ) {
 

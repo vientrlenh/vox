@@ -25,17 +25,17 @@ public final class ClassTestSectionWeightPolicy {
         long providedCount = sections.stream().filter(section -> section.weight() != null).count();
         if (providedCount == sections.size()) {
             List<BigDecimal> weights = sections.stream().map(command -> command.weight()).toList();
-            validateWeightSum(weights, "Tổng trọng số section phải bằng 1.00");
+            validateWeightSum(weights, "The total section weight must be 1.00");
             return weights;
         }
         return distributeEqualWeights(sections.size());
     }
 
-    // H.6.4: câu hỏi trong section class test PHẢI có weight tường minh (không auto-fill
-    // ở backend - nút "Chia trọng số tự động" là tính năng FE, backend chỉ validate).
+    // H.6.4: the questions in a class test section MUST have an explicit weight (the backend does not auto-fill
+    // them; the "Distribute weights automatically" button is a frontend feature, the backend only validates).
     public static List<BigDecimal> resolveQuestionWeights(List<ClassTestQuestionCommand> questions) {
         List<BigDecimal> weights = questions.stream().map(command -> command.weight()).toList();
-        validateWeightSum(weights, "Tổng trọng số câu hỏi trong phần phải bằng 1.00");
+        validateWeightSum(weights, "The total question weight within a section must be 1.00");
         return weights;
     }
 
@@ -46,12 +46,12 @@ public final class ClassTestSectionWeightPolicy {
                 throw new IllegalArgumentException(message);
             }
             if (weight.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("Trọng số section không được âm");
+                throw new IllegalArgumentException("A section weight must not be negative");
             }
             sum = sum.add(weight);
         }
         if (sum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalArgumentException(message + " (hiện tại " + sum + ")");
+            throw new IllegalArgumentException(message + " (currently " + sum + ")");
         }
     }
 

@@ -38,11 +38,11 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         RegisterForm registerForm = registerFormRepository.findById(command.registerFormId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested register form was not found"));
 
         int updatedRows = registerFormRepository.updateApprovedRegisterForm(command.registerFormId(), currentUserId);
         if (updatedRows == 0) {
-            throw new IllegalArgumentException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
+            throw new IllegalArgumentException("The register form is not pending or does not exist");
         }
 
         SchoolDirectory schoolDirectory = resolveSchoolDirectory(registerForm, command);
@@ -82,7 +82,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
 
     private SchoolDirectory verifyExistingSchoolDirectory(UUID schoolDirectoryId) {
         SchoolDirectory directory = schoolDirectoryRepository.findById(schoolDirectoryId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested school directory entry was not found"));
         if (!directory.isVerified()) {
             directory.verify();
             schoolDirectoryRepository.save(directory);
@@ -96,7 +96,7 @@ public class ApproveRegisterFormUseCase implements IUseCase<ApproveRegisterFormC
         ApproveRegisterFormCommand command
     ) {
         if (schoolDirectoryRepository.existsByCode(command.schoolCode())) {
-            throw new ResourceDuplicatedException("Danh mục trường với mã yêu cầu đã tồn tại");
+            throw new ResourceDuplicatedException("A school directory entry with the requested code already exists");
         }
         SchoolDirectory directory = SchoolDirectory.createByUserSubmitted(
             command.schoolCode(),

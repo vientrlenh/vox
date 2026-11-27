@@ -7,13 +7,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record SetUpPasswordRequest(
-    @NotNull(message = "Id người dùng không được để trống")
+    @NotNull(message = "User ID must not be blank")
     UUID userId,
 
-    @NotBlank(message = "Token không được để trống")
+    @NotBlank(message = "Token must not be blank")
     String token,
 
-    @NotBlank(message = "Mật khẩu không được để trống")
+    @NotBlank(message = "Password must not be blank")
     String password
 ) {
 

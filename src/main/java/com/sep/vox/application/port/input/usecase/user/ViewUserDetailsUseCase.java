@@ -20,7 +20,7 @@ public class ViewUserDetailsUseCase implements IUseCase<ViewUserDetailsQuery, Us
     @Override
     public UserDto execute(ViewUserDetailsQuery input) {
         User user = userRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return UserDtoMapper.toUserDto(user);
     }
     

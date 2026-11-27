@@ -15,14 +15,14 @@ import com.sep.vox.infrastructure.persistence.entity.school.SchoolBalanceEntryJp
 
 public interface SpringDataSchoolBalanceEntryRepository extends JpaRepository<SchoolBalanceEntryJpaEntity, UUID> {
 
-    // Hai bản gần như trùng nhau, khác đúng một dòng entryType. Cố ý KHÔNG gộp thành một câu với
-    // ":entryType IS NULL OR ..." -- tham số null trong JPQL phải bọc CAST để Postgres suy được kiểu,
-    // và quên CAST thì lỗi chỉ nổ lúc chạy, đúng ở nhánh "không lọc" là nhánh thường dùng nhất.
+    // The two versions are nearly identical, differing in exactly one entryType line. Intentionally NOT merged into one statement with
+    // ":entryType IS NULL OR ..." -- a null parameter in JPQL must be wrapped in CAST for Postgres to infer the type,
+    // and forgetting the CAST only fails at runtime, exactly in the "no filter" branch which is the most commonly used.
     //
-    // Khoá sắp xếp phụ theo id là BẮT BUỘC, không phải cho đẹp: một ca thi sinh nhiều bút toán trong
-    // cùng một Instant, và chỉ ORDER BY occurred_at thì thứ tự giữa chúng không xác định -- với phân
-    // trang, hậu quả là một dòng hiện hai lần ở hai trang còn một dòng khác biến mất. Id là uuidv7
-    // nên tăng theo thời gian: vừa ổn định, vừa không phá thứ tự thời gian.
+    // The secondary sort key by id is MANDATORY, not cosmetic: one assessment generates many entries within
+    // the same Instant, and ORDER BY occurred_at alone leaves the order among them undefined -- with pagination, the
+    // result is one row appearing twice on two pages while another row disappears. The id is a uuidv7 so it grows with time:
+    // both stable and not breaking the chronological order.
     @Query("""
         SELECT e FROM SchoolBalanceEntryJpaEntity e
         WHERE e.schoolId = :schoolId
@@ -49,8 +49,8 @@ public interface SpringDataSchoolBalanceEntryRepository extends JpaRepository<Sc
         @Param("to") Instant to,
         Pageable pageable);
 
-    // Khoảng NỬA MỞ [from, to) chứ không phải BETWEEN: BETWEEN inclusive hai đầu nên hai kỳ liền
-    // nhau (tháng 1 -> 31/01, tháng 2 -> 01/02) vẫn đếm trùng bút toán rơi đúng mốc giao.
+    // HALF-OPEN range [from, to) and not BETWEEN: BETWEEN is inclusive at both ends, so two consecutive
+    // periods (January -> 31/01, February -> 01/02) would still double-count entries that fall exactly on the boundary.
     @Query("""
         SELECT e FROM SchoolBalanceEntryJpaEntity e
         WHERE e.schoolId = :schoolId
@@ -64,7 +64,7 @@ public interface SpringDataSchoolBalanceEntryRepository extends JpaRepository<Sc
 
     boolean existsByOrderIdAndEntryType(UUID orderId, String entryType);
 
-    // COALESCE về 0: SUM trên tập rỗng trả NULL, để lọt ra ngoài thì mọi nơi gọi phải tự phòng null.
+    // COALESCE to 0: SUM over an empty set returns NULL, and if it leaked out every caller would have to guard against null itself.
     @Query("""
         SELECT COALESCE(SUM(e.amountVnd), 0) FROM SchoolBalanceEntryJpaEntity e
         WHERE e.schoolId = :schoolId

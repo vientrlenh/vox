@@ -21,14 +21,14 @@ public class OutboxPropertiesConfig {
         return () -> {
             Map<String, String> topics = properties.topics();
             if (topics.isEmpty()) {
-                throw new IllegalStateException("app.outbox.topics chưa được cấu hình -- outbox không publish được event nào");
+                throw new IllegalStateException("app.outbox.topics is not configured -- the outbox cannot publish any event");
             }
 
             List<String> missing = EventTypeConstant.all().stream()
                 .filter(eventType -> !topics.containsKey(eventType))
                 .toList();
             if (!missing.isEmpty()) {
-                throw new IllegalStateException("Thiếu app.outbox.topics cho eventType: " + missing);
+                throw new IllegalStateException("Missing app.outbox.topics for eventType: " + missing);
             }
 
             topics.forEach((eventType, topic) -> log.info("Outbox routing: {} -> {}", eventType, topic));

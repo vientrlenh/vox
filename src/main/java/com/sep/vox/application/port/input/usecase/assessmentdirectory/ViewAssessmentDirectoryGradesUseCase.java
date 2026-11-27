@@ -25,7 +25,7 @@ import com.sep.vox.domain.common.PageResult;
 public class ViewAssessmentDirectoryGradesUseCase
         implements IUseCase<ViewAssessmentDirectoryQuery, PageResult<AssessmentDirectoryGradeInfo>> {
 
-    static final String CLASS_TEST_REJECTION = "Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa";
+    static final String CLASS_TEST_REJECTION = "A class test does not support importing candidates by school year";
 
     private final AssessmentDirectoryAccessService assessmentDirectoryAccessService;
     private final AssessmentDirectoryQueryRepository assessmentDirectoryQueryRepository;

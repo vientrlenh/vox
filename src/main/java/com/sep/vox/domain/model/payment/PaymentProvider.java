@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.payment;
 
 /**
- * Chỉ xuất hiện khi sử dụng cổng thanh toán bên thứ ba
+ * Only present when a third-party payment gateway is used
  * PaymentProvider
  */
 public enum PaymentProvider {

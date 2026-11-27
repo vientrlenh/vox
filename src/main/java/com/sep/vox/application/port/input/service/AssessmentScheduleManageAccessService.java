@@ -14,11 +14,11 @@ import com.sep.vox.domain.repository.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Ai được xếp lịch/xếp người cho một bài kiểm tra: quản trị trường của chính trường đó, hoặc chủ
- * tịch hội đồng của chính kỳ thi đó.
+ * Who may schedule / assign people for an assessment: the school admin of that very school, or the council
+ * chair of that very assessment.
  *
- * <p>Luật này trước đây được chép nguyên văn ở từng use case xếp lịch/xếp thí sinh. Gom về một chỗ
- * để thêm use case mới không phải thêm một bản sao nữa.
+ * <p>This rule used to be copied verbatim into every scheduling / candidate-assignment use case. Gathered in one place
+ * so a new use case does not have to add another copy.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,7 +31,7 @@ public class AssessmentScheduleManageAccessService {
     private final UserRoleQueryRepository userRoleQueryRepository;
     private final UserContextPort userContextPort;
 
-    /** Trả về id người dùng hiện tại nếu họ được phép, ném {@link ForbiddenException} nếu không. */
+    /** Returns the current user id if they are allowed, throws {@link ForbiddenException} otherwise. */
     public UUID requireCanManage(Assessment assessment) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -45,6 +45,6 @@ public class AssessmentScheduleManageAccessService {
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return currentUserId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

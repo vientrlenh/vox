@@ -25,7 +25,7 @@ public class ViewSchoolStudentsBySchoolUseCase implements IUseCase<ViewSchoolStu
     @Transactional(readOnly = true)
     public PageResult<SchoolUserDto> execute(ViewSchoolStudentsBySchoolQuery input) {
         Role role = roleRepository.findByCode(SchoolRoleCodes.STUDENT)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò học sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Student role not found"));
 
         return viewSchoolUsersBySchoolUseCase.execute(new ViewSchoolUsersBySchoolQuery(
             input.schoolId(),

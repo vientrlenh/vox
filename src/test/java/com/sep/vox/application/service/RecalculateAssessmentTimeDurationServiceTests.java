@@ -62,13 +62,13 @@ class RecalculateAssessmentTimeDurationServiceTests {
     @Test
     void should_reject_when_recalculated_duration_exceeds_active_schedule() {
         givenAssessmentWithPaperDuration(AssessmentKind.CENTRALIZED, 3600);
-        // Ca thi chỉ dài 30 phút, đề vừa tính ra 60 phút.
+        // The schedule is only 30 minutes long, the paper just computed to 60 minutes.
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId))
             .thenReturn(List.of(schedule(AssessmentScheduleStatus.PUBLISHED, start, start.plus(30, ChronoUnit.MINUTES))));
 
         assertThatThrownBy(() -> service.recalculate(assessmentId))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("vượt quá thời lượng");
+            .hasMessageContaining("exceeds the duration");
         verify(assessmentRepository, never()).save(any(Assessment.class));
     }
 
@@ -80,7 +80,7 @@ class RecalculateAssessmentTimeDurationServiceTests {
 
         assertThatThrownBy(() -> service.recalculate(assessmentId))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("thời gian đóng bài");
+            .hasMessageContaining("closing time");
     }
 
     @Test

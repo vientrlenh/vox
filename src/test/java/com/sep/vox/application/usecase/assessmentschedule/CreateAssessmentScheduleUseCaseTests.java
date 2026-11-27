@@ -64,8 +64,8 @@ class CreateAssessmentScheduleUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
-        // Validator thật chạy trên hai repository đã mock: luật kiểm tra phòng vẫn được test đúng
-        // như trước khi nó được tách ra khỏi use case.
+        // The real validator runs on the two mocked repositories: the room check rule is still tested exactly
+        // as it was before it was extracted from the use case.
         useCase = new CreateAssessmentScheduleUseCase(
             assessmentRepository, assessmentScheduleRepository,
             new AssessmentScheduleRoomValidator(schoolRoomRepository, assessmentScheduleRepository),
@@ -133,7 +133,7 @@ class CreateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CreateAssessmentScheduleCommand(assessmentId, roomId, start, end)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("thời gian làm bài");
+            .hasMessageContaining("answering time");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -164,7 +164,7 @@ class CreateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CreateAssessmentScheduleCommand(assessmentId, roomId, start, end)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("mở và đóng");
+            .hasMessageContaining("opening and closing");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -179,7 +179,7 @@ class CreateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CreateAssessmentScheduleCommand(assessmentId, roomId, start, end)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("mở và đóng");
+            .hasMessageContaining("opening and closing");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 

@@ -7,7 +7,7 @@ public enum AssessmentCandidateStatus {
     ATTENDED,
     ABSENT, 
     COMPLETED, 
-    EXEMPTED, // được miễn/hoãn thi
+    EXEMPTED, // excused/postponed from the assessment
     CANCELLED; 
 
     private static final EnumSet<AssessmentCandidateStatus> NON_SCORABLE_STATUSES = EnumSet.of(

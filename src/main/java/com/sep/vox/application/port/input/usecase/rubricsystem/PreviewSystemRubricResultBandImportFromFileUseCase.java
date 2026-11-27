@@ -71,28 +71,28 @@ public class PreviewSystemRubricResultBandImportFromFileUseCase implements IUseC
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
     }
 
     // Security: trace back from the version to its rubric and check that a SYSTEM rubric owns it.
     private void requireSystemOwnedRubricVersion(UUID rubricVersionId) {
         RubricVersion version = rubricVersionRepository.findById(rubricVersionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("The requested Rubric version was not found."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc tương ứng."));
+                .orElseThrow(() -> new ResourceNotFoundException("The matching parent Rubric was not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc về trường học. System Admin không được can thiệp.");
+            throw new ForbiddenException("Security: this Rubric belongs to a school. A System Admin is not allowed to interfere.");
         }
     }
 
     private ParseImportFileResult parseNonEmptyFile(PreviewRubricResultBandImportCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_RESULT_BAND);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên trống hoặc không chứa dữ liệu hợp lệ.");
+            throw new IllegalArgumentException("The uploaded file is empty or contains no valid data.");
         }
         return parsedResult;
     }

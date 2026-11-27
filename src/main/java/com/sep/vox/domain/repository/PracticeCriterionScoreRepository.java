@@ -8,14 +8,14 @@ import com.sep.vox.domain.dto.personalization.PracticeCriterionScoreDto;
 public interface PracticeCriterionScoreRepository {
 
     /**
-     * Ghi hoặc cập nhật điểm 1 tiêu chí cho 1 bản chấm, định danh bằng MÃ tiêu chí.
+     * Writes or updates the score of 1 criterion for 1 grading, identified by the criterion CODE.
      *
-     * <p>Từ V13 không còn tra {@code rubric_criterions} để lấy id: luyện tập chấm trên thang
-     * 0-100 cố định, không thuộc rubric nào. Bản cũ tra rubric rồi {@code continue} khi không
-     * khớp -- nghĩa là điểm biến mất không dấu vết, đúng cách bug 2026-08-06 ở đường thi ẩn được.
+     * <p>Since V13 {@code rubric_criterions} is no longer looked up to get the id: practice is graded on a fixed
+     * 0-100 scale, belonging to no rubric. The old version looked up the rubric and did {@code continue} when nothing
+     * matched -- meaning the score vanished without a trace, exactly how the 2026-08-06 bug on the assessment path stayed hidden.
      *
-     * <p>Không nhận {@code matchedBandCode}: luyện tập chấm đối chiếu ĐÚNG MỘT bậc học sinh đã
-     * chọn, không xếp loại nên không có bậc nào để gán.
+     * <p>Does not take {@code matchedBandCode}: practice grading compares against EXACTLY ONE band the student
+     * chose and does not classify, so there is no band to assign.
      */
     void upsertByCode(
         UUID practiceEvaluationId,

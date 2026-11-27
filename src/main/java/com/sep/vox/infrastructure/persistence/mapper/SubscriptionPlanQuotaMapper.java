@@ -32,7 +32,7 @@ public final class SubscriptionPlanQuotaMapper {
         try {
             return QuotaType.valueOf(type);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại quota không hợp lệ khi chuyển đổi sang domain model: " + type);
+            throw new IllegalArgumentException("Invalid quota type when converting to the domain model: " + type);
         }
     }
 

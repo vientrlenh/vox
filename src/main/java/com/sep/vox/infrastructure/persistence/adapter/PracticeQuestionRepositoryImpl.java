@@ -40,9 +40,9 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
             .toList();
     }
 
-    // GỠ 2026-08-06: cooldownCutoff (gói 11 mục 3.3 -- "câu chưa đạt band mục tiêu chỉ bị loại
-    // trong 24h"). Luật mới không có ngoại lệ nào cho câu đã gặp, nên không còn mốc thời gian
-    // nào để tính.
+    // REMOVED 2026-08-06: cooldownCutoff (plan 11 section 3.3 -- "a question below the target band is only
+    // excluded for 24h"). The new rule has no exception for an already-seen question, so there is no
+    // time threshold left to compute.
 
     @Override
     public List<PracticeQuestion> findByIds(List<UUID> ids) {
@@ -60,15 +60,15 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
     }
 
     /**
-     * Transaction NGẮN, đặt đúng ở đây chứ không ở tầng trên.
+     * SHORT transaction, placed exactly here and not in the upper layer.
      *
-     * <p>insertGeneratedQuestion là @Modifying nên Hibernate bắt buộc phải có transaction
-     * đang mở, nếu không thì ném TransactionRequiredException. Trước đây nó mượn tạm
-     * transaction của BuildPracticePaperUseCase; khi transaction đó bị gỡ (để không giữ
-     * connection HikariCP suốt 10-40 giây gọi LLM) thì lệnh ghi này mất chỗ dựa và hỏng.
+     * <p>insertGeneratedQuestion is @Modifying, so Hibernate requires an open transaction,
+     * otherwise it throws TransactionRequiredException. It used to borrow the
+     * transaction of BuildPracticePaperUseCase; when that transaction was removed (so as not to hold a
+     * HikariCP connection for the 10-40 seconds of the LLM call) this write lost its support and broke.
      *
-     * <p>Đặt ở tầng adapter là đúng: nó chỉ bao đúng một lệnh INSERT chạy SAU khi lời gọi
-     * LLM đã trả về, nên không kéo dài thời gian giữ connection.
+     * <p>The adapter layer is the right place: it wraps exactly one INSERT that runs AFTER the LLM
+     * call has returned, so it does not extend the time the connection is held.
      */
     @Override
     @Transactional
@@ -91,9 +91,9 @@ public class PracticeQuestionRepositoryImpl implements PracticeQuestionRepositor
         );
     }
 
-    /** Cũng là @Modifying như saveGenerated -- cần transaction riêng vì tầng gọi
-     * (resolveNextQuestion) cố ý chạy ngoài transaction. Chưa nổ lỗi chỉ vì luồng chết ở
-     * saveGenerated trước khi tới được đây. */
+    /** Also @Modifying like saveGenerated -- needs its own transaction because the calling layer
+     * (resolveNextQuestion) intentionally runs outside a transaction. It has not failed yet only because the flow dies in
+     * saveGenerated before reaching this method. */
     @Override
     @Transactional
     public List<UUID> findPermanentlyExhaustedIds(UUID topicId, UUID studentId) {

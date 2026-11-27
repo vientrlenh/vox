@@ -30,16 +30,16 @@ import com.sep.vox.application.response.output.PushMessage;
 public class FcmNotificationService implements PushNotificationPort {
 
     /**
-     * Giới hạn cứng của sendEachForMulticast, kiểm chứng trong bytecode firebase-admin
-     * 9.10.0: "messages list must not contain more than 500 elements".
+     * Hard limit of sendEachForMulticast, verified in the firebase-admin 9.10.0
+     * bytecode: "messages list must not contain more than 500 elements".
      */
     private static final int MAX_BATCH_SIZE = 500;
 
     private final FirebaseMessaging firebaseMessaging;
 
     /**
-     * Tiền tố của route chuyển hướng phía web. Rỗng là hợp lệ: push vẫn gửi, chỉ mất phần
-     * mở đúng mục khi bấm từ khay của trình duyệt.
+     * Prefix of the web-side redirect route. Empty is valid: the push is still sent, only the part
+     * that opens the right entry when tapped from the browser tray is lost.
      */
     private final String notificationUrl;
 
@@ -119,20 +119,20 @@ public class FcmNotificationService implements PushNotificationPort {
             }
 
             if (errorCode == MessagingErrorCode.SENDER_ID_MISMATCH) {
-                log.error("FCM SENDER_ID_MISMATCH -- installation ID thuộc Firebase project khác, "
-                    + "kiểm tra lại service account đang dùng");
+                log.error("FCM SENDER_ID_MISMATCH -- installation ID belongs to a different Firebase project, "
+                    + "check the service account in use");
             }
         }
     }
 
     /**
-     * Chỉ hai mã lỗi này khẳng định thiết bị vĩnh viễn không nhận được nữa
-     * (UNREGISTERED: đã gỡ app hoặc FID hết hạn; INVALID_ARGUMENT: FID sai định dạng).
+     * Only these two error codes confirm that the device can never receive again
+     * (UNREGISTERED: app removed or FID expired; INVALID_ARGUMENT: malformed FID).
      *
-     * <p>Mọi mã còn lại -- UNAVAILABLE, INTERNAL, QUOTA_EXCEEDED, THIRD_PARTY_AUTH_ERROR,
-     * SENDER_ID_MISMATCH, và cả trường hợp null -- đều KHÔNG được coi là chết. Chúng phản
-     * ánh sự cố phía FCM hoặc cấu hình sai, sẽ xảy ra đồng loạt trên mọi thiết bị; xoá
-     * theo chúng đồng nghĩa với xoá sạch bảng chỉ vì một lần downtime.
+     * <p>Every other code -- UNAVAILABLE, INTERNAL, QUOTA_EXCEEDED, THIRD_PARTY_AUTH_ERROR,
+     * SENDER_ID_MISMATCH, and also the null case -- must NOT be treated as dead. They reflect
+     * an FCM-side incident or a wrong configuration, and will occur simultaneously on every device; deleting
+     * because of them means wiping the table just because of one downtime.
      */
     private boolean isStale(MessagingErrorCode errorCode) {
         return errorCode == MessagingErrorCode.UNREGISTERED
@@ -176,19 +176,19 @@ public class FcmNotificationService implements PushNotificationPort {
     }
 
     /**
-     * Đường dẫn trình duyệt mở khi người dùng bấm vào khay thông báo lúc tab đã đóng.
+     * The path the browser opens when the user taps the notification tray while the tab is closed.
      *
-     * <p>Chỉ web mới cần: Android và iOS tự bắt cú bấm rồi đọc {@code data} trong app, còn
-     * service worker của trình duyệt thì không có sẵn bảng route nào để tự dựng URL. Trỏ
-     * vào route chuyển hướng {@code /n/{id}} thay vì URL màn hình thật -- bảng route là
-     * chuyện của client và đổi bất cứ lúc nào, còn {@code /n/{id}} thì không.
+     * <p>Only the web needs it: Android and iOS catch the tap themselves and read {@code data} inside the app, while the browser's
+     * service worker has no route table to build a URL from. It points to
+     * the redirect route {@code /n/{id}} instead of the real screen URL -- the route table is
+     * the client's business and changes at any time, while {@code /n/{id}} does not.
      *
-     * @return null khi chưa cấu hình, khi push thiếu notificationId (không biết mở mục nào),
-     *         hoặc khi cấu hình không phải https -- FCM từ chối link không https, và để nó
-     *         đi tiếp nghĩa là mất luôn cả thông báo chứ không chỉ mất đường dẫn.
+     * @return null when not configured, when the push lacks a notificationId (no way to know which entry to open),
+     *         or when the configuration is not https -- FCM rejects a non-https link, and letting it
+     *         through means losing the whole notification and not only the path.
      */
-    // Không private: MulticastMessage không có getter nào, nên cách duy nhất để kiểm phần
-    // dựng URL là gọi thẳng vào đây từ test cùng package.
+    // Not private: MulticastMessage has no getter, so the only way to check the URL
+    // building is to call straight into here from a test in the same package.
     String webpushLink(PushMessage message) {
         if (notificationUrl.isBlank()) {
             return null;
@@ -200,7 +200,7 @@ public class FcmNotificationService implements PushNotificationPort {
         }
 
         if (!notificationUrl.startsWith("https://")) {
-            log.warn("Bỏ qua link webpush vì app.frontend.notification-url không phải https: {}",
+            log.warn("Skipping the webpush link because app.frontend.notification-url is not https: {}",
                 notificationUrl);
             return null;
         }

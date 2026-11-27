@@ -15,13 +15,13 @@ import com.sep.vox.application.query.repository.QuestionQueryRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Câu JPQL của {@code JpaQuestionQueryRepository} được dựng bằng
- * {@code em.createQuery(String)} lúc chạy, KHÔNG phải {@code @Query} — nên Hibernate không
- * kiểm nó lúc khởi động và một lỗi cú pháp sẽ chỉ lộ ra khi có người mở màn hình thống kê.
+ * The JPQL of {@code JpaQuestionQueryRepository} is built with
+ * {@code em.createQuery(String)} at runtime, NOT {@code @Query} -- so Hibernate does not
+ * check it at startup and a syntax error would only show up when someone opens the statistics screen.
  *
- * <p>Lớp này tồn tại để kéo thời điểm đó về lúc build. Nó cố tình không dựng dữ liệu: chỉ
- * cần query chạy được là đã phủ đúng phần rủi ro (cú pháp, tên entity, tên trường, kiểu
- * tham số). Phần "đếm đúng ai được xem gì" thuộc về test của use case.
+ * <p>This class exists to pull that moment forward to build time. It deliberately builds no data: it only
+ * needs the query to run to cover the actual risk (syntax, entity names, field names, parameter
+ * types). The part "counts exactly who may see what" belongs to the use case tests.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport

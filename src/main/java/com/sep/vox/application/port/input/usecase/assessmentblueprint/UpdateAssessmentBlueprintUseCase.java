@@ -36,7 +36,7 @@ public class UpdateAssessmentBlueprintUseCase implements IUseCase<UpdateAssessme
         AssessmentBlueprint blueprint = assessmentBlueprintEditAccessService.requireEditableBlueprint(command.blueprintId());
         if (assessmentRepository.existsByBlueprintIdAndKindAndStatusNot(blueprint.getId(), AssessmentKind.CENTRALIZED, AssessmentStatus.DRAFT)) {
             throw new IllegalArgumentException(
-                "Blueprint đã được dùng cho kỳ thi tập trung và đã khóa, không thể sửa/xóa trực tiếp — hãy nhân bản phiên bản mới");
+                "The blueprint is used by a centralized assessment and is locked, so it cannot be edited or deleted directly: duplicate it as a new version");
         }
 
         if (command.name() != null) {

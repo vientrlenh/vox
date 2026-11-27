@@ -21,14 +21,14 @@ import com.sep.vox.domain.repository.SchoolSubscriptionEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * System Admin cưỡng chế cắt quyền dùng NGAY LẬP TỨC -- dùng khi phát hiện trường vi phạm (gian
- * lận...), luôn kèm lý do.
+ * A System Admin forcibly cuts access IMMEDIATELY -- used when a school is found violating the rules (fraud...),
+ * always with a reason.
  *
- * <p>Khác CancelSubscriptionUseCase: hủy chỉ tắt gia hạn, gói vẫn ACTIVE và dùng được tới hết
- * endDate. Đình chỉ thì cắt ngay.
+ * <p>Different from CancelSubscriptionUseCase: cancelling only turns off renewal, and the plan stays ACTIVE and
+ * usable until endDate. Suspension cuts access right away.
  *
- * <p>Mỗi lần đình chỉ ghi một dòng school_subscription_events. Ba cột suspended_* trên gói chỉ nói
- * "HIỆN có đang bị đình chỉ không" và bị xóa sạch khi gỡ -- không phải lịch sử. Xem
+ * <p>Every suspension writes one school_subscription_events row. The three suspended_* columns on the plan only
+ * say "is it CURRENTLY suspended" and are wiped when the suspension is lifted -- they are not history. See
  * SchoolSubscriptionEvent.
  */
 @Service
@@ -67,16 +67,16 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
     private String requireReason(ForceSuspendSubscriptionCommand input) {
         String reason = StringNormalization.trimAndCollapseSpaces(input.reason());
         if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException("Phải nêu lý do đình chỉ gói đăng ký.");
+            throw new IllegalArgumentException("A reason for suspending the subscription is required.");
         }
         return reason;
     }
 
     private SchoolSubscription requireActiveSubscription(UUID subscriptionId) {
         SchoolSubscription subscription = schoolSubscriptionRepository.findById(subscriptionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription not found"));
         if (subscription.getStatus() != SchoolSubscriptionStatus.ACTIVE) {
-            throw new IllegalArgumentException("Chỉ đình chỉ được gói đang ở trạng thái đang hoạt động");
+            throw new IllegalArgumentException("Only an active subscription can be suspended");
         }
         return subscription;
     }
@@ -88,7 +88,7 @@ public class ForceSuspendSubscriptionUseCase implements IUseCase<ForceSuspendSub
             .anyMatch(schedule -> schedule.isOngoingAt(now));
         if (hasOngoingAssessment) {
             throw new IllegalArgumentException(
-                "Trường đang có ca thi diễn ra, không thể đình chỉ ngay bây giờ. Vui lòng thử lại sau khi ca thi kết thúc.");
+                "An assessment schedule is in progress at the school, so it cannot be suspended right now. Please try again after the schedule ends.");
         }
     }
 

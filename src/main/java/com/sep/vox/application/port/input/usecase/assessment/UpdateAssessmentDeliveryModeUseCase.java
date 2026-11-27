@@ -52,7 +52,7 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         authorize(assessment, currentUserId, currentSchoolId, schoolAdmin);
 
@@ -66,12 +66,12 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
 
     private void requireDeliveryModeChangeable(Assessment assessment, AssessmentDeliveryMode deliveryMode) {
         if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException("Không thể đổi hình thức làm bài khi bài kiểm tra đã bắt đầu hoặc kết thúc");
+            throw new IllegalArgumentException("The delivery mode cannot be changed after the assessment has started or ended");
         }
         if (deliveryMode != assessment.getDeliveryMode()
                 && assessmentCandidateRepository.existsByAssessmentIdAndScheduleIdIsNotNull(assessment.getId())) {
             throw new IllegalArgumentException(
-                "Không thể đổi hình thức làm bài khi đã có thí sinh được xếp vào ca thi — hãy gỡ hết thí sinh khỏi ca thi trước");
+                "The delivery mode cannot be changed while candidates are placed in assessment schedules: remove all candidates from the schedules first");
         }
     }
 
@@ -82,7 +82,7 @@ public class UpdateAssessmentDeliveryModeUseCase implements IUseCase<UpdateAsses
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 
     private boolean papersLocked(UUID assessmentId) {

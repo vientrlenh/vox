@@ -14,23 +14,23 @@ public interface SchoolSubscriptionRepository {
     Optional<SchoolSubscription> findById(UUID id);
     SchoolSubscription save(SchoolSubscription subscription);
     /**
-     * Kỳ thuê bao đang CÓ HIỆU LỰC ngay lúc này -- lọc theo ngày, không chỉ theo status. Trường gia
-     * hạn sớm sẽ có một kỳ đã trả tiền nhưng chưa tới ngày chạy; kỳ đó KHÔNG được trả về ở đây.
+     * The subscription period IN EFFECT right now -- filtered by date, not just by status. A school that renews
+     * early will have a period that is paid but not yet at its run date; that period is NOT returned here.
      */
     Optional<SchoolSubscription> findActiveBySchoolId(UUID schoolId);
 
     /**
-     * MỌI kỳ chưa kết thúc tại {@code at}, sắp xếp endDate GIẢM DẦN -- gồm cả kỳ đang chạy lẫn kỳ đã
-     * trả tiền và đang xếp hàng chờ.
+     * EVERY period not yet ended at {@code at}, sorted by endDate DESCENDING -- including the running period and the periods already
+     * paid and queued waiting.
      *
-     * <p>Trả cả danh sách chứ không chỉ kỳ xa nhất vì nâng cấp phải đóng TẤT CẢ và bù tiền cho TẤT
-     * CẢ -- bỏ sót kỳ xếp hàng là đóng một kỳ trường đã trả tiền mà không hoàn lại đồng nào.
-     * Chỗ chỉ cần mốc nối tiếp thì lấy phần tử đầu.
+     * <p>Returns the whole list and not only the furthest period because an upgrade must close ALL and compensate ALL
+     * -- missing a queued period would close a period the school already paid for without refunding a dong.
+     * A caller that only needs the continuation point takes the first element.
      */
     List<SchoolSubscription> findUnfinishedBySchoolId(UUID schoolId, Instant at);
 
     /**
-     * Kỳ gần đây nhất của trường bất kể trạng thái -- gồm cả kỳ đã hết hạn, để phục vụ gia hạn muộn.
+     * The school's most recent period regardless of status -- including expired ones, to support late renewal.
      */
     Optional<SchoolSubscription> findMostRecentBySchoolId(UUID schoolId);
     List<SchoolSubscription> findBySchoolId(UUID schoolId);
@@ -38,28 +38,28 @@ public interface SchoolSubscriptionRepository {
     boolean existsActiveByPlanId(UUID planId);
 
     /**
-     * Chuyển hàng loạt ACTIVE -> EXPIRED cho các subscription đã qua {@code cutoff}. Trả về số dòng
-     * bị đổi.
+     * Bulk transition ACTIVE -> EXPIRED for subscriptions past {@code cutoff}. Returns the number of rows
+     * changed.
      *
-     * <p>{@code cutoff} là mốc EXCLUSIVE: chỉ hết hạn khi {@code endDate < cutoff}. Nơi gọi quyết
-     * định mốc đó nghĩa là gì -- xem {@code SubscriptionExpiryJob}.
+     * <p>{@code cutoff} is EXCLUSIVE: it expires only when {@code endDate < cutoff}. The caller decides
+     * what that moment means -- see {@code SubscriptionExpiryJob}.
      */
     int expireOverdue(Instant cutoff);
 
-    // Id gói đang hoạt động của trường mà 1 user đang trực thuộc (dùng để trừ quota)
+    // Id of the active plan of the school that a user belongs to (used to deduct quota)
     Optional<UUID> findActiveSubscriptionIdForUser(UUID userId);
 
     /**
-     * Số tiền (VND) còn chi được cho một lượt luyện của user: nhỏ hơn giữa "hạn mức PRACTICE của
-     * trường còn lại + số dư ví tự nạp" và "hạn mức cá nhân của chính user còn lại" (nếu trường có
-     * chia riêng cho em). ZERO nếu không có gói đang hoạt động.
+     * The amount (VND) still spendable for one practice run of a user: the smaller of "the school's PRACTICE quota
+     * remaining + the self-funded balance" and "the user's own personal quota remaining" (if the school
+     * distributed one to them). ZERO if there is no active plan.
      *
-     * <p>Gọi là FUNDS chứ không phải QUOTA vì con số này gộp cả ví tự nạp: từ khi ConsumeQuotaService
-     * trừ phần vượt hạn mức sang ví đó, "còn hạn mức không" không còn là câu hỏi quyết định được
-     * việc cho luyện tiếp hay không.
+     * <p>Called FUNDS and not QUOTA because this figure includes the self-funded balance: since ConsumeQuotaService
+     * charges the part over the quota to that balance, "is there quota left" is no longer a question that can decide
+     * whether practice may continue.
      */
     BigDecimal findPracticeSpendableFundsVnd(UUID userId);
 
-    // Số phút tối đa mỗi lượt luyện của gói đang hoạt động (null nếu không có gói)
+    // Maximum minutes per practice run of the active plan (null if there is no plan)
     Integer findMaxTimePerAttemptMinForUser(UUID userId);
 }

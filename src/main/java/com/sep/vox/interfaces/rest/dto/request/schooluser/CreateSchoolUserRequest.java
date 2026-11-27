@@ -9,26 +9,26 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSchoolUserRequest(
-    @NotBlank(message = "Email không được để trống")
-    @Size(max = 255, message = "Email không được vượt quá 255 ký tự")
-    @Email(message = "Email không hợp lệ")
+    @NotBlank(message = "Email must not be blank")
+    @Size(max = 255, message = "Email must not exceed 255 characters")
+    @Email(message = "Email is invalid")
     String email,
 
-    @NotBlank(message = "Số điện thoại không được để trống")
-    @Size(max = 20, message = "Số điện thoại không được vượt quá 20 ký tự")
+    @NotBlank(message = "Phone number must not be blank")
+    @Size(max = 20, message = "Phone number must not exceed 20 characters")
     String phone,
 
-    @NotBlank(message = "Họ và tên không được để trống")
-    @Size(max = 255, message = "Họ và tên không được vượt quá 255 ký tự")
+    @NotBlank(message = "Full name must not be blank")
+    @Size(max = 255, message = "Full name must not exceed 255 characters")
     String fullName,
 
-    @NotNull(message = "Ngày sinh không được để trống")
+    @NotNull(message = "Date of birth must not be blank")
     LocalDate dateOfBirth,
 
-    @Size(max = 255, message = "Địa chỉ không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Address must not exceed 255 characters")
     String address,
 
-    @NotBlank(message = "Vai trò không được để trống")
+    @NotBlank(message = "Role must not be blank")
     String roleCode,
 
     LocalDate startDate,

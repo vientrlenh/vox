@@ -29,7 +29,7 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 @RequiredArgsConstructor
 public class AssessmentBlueprintEditAccessService {
 
-    private static final String ACCESS_DENIED = "Quyền truy cập bị từ chối";
+    private static final String ACCESS_DENIED = "Access denied";
 
     private final AssessmentBlueprintRepository assessmentBlueprintRepository;
     private final AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository;
@@ -63,7 +63,7 @@ public class AssessmentBlueprintEditAccessService {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = requireCurrentSchoolId(currentUserId);
         AssessmentBlueprintSection section = assessmentBlueprintSectionRepository.findById(sectionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy section"));
+            .orElseThrow(() -> new ResourceNotFoundException("Section not found"));
         EditableVersion editable = loadEditableVersion(section.getBlueprintVersionId(), currentUserId, currentSchoolId);
         return new EditableSection(section, editable.version());
     }
@@ -72,7 +72,7 @@ public class AssessmentBlueprintEditAccessService {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = requireCurrentSchoolId(currentUserId);
         AssessmentBlueprintSlot slot = assessmentBlueprintSlotRepository.findById(slotId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy slot"));
+            .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
         EditableVersion editable = loadEditableVersion(slot.getBlueprintVersionId(), currentUserId, currentSchoolId);
         return new EditableSlot(slot, editable.version());
     }
@@ -85,14 +85,14 @@ public class AssessmentBlueprintEditAccessService {
 
     private EditableVersion loadEditableVersion(UUID versionId, UUID currentUserId, UUID currentSchoolId) {
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(versionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Blueprint version not found"));
         AssessmentBlueprint blueprint = loadEditableBlueprint(version.getBlueprintId(), currentUserId, currentSchoolId);
         return new EditableVersion(blueprint, version);
     }
 
     private AssessmentBlueprint loadEditableBlueprint(UUID blueprintId, UUID currentUserId, UUID currentSchoolId) {
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(blueprintId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment blueprint not found"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException(ACCESS_DENIED);
         }

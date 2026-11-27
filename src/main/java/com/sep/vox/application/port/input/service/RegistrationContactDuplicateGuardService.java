@@ -27,13 +27,13 @@ public class RegistrationContactDuplicateGuardService {
                 || registerFormRepository.existsByContactPhoneAndStatus(contactPhone, RegisterFormStatus.PENDING);
 
         if (formAlreadyPendingByContactInfo) {
-            throw new ResourceDuplicatedException("Thông tin yêu cầu đang tồn tại đơn đăng ký cần được phê duyệt");
+            throw new ResourceDuplicatedException("The submitted information already has a registration awaiting approval");
         }
 
         boolean alreadyUser = userRepository.existsByEmail(contactEmail) || userRepository.existsByPhone(contactPhone);
 
         if (alreadyUser) {
-            throw new ResourceDuplicatedException("Email hoặc số điện thoại yêu cầu đã được đăng ký");
+            throw new ResourceDuplicatedException("The requested email or phone number is already registered");
         }
     }
 }

@@ -28,7 +28,7 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
     @Transactional
     public UUID execute(ArchiveSubscriptionPlanCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
         requireArchivable(plan);
         requireReplacementWhenPlanInUse(plan, input.replacedByPlanId());
@@ -41,10 +41,10 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
 
     private void requireArchivable(SubscriptionPlan plan) {
         if (plan.getStatus() == SubscriptionPlanStatus.DRAFT) {
-            throw new IllegalArgumentException("Gói đang ở trạng thái nháp thì phải xóa cứng, không lưu trữ.");
+            throw new IllegalArgumentException("A plan in DRAFT status must be hard-deleted, not archived.");
         }
         if (plan.getStatus() == SubscriptionPlanStatus.ARCHIVED) {
-            throw new IllegalArgumentException("Gói đã được lưu trữ trước đó.");
+            throw new IllegalArgumentException("The plan was already archived.");
         }
     }
 
@@ -61,11 +61,11 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
         if (replacedByPlanId == null) {
             if (schoolSubscriptionRepository.existsActiveByPlanId(plan.getId())) {
                 throw new IllegalArgumentException(
-                    "Gói đang có trường sử dụng, phải chọn gói thay thế hoặc đợi tới khi không còn trường nào dùng gói này trước khi lưu trữ.");
+                    "Schools are using this plan; choose a replacement plan or wait until no school uses this plan before archiving.");
             }
             if (subscriptionPlanRepository.existsByReplacedByPlanId(plan.getId())) {
                 throw new IllegalArgumentException(
-                    "Gói này đang là gói thay thế của một gói khác, phải chọn gói thay thế tiếp theo trước khi lưu trữ.");
+                    "This plan is the replacement of another plan; choose the next replacement plan before archiving.");
             }
         }
     }
@@ -73,7 +73,7 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
     private void assignReplacementIfGiven(SubscriptionPlan plan, @Nullable UUID replacedByPlanId) {
         if (replacedByPlanId != null) {
             SubscriptionPlan replacement = subscriptionPlanRepository.findById(replacedByPlanId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
+                .orElseThrow(() -> new ResourceNotFoundException("Replacement plan not found"));
             // A school forced to change plan on renewal (SubscriptionPlanResolver.resolveActivePlan) has no chance to refuse -- see
             // SubscriptionPlanReplacementValidator for the full set of rules.
             replacementValidator.requireValidReplacement(replacement, plan);

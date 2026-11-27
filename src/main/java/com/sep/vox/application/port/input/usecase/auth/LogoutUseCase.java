@@ -21,38 +21,40 @@ import com.sep.vox.domain.repository.DeviceSessionRepository;
 import com.sep.vox.domain.repository.RefreshTokenRepository;
 
 /**
- * Thu hồi phiên thiết bị khi người dùng đăng xuất.
+ * Revokes the device session when the user logs out.
  *
- * <p>Trước khi có use case này, {@link SessionManagerPort#revoke} chỉ được gọi từ
- * {@link RefreshUseCase} lúc phát hiện bất thường (refresh token bị dùng lại, deviceId lệch).
- * Nghĩa là đăng xuất BÌNH THƯỜNG không thu hồi gì cả: client chỉ xoá token trong máy, còn phiên
- * phía server sống trọn 72 giờ theo TTL của cookie refresh_token -- ai nhặt được cookie đó vẫn
- * đổi ra access token mới được. Trên máy phòng lab dùng chung thì đó là phiên của học sinh vừa
- * rời ghế.
+ * <p>Before this use case existed, {@link SessionManagerPort#revoke} was only called from
+ * {@link RefreshUseCase} when it detected an anomaly (a reused refresh token, a mismatched deviceId).
+ * That means a NORMAL logout revoked nothing: the client only deleted the token on the device, while the
+ * server-side session lived on for the full 72 hours of the refresh_token cookie TTL -- whoever picked up
+ * that cookie could still exchange it for a new access token. On a shared lab computer that is the session
+ * of the student who just left the seat.
  *
- * <p>KHÔNG ném lỗi khi không tìm thấy phiên nào để thu hồi. Đăng xuất là thao tác một chiều:
- * client xoá token trong máy bất kể server trả gì, nên một ngoại lệ ở đây chỉ tạo ra đúng tình
- * trạng tệ nhất -- client mất token trong khi server vẫn giữ phiên sống, và không còn ai gọi
- * lại được nữa. Gọi lần hai trên phiên đã thu hồi cũng vô hại: câu UPDATE lọc
- * {@code revokedAt IS NULL} nên trả 0 dòng và {@code DeviceSessionRevokedEvent} không phát lại.
+ * <p>Does NOT throw when there is no session to revoke. Logout is a one-way operation: the client deletes
+ * the token on the device whatever the server answers, so an exception here would only produce the worst
+ * state -- the client has lost its token while the server keeps the session alive, and nobody can call
+ * again to close it. Calling it a second time on an already revoked session is harmless too: the UPDATE
+ * filters on {@code revokedAt IS NULL}, so it returns 0 rows and {@code DeviceSessionRevokedEvent} is not
+ * emitted again.
  *
- * <p>Hai nguồn tìm phiên, cố ý GỘP chứ không phải chọn một:
+ * <p>Two sources for finding the session, deliberately MERGED rather than choosing one:
  * <ul>
- *   <li>Cookie refresh_token -- chính xác nhất vì đó đúng là credential đang được trả lại, và là
- *       nguồn DUY NHẤT còn dùng được khi access token đã hết hạn (15 phút, JWT_EXPIRATION_MS).
- *       Phiên bị bỏ quên -- thứ cần thu hồi nhất -- gần như luôn ở trạng thái đó.</li>
- *   <li>(userId đang đăng nhập, deviceId) -- vớt những phiên mà cookie không còn trỏ tới.
- *       {@link LoginUseCase} tạo một DeviceSession MỚI ở MỖI lần đăng nhập, kể cả trên cùng một
- *       thiết bị, nên một máy có thể đang mang nhiều phiên sống cùng lúc. Đăng xuất trên máy đó
- *       phải dọn hết; bỏ sót cái nào thì nó tiếp tục sống mà người dùng không có đường nào thấy
- *       để tự tắt.</li>
+ *   <li>The refresh_token cookie -- the most precise, because it is exactly the credential being returned,
+ *       and the ONLY source still usable once the access token has expired (15 minutes,
+ *       JWT_EXPIRATION_MS). An abandoned session -- the one that most needs revoking -- is almost always in
+ *       that state.</li>
+ *   <li>(logged-in userId, deviceId) -- catches sessions the cookie no longer points to.
+ *       {@link LoginUseCase} creates a NEW DeviceSession on EVERY login, even on the same device, so one
+ *       device can carry several live sessions at once. Logging out on that device must clean up all of
+ *       them; any one left behind stays alive with no way for the user to see it and turn it off.</li>
  * </ul>
  *
- * <p>Access token ĐÃ phát thì không thu hồi được: {@code JwtAuthTokenProvider} không đặt claim
- * phiên nào vào token và {@code JwtAuthenticationFilter} chỉ kiểm chữ ký, nên nó vẫn dùng được
- * tối đa 15 phút sau khi đăng xuất. Đóng hẳn khoảng đó đòi hỏi thêm claim phiên vào token và tra
- * trạng thái thu hồi ở MỌI request -- một lượt đọc DB cho toàn bộ API, đắt hơn nhiều so với thứ
- * nó mua được. Bù lại phía client: cả web lẫn desktop đều xoá access token ngay khi đăng xuất.
+ * <p>An access token that has ALREADY been issued cannot be revoked: {@code JwtAuthTokenProvider} puts no
+ * session claim in the token and {@code JwtAuthenticationFilter} only checks the signature, so it stays
+ * usable for up to 15 minutes after logout. Closing that gap completely would require adding a session claim
+ * to the token and checking the revocation state on EVERY request -- a DB read for the whole API, far more
+ * expensive than what it buys. The client side compensates: both web and desktop delete the access token
+ * as soon as the user logs out.
  */
 @Service
 @RequiredArgsConstructor
@@ -70,8 +72,8 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
         LogoutCommand command = normalize(input);
         Instant now = Instant.now();
 
-        // LinkedHashSet: hai nguồn bên dưới thường trỏ về cùng một phiên, và gọi revoke hai lần
-        // cho cùng sessionId là mở thừa một transaction REQUIRES_NEW không làm gì.
+        // LinkedHashSet: the two sources below usually point to the same session, and calling revoke twice
+        // for the same sessionId opens a redundant REQUIRES_NEW transaction that does nothing.
         Set<UUID> sessionIds = new LinkedHashSet<UUID>();
         findSessionByRefreshToken(command.refreshToken()).ifPresent(sessionIds::add);
         sessionIds.addAll(findLiveSessionsOnDevice(command.deviceId()));
@@ -91,13 +93,13 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
     }
 
     /**
-     * Dùng {@code findByTokenHash} chứ không phải bản {@code ForUpdate} như
-     * {@link RefreshUseCase}: ở đây không ghi gì lên dòng token nên khoá bi quan chỉ tạo thêm chỗ
-     * cho /logout và /refresh chờ nhau. Có chạy đua thì cũng vô hại -- token cũ và token vừa xoay
-     * đều trỏ về CÙNG một sessionId, nên thu hồi phiên chặn được cả hai.
+     * Uses {@code findByTokenHash} rather than the {@code ForUpdate} variant that {@link RefreshUseCase} uses:
+     * nothing is written to the token row here, so a pessimistic lock would only make /logout and /refresh wait
+     * for each other. A race is harmless anyway -- the old token and the freshly rotated one both point to the
+     * SAME sessionId, so revoking the session blocks both.
      *
-     * <p>Token không tra ra gì (cookie cũ, cookie của môi trường khác) trả về rỗng chứ không phải
-     * lỗi: xem lý do ở javadoc của lớp.
+     * <p>A token that resolves to nothing (an old cookie, a cookie from another environment) returns empty
+     * rather than an error: see the class Javadoc for the reason.
      */
     private Optional<UUID> findSessionByRefreshToken(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
@@ -110,9 +112,9 @@ public class LogoutUseCase implements IUseCase<LogoutCommand, Void> {
     }
 
     /**
-     * Rỗng khi request không mang access token còn hạn -- lúc đó không biết người gọi là ai, và
-     * đoán bừa theo mỗi deviceId thì một máy bất kỳ có thể thu hồi phiên của người khác trùng
-     * deviceId. Cookie refresh_token vẫn lo phần thu hồi trong trường hợp đó.
+     * Empty when the request carries no valid access token -- then the caller is unknown, and guessing by
+     * deviceId alone would let any device revoke another person's session that has the same deviceId. The
+     * refresh_token cookie still covers the revocation in that case.
      */
     private List<UUID> findLiveSessionsOnDevice(String deviceId) {
         return userContextPort.findCurrentAuthenticatedUserId()

@@ -60,14 +60,14 @@ public class ZeroScoreAssessmentResultService {
     @Transactional
     public AssessmentCandidateResult releaseZeroForEmptySession(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         return releaseZeroForSession(session, Instant.now());
     }
 
     @Transactional
     public void ensureZeroResultsForMissingOrEmptyAttempts(UUID assessmentId) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentPolicy policy = resolvePolicy(assessment);
         Instant now = Instant.now();
         UUID fallbackPaperId = assessmentPaperRepository.findByAssessmentId(assessmentId).stream()
@@ -127,7 +127,7 @@ public class ZeroScoreAssessmentResultService {
 
     private AssessmentCandidateResult releaseZeroForSession(AssessmentSession session, Instant now) {
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         return releaseZeroForSession(session, resolvePolicy(assessment), now);
     }
 
@@ -156,10 +156,10 @@ public class ZeroScoreAssessmentResultService {
 
     private AssessmentPolicy resolvePolicy(com.sep.vox.domain.model.assessment.Assessment assessment) {
         if (assessment.getAssessmentPolicyId() == null) {
-            throw new ResourceNotFoundException("Bài kiểm tra chưa gắn assessment policy");
+            throw new ResourceNotFoundException("The assessment has no assessment policy attached");
         }
         return assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy assessment policy"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment policy not found"));
     }
 
     private BigDecimal floorScore(AssessmentPolicy policy) {
@@ -179,15 +179,15 @@ public class ZeroScoreAssessmentResultService {
         List<RubricResultBand> matchingBands = findBandsContaining(policy, floorScore);
         if (matchingBands.isEmpty()) {
             log.info(
-                "Không có dải điểm kết quả nào chứa {} (rubricVersionId={}) -- lưu kết quả điểm sàn không kèm xếp loại.",
+                "No result score band contains {} (rubricVersionId={}) -- saving the floor-score result without a result band.",
                 floorScore, policy.getRubricVersionId()
             );
             return null;
         }
         if (matchingBands.size() > 1) {
             log.error(
-                "Cấu hình dải điểm CHỒNG LẤN tại {}: khớp {} dải của rubricVersionId={}."
-                    + " Lấy dải order nhỏ nhất ({}). Quản trị cần sửa lại dải.",
+                "Result score band configuration OVERLAPS at {}: matches {} bands of rubricVersionId={}."
+                    + " Taking the band with the smallest order ({}). An admin needs to fix the bands.",
                 floorScore, matchingBands.size(), policy.getRubricVersionId(),
                 matchingBands.get(0).getCode()
             );

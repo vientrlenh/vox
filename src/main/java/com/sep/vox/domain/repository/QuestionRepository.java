@@ -31,7 +31,7 @@ public interface QuestionRepository {
         QuestionStatus status,
         QuestionType type,
         QuestionSharing sharing,
-        /** Tên enum QuestionAssetType, hoặc "NONE" để lấy câu KHÔNG có tài nguyên. null = không lọc. */
+        /** Name of the QuestionAssetType enum, or "NONE" to get questions WITHOUT an asset. null = no filter. */
         String assetType,
         String scope,
         String keyword,

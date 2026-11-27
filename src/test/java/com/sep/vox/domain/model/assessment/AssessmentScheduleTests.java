@@ -9,8 +9,8 @@ import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 
 /**
- * Vị từ thời gian của ca thi. Đặt ở domain để "ca đang diễn ra / đã hết giờ" chỉ được phát biểu một
- * chỗ — service đóng ca, worker quét ca và test đều đọc chung một định nghĩa.
+ * Time predicates of a schedule. Placed in domain so that "schedule in progress / time is up" is stated in only one
+ * place — the schedule-closing service, the schedule-scanning worker and the tests all read the same definition.
  */
 class AssessmentScheduleTests {
 

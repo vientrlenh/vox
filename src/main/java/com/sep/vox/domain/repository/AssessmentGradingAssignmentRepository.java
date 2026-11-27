@@ -13,22 +13,22 @@ public interface AssessmentGradingAssignmentRepository {
     Optional<AssessmentGradingAssignment> findById(UUID id);
 
     /**
-     * Như {@link #findById} nhưng khoá dòng để ghi, khoá giữ tới hết transaction. Chỉ
-     * gọi TRONG một transaction ghi — dùng cho các luồng đọc-sửa-ghi trên cùng một phân
-     * công (chấm bài, đổi giáo viên, đặt hạn) để chúng nối đuôi nhau thay vì ghi đè nhau.
+     * Same as {@link #findById} but locks the row for writing, and the lock is held until the end of the transaction. Only
+     * call INSIDE a write transaction — for read-modify-write flows on the same assignment (grading, changing teacher,
+     * setting a deadline) so that they queue up instead of overwriting each other.
      */
     Optional<AssessmentGradingAssignment> findByIdForUpdate(UUID id);
 
     /**
-     * Phân công đang mở của một bài. Một bài tối đa một dòng mở — DB enforce bằng
-     * unique index trên {@code active_result_id}; các dòng đã đóng của vòng trước
-     * mang {@code active_result_id = NULL} nên không lọt vào đây.
+     * The open assignment of a result. A result has at most one open row — the DB enforces it with a
+     * unique index on {@code active_result_id}; closed rows of earlier rounds
+     * carry {@code active_result_id = NULL} so they do not appear here.
      */
     Optional<AssessmentGradingAssignment> findOpenByCandidateResultId(UUID candidateResultId);
 
     List<AssessmentGradingAssignment> findOpenByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 
-    /** Toàn bộ lịch sử phân công của một bài, mới nhất trước. */
+    /** The whole assignment history of a result, newest first. */
     List<AssessmentGradingAssignment> findByCandidateResultIdOrderByAssignedAtDesc(UUID candidateResultId);
 
     List<AssessmentGradingAssignment> findByCandidateResultIdIn(Collection<UUID> candidateResultIds);
@@ -43,10 +43,10 @@ public interface AssessmentGradingAssignmentRepository {
      */
     boolean existsByCandidateResultIdAndTeacherId(UUID candidateResultId, UUID teacherId);
 
-    /** Vòng phúc khảo của một đơn (mọi trạng thái). */
+    /** The appeal round of an appeal (every status). */
     List<AssessmentGradingAssignment> findByAppealId(UUID appealId);
 
-    /** Phân công còn mở đã quá hạn — nguồn của job nhắc và của thu hồi hàng loạt. */
+    /** Open assignments past their deadline — the source of the reminder job and of bulk revocation. */
     List<AssessmentGradingAssignment> findOverdue(Instant now);
 
     /**
@@ -57,7 +57,7 @@ public interface AssessmentGradingAssignmentRepository {
     List<AssessmentGradingAssignment> findOverdueInSchool(
         Instant now, UUID schoolId, UUID assessmentId, int limit);
 
-    /** Quá hạn và chưa từng gửi mail nhắc. Chống nhắc trùng bằng {@code reminded_at}. */
+    /** Past the deadline and never sent a reminder mail. Duplicate reminders are prevented with {@code reminded_at}. */
     List<AssessmentGradingAssignment> findDueForReminder(Instant threshold);
 
     AssessmentGradingAssignment save(AssessmentGradingAssignment assignment);
@@ -66,7 +66,7 @@ public interface AssessmentGradingAssignmentRepository {
 
     void deleteById(UUID id);
 
-    /** Dọn theo bài khi xoá phiên thi — không có FK nào chặn, bỏ sót là để lại dòng mồ côi. */
+    /** Cleans up per result when an assessment session is deleted — no FK blocks it, and missing one leaves an orphan row. */
     void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 
     long countByTeacherIdAndStatus(UUID teacherId, GradingAssignmentStatus status);

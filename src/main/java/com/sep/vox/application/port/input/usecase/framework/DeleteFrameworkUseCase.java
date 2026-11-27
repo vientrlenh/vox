@@ -21,10 +21,10 @@ public class DeleteFrameworkUseCase implements IUseCase<DeleteFrameworkCommand, 
     @Transactional
     public Void execute(DeleteFrameworkCommand input) {
         frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework not found"));
 
         if (frameworkVersionRepository.existsByFrameworkId(input.frameworkId())) {
-            throw new IllegalArgumentException("Không thể xóa framework đang có phiên bản");
+            throw new IllegalArgumentException("Cannot delete a framework that has versions");
         }
 
         frameworkRepository.deleteById(input.frameworkId());

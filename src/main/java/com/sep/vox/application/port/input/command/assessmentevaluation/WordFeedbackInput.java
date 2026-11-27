@@ -6,10 +6,10 @@ import java.util.List;
 public record WordFeedbackInput(
     String word,
     Double accuracyScore,
-    /** Điểm đã tính cả lỗi âm vị -- xem pronunciation_node_helper.py, KHÔNG suy lại được. */
+    /** The score with phoneme errors already included -- see pronunciation_node_helper.py, it can NOT be recomputed. */
     Double effectiveScore,
     String errorType,
-    /** red | yellow | green | gray -- nguồn sự thật cho màu trên giao diện. */
+    /** red | yellow | green | gray -- the source of truth for the color in the UI. */
     String color,
     String level,
     String errorNote,

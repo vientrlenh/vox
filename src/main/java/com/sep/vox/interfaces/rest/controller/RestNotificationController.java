@@ -39,7 +39,7 @@ public class RestNotificationController {
     public ResponseEntity<ApiResponse<Object>> createDevice(@RequestBody @Valid CreateNotificationDeviceRequest request) {
         CreateNotificationDeviceCommand command = CreateNotificationDeviceRequest.toCommand(request);
         createNotificationDeviceUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Thông báo cho thiết bị đã được khởi tạo");
+        ApiResponse<Object> response = ApiResponse.success("Notifications for the device have been initialized");
         return ResponseEntity.ok(response);
     }
 
@@ -47,7 +47,7 @@ public class RestNotificationController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Object>> deleteDevice(@PathVariable(name = "installationId") String installationId) {
         deleteNotificationDeviceUseCase.execute(installationId);
-        ApiResponse<Object> response = ApiResponse.success("Thiết bị nhận thông báo đã được gỡ");
+        ApiResponse<Object> response = ApiResponse.success("The notification device has been removed");
         return ResponseEntity.ok(response);
     }
 
@@ -56,7 +56,7 @@ public class RestNotificationController {
     public ResponseEntity<ApiResponse<UUID>> markNotificationAsRead(@PathVariable(name = "id") UUID id) {
         MarkNotificationAsReadCommand command = new MarkNotificationAsReadCommand(id);
         UUID data = markNotificationAsReadUseCase.execute(command);
-        ApiResponse<UUID> response = ApiResponse.success("Thông báo đã được đọc", data);
+        ApiResponse<UUID> response = ApiResponse.success("Notification marked as read", data);
         return ResponseEntity.ok(response);
     }
 
@@ -65,7 +65,7 @@ public class RestNotificationController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Object>> markAllNotificationsAsRead() {
         markAllNotificationsAsReadUseCase.execute(null);
-        ApiResponse<Object> response = ApiResponse.success("Tất cả thông báo đã được đọc");
+        ApiResponse<Object> response = ApiResponse.success("All notifications marked as read");
         return ResponseEntity.ok(response);
     }
 }

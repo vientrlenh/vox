@@ -147,8 +147,8 @@ class AssessmentDirectoryAccessServiceTests {
 
     @Test
     void should_reject_chair_from_another_school() {
-        // Chair nhưng school_user trỏ trường khác: scope phải bám schoolId của kỳ thi,
-        // và người này không được coi là hợp lệ.
+        // Chair but the school_user points to another school: the scope must follow the assessment's schoolId,
+        // and this person must not be considered valid.
         givenCallerInSchool(UUID.randomUUID());
         givenCallerRoles("TEACHER");
         givenCallerIsChair(false);

@@ -92,7 +92,7 @@ class ViewSchoolGradesUseCaseTests {
 
     @Test
     void should_reject_user_from_other_school() {
-        // Chặn IDOR: SCHOOL_ADMIN của trường khác không được xem/list năm học của trường này.
+        // Blocks IDOR: a SCHOOL_ADMIN of another school must not view/list the school years of this school.
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.of(UUID.randomUUID()));
 
@@ -103,7 +103,7 @@ class ViewSchoolGradesUseCaseTests {
 
     @Test
     void should_reject_when_user_has_no_school() {
-        // Fail-open đã đóng: user active nhưng không thuộc trường nào không được truy cập.
+        // Fail-open closed: an active user who belongs to no school must not get access.
         when(userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)).thenReturn(true);
         when(userContextPort.isSystemAdmin()).thenReturn(false);
         when(schoolUserRepository.findSchoolIdByUserId(currentUserId)).thenReturn(Optional.empty());

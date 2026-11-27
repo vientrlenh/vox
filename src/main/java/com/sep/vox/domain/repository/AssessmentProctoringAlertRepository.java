@@ -8,10 +8,10 @@ import com.sep.vox.domain.model.assessment.AssessmentProctoringAlert;
 public interface AssessmentProctoringAlertRepository {
 
     /**
-     * Ghi cảnh báo nếu {@code eventId} chưa từng được ghi, và báo lại có ghi mới hay không.
+     * Records an alert if {@code eventId} has never been recorded, and reports whether a new row was written.
      *
-     * <p>Trả về boolean thay vì void vì phía gọi cần phân biệt "đã lưu" với "đây là bản gửi lại":
-     * cả hai đều thành công, nhưng chỉ một cái đáng ghi log là dữ liệu mới.
+     * <p>Returns a boolean rather than void because the caller must tell "saved" apart from "this is a resend":
+     * both succeed, but only one is new data worth logging.
      */
     boolean saveIfAbsent(AssessmentProctoringAlert alert);
 
@@ -31,6 +31,6 @@ public interface AssessmentProctoringAlertRepository {
      */
     boolean hasIntegrityAlert(UUID assessmentSessionId);
 
-    /** Cảnh báo của cả ca thi, gộp qua mọi phiên thi trong ca -- cho màn giám sát trực tiếp. */
+    /** Alerts of a whole schedule, merged across every session in it -- for the live monitoring screen. */
     List<AssessmentProctoringAlert> findByScheduleIdOrderByCapturedAt(UUID scheduleId);
 }

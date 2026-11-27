@@ -22,10 +22,9 @@ public class ViewAssessmentAppealDetailUseCase implements IUseCase<UUID, AppealD
     private final AssessmentAppealAccessService assessmentAppealAccessService;
 
     /**
-     * ⚠️ Chốt quyền nằm Ở ĐÂY, không ở {@code @PreAuthorize} của controller. Bề mặt
-     * GraphQL đã nới sang {@code TEACHER} để giáo viên tạo bài kiểm tra trên lớp đọc
-     * được đơn của bài mình — nếu chỉ lọc theo trường như trước thì MỌI giáo viên đọc
-     * được MỌI đơn phúc khảo của trường.
+     * ⚠️ The permission check lives HERE, not in the controller's {@code @PreAuthorize}. The GraphQL surface was
+     * widened to {@code TEACHER} so that the teacher who created a class test can read the appeals of their own
+     * test -- if it only filtered by school as before, EVERY teacher could read EVERY appeal of the school.
      */
     @Override
     @Transactional(readOnly = true)
@@ -37,6 +36,6 @@ public class ViewAssessmentAppealDetailUseCase implements IUseCase<UUID, AppealD
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(context.schoolId());
         return assessmentAppealQueryRepository.findDetailById(appealId, schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn phúc khảo."));
+            .orElseThrow(() -> new ResourceNotFoundException("Appeal not found."));
     }
 }

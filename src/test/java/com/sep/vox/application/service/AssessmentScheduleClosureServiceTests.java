@@ -25,9 +25,9 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Luật đóng ca thi được phát biểu ở đúng một chỗ. Ba đường gọi vào đây — đóng bài, huỷ/xoá bài, và
- * job quét ca hết giờ — nên bảng ánh xạ trạng thái được test đầy đủ tại lớp này, còn test của use
- * case chỉ xác nhận có gọi đúng.
+ * The schedule-closing rule is stated in exactly one place. Three paths call in here — closing an assessment, cancelling/deleting an assessment, and
+ * the job that sweeps schedules past their end time — so the status mapping table is tested fully in this class, while the use
+ * case tests only confirm it is called correctly.
  */
 class AssessmentScheduleClosureServiceTests {
 
@@ -39,7 +39,7 @@ class AssessmentScheduleClosureServiceTests {
 
     private final Instant start = OffsetDateTime.parse("2026-07-10T08:00:00+07:00").toInstant();
     private final Instant end = start.plus(2, ChronoUnit.HOURS);
-    /** Mốc "bây giờ" nằm sau khi ca đã kết thúc. */
+    /** The "now" moment lies after the schedule has ended. */
     private final Instant afterEnd = end.plus(5, ChronoUnit.MINUTES);
 
     @BeforeEach
@@ -49,7 +49,7 @@ class AssessmentScheduleClosureServiceTests {
         service = new AssessmentScheduleClosureService(assessmentScheduleRepository, assessmentSessionRepository);
     }
 
-    // ---------- guard: chặn đóng bài khi còn người đang làm bài ----------
+    // ---------- guard: block closing the assessment while someone is still taking it ----------
 
     @Test
     void should_reject_close_when_ongoing_schedule_still_has_active_session() {
@@ -59,7 +59,7 @@ class AssessmentScheduleClosureServiceTests {
 
         assertThatThrownBy(() -> service.requireNoActiveSessionInOngoingSchedule(assessmentId, start))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("3 học sinh đang làm bài");
+            .hasMessageContaining("3 students taking the assessment");
     }
 
     /**
@@ -84,7 +84,7 @@ class AssessmentScheduleClosureServiceTests {
         verifyNoInteractions(assessmentSessionRepository);
     }
 
-    // ---------- cascade khi ĐÓNG bài ----------
+    // ---------- cascade when the assessment is CLOSED ----------
 
     @Test
     void should_complete_published_schedule_that_already_ended() {
@@ -159,7 +159,7 @@ class AssessmentScheduleClosureServiceTests {
         assertThat(ended.getUpdatedBy()).isEqualTo("previous-editor");
     }
 
-    // ---------- cascade khi HUỶ/XOÁ bài ----------
+    // ---------- cascade when the assessment is CANCELLED/DELETED ----------
 
     @Test
     void should_cancel_draft_and_published_schedules_on_cancel() {
@@ -200,7 +200,7 @@ class AssessmentScheduleClosureServiceTests {
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
-    // ---------- job quét ca đã hết giờ ----------
+    // ---------- job that sweeps schedules past their end time ----------
 
     @Test
     void should_complete_ended_schedules_found_by_sweep() {

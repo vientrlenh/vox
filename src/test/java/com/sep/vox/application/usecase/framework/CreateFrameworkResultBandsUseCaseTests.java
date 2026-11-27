@@ -53,6 +53,6 @@ class CreateFrameworkResultBandsUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này");
+            .hasMessage("The result code or label already exists for this version");
     }
 }

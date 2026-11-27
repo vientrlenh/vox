@@ -113,7 +113,7 @@ class ViewQuestionStatusCountsUseCaseTests {
             .containsExactly(QuestionStatus.values());
     }
 
-    /** Keyword và topicName phải xuống repository ở dạng LIKE pattern, giống ViewQuestionsUseCase. */
+    /** Keyword and topicName must reach the repository as a LIKE pattern, the same as ViewQuestionsUseCase. */
     @Test
     void should_pass_like_patterns_down_to_the_repository() {
         useCase.execute(new ViewQuestionStatusCountsQuery(

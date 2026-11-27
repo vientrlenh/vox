@@ -8,7 +8,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.IntStream; // Sử dụng Command dùng chung của bác
+import java.util.stream.IntStream;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -54,7 +54,7 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
     @Transactional
     public PreviewRubricCriterionImportResponse execute(PreviewRubricCriterionImportCommand command) {
         if (command.schoolId() == null) {
-            throw new IllegalArgumentException("Yêu cầu không hợp lệ: Thiếu mã trường học đối với luồng School Admin.");
+            throw new IllegalArgumentException("Invalid request: the school id is missing for the School Admin flow.");
         }
 
         requireActiveSchoolMember(command.schoolId());
@@ -81,7 +81,7 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
     private ParseImportFileResult parseNonEmptyFile(PreviewRubricCriterionImportCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_CRITERION);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên rỗng hoặc không có dữ liệu hợp lệ.");
+            throw new IllegalArgumentException("The uploaded file is empty or has no valid data.");
         }
         return parsedResult;
     }
@@ -89,29 +89,29 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
+                .orElseThrow(() -> new ForbiddenException("You do not belong to any school, so you cannot use this function."));
 
         // Security: the school id in the URL must match the caller's real school.
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bạn không có quyền thao tác trên dữ liệu của trường khác.");
+            throw new ForbiddenException("You are not allowed to operate on the data of another school.");
         }
     }
 
     private void requireSchoolOwnedRubricVersion(PreviewRubricCriterionImportCommand command) {
         RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("The requested version was not found."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         // Security: the id of a SYSTEM rubric or of another school's rubric must not be accepted through this school's URL.
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường bạn.");
+            throw new ForbiddenException("Security: this Rubric is not owned by your school.");
         }
     }
 

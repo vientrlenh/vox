@@ -3,10 +3,10 @@ package com.sep.vox.application.port.input.query.assessmentappeal;
 import java.util.UUID;
 
 /**
- * Ứng viên chấm phúc khảo cho MỘT đơn.
+ * Appeal-grading candidates for ONE appeal.
  *
- * <p>Cần {@code appealId} vì cờ xung đột lợi ích tính theo bài thi của đơn đó, không
- * phải theo trường.
+ * <p>Needs {@code appealId} because the conflict-of-interest flag is computed against the submission of that appeal, not
+ * against the school.
  */
 public record ViewAssignableReviewersQuery(
     UUID appealId,

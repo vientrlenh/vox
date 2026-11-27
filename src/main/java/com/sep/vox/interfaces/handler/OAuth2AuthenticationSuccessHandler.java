@@ -50,7 +50,7 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
             HttpSession session = request.getSession(false);
             if (session == null) {
-                throw new UnauthorizedException("Đăng nhập thất bại");
+                throw new UnauthorizedException("Login failed");
             }
             String deviceId = (String) session.getAttribute("oauth2_device_id");
             String deviceName = (String) session.getAttribute("oauth2_device_name");

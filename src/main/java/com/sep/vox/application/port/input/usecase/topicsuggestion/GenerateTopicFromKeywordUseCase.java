@@ -18,26 +18,26 @@ public class GenerateTopicFromKeywordUseCase implements IUseCase<GenerateTopicFr
     private final UserContextPort userContextPort;
 
     /**
-     * KHÔNG @Transactional -- cùng lý do đã ghi ở {@link ViewSynchronousTopicOffersUseCase},
-     * và đây là chỗ SÓT của lần sửa đó: ba use case cùng gọi {@code TopicSuggestionService}
-     * nhưng chỉ một cái được gỡ.
+     * NOT @Transactional -- same reason as recorded in {@link ViewSynchronousTopicOffersUseCase},
+     * and this is the spot that fix MISSED: three use cases call {@code TopicSuggestionService}
+     * but only one of them was fixed.
      *
-     * {@code TopicSuggestionService.generateFromKeyword} đã cố ý bỏ @Transactional ("Not
-     * &#64;Transactional -- same reason as ... above") vì nó gọi {@code generationClient.propose}
-     * -- một lượt LLM 10-40 giây -- rồi {@code generationClient.index} sang vector store. Bọc
-     * @Transactional ở đây thì transaction mở suốt chừng ấy thời gian và GIỮ một connection
-     * của pool, nên công sức bỏ nó ở tầng dưới bị vô hiệu hoàn toàn.
+     * {@code TopicSuggestionService.generateFromKeyword} deliberately dropped @Transactional ("Not
+     * &#64;Transactional -- same reason as ... above") because it calls {@code generationClient.propose}
+     * -- an LLM round trip of 10-40 seconds -- and then {@code generationClient.index} into the vector store. Wrapping
+     * it in @Transactional here keeps the transaction open for that whole time and HOLDS a pool
+     * connection, so dropping it in the lower layer is completely undone.
      *
-     * Triệu chứng đo được 2026-08-05 18:17: HikariCP "Apparent connection leak detected" trên
-     * thread tomcat-handler-60, stack đúng
+     * Symptom measured 2026-08-05 18:17: HikariCP "Apparent connection leak detected" on
+     * thread tomcat-handler-60, with exactly the stack
      * {@code GenerateTopicFromKeywordUseCase$$SpringCGLIB$$0.execute} -> TransactionInterceptor
-     * -> {@code JpaTransactionManager.doBegin}. Ngưỡng cảnh báo là 5 giây; một lượt sinh chủ đề
-     * vượt xa.
+     * -> {@code JpaTransactionManager.doBegin}. The warning threshold is 5 seconds; one topic generation
+     * far exceeds it.
      *
-     * Không mất tính nguyên tử: phần DUY NHẤT cần nguyên tử -- tạo topic + ghi nhận lượt hạn
-     * mức tuần -- đã nằm trong {@code KeywordTopicPersistenceService.createTopicAndRecordRequest}
-     * với @Transactional riêng. Các lệnh còn lại là đọc, hoặc một lần
-     * {@code recordKeywordRequest} độc lập, tự transact qua Spring Data proxy.
+     * Atomicity is not lost: the ONLY part that needs it -- creating the topic + recording the weekly
+     * quota request -- already sits in {@code KeywordTopicPersistenceService.createTopicAndRecordRequest}
+     * with its own @Transactional. The remaining calls are reads, or a single independent
+     * {@code recordKeywordRequest} that transacts on its own through the Spring Data proxy.
      */
     @Override
     public TopicFromKeywordResult execute(GenerateTopicFromKeywordCommand input) {

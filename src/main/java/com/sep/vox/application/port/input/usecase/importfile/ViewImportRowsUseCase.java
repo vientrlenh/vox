@@ -63,10 +63,10 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
 
     private void validateInput(ViewImportRowsQuery input) {
         if (input == null || input.sessionId() == null) {
-            throw new IllegalArgumentException("Phiên import không được để trống");
+            throw new IllegalArgumentException("Import session must not be empty");
         }
         if (input.page() <= 0 || input.size() <= 0) {
-            throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
+            throw new IllegalArgumentException("Invalid page number and page size");
         }
     }
 
@@ -78,41 +78,41 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
             validateSchool(schoolId);
             validateSessionBelongsToSchool(session, schoolId);
         } else if (!session.isCreatedBy(currentUserId)) {
-            throw new ForbiddenException("Phiên import không thuộc về bạn");
+            throw new ForbiddenException("The import session does not belong to you");
         }
     }
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("Current user is not active");
         }
         return user;
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("Current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("School is not active");
         }
     }
 
     private ImportSession findSession(UUID importSessionId) {
         return importSessionRepository.findById(importSessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import"));
+            .orElseThrow(() -> new ResourceNotFoundException("Import session not found"));
     }
 
     private void validateSessionBelongsToSchool(ImportSession session, UUID schoolId) {
         if (!Objects.equals(session.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Phiên import không thuộc trường hiện tại");
+            throw new IllegalArgumentException("The import session does not belong to the current school");
         }
     }
 }

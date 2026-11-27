@@ -96,8 +96,8 @@ public final class PracticeSessionResponseMapper {
             dto.gradingGaveUpCount(),
             dto.difficultyRank(),
             dto.turns().stream().map(PracticeSessionResponseMapper::toResponse).toList(),
-            // Chuyển tiếp, KHÔNG tra gì: lớp này là static nên không tiêm repository được.
-            // Thang đã được tính ngay trong truy vấn (COALESCE trên LEFT JOIN rubric_versions).
+            // Pass-through, NO lookup: this class is static, so it cannot have a repository injected.
+            // The scale is already computed in the query (COALESCE over LEFT JOIN rubric_versions).
             dto.scoreScaleMin(),
             dto.scoreScaleMax()
         );

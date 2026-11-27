@@ -32,17 +32,17 @@ public class CreateAssessmentMemberUseCase implements IUseCase<CreateAssessmentM
     @Transactional
     public AssessmentMemberDto execute(CreateAssessmentMemberCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         AssessmentMemberManageAccessService.AssessmentMemberActor actor = assessmentMemberManageAccessService.requireCanManage(assessment);
         AssessmentMemberRole role = input.role();
         assessmentMemberManageAccessService.requireCanTouchRole(actor, role);
 
         if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), input.userId())) {
-            throw new IllegalArgumentException("Người dùng không thuộc trường của bài kiểm tra");
+            throw new IllegalArgumentException("The user does not belong to the school of the assessment");
         }
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), input.userId(), role)) {
-            throw new IllegalArgumentException("Người dùng đã có vai trò này trong bài kiểm tra");
+            throw new IllegalArgumentException("The user already has this role in the assessment");
         }
 
         AssessmentMember member = AssessmentMember.granted(

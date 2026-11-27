@@ -21,8 +21,10 @@ public class SubscriptionPlan extends BaseModel {
     private UUID replacedByPlanId;
 
     public SubscriptionPlan() {}
-
-
+
+
+
+
 
     public String getName() {
         return name;
@@ -120,7 +122,7 @@ public class SubscriptionPlan extends BaseModel {
      */
     public Instant endDateFrom(Instant start) {
         if (start == null || periodType == null || periodCount == null) {
-            throw new IllegalStateException("Gói thiếu chu kỳ (periodType/periodCount), không tính được hạn dùng");
+            throw new IllegalStateException("The plan has no period (periodType/periodCount), so its expiry cannot be computed");
         }
         ZonedDateTime local = start.atZone(ZoneConstant.BUSINESS_ZONE);
         ZonedDateTime end = switch (periodType) {

@@ -23,17 +23,17 @@ import com.sep.vox.domain.repository.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 /**
- * Bài kiểm tra trên lớp: chủ bài (CHAIR) chấm hết, nên phân công vòng
- * {@code INITIAL} được mở TỰ ĐỘNG thay vì chờ school admin gán — admin không quản
- * bài trên lớp, nên nếu chờ thì hàng đợi của giáo viên rỗng vĩnh viễn.
+ * Class test: the owner (CHAIR) grades everything, so the {@code INITIAL} round assignment
+ * is opened AUTOMATICALLY instead of waiting for the school admin to assign — the admin does not manage
+ * class tests, so if we waited the teacher's queue would stay empty forever.
  *
- * <p>Kỳ thi {@code CENTRALIZED} không đi qua đây: mọi hàm đều no-op khi
- * {@code kind != CLASS_TEST}, nên luồng phân công của nhà trường giữ nguyên.
+ * <p>A {@code CENTRALIZED} assessment does not go through here: every method is a no-op when
+ * {@code kind != CLASS_TEST}, so the school's assignment flow stays unchanged.
  *
- * <p><strong>Gọi được nhiều lần.</strong> Mọi đường ghi đều kiểm "bài đã có phân
- * công đang mở chưa" trước — đó là hàng rào chống vi phạm unique index
- * {@code uq_grading_assignment_active_result}. Nhờ vậy hai điểm móc (khi sinh kết
- * quả và khi đóng bài) chồng lên nhau cũng không sinh dòng thứ hai.
+ * <p><strong>Can be called multiple times.</strong> Every write path first checks "does the assessment already have an
+ * open assignment" — that is the barrier against violating the unique index
+ * {@code uq_grading_assignment_active_result}. Thanks to it, two hooks (when the result is created
+ * and when the assessment closes) overlapping will not create a second row.
  */
 @Service
 @RequiredArgsConstructor
@@ -121,7 +121,7 @@ public class ClassTestGradingAssignmentService {
         return assessmentGradingAssignmentRepository.saveAll(toOpen).size();
     }
 
-    /** {@code null} = không phải bài trên lớp, hoặc bài không có CHAIR. */
+    /** {@code null} = not a class test, or the assessment has no CHAIR. */
     private UUID findClassTestChairId(UUID assessmentId) {
         Assessment assessment = assessmentRepository.findById(assessmentId).orElse(null);
         if (assessment == null || assessment.getKind() != AssessmentKind.CLASS_TEST) {
@@ -135,14 +135,14 @@ public class ClassTestGradingAssignmentService {
     }
 
     /**
-     * {@code deadlineAt = null} — bài trên lớp không có hạn chấm hành chính, và
-     * {@code GradingDeadlineReminderJob} chỉ bắn mail cho dòng CÓ hạn.
+     * {@code deadlineAt = null} — a class test has no administrative grading deadline, and
+     * {@code GradingDeadlineReminderJob} only sends mail for rows that HAVE a deadline.
      *
-     * <p>{@code assignedBy = chairId}: hệ thống mở thay, nhưng người chịu trách nhiệm
-     * là chính họ.
+     * <p>{@code assignedBy = chairId}: the system opens it on their behalf, but the person responsible
+     * is themselves.
      *
-     * <p>{@code scoreBefore} chụp NGAY LÚC MỞ — đây là mốc đo độ lệch AI ↔ người; lấy
-     * sau thì đã bị chính giáo viên sửa mất.
+     * <p>{@code scoreBefore} is captured AT OPENING TIME — this is the reference point for measuring the AI ↔ human gap; taken
+     * later, it would already have been changed by the teacher.
      */
     private AssessmentGradingAssignment open(AssessmentCandidateResult result, UUID chairId, Instant now) {
         return AssessmentGradingAssignment.open(

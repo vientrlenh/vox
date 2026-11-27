@@ -23,17 +23,17 @@ import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.domain.repository.TurnCorrectionRepository;
 
 /**
- * Dựng bản chi tiết một phiên luyện (lượt nói + sửa lỗi + điểm theo tiêu chí), KHÔNG kiểm quyền.
+ * Builds the detail of a practice session (speaking turns + corrections + score per criterion) WITHOUT checking permission.
  *
- * Tách riêng vì có HAI đường vào cùng nội dung này với hai luật quyền khác hẳn nhau: giáo viên
- * xem bài của học sinh mình dạy ({@code studentPracticeSessionDetail}), và học sinh xem lại bài
- * của chính mình sau khi kết thúc phiên ({@code myPracticeSessionDetail}). Nếu để mỗi use case
- * tự dựng lấy thì hai bản sao sẽ trôi lệch nhau -- thêm một cột vào màn tổng kết của học sinh
- * mà quên bên giáo viên, hoặc ngược lại.
+ * Split out because there are TWO entry paths to this same content with very different permission rules: a teacher
+ * viewing the work of a student they teach ({@code studentPracticeSessionDetail}), and a student reviewing
+ * their own work after the session ends ({@code myPracticeSessionDetail}). If each use case
+ * built it itself the two copies would drift apart -- adding a column to the student's summary screen
+ * and forgetting the teacher side, or vice versa.
  *
- * Việc kiểm quyền cố ý nằm NGOÀI service này, ở từng use case: nó không biết ai đang gọi, nên
- * gọi thẳng vào đây mà quên kiểm quyền là lộ bài của người khác. Đọc kỹ điểm này trước khi thêm
- * đường vào thứ ba.
+ * The permission check is deliberately OUTSIDE this service, in each use case: it does not know who is calling, so
+ * calling straight into it and forgetting the permission check exposes another person's work. Read this point carefully before adding
+ * a third entry path.
  */
 @Service
 @RequiredArgsConstructor
@@ -49,7 +49,7 @@ public class PracticeSessionDetailAssemblyService {
     @Transactional(readOnly = true)
     public TeacherPracticeSessionDetail assemble(UUID sessionId) {
         SessionRowInfo summary = practiceSessionQueryRepository.findSessionRowById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice session not found."));
         List<TeacherPracticeTurnViewDto> turns = loadTurnViews(sessionId);
         List<PracticeCriterionScoreDto> scores = practiceCriterionScoreRepository.findScoresBySessionId(sessionId);
         int itemCount = practiceItemEvaluationRepository.countCompletedBySessionId(sessionId);

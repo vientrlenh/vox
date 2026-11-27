@@ -79,14 +79,14 @@
 <h1>Translate Vietnamese messages and comments to English</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-27 &middot;
-  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+  Plan status: <span class="status progress" id="plan-status" data-plan-status="in-progress">In progress</span>
 </div>
 
 <p>1,518 Java files (plus configuration, GraphQL schemas and resources) still contain Vietnamese: about 6,700 comment
 lines and 6,300 string-literal lines. This plan moves the code to English in 12 phases, each of which leaves the build
-green and can be reviewed (and merged) on its own. <strong>Messages:</strong> the texts the code writes to logs and
-returns to API clients become English; texts that are data (seed content, import column aliases, test fixtures) stay,
-and what exactly counts as a &ldquo;message&rdquo; is decision D1. <strong>Comments:</strong> a comment that breaks
+green and can be reviewed (and merged) on its own. <strong>Messages:</strong> the texts the code writes to logs, returns
+to API clients and renders for end users (emails, push notifications, spreadsheet headers, order descriptions) become English; texts that are data (seed content, import column aliases, test fixtures) stay,
+and what exactly counts as a &ldquo;message&rdquo; is decision D1, widened by A2. <strong>Comments:</strong> a comment that breaks
 the <code>AGENTS.md</code> &ldquo;Self-explaining code&rdquo; rule is deleted, every other comment is translated
 faithfully (decision D2, already made).</p>
 
@@ -206,7 +206,7 @@ fixtures (Vietnamese names, speech transcripts, SQL <code>INSERT</code> values),
   <p>(2) Language: Vietnamese comments in code being changed are translated &ldquo;do not shorten or delete it&rdquo;. The request to delete rule-breaking
      comments narrows that sentence &rarr; D2 (answered).</p>
   <p>(3) Database: &ldquo;Never edit a migration that has been merged&rdquo; &rarr; D3.</p>
-  <p>(4) Ask first: changing text that REST, GraphQL and gRPC clients receive (D1); touching security/JWT/OAuth code and money logic (D5); a new
+  <p>(4) Ask first: changing text that REST, GraphQL and gRPC clients receive (D1), that school users read in emails, push notifications and spreadsheets, or that PayOS receives as an order description (A2); touching security/JWT/OAuth code and money logic (D5); a new
      file outside the usual patterns and a change to <code>AGENTS.md</code> itself (D4).</p>
 </div>
 
@@ -230,6 +230,7 @@ fixtures (Vietnamese names, speech transcripts, SQL <code>INSERT</code> values),
      emails, pushes and spreadsheets, and the Excel header change needs a per-sheet check that the importer accepts the English header (the alias maps
      list English names first, but each sheet is checked). Adds phase 11.</p>
   <div class="answer"><strong>Answer (2026-11-27):</strong> A &ndash; translate A and B; keep C and D. Phase 11 is therefore deferred.</div>
+  <p class="meta">Superseded by A2 (2026-11-27): kind C is now translated. The answer above is kept as written, for the record.</p>
 </div>
 
 <div class="decision" id="d2" data-decision-state="answered">
@@ -285,6 +286,36 @@ fixtures (Vietnamese names, speech transcripts, SQL <code>INSERT</code> values),
   <div class="answer"><strong>Answer (2026-11-27):</strong> A &ndash; include both the security and the money sets in their normal jobs.</div>
 </div>
 
+<div class="decision" id="a1" data-decision-state="answered" data-scope="plan" data-topic="stored-user-visible-text">
+  <h3>A1. Is text that the system saves to the database and users later read (appeal decision notes, zero-score evaluation texts) translated? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 7.3. Scope: whole plan. Reused by: job-7-3.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> Translate to English &ndash; treat stored, user-visible text as kind B, not kind C. Applies to AssessmentCandidateResultFinalizationService (appeal decision note) and MissingResponseBackfillService (two zero-score evaluation texts) and to the same kind of literal in later phases. Existing rows in the database stay as they are.</div>
+</div>
+
+<div class="decision" id="a2" data-decision-state="answered" data-scope="plan" data-topic="rendered-content-english">
+  <h3>A2. Supersedes D1: is rendered content (emails, push notifications, spreadsheet headers, order descriptions) translated? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked on 2026-11-27 when you asked to make phase 11 the phase to implement; D1 had been answered A. Scope: whole plan, and it decides phase 11. Supersedes D1 (D1 is kept as written). Reused by: none yet.</p>
+  <p>Kind C, as the keep register holds it (27 files, 18 main and 9 test, plus the 9 email templates): email subjects, bodies and role labels (<code>SmtpEmailTemplateRenderService</code>, the 9 templates, 9 email consumers);
+     push notification titles and bodies; Excel and CSV headers; and the end-user texts the code writes: order descriptions (<code>CreateSubscriptionOrderUseCase</code> and <code>CreateTopUpOrderUseCase</code>, which
+     <code>PayOSService</code> passes to PayOS), a dashboard fallback class name and two topic-offer labels. Kind D (seed data, import aliases and accepted values, the <code>'&#273;'</code> char literals, test fixtures) still stays Vietnamese.</p>
+  <p>What changes for people: Vietnamese school users receive English emails, push notifications and spreadsheet headers, and new orders carry an English description. Existing rows stay as they are (A1). Not checked:
+     what the frontend, desktop app and AI grading service show or match.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> C &ndash; translate A, B and C; keep only D. You asked to &ldquo;make the phase 11 as the phase I want to implement&rdquo;, chose &ldquo;Reopen this plan, D1 becomes C&rdquo; and the scope
+     &ldquo;All kind C in the register&rdquo; (jobs 11.1&ndash;11.4), and asked that the plan be edited only after the other session was paused (it had finished phase 9).</div>
+</div>
+
+<div class="decision" id="a3" data-decision-state="answered" data-scope="job-12-1" data-topic="missed-test-files">
+  <h3>A3. What happens to 3 test files the earlier phases missed (PagingConventionTests, TestStoragePortConfig, OutboxTestSupport)? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 12.1. Scope: job 12.1. Reused by: none yet.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> Translate them now &ndash; comments, Javadoc, @DisplayName and messages, as a CHANGED item of job 12.1; nothing goes on the keep list.</div>
+</div>
+
+<div class="decision" id="a4" data-decision-state="answered" data-scope="job-12-3" data-topic="agents-md-language-bullet">
+  <h3>A4. Is the proposed AGENTS.md Language bullet approved? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 12.1 (batched with A3). Scope: job 12.3. Reused by: none yet.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> Approve as written. Wording: &ldquo;Language: everything is English: identifiers, comments, Javadoc, test documentation, log, exception, validation and API response messages, email, push notification and spreadsheet texts, and commit messages. Vietnamese stays only as data: seed data, import header aliases and accepted values, the 'đ' char literals, and Vietnamese names and transcripts in test fixtures. LanguageConventionTests fails on a Vietnamese comment anywhere and on a Vietnamese string literal in a file not listed in src/test/resources/architecture/language-keep-list.txt; that list may only shrink, so never add to it. When you edit a comment, write it in English.&rdquo;</div>
+</div>
+
 <h2 id="phases">3. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green. Phases 2&ndash;9 follow the layers inside out (domain, application, infrastructure, interfaces); the tests
 of a package are translated in the same job as the package, because tests assert messages and must change with them.</p>
@@ -292,7 +323,8 @@ of a package are translated in the same job as the package, because tests assert
 <h3>Rules that every job follows</h3>
 <ol>
   <li><strong>Comments</strong> follow D2. The per-phase notes record how many comments were translated, deleted and left, and list the borderline ones, so deletions can be reviewed in the diff.</li>
-  <li><strong>Strings</strong> follow D1. A literal of a kept kind (C or D: emails, push text, Excel headers, seed data, import aliases, test fixtures) is left alone and recorded in the keep register (Implementation notes) with its file, line range and reason.
+  <li><strong>Strings</strong> follow D1, widened by A2. A literal of kind D (seed data, import aliases, test fixtures) is left alone and recorded in the keep register (Implementation notes) with its file, line range and reason.
+      A literal of kind C (emails, push text, Excel headers, order descriptions) found before phase 11 is recorded the same way and translated in phase 11; the register rows that say &ldquo;phase 11 is deferred&rdquo; were written before A2.
       A job never decides a kind silently: the register is how you review it.</li>
   <li><strong>Terminology</strong> comes from the glossary built in job 1.3, so the same Vietnamese term is translated the same way everywhere, using the identifier the code already has.</li>
   <li><strong>Structure is preserved.</strong> Placeholders (<code>{}</code>, <code>%s</code>, <code>%d</code>, <code>{0}</code>, <code>{min}</code> in validation messages), escapes and argument order stay; a concatenation keeps its operands in the
@@ -308,58 +340,58 @@ of a package are translated in the same job as the package, because tests assert
       After the scan, the job reads 20 random remaining comment or string lines of its paths to catch Vietnamese the word list missed, and reports the result.</li>
 </ol>
 
-<div class="phase" id="phase-1" data-status="todo">
+<div class="phase" id="phase-1" data-status="done">
   <h3><span class="title">Phase 1 &ndash; Tooling and glossary</span>
     <span class="tag">small &middot; mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> measuring and checking tools exist and one glossary fixes the terminology before any file changes. No file under <code>src/</code> changes in this phase.
      <strong>Depends on:</strong> nothing (the plan being approved).</p>
   <ul class="jobs">
-    <li class="job" id="job-1-1" data-status="todo">
-      <span class="title">1.1 Scanner for Vietnamese in comments and strings</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-1" data-status="done">
+      <span class="title">1.1 Scanner for Vietnamese in comments and strings</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> run on the untouched tree it prints 1,518 files, 6,659 comment lines, 6,324 string lines and the 70 unaccented lines, by file and by kind (line comment, Javadoc, string, text block),
          and it also reads <code>.yaml</code>, <code>Dockerfile</code>, <code>.graphqls</code>, <code>.html</code>. A first version (<code>scan_java.py</code>, <code>scan_ascii_vn.py</code>) was written while planning in the session
          scratchpad; it stays outside the repo, so re-create it from this description if the scratchpad was cleared.
          <strong>Files:</strong> scratchpad only.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; scanner re-created at scratchpad <code>scan.py</code>. On the untouched tree it prints 1,512 files with diacritics + 6 unaccented-only = 1,518, 6,659 comment lines (1,183 line, 5,476 Javadoc), 6,324 string lines (6,282 string, 42 text block), 70 unaccented lines in 20 files, and 1,497 Vietnamese lines in 37 non-Java files (yaml, Dockerfile, graphqls, html, sql, json).</li></ul>
     </li>
-    <li class="job" id="job-1-2" data-status="todo">
-      <span class="title">1.2 Verifier that a diff only touched comments and strings</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-2" data-status="done">
+      <span class="title">1.2 Verifier that a diff only touched comments and strings</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> for every Java file that differs from <code>HEAD</code> it tokenizes the old and new text, and reports any difference in the code outside comments and string literals, a different number or order of
          literals, different placeholders or escapes, a changed kept literal, and (for SQL text blocks) any change outside <code>--</code> comments. Self-test: on a scratch copy with one identifier renamed and one <code>{}</code>
          removed it reports both; on an untouched file it reports nothing. <strong>Files:</strong> scratchpad only.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; verifier at scratchpad <code>verify.py</code> (supports <code>--keep</code> and <code>--base</code>). Self-test on a scratch copy: removing one <code>{}</code> and misspelling one keyword is reported as both a code difference and a placeholder difference; a comment-only edit and an untouched file report nothing.</li></ul>
     </li>
-    <li class="job" id="job-1-3" data-status="todo">
-      <span class="title">1.3 Glossary of domain terms</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-1-3" data-status="done">
+      <span class="title">1.3 Glossary of domain terms</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the Implementation notes hold a table &ldquo;Vietnamese term &rarr; English term&rdquo; for every term that appears at least 10 times in message strings and comments, and each English term is
          taken from an identifier, GraphQL type or enum already in the code (found with <code>grep</code>; for example the term for the appeal of a result follows <code>AssessmentAppeal</code>). No term is invented where the code has one.
          <strong>Files:</strong> this plan's notes only.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; glossary (63 terms + 7 message patterns) in Implementation notes; each English term cites the identifier, enum or GraphQL type it comes from. Terms with no identifier (school year, character) are marked as plain words. Counts from scratchpad <code>terms.py</code>.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>git status --short -- src</code> prints nothing; <code>./gradlew compileJava</code> still succeeds.</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-27 &middot; Done &middot; <code>git status --short -- src</code> prints nothing; <code>./gradlew compileJava</code> exit 0.</li></ul>
 </div>
 
-<div class="phase" id="phase-2" data-status="todo">
+<div class="phase" id="phase-2" data-status="done">
   <h3><span class="title">Phase 2 &ndash; Domain layer</span>
     <span class="tag">medium &middot; mechanical &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 174 files (164 main, 10 test) are English: 918 comment lines and 189 string lines. Value-object and domain-service messages are exception messages (kind B).
      <strong>Depends on:</strong> phase 1, D1, D5.</p>
   <ul class="jobs">
-    <li class="job" id="job-2-1" data-status="todo">
-      <span class="title">2.1 <code>domain/{common,dto,model,valueobject}</code> and their tests</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-1" data-status="done">
+      <span class="title">2.1 <code>domain/{common,dto,model,valueobject}</code> and their tests</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 94 files (88 main, 6 test; 329 comment lines, 79 string lines). <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/{common,dto,model,valueobject}</code>,
          <code>src/test/java/com/sep/vox/domain/{model,valueobject}</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; compileJava compileTestJava pass; ./gradlew test passes; architecture tests pass; verify.py reports only the intended PaymentStatus import.</li><li>2026-11-27 &middot; Done &middot; 93 files translated; verify.py clean except the intended OrderStatus import in PaymentStatus; domain, architecture and RubricCriterionExamplesNormalizerTests pass. Kept: VnSearchKey.java:14 (the letter đ), FullNameTests (Vietnamese names).</li><li>2026-11-27 &middot; In progress &middot; baseline: compileJava passes, src clean</li><li>2026-11-27 &middot; In progress &middot; starting job 2.1</li></ul>
     </li>
-    <li class="job" id="job-2-2" data-status="todo">
-      <span class="title">2.2 <code>domain/{repository,service}</code> and their tests</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-2-2" data-status="done">
+      <span class="title">2.2 <code>domain/{repository,service}</code> and their tests</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 80 files (76 main, 4 test; 589 comment lines, 110 string lines), including <code>QuestionStatusTransition</code> (32 string lines) and
          <code>AssessmentScheduleWindowMessages</code>. <strong>Files:</strong> <code>domain/repository</code>, <code>domain/service</code>, <code>src/test/java/com/sep/vox/domain/service</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 80 files translated; verify.py clean; ./gradlew test (2,823 tests) passes after updating 9 out-of-phase tests.</li><li>2026-11-27 &middot; In progress &middot; starting</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.domain.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>
@@ -367,183 +399,183 @@ of a package are translated in the same job as the package, because tests assert
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-3" data-status="todo">
+<div class="phase" id="phase-3" data-status="done">
   <h3><span class="title">Phase 3 &ndash; Application contracts (ports, queries, responses, commands)</span>
     <span class="tag">medium &middot; mechanical &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 198 files (189 main, 9 test) are English: 1,298 comment lines and 56 string lines. This phase is almost all Javadoc on records and ports. Event payload classes get comment changes only;
      no payload field, version or topic changes. <strong>Depends on:</strong> phase 2.</p>
   <ul class="jobs">
-    <li class="job" id="job-3-1" data-status="todo">
-      <span class="title">3.1 <code>application/{common,event,mapper}</code>, <code>port/output</code> and their tests</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-1" data-status="done">
+      <span class="title">3.1 <code>application/{common,event,mapper}</code>, <code>port/output</code> and their tests</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 44 files (35 main, 9 test; 296 comment lines, 56 string lines). <strong>Files:</strong> <code>application/common</code>, <code>application/event</code>,
          <code>application/mapper</code>, <code>application/port/output</code>, <code>src/test/java/com/sep/vox/application/{common,port,support}</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 198 files; ./gradlew test (full unit suite) passes, architecture tests pass; verify.py reports only the 3 intended imports (GoogleIdTokenVerifierPort, PaymentCheckoutResponse, PaymentStatus)</li><li>2026-11-27 &middot; Done &middot; 44 files translated; verify.py clean except the intended UnauthorizedException import; compileJava compileTestJava pass; tests com.sep.vox.application.{common,port,mapper}.* and architecture.* pass. CHANGED: 6 test files keep Vietnamese strings (fixtures, Excel headers, messages pinned to phase 7), listed in the keep register.</li><li>2026-11-27 &middot; In progress &middot; starting job 3.1 (44 files: 35 main, 9 test)</li><li>2026-11-27 &middot; In progress &middot; baseline: compileJava compileTestJava pass</li></ul>
     </li>
-    <li class="job" id="job-3-2" data-status="todo">
-      <span class="title">3.2 <code>application/{query,response}</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-2" data-status="done">
+      <span class="title">3.2 <code>application/{query,response}</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 90 files (all main; 772 comment lines, no strings). <strong>Files:</strong> <code>application/query</code>, <code>application/response</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 90 files translated; verify.py clean except the intended CheckoutAction import; scan reports 0 Vietnamese lines under application/query and application/response; compileJava compileTestJava pass</li><li>2026-11-27 &middot; In progress &middot; starting job 3.2 (90 files)</li></ul>
     </li>
-    <li class="job" id="job-3-3" data-status="todo">
-      <span class="title">3.3 <code>application/port/input/{command,query}</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-3-3" data-status="done">
+      <span class="title">3.3 <code>application/port/input/{command,query}</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 64 files (all main; 230 comment lines, no strings). <strong>Files:</strong> <code>application/port/input/command</code>,
          <code>application/port/input/query</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 64 files translated, 7 comments deleted; verify.py clean; scan reports 0 Vietnamese lines under port/input/{command,query}; compileJava compileTestJava pass</li><li>2026-11-27 &middot; In progress &middot; starting job 3.3 (64 files)</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-4" data-status="todo">
+<div class="phase" id="phase-4" data-status="done">
   <h3><span class="title">Phase 4 &ndash; Use cases: assessments</span>
     <span class="tag">large &middot; judgement (messages) &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 221 files (155 main, 66 test) are English: 619 comment lines and 1,135 string lines (6 unaccented). Most strings are exception messages and the
      tests that assert them. <strong>Depends on:</strong> phase 3.</p>
   <ul class="jobs">
-    <li class="job" id="job-4-1" data-status="todo">
-      <span class="title">4.1 <code>assessment</code>, <code>assessmentappeal</code>, <code>assessmentblueprint</code>, <code>assessmentcandidate</code>, <code>assessmentdirectory</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-1" data-status="done">
+      <span class="title">4.1 <code>assessment</code>, <code>assessmentappeal</code>, <code>assessmentblueprint</code>, <code>assessmentcandidate</code>, <code>assessmentdirectory</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 99 files (74 main, 25 test; 176 comment lines, 472 string lines). <strong>Files:</strong> <code>application/port/input/usecase/&lt;those features&gt;</code> and
          <code>src/test/java/com/sep/vox/application/usecase/&lt;those features&gt;</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 4.1-4.3 done. ./gradlew compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.application.usecase.*' pass; ./gradlew test --tests 'com.sep.vox.architecture.*' pass.</li><li>2026-11-27 &middot; Done &middot; 98 files; verify.py (with keep list) reports 0 differences outside comments and strings; compileJava compileTestJava pass; tests application.usecase.{assessment,assessmentappeal,assessmentblueprint,assessmentcandidate,assessmentdirectory}.* (274) and architecture.* pass. Applies D1, D2, D5. 63 Vietnamese string lines stay (fixtures, or pinned to phase 7 services); see keep register. Checked for unaccented Vietnamese with the word list: none.</li><li>2026-11-27 &middot; In progress &middot; scanner and verifier from earlier session copied to scratchpad; applies D1 (translate kinds A and B), D2 (delete or translate comments), D5 (money/security included)</li><li>2026-11-27 &middot; In progress &middot; started job 4.1</li></ul>
     </li>
-    <li class="job" id="job-4-2" data-status="todo">
-      <span class="title">4.2 <code>assessmentevaluation</code>, <code>assessmentgrading</code>, <code>assessmentitemresponse</code>, <code>assessmentpaper</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-2" data-status="done">
+      <span class="title">4.2 <code>assessmentevaluation</code>, <code>assessmentgrading</code>, <code>assessmentitemresponse</code>, <code>assessmentpaper</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 61 files (36 main, 25 test; 316 comment lines, 307 string lines, 5 unaccented lines such as <code>"Khong tim thay evaluation ..."</code> in
          <code>AssessmentSessionResultCalculator</code>). <strong>Files:</strong> the same two roots, those features.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 60 files; verify.py (with keep list) reports 0 differences outside comments and strings; compileJava compileTestJava pass; tests application.usecase.{assessmentevaluation,assessmentgrading,assessmentitemresponse,assessmentpaper,assessment,assessmentappeal}.* (433) and architecture.* pass. Applies D1, D2, D5. Kept: Excel headers (kind C), fixtures, and messages/labels pinned to phase 7 services; see keep register. CHANGED: also translated the 'BẢO MẬT' mock messages in 4.1 tests (SECURITY).</li><li>2026-11-27 &middot; In progress &middot; starting job 4.2</li></ul>
     </li>
-    <li class="job" id="job-4-3" data-status="todo">
-      <span class="title">4.3 <code>assessmentpolicyschool</code>, <code>assessmentpolicysystem</code>, <code>assessmentpolicyteacher</code>, <code>assessmentschedule</code>, <code>assessmentsession</code>, <code>assessmentturn</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-4-3" data-status="done">
+      <span class="title">4.3 <code>assessmentpolicyschool</code>, <code>assessmentpolicysystem</code>, <code>assessmentpolicyteacher</code>, <code>assessmentschedule</code>, <code>assessmentsession</code>, <code>assessmentturn</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 61 files (45 main, 16 test; 127 comment lines, 356 string lines). <strong>Files:</strong> the same two roots, those features.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 61 files; verify.py (with keep list, all of phase 4: 219 files) reports 0 differences outside comments and strings; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.application.usecase.*' and architecture.* pass.</li><li>2026-11-27 &middot; In progress &middot; starting job 4.3</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-5" data-status="todo">
+<div class="phase" id="phase-5" data-status="done">
   <h3><span class="title">Phase 5 &ndash; Use cases: frameworks, questions, rubrics</span>
     <span class="tag">large &middot; judgement (messages) &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 198 files (165 main, 33 test) are English: 212 comment lines and 1,058 string lines, almost all exception messages (<code>rubricschool</code> and <code>rubricsystem</code> alone hold 542, with the
      <code>B&#7842;O M&#7852;T:</code> prefix on security-rule messages). <strong>Depends on:</strong> phase 4 (the same message vocabulary is reused).</p>
   <ul class="jobs">
-    <li class="job" id="job-5-1" data-status="todo">
-      <span class="title">5.1 <code>framework</code>, <code>gradelevel</code>, <code>importfile</code>, <code>interestdimension</code>, <code>supportedlanguage</code>, <code>topicsuggestion</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-1" data-status="done">
+      <span class="title">5.1 <code>framework</code>, <code>gradelevel</code>, <code>importfile</code>, <code>interestdimension</code>, <code>supportedlanguage</code>, <code>topicsuggestion</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 57 files (43 main, 14 test; 49 comment lines, 226 string lines). <strong>Files:</strong> <code>application/port/input/usecase/&lt;those features&gt;</code> and the mirrored test packages.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 5.1-5.3 done. ./gradlew compileJava compileTestJava pass; ./gradlew test (full unit suite) pass; ./gradlew test --tests 'com.sep.vox.architecture.*' pass.</li><li>2026-11-27 &middot; Done &middot; 55 files changed (the other 2 only hold fixtures). verify.py (with keep list) reports 0 differences outside comments and strings; compileJava compileTestJava pass; tests application.usecase.{framework,gradelevel,importfile,interestdimension,supportedlanguage,topicsuggestion}.* and architecture.* pass. 4 numbered narrating comments deleted by D2 (ViewFrameworkCriteriaUseCase and ViewSchoolFrameworkCriteriaUseCase), rest translated. 6 Vietnamese fixture lines stay (header &ldquo;Mã lớp&rdquo; in importfile tests, see keep register). Applies D1, D2, D5.</li><li>2026-11-27 &middot; In progress &middot; applies D1 (translate kinds A and B), D2 (delete or translate comments), D5 (money/security included)</li><li>2026-11-27 &middot; In progress &middot; applies D1, D2, D5; started job 5.1</li></ul>
     </li>
-    <li class="job" id="job-5-2" data-status="todo">
-      <span class="title">5.2 <code>question</code>, <code>questionbank</code>, <code>questiontopic</code>, <code>scoringrule</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-2" data-status="done">
+      <span class="title">5.2 <code>question</code>, <code>questionbank</code>, <code>questiontopic</code>, <code>scoringrule</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 60 files (55 main, 5 test; 105 comment lines, 257 string lines). <strong>Files:</strong> the same two roots, those features.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 59 files changed. verify.py (with keep list) reports 0 differences outside comments and strings; compileJava compileTestJava pass; tests application.usecase.{question,questionbank,questiontopic,scoringrule}.* and architecture.* pass. Deleted (D2, narrates the next statement): the numbered comments at DeleteSystemScoringRuleUseCase:36,44,47, and the first sentence of 3 class Javadocs that only restated the class name (UpdateQuestionStatusUseCase, PreviewQuestionBankImportFromFileUseCase, BulkUpdateQuestionStatusUseCaseTests). 9 Vietnamese lines stay (fixtures; the assertion in QuestionImportCommitHandlerTests:72 is pinned to the phase 7 service QuestionImportCommitHandler). Applies D1, D2, D5.</li><li>2026-11-27 &middot; In progress &middot; applies D1, D2, D5</li></ul>
     </li>
-    <li class="job" id="job-5-3" data-status="todo">
-      <span class="title">5.3 <code>rubricschool</code>, <code>rubricsystem</code>, <code>rubricteacher</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-5-3" data-status="done">
+      <span class="title">5.3 <code>rubricschool</code>, <code>rubricsystem</code>, <code>rubricteacher</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 81 files (67 main, 14 test; 58 comment lines, 575 string lines). <strong>Files:</strong> the same two roots, those features.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 79 files changed. verify.py (with keep list) reports differences only in the 4 files whose weight message was rephrased (see Implementation notes, false positive on a Vietnamese &ldquo;% g&rdquo;); compileJava compileTestJava pass; tests application.usecase.* (full unit suite also green) and architecture.* pass. 16 comments deleted by D2, rest translated; 12 Vietnamese fixture/pinned lines stay (keep register). Applies D1, D2, D5.</li><li>2026-11-27 &middot; In progress &middot; applies D1, D2, D5</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-6" data-status="todo">
+<div class="phase" id="phase-6" data-status="done">
   <h3><span class="title">Phase 6 &ndash; Use cases: schools, billing, practice, other</span>
     <span class="tag">large &middot; judgement (messages) &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 185 files (141 main, 44 test) are English: 781 comment lines and 896 string lines. Job 6.1 contains the five JWT/OAuth use cases (security set); job 6.2 is money code.
      <strong>Depends on:</strong> phase 5.</p>
   <ul class="jobs">
-    <li class="job" id="job-6-1" data-status="todo">
-      <span class="title">6.1 <code>auth</code>, <code>registration</code>, <code>role</code>, <code>user</code>, <code>school</code>, <code>schooldirectory</code>, <code>schoolclass</code>, <code>schoolclassuser</code>, <code>schoolgrade</code>, <code>schoolroom</code>, <code>schooluser</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-1" data-status="done">
+      <span class="title">6.1 <code>auth</code>, <code>registration</code>, <code>role</code>, <code>user</code>, <code>school</code>, <code>schooldirectory</code>, <code>schoolclass</code>, <code>schoolclassuser</code>, <code>schoolgrade</code>, <code>schoolroom</code>, <code>schooluser</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 96 files (69 main, 27 test; 161 comment lines, 690 string lines), plus <code>./gradlew test --tests '*Login*' --tests '*Refresh*' --tests '*OAuth2*'</code>.
          <strong>Files:</strong> the use-case and test roots for those features.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 6.1&ndash;6.3 done. ./gradlew compileJava compileTestJava pass; full ./gradlew test passes (2,823 tests, 0 failures) including com.sep.vox.application.usecase.* and com.sep.vox.architecture.*.</li><li>2026-11-27 &middot; Done &middot; 85 files changed (11 more hold only fixtures). verify.py: 85 files, 0 differences; compileJava compileTestJava pass; ./gradlew test (usecase auth, registration, role, user, school*, *Login*, *Refresh*, *OAuth2*, architecture.*) pass.</li><li>2026-11-27 &middot; In progress &middot; baseline compileJava compileTestJava passes. Applies D1, D2, D5 (security: Login, Refresh, OAuth2Login, GoogleTokenLogin, Logout use cases).</li><li>2026-11-27 &middot; In progress &middot; Starting job 6.1. Applies D1 A, D2, D5 A.</li></ul>
     </li>
-    <li class="job" id="job-6-2" data-status="todo">
-      <span class="title">6.2 <code>balance</code>, <code>order</code>, <code>payment</code>, <code>subscription</code>, <code>metering</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-2" data-status="done">
+      <span class="title">6.2 <code>balance</code>, <code>order</code>, <code>payment</code>, <code>subscription</code>, <code>metering</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 41 files (33 main, 8 test; 285 comment lines, 136 string lines), plus <code>./gradlew test --tests '*Order*' --tests '*Payment*' --tests '*Balance*' --tests '*Subscription*'</code>.
          <strong>Files:</strong> the use-case and test roots for those features.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 41 files changed. verify.py: 40 clean, 1 false positive (SetQuotaDistributionPolicyUseCase:40, the Vietnamese &ldquo;0% tới&rdquo; read as a format specifier). compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.application.usecase.*' and 'com.sep.vox.architecture.*' pass (includes *Order*, *Payment*, *Balance*, *Subscription*).</li><li>2026-11-27 &middot; In progress &middot; Applies D1, D2, D5 (money code: balance, order, payment, subscription, metering; text only).</li></ul>
     </li>
-    <li class="job" id="job-6-3" data-status="todo">
-      <span class="title">6.3 <code>dashboard</code>, <code>learnerprofile</code>, <code>notification</code>, <code>practiceevaluation</code>, <code>practiceplanning</code>, <code>practicesession</code>, <code>proctoring</code>, <code>recording</code>, <code>stream</code></span> <span class="status todo">Not started</span>
+    <li class="job" id="job-6-3" data-status="done">
+      <span class="title">6.3 <code>dashboard</code>, <code>learnerprofile</code>, <code>notification</code>, <code>practiceevaluation</code>, <code>practiceplanning</code>, <code>practicesession</code>, <code>proctoring</code>, <code>recording</code>, <code>stream</code></span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 48 files (39 main, 9 test; 335 comment lines, 70 string lines). <strong>Files:</strong> the use-case and test roots for those features.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 45 files changed (3 more hold only fixtures). verify.py: 45 files, 0 differences; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.application.usecase.*' and 'com.sep.vox.architecture.*' pass.</li><li>2026-11-27 &middot; In progress &middot; Applies D1, D2.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-7" data-status="todo">
+<div class="phase" id="phase-7" data-status="done">
   <h3><span class="title">Phase 7 &ndash; Application services</span>
     <span class="tag">large &middot; judgement &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 117 files (97 main, 20 test) in <code>application/port/input/service</code> are English: 1,137 comment lines (the densest &ldquo;why&rdquo; comments in the repo, for example in
      <code>OrderSettlementService</code> and <code>ConsumeQuotaService</code>) and 611 string lines. <strong>Depends on:</strong> phase 6.</p>
   <ul class="jobs">
-    <li class="job" id="job-7-1" data-status="todo">
-      <span class="title">7.1 Import commit handlers and spreadsheet services</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-1" data-status="done">
+      <span class="title">7.1 Import commit handlers and spreadsheet services</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 16 main files (39 comment lines, 245 string lines). Import row errors are translated (kind B); accepted input values such as <code>"c&oacute;"</code> in
          <code>RubricCriterionImportCommitHandler</code> and Excel headers in <code>QuestionSpreadsheetService</code> are recorded in the keep register (kind D, or C until phase 11).
          <strong>Files:</strong> <code>application/port/input/service/*Import*</code>, <code>*Spreadsheet*</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 7.1-7.3 done. ./gradlew compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.application.*' pass; ./gradlew test --tests 'com.sep.vox.architecture.*' pass. Applies D1, D2, D5, A1.</li><li>2026-11-27 &middot; Done &middot; 16 main files plus 11 pinned test lines (10 test files); verify.py (with keep list) reports 0 differences; compileJava compileTestJava pass; tests *ImportCommitHandler*, *ImportSession*, *QuestionSpreadsheet*, application.usecase.importfile.* and architecture.* pass. 22 string lines stay (headers kind C, accepted value kind D; keep register). Applies D1, D2.</li><li>2026-11-27 &middot; In progress &middot; starting job 7.1; applies D1, D2</li><li>2026-11-27 &middot; In progress &middot; starting phase 7; applies D1, D2, D5. Baseline: compileJava compileTestJava pass; scanner 1137 comment lines, 646 string lines</li></ul>
     </li>
-    <li class="job" id="job-7-2" data-status="todo">
-      <span class="title">7.2 Quota, order, billing and settlement services</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-2" data-status="done">
+      <span class="title">7.2 Quota, order, billing and settlement services</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 25 files (18 main, 7 test; 445 comment lines, 122 string lines), plus <code>./gradlew test --tests '*Quota*' --tests '*Settlement*'</code>.
          <strong>Files:</strong> the services matched by name (<code>*Quota*</code>, <code>*Order*</code>, <code>*Payment*</code>, <code>*Balance*</code>, <code>*Settlement*</code>, <code>*Debt*</code>, <code>*Pricing*</code>, <code>*Spend*</code>) and their tests.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 31 files (the plan counted 25; also matched *Subscription* and *Exchange*, so 7.3 has fewer); verify.py (with keep list) 0 differences; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.application.*' --tests 'com.sep.vox.architecture.*' pass. CHANGED: money suffix &ldquo;&#273;&rdquo; in messages is now &ldquo; VND&rdquo;; 3 pinned asserts in FundQuotaFromBalanceUseCaseTests and PublishSubscriptionPlanUseCaseTests updated. Applies D1, D2, D5.</li><li>2026-11-27 &middot; In progress &middot; starting job 7.2; applies D1, D2, D5 (money files)</li></ul>
     </li>
-    <li class="job" id="job-7-3" data-status="todo">
-      <span class="title">7.3 All other application services</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-7-3" data-status="done">
+      <span class="title">7.3 All other application services</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for the remaining 76 files (63 main, 13 test; 653 comment lines, 244 string lines). <strong>Files:</strong>
          <code>application/port/input/service</code> and <code>src/test/java/com/sep/vox/application/service</code>, excluding jobs 7.1 and 7.2.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 93 service files (53 main, 40 test paths) plus 10 use case and 14 use case test files for pinned labels/messages; scanner reports Vietnamese only in the kept fixtures and Excel headers; verify.py (with keep list) shows no difference in phase 7 files (the 8 earlier-phase false positives and intended imports are unchanged); compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.application.*' --tests 'com.sep.vox.architecture.*' pass. Applies D1, D2, D5, A1 (stored user-visible text translated).</li><li>2026-11-27 &middot; In progress &middot; starting job 7.3; applies D1, D2</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-8" data-status="todo">
+<div class="phase" id="phase-8" data-status="done">
   <h3><span class="title">Phase 8 &ndash; Infrastructure layer</span>
     <span class="tag">large &middot; judgement &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 200 files (154 main, 46 test) are English except recorded data: 1,402 comment lines and 1,404 string lines (33 unaccented, for example <code>S3BucketInitializer</code> and <code>AwsS3StorageService</code>).
      Job 8.3 includes the security set (<code>SecurityConfig</code>, <code>infrastructure/security</code>, <code>infrastructure/filter</code>). <strong>Depends on:</strong> phase 7.</p>
   <ul class="jobs">
-    <li class="job" id="job-8-1" data-status="todo">
-      <span class="title">8.1 Persistence adapters, entities, mappers, query repositories</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-1" data-status="done">
+      <span class="title">8.1 Persistence adapters, entities, mappers, query repositories</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 106 files (79 main, 27 test; 742 comment lines, 252 string lines, including 35 SQL <code>--</code> comment lines inside <code>@Query</code> text blocks in 8 files).
          <strong>Files:</strong> <code>infrastructure/persistence</code>, <code>src/test/java/com/sep/vox/infrastructure/persistence</code> (those tests need Docker to run, so here they are compiled only).</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 8.1&ndash;8.4 done. ./gradlew compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.infrastructure.*' --tests 'com.sep.vox.architecture.*' pass; integrationTest not run (no Docker). 187 files changed in infrastructure; verify.py differences only the two intended ones (SpringDataImportSessionRepository:92 and the {not-json} fixture).</li><li>2026-11-27 &middot; Done &middot; 100 files changed (6 more hold only fixtures). verify.py (with keep list) 0 differences except SpringDataImportSessionRepository:92 (intended: stored failure_reason text translated, A1); compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.infrastructure.*' --tests 'com.sep.vox.architecture.*' pass (persistence tests compiled only, no Docker). 3 comment lines stay (Vietnamese example names / the letter đ), 192 fixture string lines stay (keep register). Applies D1, D2, D5 (money: school balance, order, payment, quota repositories; text only), A1.</li><li>2026-11-27 &middot; In progress &middot; starting job 8.1; applies D1, D2.</li><li>2026-11-27 &middot; In progress &middot; starting phase 8; applies D1, D2, D5.</li></ul>
     </li>
-    <li class="job" id="job-8-2" data-status="todo">
-      <span class="title">8.2 Events, workers, clients, filters, repository</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-2" data-status="done">
+      <span class="title">8.2 Events, workers, clients, filters, repository</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 39 files (32 main, 7 test; 194 comment lines, 266 string lines). In <code>NotificationPushedEventConsumer</code> the log texts are translated; the push titles and bodies go on the
          keep register (kind C). <strong>Files:</strong> <code>infrastructure/{event,worker,client,filter,repository}</code> and their tests.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 36 files changed. verify.py (with keep list) 0 differences; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.infrastructure.*' --tests 'com.sep.vox.architecture.*' pass. Email subjects and labels, push titles and bodies stay (kind C, keep register); log and exception texts translated. 155 string lines stay. Applies D1, D2.</li><li>2026-11-27 &middot; In progress &middot; starting job 8.2; applies D1, D2.</li></ul>
     </li>
-    <li class="job" id="job-8-3" data-status="todo">
-      <span class="title">8.3 Services, security, config, properties</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-3" data-status="done">
+      <span class="title">8.3 Services, security, config, properties</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 41 files (32 main, 9 test; 342 comment lines, 336 string lines), plus <code>./gradlew test --tests '*Jwt*' --tests '*GoogleIdToken*'</code>.
          <code>FileProcessingService</code> header aliases and <code>SmtpEmailTemplateRenderService</code> text go on the keep register (kinds D and C); its comments are translated.
          <strong>Files:</strong> <code>infrastructure/{service,security,config,properties}</code> and their tests.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 39 files changed (security set: SecurityConfig, GoogleIdTokenProvider, JwtAuthTokenProvider, CustomOidcUserService, CustomUserDetailsService, SecurityContextProvider; text only). verify.py (with keep list) 0 differences; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.infrastructure.*' --tests '*Jwt*' --tests '*GoogleIdToken*' --tests 'com.sep.vox.architecture.*' pass. FileProcessingService header aliases and SmtpEmailTemplateRenderService text stay (kinds D and C, keep register); 247 string lines stay. CHANGED: the Google sign-in test pin &ldquo;chưa được cấu hình&rdquo; became &ldquo;is not configured&rdquo;. Applies D1, D2, D5.</li><li>2026-11-27 &middot; In progress &middot; starting job 8.3 (security set: SecurityConfig, infrastructure/security, filter); applies D1, D2, D5.</li></ul>
     </li>
-    <li class="job" id="job-8-4" data-status="todo">
-      <span class="title">8.4 Initializers</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-4" data-status="done">
+      <span class="title">8.4 Initializers</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 14 files (11 main, 3 test; 124 comment lines, 550 string lines). Comments, log texts and error texts are translated; the seed names and descriptors
          (<code>FrameworkInitializer</code> 412 lines, <code>SystemRubricTemplateInitializer</code>, <code>SubscriptionPlanInitializer</code>, ...) are recorded as kind D, per file. <strong>Files:</strong>
          <code>infrastructure/initializer</code> and <code>src/test/java/com/sep/vox/infrastructure/initializer</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 14 files changed. verify.py (with keep list) 0 differences; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.infrastructure.*' --tests 'com.sep.vox.architecture.*' pass (3 initializer tests compiled-only where they need Docker). Seed names, descriptors and criterion texts stay (kind D, keep register); 6 comment lines that cite circular numbers stay. Applies D1, D2.</li><li>2026-11-27 &middot; In progress &middot; starting job 8.4; applies D1, D2.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.infrastructure.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.
@@ -551,56 +583,56 @@ of a package are translated in the same job as the package, because tests assert
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-9" data-status="todo">
+<div class="phase" id="phase-9" data-status="done">
   <h3><span class="title">Phase 9 &ndash; Interfaces layer</span>
     <span class="tag">large &middot; judgement &middot; needs D1, D5</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 222 files (201 main, 21 test) are English: 286 comment lines and 970 string lines (23 unaccented, mostly the <code>ApiResponse</code> success messages in <code>RestQuestionController</code>).
      This is where kind B reaches clients directly. <strong>Depends on:</strong> phase 8.</p>
   <ul class="jobs">
-    <li class="job" id="job-9-1" data-status="todo">
-      <span class="title">9.1 REST controllers</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-1" data-status="done">
+      <span class="title">9.1 REST controllers</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 39 files (32 main, 7 test; 175 comment lines, 375 string lines, 20 unaccented): success messages and <code>@Operation</code> / <code>@Parameter</code> text are English and
          <code>./gradlew test --tests 'com.sep.vox.interfaces.rest.*'</code> passes. <strong>Files:</strong> <code>interfaces/rest/controller</code>, <code>src/test/java/com/sep/vox/interfaces/rest</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 9.1&ndash;9.3 done. compileJava compileTestJava pass; full ./gradlew test (2,823 tests, 0 failures) passes; architecture tests pass; integrationTest not run (no Docker). Interfaces layer has no Vietnamese except the keep-register fixtures. Client-visible text changed to English: ApiResponse.message of every REST controller, Bean Validation messages, GlobalExceptionHandler texts, GraphQL error fallback, gRPC status texts, PageArguments messages.</li><li>2026-11-27 &middot; Done &middot; 39 files changed (32 main, 7 test). verify.py (with keep list) 0 differences; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.interfaces.rest.*' and 'com.sep.vox.architecture.*' pass. Success messages, OpenAPI text and comments translated; narrating comments above @Operation in RestRubricController, RestAssessmentPolicyController, RestScoringRuleController deleted (D2). Kept: Excel header mappings and a CSV header in 2 test files (kind D, keep register). CHANGED: the effective-start-date validation message (3 request records) and ViewMyAssessmentsQueryMapper messages were translated here because tests of this job assert them. Applies D1, D2, D5 (money: RestOrderController, RestPaymentController, RestSubscriptionController, RestCallbackController; text only), A1.</li><li>2026-11-27 &middot; In progress &middot; starting job 9.1; applies D1, D2, A1. Baseline compileJava compileTestJava pass.</li><li>2026-11-27 &middot; In progress &middot; starting phase 9; applies D1, D2, D5, A1.</li></ul>
     </li>
-    <li class="job" id="job-9-2" data-status="todo">
-      <span class="title">9.2 REST request records, exception handler, other REST classes</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-2" data-status="done">
+      <span class="title">9.2 REST request records, exception handler, other REST classes</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 143 files (142 main, 1 test; 27 comment lines, 537 string lines): Bean Validation messages keep their <code>{...}</code> placeholders, and
          <code>GlobalExceptionHandler</code> texts such as the unsupported-media-type message are English. <strong>Files:</strong> <code>interfaces/rest/dto</code>, <code>interfaces/rest/exception</code>, remaining <code>interfaces/rest</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 174 rest files changed in 9.1 and 9.2 together; the 143 files of 9.2: 525 validation, handler and mapper string lines translated by a message dictionary (suffix patterns such as &ldquo;X must not be blank&rdquo; from the glossary, placeholders and attribute values untouched), comments translated or deleted (D2). verify.py (with keep list) 0 differences over interfaces/rest; compileJava compileTestJava pass; ./gradlew test --tests 'com.sep.vox.interfaces.*' and 'com.sep.vox.architecture.*' pass. Applies D1, D2.</li><li>2026-11-27 &middot; In progress &middot; starting job 9.2; applies D1, D2.</li></ul>
     </li>
-    <li class="job" id="job-9-3" data-status="todo">
-      <span class="title">9.3 GraphQL, Kafka, gRPC, handler, shared</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-3" data-status="done">
+      <span class="title">9.3 GraphQL, Kafka, gRPC, handler, shared</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> check S passes for 40 files (27 main, 13 test; 84 comment lines, 58 string lines): <code>GlobalExceptionResolver</code> and <code>GlobalGrpcExceptionHandler</code> texts and the Kafka consumer
          validation messages are English, and <code>./gradlew test --tests 'com.sep.vox.interfaces.*'</code> passes. <code>StreamingServiceTokenInterceptor</code> and <code>OAuth2AuthenticationSuccessHandler</code> are in the security set (D5).
          <strong>Files:</strong> <code>interfaces/{graphql,kafka,grpc,handler,shared}</code> and their tests.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 42 files changed (graphql, kafka, grpc, handler, shared and tests). verify.py (with keep list) 0 differences over src/*/java/com/sep/vox/interfaces (215 files); compileJava compileTestJava pass; ./gradlew test (full unit suite, 2,823 tests) passes, including com.sep.vox.interfaces.* and com.sep.vox.architecture.*. Security set: StreamingServiceTokenInterceptor (comment only), OAuth2AuthenticationSuccessHandler (one exception text; D5). Translated: PageArguments messages (and the tests that pin them), GlobalExceptionResolver, GlobalGrpcExceptionHandler, Kafka validation messages and logs. Fixtures stay (keep register). Applies D1, D2, D5.</li><li>2026-11-27 &middot; In progress &middot; starting job 9.3 (security set: StreamingServiceTokenInterceptor, OAuth2AuthenticationSuccessHandler); applies D1, D2, D5.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.interfaces.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-10" data-status="todo">
+<div class="phase" id="phase-10" data-status="done">
   <h3><span class="title">Phase 10 &ndash; Resources and configuration</span>
     <span class="tag">medium &middot; mechanical &middot; needs D1, D3</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> configuration comments, GraphQL schema text and (if D3 = B) database comment metadata are English. <strong>Depends on:</strong> phase 9 (the GraphQL schema text must match the
      controllers' English messages), D1, D3.</p>
   <ul class="jobs">
-    <li class="job" id="job-10-1" data-status="todo">
-      <span class="title">10.1 <code>application.yaml</code>, <code>application-test.yaml</code>, <code>Dockerfile</code> comments</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-1" data-status="done">
+      <span class="title">10.1 <code>application.yaml</code>, <code>application-test.yaml</code>, <code>Dockerfile</code> comments</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 161 comment lines (129 + 29 + 3) are English, and the files differ from <code>HEAD</code> only inside comments: <code>diff</code> of old and new with everything from <code>#</code> to the end of each line removed prints nothing (a <code>#</code> inside a quoted value is checked by hand).
          The <code>application.yaml</code> Flyway comment keeps every instruction (the two <code>FLYWAY_*</code> variables and the <code>docker compose down -v</code> alternative). <strong>Files:</strong>
          <code>src/main/resources/application.yaml</code>, <code>src/test/resources/application-test.yaml</code>, <code>Dockerfile</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 3 files; all comment lines English. For each file, a diff of HEAD and new with everything from <code>#</code> to end of line removed prints nothing; no Vietnamese letters remain (the only hit, <code>31.200&#273;</code>, is a currency value inside an English comment). Flyway comment keeps both <code>FLYWAY_*</code> variables and the <code>docker compose down -v</code> alternative. Applies D2.</li></ul>
     </li>
-    <li class="job" id="job-10-2" data-status="todo">
-      <span class="title">10.2 GraphQL schema descriptions and comments</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-2" data-status="done">
+      <span class="title">10.2 GraphQL schema descriptions and comments</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the 351 lines in 6 <code>.graphqls</code> files are English (the descriptions are kind B and the 9 <code>#</code> comment lines are comments, so all 351 are translated), no field, type or argument changes, and
          <code>./gradlew test --tests '*GraphQL*'</code> passes (the slice tests load the real schema without Docker). <strong>Files:</strong> <code>src/main/resources/graphql/{assessment-appeal,assessment-grading,assessment,dashboard,practice-planning,topic-suggestion}.graphqls</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 6 .graphqls files translated (descriptions as kind B, 9 # comments); no Vietnamese letters remain in src/main/resources/graphql. Structure check: with descriptions and comments stripped, all 6 files are identical to HEAD. <code>./gradlew compileJava</code> and <code>./gradlew test --tests '*GraphQL*'</code> pass. Applies D1, D2.</li></ul>
     </li>
     <li class="job" id="job-10-3" data-status="skipped">
       <span class="title">10.3 <code>V24</code> migration for the Vietnamese <code>COMMENT ON</code> texts (only if D3 = B)</span> <span class="status skipped">Deferred</span>
@@ -611,70 +643,95 @@ of a package are translated in the same job as the package, because tests assert
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*GraphQL*'</code>, <code>git diff --stat -- src/main/resources/db/migration</code>.</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 10.1 and 10.2 done, 10.3 deferred (D3 = A). compileJava and test --tests '*GraphQL*' pass; <code>git diff --stat -- src/main/resources/db/migration</code> prints nothing.</li></ul>
 </div>
 
-<div class="phase" id="phase-11" data-status="skipped">
-  <h3><span class="title">Phase 11 &ndash; Rendered content (only if D1 = C)</span>
-    <span class="tag">medium &middot; needs D1 = C</span>
-    <span class="status skipped">Deferred</span></h3>
-  <p><strong>Goal:</strong> emails, push notifications and generated spreadsheets are English. The whole phase is skipped when D1 is A or B. <strong>Depends on:</strong> phases 7 and 8, D1 = C.</p>
+<div class="phase" id="phase-11" data-status="done">
+  <h3><span class="title">Phase 11 &ndash; Rendered content (A2)</span>
+    <span class="tag">large &middot; judgement &middot; needs A2, D5</span>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> emails, push notifications, spreadsheet headers and the other end-user texts the code writes (order descriptions, a dashboard fallback class name, two topic-offer labels) are English. Applies A2, which supersedes D1.
+     <strong>Measured 2026-11-27</strong> by parsing every keep-register row of kind C and counting the lines that hold a Vietnamese letter today: 27 files (18 main, 9 test) plus the 9 email templates.
+     The first version of this phase named only the render service, the 9 templates, <code>NotificationPushedEventConsumer</code> and <code>QuestionSpreadsheetService</code>; the email subjects and role labels in 9 consumers, the other export classes, the order descriptions and the dashboard and topic-offer labels were missing, so jobs 11.1&ndash;11.3 are widened and job 11.4 is new.
+     <strong>Depends on:</strong> phases 7 and 8 (done). It does not depend on phase 10, and phase 9 is done.</p>
   <ul class="jobs">
-    <li class="job" id="job-11-1" data-status="skipped">
-      <span class="title">11.1 Email subjects, bodies and the 9 templates</span> <span class="status skipped">Deferred</span>
-      <p><strong>Done when:</strong> <code>SmtpEmailTemplateRenderService</code> (67 string lines) and the 9 files in <code>src/main/resources/templates/email/</code> (71 lines) are English, no placeholder name changes (the
-         verifier compares them), and <code>./gradlew test --tests '*EmailConsumer*'</code> passes. No test class exists for <code>SmtpEmailTemplateRenderService</code> itself (checked with <code>git ls-files src/test</code>), so the placeholder comparison
-         and the consumer tests are the evidence; the job adds no test. <strong>Files:</strong> the service, the 9 templates and the consumer tests that assert email text.</p>
-      <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+    <li class="job" id="job-11-1" data-status="done">
+      <span class="title">11.1 Email subjects, bodies, role labels and the 9 templates</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> <code>SmtpEmailTemplateRenderService</code> (58 lines with Vietnamese today) and the 9 files in <code>src/main/resources/templates/email/</code> (71 lines) are English, and the 9 templates say
+         <code>lang="en"</code> instead of <code>lang="vi"</code> (a Vietnamese-letter scan does not see it). The subject and role-label literals of 9 consumers are English (39 lines):
+         <code>AssessmentAppealEmailConsumer</code>, <code>AssessmentResultLifecycleEmailConsumer</code>, <code>GradingAssignmentEmailConsumer</code>, <code>InvoiceEmailConsumer</code>, <code>RegisterVerificationOtpEmailConsumer</code>,
+         <code>RejectRegisterFormEventConsumer</code>, <code>ResetPasswordOtpEmailConsumer</code>, <code>SchoolDebtEmailConsumer</code>, <code>UserCreatedEventConsumer</code>. No placeholder name changes: the 19 <code>{{name}}</code>
+         placeholders of the templates are compared before and after (<code>git show HEAD:&lt;file&gt;</code>), and the verifier compares the Java files. Date and number formats (<code>HH:mm dd/MM/yyyy</code>, <code>DecimalFormat</code>) are not touched.
+         The three consumer test classes that assert email text (<code>AssessmentAppealEmailConsumerTests</code>, <code>AssessmentResultLifecycleEmailConsumerTests</code>, <code>GradingAssignmentEmailConsumerTests</code>; 49 lines) assert the English text, and
+         <code>./gradlew test --tests 'com.sep.vox.infrastructure.event.internal.consumer.*'</code> passes. No test class exists for <code>SmtpEmailTemplateRenderService</code> itself (checked with <code>git ls-files src/test</code>), so the placeholder comparison
+         and the consumer tests are the evidence; the job adds no test. <strong>Files:</strong> the service, the 9 templates, the 9 consumers and the 3 consumer test classes.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; jobs 11.1-11.4 done. compileJava compileTestJava, the job test filters and architecture.* pass; integrationTest not run (no Docker). Client-visible change: emails, push texts, spreadsheet headers, new order descriptions are English.</li><li>2026-11-27 &middot; Done &middot; SmtpEmailTemplateRenderService, 9 templates (lang=en, 19 {{placeholders}} identical to HEAD) and 9 consumers translated; 3 consumer tests assert English text (fixtures stay). verify.py: only a known false positive from an earlier phase ({khong-phai-json}); compileJava compileTestJava, test --tests 'com.sep.vox.infrastructure.event.internal.consumer.*' and 'architecture.*' pass. Applies A2, D2. No push text found in the 9 consumers.</li><li>2026-11-27 &middot; In progress &middot; starting job 11.1; applies A2, D2, D5</li><li>2026-11-27 &middot; Not started &middot; reopened by A2 (supersedes D1 = A) and widened from the first version</li><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
     </li>
-    <li class="job" id="job-11-2" data-status="skipped">
-      <span class="title">11.2 Push notification titles and bodies</span> <span class="status skipped">Deferred</span>
-      <p><strong>Done when:</strong> the roughly 40 title and body literals of <code>NotificationPushedEventConsumer</code> (and the labels in the same file) are English, and
-         <code>./gradlew test --tests '*Notification*'</code> passes. <strong>Files:</strong> <code>infrastructure/event/internal/consumer/NotificationPushedEventConsumer.java</code> and its tests.</p>
-      <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+    <li class="job" id="job-11-2" data-status="done">
+      <span class="title">11.2 Push notification titles and bodies</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> the title, body and label literals of <code>NotificationPushedEventConsumer</code> (41 lines with Vietnamese today) are English; <code>NotificationPushedEventConsumerTests</code> (25 lines) and the push title and body
+         fixture in <code>FcmNotificationWebpushLinkTests</code> (1 line) match; a push title or body found in a job 11.1 consumer is translated there and noted here; and
+         <code>./gradlew test --tests '*NotificationPushedEventConsumer*' --tests '*FcmNotification*'</code> passes. Not checked: whether the frontend or desktop app matches on push text.
+         <strong>Files:</strong> <code>infrastructure/event/internal/consumer/NotificationPushedEventConsumer.java</code> and the two test classes.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; NotificationPushedEventConsumer titles, bodies and round labels translated (src/.../NotificationPushedEventConsumer.java); test asserts 'Spot check'; FcmNotificationWebpushLinkTests fixture title translated. verify.py 0 differences; compileJava compileTestJava and test --tests '*NotificationPushedEventConsumer*' '*FcmNotification*' pass. No push text found in the 11.1 consumers. Applies A2.</li><li>2026-11-27 &middot; In progress &middot; starting job 11.2; applies A2, D2</li><li>2026-11-27 &middot; Not started &middot; reopened by A2 (supersedes D1 = A)</li><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
     </li>
-    <li class="job" id="job-11-3" data-status="skipped">
-      <span class="title">11.3 Excel export and template headers and sheet names</span> <span class="status skipped">Deferred</span>
-      <p><strong>Done when:</strong> for each spreadsheet, a test or <code>grep</code> shows the importer still accepts the English header (via the <code>FileProcessingService</code> alias maps) before the header is changed; the 37 header lines in 4
-         files are English; <code>./gradlew test --tests '*Spreadsheet*'</code> passes. Import aliases themselves are never changed. <strong>Files:</strong> <code>QuestionSpreadsheetService</code> and the other
-         spreadsheet and export classes found by the scanner, and their tests.</p>
-      <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+    <li class="job" id="job-11-3" data-status="done">
+      <span class="title">11.3 Excel and CSV export and template headers and sheet names</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> for each spreadsheet that people can download and upload again, a test or <code>grep</code> shows the importer accepts the English header (via the <code>FileProcessingService</code> alias maps) before its header is changed;
+         if an importer does not accept it, the job stops for that sheet and asks (the alias maps are kind D and are never changed). The 26 header lines in 3 main files are English: <code>QuestionSpreadsheetService</code> (21 lines),
+         <code>ExportAssessmentScoresExcelUseCase</code> (3), <code>ExportAssessmentScoresUseCase</code> (2). The first version estimated 37 lines in 4 files, so the job also runs the scanner with the unaccented word list over <code>application</code> and
+         <code>infrastructure</code> for header and sheet-name literals the register does not list, and records what it finds. Tests match: <code>QuestionSpreadsheetServiceTests</code> (5 lines), the header lines of
+         <code>ExportAssessmentScoresExcelUseCaseTests</code> (its Vietnamese fixtures stay) and the CSV header returned by a mocked export in <code>RestAssessmentResultControllerTests</code> (line 67).
+         <code>./gradlew test --tests '*Spreadsheet*' --tests '*ExportAssessmentScores*' --tests '*RestAssessmentResultController*'</code> passes. <strong>Files:</strong> the three classes above and the three test classes.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; 26 header lines translated: QuestionSpreadsheetService (21), ExportAssessmentScoresExcelUseCase (3, sheet name 'Scores'), ExportAssessmentScoresUseCase (2); tests match. Importer check: FileProcessingService.questionContentAliases/questionTargetAliases list the English form of all 16 import headers + 'bank code' (header matching is case, diacritic and punctuation insensitive, normalizeHeader line 469); 'Topic', 'Status', 'Created by', 'Created at' of the full export are not import columns (the old Vietnamese 'Chủ đề' was not an alias either). Score exports have no importer. CHANGED: test method should_write_the_thirteen_vietnamese_headers_in_order renamed to ..._english_headers_... because its name became false. Scan over src/main/java finds no other header or sheet-name literal. Noticed, not changed: ExportAssessmentScoresExcelUseCase.exportFileName returns transliterated Vietnamese ('bang-diem-lop', 'tap-trung'). Test: test --tests '*Spreadsheet*' '*ExportAssessmentScores*' '*RestAssessmentResultController*' pass. Applies A2.</li><li>2026-11-27 &middot; In progress &middot; starting job 11.3; applies A2, D2</li><li>2026-11-27 &middot; Not started &middot; reopened by A2 (supersedes D1 = A) and widened from the first version</li><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+    </li>
+    <li class="job" id="job-11-4" data-status="done">
+      <span class="title">11.4 Order descriptions and other end-user texts the code writes (money code, text only)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> first, the PayOS rules for the payment <code>description</code> (length limit, allowed characters) are read in the official PayOS documentation and written into this job's log. <code>PayOSService</code> passes
+         <code>command.description()</code> (line 135) unchanged and the code has no length check, so if an English text breaks a PayOS rule the job stops and asks. Then the 6 main literals are English:
+         <code>CreateSubscriptionOrderUseCase</code> (&ldquo;upgrade to &lt;plan&gt;&rdquo; and &ldquo;subscribe to &lt;plan&gt;&rdquo; descriptions, 2 lines), <code>CreateTopUpOrderUseCase</code> (top-up description, 1),
+         <code>ViewTeacherDashboardUseCase</code> (<code>UNKNOWN_CLASS_NAME</code>, 1) and <code>ViewPracticeTopicOffersUseCase</code> (two rationale labels, lines 154 and 156); and the line of
+         <code>ViewTeacherDashboardUseCaseTests</code> that asserts the fallback name matches (its other Vietnamese lines are fixtures and stay). The verifier shows no other change in these files, and
+         <code>./gradlew test --tests '*Order*' --tests '*Payment*' --tests '*Quota*' --tests '*ViewTeacherDashboard*' --tests '*ViewPracticeTopicOffers*'</code> passes. No test class exists for the two order use cases (checked with <code>git ls-files src/test</code>),
+         so the verifier and the filters are the evidence; the job adds no test. Orders already stored keep their description (A1). The money files touched are listed in the phase notes (D5).
+         <strong>Files:</strong> the four use cases and <code>ViewTeacherDashboardUseCaseTests</code>.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; PayOS rule (https://payos.vn/docs/api/, POST /v2/payment-requests, field description): 'with bank accounts not linked through payOS the limit is 9 characters'; no character-set rule is stated. The old Vietnamese descriptions already exceeded 9 characters, and the code has no length check, so no new kind of violation; lengths: 'Upgrade to ' 11 (was 13), 'Subscribe to ' 13 (was 8, +5), 'Top up balance' 14 (was 18). Translated CreateSubscriptionOrderUseCase (2), CreateTopUpOrderUseCase (1), ViewTeacherDashboardUseCase UNKNOWN_CLASS_NAME, ViewPracticeTopicOffersUseCase (2 labels) and the fallback assertion in ViewTeacherDashboardUseCaseTests. verify.py 0 differences; compileJava compileTestJava and test --tests '*Order*' '*Payment*' '*Quota*' '*ViewTeacherDashboard*' '*ViewPracticeTopicOffers*' 'architecture.*' pass. Money files touched, text only (D5): CreateSubscriptionOrderUseCase, CreateTopUpOrderUseCase. Applies A2, D5.</li><li>2026-11-27 &middot; In progress &middot; starting job 11.4; applies A2, D5 (money code, text only)</li></ul>
     </li>
   </ul>
-  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the test filters above, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
-  <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the test filters above, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>. <code>integrationTest</code> is not run (no Docker).</p>
+  <ul class="status-log"><li>2026-11-27 &middot; Not started &middot; reopened by A2 (supersedes D1 = A); jobs 11.1&ndash;11.3 rewritten, job 11.4 added</li><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
 </div>
 
-<div class="phase" id="phase-12" data-status="todo">
+<div class="phase" id="phase-12" data-status="done">
   <h3><span class="title">Phase 12 &ndash; Lock-in and final scan</span>
     <span class="tag">small &middot; needs D4</span>
-    <span class="status todo">Not started</span></h3>
-  <p><strong>Goal:</strong> the result is checked end to end and protected. <strong>Depends on:</strong> phases 2&ndash;10 (and 11 if D1 = C), D4.</p>
+    <span class="status done">Done</span></h3>
+  <p><strong>Goal:</strong> the result is checked end to end and protected. <strong>Depends on:</strong> phases 2&ndash;11 (phase 11 applies A2), D4.</p>
   <ul class="jobs">
-    <li class="job" id="job-12-1" data-status="todo">
-      <span class="title">12.1 Final scan and keep-register reconciliation</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-1" data-status="done">
+      <span class="title">12.1 Final scan and keep-register reconciliation</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> the scanner over <code>src</code> and <code>Dockerfile</code> reports Vietnamese only in the files of the keep register (seed initializers, <code>FileProcessingService</code>,
-         the <code>'&#273;'</code> char literals, test fixtures, SQL migrations <code>V1</code>&ndash;<code>V13</code>, and the rendered-content files kept by D1 = A: <code>SmtpEmailTemplateRenderService</code>, the push text in <code>NotificationPushedEventConsumer</code>, the Excel headers, and the 9 email templates), and
+         the <code>'&#273;'</code> char literals, test fixtures, SQL migrations <code>V1</code>&ndash;<code>V13</code>; no kind C row is left, because phase 11 translated the rendered content under A2), and
          <code>git grep -lP '&lt;Vietnamese letter class&gt;' -- src Dockerfile</code> prints exactly those files. Every register row has a file, a line range and a reason.
          <strong>Files:</strong> this plan's notes only.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; Scan of src and Dockerfile: Vietnamese remains only in 123 Java files (seed initializers, FileProcessingService, test fixtures, 10 comment lines quoting the letter &#273; or a name), the 13 migrations, the 2 seed JSON files and one currency example in an application.yaml comment (<code>31.200&#273;</code>); the unaccented word list finds only import aliases and fixtures. CHANGED (A3): the scan found 3 test files no earlier phase had translated (PagingConventionTests, TestStoragePortConfig, OutboxTestSupport) and one main literal registered wrongly as a fixture (CreateAssessmentPaperUseCase:222 label, now &ldquo;Class test&rdquo;, nothing asserts it); all four translated, verify.py 0 differences, compileJava compileTestJava, test --tests '*Outbox*' '*CreateAssessmentPaper*' and architecture.* pass. Register reconciliation: see Implementation notes, &ldquo;Final reconciliation&rdquo;. Applies A3.</li><li>2026-11-27 &middot; In progress &middot; starting job 12.1; applies A3 (translate 3 missed test files). Scan found 3 files outside the register: PagingConventionTests, TestStoragePortConfig, OutboxTestSupport.</li></ul>
     </li>
-    <li class="job" id="job-12-2" data-status="todo">
-      <span class="title">12.2 <code>LanguageConventionTests</code> and keep list (D4 = A)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-2" data-status="done">
+      <span class="title">12.2 <code>LanguageConventionTests</code> and keep list (D4 = A)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>./gradlew test --tests '*LanguageConventionTests'</code> passes on the tree, fails on a snippet with a Vietnamese comment and on one with a Vietnamese string in a file not on the keep list (the
          test's own self-tests), and <code>language-keep-list.txt</code> holds exactly the Java files of the register (the test scans <code>src/main/java</code> and <code>src/test/java</code> only; migrations, seed JSON and templates stay in the register alone). Skipped if D4 is B or C. <strong>Files:</strong>
          <code>src/test/java/com/sep/vox/architecture/LanguageConventionTests.java</code>, <code>src/test/resources/architecture/language-keep-list.txt</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; Added LanguageConventionTests and language-keep-list.txt (123 Java files). ./gradlew test --tests '*LanguageConventionTests' passes on the tree (4 tests: scan, stale entries, violating snippets detected, no false positives); the full unit suite passes. Applies D4.</li></ul>
     </li>
-    <li class="job" id="job-12-3" data-status="todo">
-      <span class="title">12.3 <code>AGENTS.md</code> Language bullet and testing list (D4 = A or B)</span> <span class="status todo">Not started</span>
-      <p><strong>Done when:</strong> you confirmed the proposed wording in chat, the bullet at <code>AGENTS.md</code> line 148 states which strings are English and which stay Vietnamese (matching D1, D2 and D5), and, if
+    <li class="job" id="job-12-3" data-status="done">
+      <span class="title">12.3 <code>AGENTS.md</code> Language bullet and testing list (D4 = A or B)</span> <span class="status done">Done</span>
+      <p><strong>Done when:</strong> you confirmed the proposed wording in chat, the bullet at <code>AGENTS.md</code> line 148 states which strings are English and which stay Vietnamese (matching D1 as superseded by A2, D2 and D5), and, if
          12.2 ran, the Testing section lists <code>LanguageConventionTests</code>. Skipped if D4 = C. <strong>Files:</strong> <code>AGENTS.md</code>.</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-27 &middot; Done &middot; AGENTS.md Language bullet replaced (line 148) and LanguageConventionTests added to Testing. CHANGED (A4): the approved text said the test &ldquo;fails on a Vietnamese comment anywhere&rdquo;; the test lets the files of the keep list hold Vietnamese in comments too (10 comment lines quote the letter &#273; or a name), so the sentence now reads &ldquo;Vietnamese in a comment or a string literal in any Java file that is not listed in &hellip;&rdquo;. Applies A4.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test</code> (all green), then the <code>verify-plan</code> skill.</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-27 &middot; Done &middot; compileJava compileTestJava pass; ./gradlew test passes (2,827 tests, 0 failures; 2,823 at baseline plus 4 in LanguageConventionTests); git diff --stat -- src/main/resources/db/migration prints nothing. integrationTest not run (no Docker). verify-plan skill not yet run.</li></ul>
 </div>
 
 <h2 id="risks">4. Risks</h2>
@@ -682,8 +739,11 @@ of a package are translated in the same job as the package, because tests assert
   <li><strong>A translation changes the meaning</strong> of an invariant or a business rule (most likely in the money and quota comments). The glossary fixes terms; translations are faithful, not shortened; each phase's notes list the
       security and money files for you to read first; when unsure a comment is translated, never deleted.</li>
   <li><strong>Code changes by accident</strong> while editing 1,518 files. The verifier (job 1.2) proves that everything outside comments and string literals is identical, and runs in every job.</li>
-  <li><strong>Client-visible text changes</strong> (D1 = A). REST <code>message</code>, validation maps, <code>ApiResponse.message</code>, GraphQL error messages and gRPC status text change language. The frontend, desktop app and AI grading service
+  <li><strong>Client-visible text changes</strong> (D1, kinds A and B). REST <code>message</code>, validation maps, <code>ApiResponse.message</code>, GraphQL error messages and gRPC status text change language. The frontend, desktop app and AI grading service
       are outside this repo and were not checked; the final report lists every changed channel and the places that may match on text.</li>
+  <li><strong>Rendered content changes language</strong> (A2). School users receive English emails and push notifications and download spreadsheets with English headers; new orders carry an English description. Three things are not checked:
+      whether the frontend, desktop app or AI grading service matches on push text, spreadsheet headers or the dashboard and topic-offer labels; whether PayOS limits the length or characters of the order description (job 11.4 reads its documentation first and
+      stops if an English text breaks a rule); and whether each importer accepts the English header (job 11.3 checks every sheet before changing it and stops if one does not).</li>
   <li><strong>Data translated by mistake.</strong> Translating import aliases or seed values would reject real uploaded files or create duplicate seed rows. They are kind D and recorded in the keep register; the guard test (D4 = A) keeps them listed.</li>
   <li><strong>Method-size and architecture tests fail</strong> because a comment got longer or shorter. Rule 5 and the <code>architecture.*</code> run in every job catch it; stale exemption entries are removed, never added.</li>
   <li><strong>Merge conflicts.</strong> The diff touches about 1,500 files while <code>test-restructuring-plan</code> phases 4&ndash;5 are still editing <code>application/usecase</code> tests and four <code>refactor/*</code> branches exist. Land and merge one phase at a time
@@ -697,7 +757,7 @@ of a package are translated in the same job as the package, because tests assert
 <ul>
   <li>SQL migrations <code>V1</code>&ndash;<code>V13</code> and their three <code>COMMENT ON</code> texts (D3 = A); no new migration is added.</li>
   <li>Data in Vietnamese: seed content in the 10 initializers and the 2 seed JSON files, import header aliases and accepted values in <code>FileProcessingService</code> and the import handlers, the <code>'&#273;'</code> char literals, Vietnamese names and transcripts in test fixtures.</li>
-  <li>Emails, push notification text and Excel export/template headers (kind C, D1 = A); phase 11 stays deferred and can be reopened as its own plan if a localisation decision is made.</li>
+  <li>Existing rows: orders already stored keep their Vietnamese description and other stored text stays as it is (A1); only text the code writes from now on is English. Emails, push notifications and spreadsheets are English for every user (A2); a per-user language is not part of this plan.</li>
   <li>Any localisation mechanism (message bundles, <code>Accept-Language</code>, <code>MessageSource</code>): messages become English constants, not keys.</li>
   <li>Renaming identifiers, changing exception types, error codes, HTTP status mapping, events, topics or schema fields; reformatting; converting hand-written mocks; fixing problems noticed on the way (they are reported in the notes).</li>
   <li>Plans under <code>docs/</code> that quote Vietnamese words; <code>README.md</code> (no Vietnamese).</li>
@@ -707,12 +767,12 @@ of a package are translated in the same job as the package, because tests assert
 <h2 id="verify">6. Verification</h2>
 <p>The plan is finished when all of these hold on the final tree:</p>
 <ul>
-  <li>The scanner and <code>git grep -lP</code> with the Vietnamese letter class over <code>src</code> and <code>Dockerfile</code> list only the files of the keep register, and <code>language-keep-list.txt</code> matches the register (D4 = A).</li>
+  <li>The scanner and <code>git grep -lP</code> with the Vietnamese letter class over <code>src</code> and <code>Dockerfile</code> list only the files of the keep register, the register holds no kind C row (A2), and <code>language-keep-list.txt</code> matches the register (D4 = A).</li>
   <li>The verifier over the whole diff against the starting commit (<code>8760ecc8</code>) reports no change outside comments and string literals, apart from the files of jobs 10.3, 12.2 and 12.3 and the removed method-size exemption entries.</li>
   <li><code>./gradlew compileJava compileTestJava</code> succeeds and <code>./gradlew test</code> passes (2,823 tests at baseline, plus those the new test class adds).</li>
   <li><code>./gradlew integrationTest</code> and <code>./gradlew clean build --no-daemon</code> (the CI command) pass on a machine with Docker. Not run during planning.</li>
   <li><code>git diff --stat -- src/main/resources/db/migration</code> prints nothing: no migration is modified or added (D3 = A).</li>
-  <li>The final report lists the changed client-facing channels (D1), the security and money files touched (D5), and the counts of comments translated, deleted and left.</li>
+  <li>The final report lists the changed client-facing channels (D1; and, from A2, emails, push notifications, spreadsheet headers and order descriptions), the security and money files touched (D5), and the counts of comments translated, deleted and left.</li>
 </ul>
 <p>Run the <code>verify-plan</code> skill after the last phase.</p>
 
@@ -723,6 +783,8 @@ of a package are translated in the same job as the package, because tests assert
     <tr><td>2026-11-27</td><td>Plan written (Draft)</td><td>First version: translate Vietnamese messages and comments to English; comments that break <code>AGENTS.md</code> are deleted (D2 answered), the rest translated.</td></tr>
     <tr><td>2026-11-27</td><td>D1, D3, D4, D5 answered (all the recommended option); phase 11 (3 jobs) and job 10.3 marked Deferred; conditional wording in the rules, jobs 10.2 and 12.1, risks, scope and verification tightened</td><td>D1 = A keeps rendered content (emails, push, Excel headers) Vietnamese, and D3 = A leaves the migrations untouched, so the work for D1 = C and D3 = B does not apply.</td></tr>
     <tr><td>2026-11-27</td><td>Approved</td><td>You approved the plan as written, including the D2 rubric reading.</td></tr>
+    <tr><td>2026-11-27</td><td>Reopened as Draft. A2 added (supersedes D1: kind C is translated). Phase 11 set to Not started: jobs 11.1&ndash;11.3 rewritten and widened, job 11.4 added. Wording updated in the introduction, the AGENTS.md callout, rule 2, phase 12 (dependency, jobs 12.1 and 12.3), Risks, Out of scope and Verification. Jobs already Done (phases 1&ndash;9) and phase 10 are unchanged.</td><td>You asked to make phase 11 the phase to implement, chose to reopen this plan with D1 = C and the scope &ldquo;all kind C in the register&rdquo;, and asked that the edit wait until the other session was paused (it finished phase 9 first). Measuring the register showed that the first phase 11 named only 4 of the 27 kind C files (plus the 9 templates); the rest were covered at most in general terms.</td></tr>
+    <tr><td>2026-11-27</td><td>Approved</td><td>You approved the reopened plan as written, including A2 (D1 becomes C) and the four jobs of phase 11.</td></tr>
   </tbody>
 </table></div>
 
@@ -734,20 +796,336 @@ problems noticed but not fixed.</p>
 <h3>Glossary (job 1.3)</h3>
 <div class="table-scroll"><table>
   <thead><tr><th>Vietnamese term</th><th>English term</th><th>Taken from</th></tr></thead>
-  <tbody></tbody>
+  <tbody>
+<tr><td>trường, trường học</td><td>school</td><td><code>School</code></td></tr>
+<tr><td>học sinh</td><td>student</td><td>role <code>STUDENT</code></td></tr>
+<tr><td>giáo viên</td><td>teacher</td><td>role <code>TEACHER</code></td></tr>
+<tr><td>quản trị trường</td><td>school admin</td><td>role <code>SCHOOL_ADMIN</code>; used in <code>AssessmentAppealStatus</code></td></tr>
+<tr><td>quản trị hệ thống</td><td>system admin</td><td>role <code>SYSTEM_ADMIN</code></td></tr>
+<tr><td>lớp, lớp học</td><td>class</td><td><code>SchoolClass</code></td></tr>
+<tr><td>khối</td><td>grade</td><td><code>SchoolGrade</code>, <code>GradeLevel</code></td></tr>
+<tr><td>phòng, phòng học</td><td>room</td><td><code>SchoolRoom</code></td></tr>
+<tr><td>kỳ thi, kỳ thi tập trung</td><td>assessment, centralized assessment</td><td><code>Assessment</code>, <code>AssessmentKind.CENTRALIZED</code></td></tr>
+<tr><td>bài kiểm tra</td><td>class test</td><td><code>AssessmentKind.CLASS_TEST</code> (125 uses), <code>ClassTestPaperResolver</code></td></tr>
+<tr><td>ca thi</td><td>assessment schedule</td><td><code>AssessmentSchedule</code></td></tr>
+<tr><td>phiên, phiên thi, phiên làm bài</td><td>session, assessment session</td><td><code>AssessmentSession</code></td></tr>
+<tr><td>phiên luyện, luyện tập</td><td>practice session, practice</td><td><code>PracticeSession</code></td></tr>
+<tr><td>thí sinh</td><td>candidate</td><td><code>AssessmentCandidate</code></td></tr>
+<tr><td>giám thị</td><td>proctor</td><td><code>AssessmentScheduleProctor</code></td></tr>
+<tr><td>đề thi, mã đề</td><td>assessment paper, paper</td><td><code>AssessmentPaper</code>, parameter <code>paperId</code></td></tr>
+<tr><td>blueprint đề thi</td><td>assessment blueprint</td><td><code>AssessmentBlueprint</code></td></tr>
+<tr><td>câu hỏi</td><td>question</td><td><code>Question</code></td></tr>
+<tr><td>ngân hàng câu hỏi</td><td>question bank</td><td><code>QuestionBank</code></td></tr>
+<tr><td>chủ đề</td><td>topic</td><td><code>QuestionTopic</code></td></tr>
+<tr><td>bộ tiêu chí, rubric</td><td>rubric</td><td><code>Rubric</code></td></tr>
+<tr><td>phiên bản rubric, bản rubric</td><td>rubric version</td><td><code>RubricVersion</code></td></tr>
+<tr><td>tiêu chí</td><td>criterion (plural criteria)</td><td><code>RubricCriterion</code></td></tr>
+<tr><td>khung đánh giá</td><td>framework</td><td><code>Framework</code></td></tr>
+<tr><td>bậc (của khung / luyện)</td><td>band</td><td><code>FrameworkCriterionBand</code>, <code>PracticeBandOption</code></td></tr>
+<tr><td>điểm</td><td>score</td><td><code>AssessmentItemCriterionScore</code>, <code>scaleMin</code></td></tr>
+<tr><td>thang điểm</td><td>score scale</td><td><code>scaleMin</code> in the rubric version</td></tr>
+<tr><td>chấm, chấm bài</td><td>grade (verb), grading</td><td><code>GradingTask</code>, <code>AssessmentSessionStatus.GRADING</code></td></tr>
+<tr><td>chấm lại</td><td>re-grade</td><td><code>RE_GRADING</code></td></tr>
+<tr><td>kết quả</td><td>result</td><td><code>AssessmentCandidateResult</code></td></tr>
+<tr><td>công bố</td><td>publish</td><td><code>RESULTS_PUBLISHED</code>, <code>AssessmentAppealStatus.PUBLISHED</code></td></tr>
+<tr><td>phúc khảo, đơn phúc khảo</td><td>appeal</td><td><code>AssessmentResultAppeal</code>, <code>AssessmentAppealStatus</code></td></tr>
+<tr><td>nộp</td><td>submit</td><td><code>AssessmentSessionStatus.SUBMITTED</code></td></tr>
+<tr><td>hết hạn</td><td>expired</td><td><code>AssessmentSessionStatus.EXPIRED</code></td></tr>
+<tr><td>chính sách (của trường)</td><td>assessment policy</td><td><code>AssessmentPolicy</code></td></tr>
+<tr><td>luật chấm</td><td>scoring rule</td><td><code>ScoringRule</code></td></tr>
+<tr><td>hạn mức</td><td>quota</td><td><code>QuotaType</code>, <code>SchoolSubscriptionQuotaRecord</code></td></tr>
+<tr><td>gói, gói đăng ký</td><td>subscription plan</td><td><code>SubscriptionPlan</code></td></tr>
+<tr><td>đăng ký (thuê bao)</td><td>subscription</td><td><code>SchoolSubscription</code></td></tr>
+<tr><td>đơn đăng ký</td><td>register form</td><td><code>RegisterForm</code></td></tr>
+<tr><td>ví, ví tự nạp</td><td>school balance ("wallet" only where the identifier says it, e.g. <code>confirmWalletDraw</code>)</td><td><code>SchoolBalance</code></td></tr>
+<tr><td>sổ cái, sao kê</td><td>balance ledger, statement</td><td><code>SchoolBalanceSummary</code>, <code>SchoolBalanceEntryPage</code></td></tr>
+<tr><td>bút toán</td><td>balance entry</td><td><code>SchoolBalanceEntry</code>, <code>OVERAGE_CHARGE</code></td></tr>
+<tr><td>số dư</td><td>balance</td><td><code>SchoolBalance</code></td></tr>
+<tr><td>nợ</td><td>debt</td><td><code>SchoolDebtEvent</code></td></tr>
+<tr><td>hóa đơn</td><td>invoice</td><td><code>Invoice</code></td></tr>
+<tr><td>đơn hàng</td><td>order</td><td><code>Order</code></td></tr>
+<tr><td>thanh toán</td><td>payment</td><td><code>Payment</code></td></tr>
+<tr><td>tài khoản</td><td>account</td><td><code>account</code> (18 uses); the entity itself is <code>User</code></td></tr>
+<tr><td>người dùng</td><td>user</td><td><code>User</code></td></tr>
+<tr><td>vai trò</td><td>role</td><td><code>Role</code></td></tr>
+<tr><td>trạng thái</td><td>status</td><td><code>*Status</code> enums</td></tr>
+<tr><td>đình chỉ</td><td>suspended</td><td><code>suspended</code> (66 uses)</td></tr>
+<tr><td>khoá, khóa</td><td>lock, locked</td><td><code>locked</code> (75 uses)</td></tr>
+<tr><td>vô hiệu hóa</td><td>deactivate</td><td><code>deactivate</code> (34 uses)</td></tr>
+<tr><td>gia hạn</td><td>renew, renewal</td><td><code>SubscriptionRenewal</code> (44 uses)</td></tr>
+<tr><td>thu hồi</td><td>revoke</td><td><code>revoke</code> in <code>LogoutUseCase</code>, <code>RefreshUseCase</code></td></tr>
+<tr><td>năm học</td><td>school year</td><td>no identifier names it; <code>SchoolGrade</code> is the &ldquo;grade of a school year&rdquo; (&ldquo;khối năm học&rdquo; in the GraphQL schema)</td></tr>
+<tr><td>trọng số</td><td>weight</td><td><code>ClassTestSectionWeightPolicy</code></td></tr>
+<tr><td>hàng đợi</td><td>queue</td><td><code>queue</code> (45 uses), <code>markQueued</code></td></tr>
+<tr><td>nhập (file), import</td><td>import</td><td><code>ImportSession</code>, <code>ImportType</code></td></tr>
+<tr><td>ký tự</td><td>character</td><td>plain word, no identifier</td></tr>
+<tr><td>thông báo (thông báo đẩy)</td><td>notification</td><td><code>Notification</code></td></tr>
+<tr><td colspan="3"><strong>Message patterns (same wording everywhere)</strong></td></tr>
+<tr><td>Không tìm thấy X</td><td>X not found</td><td><code>ResourceNotFoundException</code> messages (840+ uses); X from the table above</td></tr>
+<tr><td>X không được để trống</td><td>X must not be blank</td><td>most frequent validation message (390+ uses)</td></tr>
+<tr><td>X không hợp lệ</td><td>X is invalid</td><td>224 uses</td></tr>
+<tr><td>X đã tồn tại</td><td>X already exists</td><td><code>ResourceDuplicatedException</code></td></tr>
+<tr><td>Bạn không có quyền …; truy cập bị từ chối</td><td>You do not have permission to …; access denied</td><td><code>ForbiddenException</code></td></tr>
+<tr><td>X không được vượt quá N ký tự</td><td>X must not exceed N characters</td><td>104 uses</td></tr>
+<tr><td>X là bắt buộc</td><td>X is required</td><td>81 uses</td></tr>
+<tr><td colspan="3">Not translated: <em>người nghe</em> in the framework descriptions (seed data, kind D). The term list comes from word and bigram counts of the comment and string lines (scratchpad <code>terms.py</code>).</td></tr>
+</tbody>
 </table></div>
 
 <h3>Keep register (jobs 2.1&ndash;12.1)</h3>
 <div class="table-scroll"><table>
   <thead><tr><th>File</th><th>Lines</th><th>Kind</th><th>Reason</th></tr></thead>
-  <tbody></tbody>
+  <tbody>
+    <tr><td>src/main/java/com/sep/vox/domain/common/VnSearchKey.java</td><td>14</td><td>D</td><td>Javadoc quotes the Vietnamese letter &ldquo;&#273;&rdquo; (U+0111) to explain why NFD does not touch it; the letter is the subject of the comment.</td></tr>
+    <tr><td>src/test/java/com/sep/vox/domain/valueobject/FullNameTests.java</td><td>12, 14, 25</td><td>D</td><td>Vietnamese personal name used as test fixture.</td></tr>
+    <tr><td>src/test/java/com/sep/vox/domain/service/rubric/RubricResultBandValidatorTests.java, ScoreRangeValidatorTests.java</td><td>band names</td><td>D</td><td>Vietnamese band labels (Y&#7871;u, Kh&aacute;, Gi&#7887;i&hellip;) used as fixture data.</td></tr>
+    <tr><td>src/test/java/com/sep/vox/domain/service/question/QuestionStatusTransitionTests.java</td><td>286, 318</td><td>D</td><td>Arbitrary question text and bank name used as fixture data.</td></tr>
+      <tr><td>src/test/java/com/sep/vox/application/common/StringNormalizationTests.java</td><td>44</td><td>D</td><td>Unaccented Vietnamese university name used as normalization fixture.</td></tr>
+    <tr><td>src/test/java/com/sep/vox/application/port/input/service/PracticePaperDraftEntrySerializationTests.java</td><td>49, 66, 76</td><td>D</td><td>Practice hints and a failure text used as round-trip fixture data.</td></tr>
+    <tr><td>src/test/java/com/sep/vox/application/port/input/service/QuestionSpreadsheetServiceTests.java</td><td>60-63, 219</td><td>C</td><td>Excel column headers that the production code still writes in Vietnamese (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>src/test/java/com/sep/vox/application/port/input/service/RubricCriterionExamplesNormalizerTests.java</td><td>16 (message), 45, 48 (fixture)</td><td>pinned</td><td>Line 16 asserts a message of RubricCriterionExamplesNormalizer (phase 7); it is translated together with that class. Lines 45 and 48 are Vietnamese transcript fixtures (D).</td></tr>
+    <tr><td>src/test/java/com/sep/vox/application/port/input/service/PracticePaperDraftServiceTests.java</td><td>26</td><td>pinned</td><td>Asserts a message of PracticePaperDraftService (phase 7); translated together with that class.</td></tr>
+    <tr><td>src/test/java/com/sep/vox/application/port/input/service/SchoolSubscriptionActiveGuardServiceTests.java</td><td>29-61</td><td>pinned</td><td>Asserts messages of SchoolSubscriptionActiveGuardService (phase 7) and passes its action labels; translated together with that class.</td></tr>
+      <tr><td>job 4.1: application/port/input/usecase/assessment/AttachAssessmentBlueprintUseCase.java</td><td>130 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/port/input/usecase/assessment/ChangeClassTestBlueprintUseCase.java</td><td>138 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/port/input/usecase/assessment/CreateClassTestUseCase.java</td><td>85 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/port/input/usecase/assessment/UpdateClassTestQuestionsUseCase.java</td><td>119 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/port/input/usecase/assessmentblueprint/CreateAssessmentBlueprintVersionUseCase.java</td><td>59 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/port/input/usecase/assessmentblueprint/UpdateAssessmentBlueprintVersionUseCase.java</td><td>70 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.2: application/port/input/usecase/assessmentgrading/ExportAssessmentScoresExcelUseCase.java</td><td>39, 45, 46 (header)</td><td>C</td><td>Excel/CSV column header or sheet name that production still writes in Vietnamese (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 4.2: application/port/input/usecase/assessmentgrading/ExportAssessmentScoresUseCase.java</td><td>42, 43 (header)</td><td>C</td><td>Excel/CSV column header or sheet name that production still writes in Vietnamese (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 4.2: application/port/input/usecase/assessmentpaper/CreateAssessmentPaperUseCase.java</td><td>145, 366 (message); 222 (fixture)</td><td>pinned/D</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class. Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/port/input/usecase/assessmentpaper/UpdateAssessmentPaperItemUseCase.java</td><td>163 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.2: application/port/input/usecase/assessmentpaper/UpdateAssessmentPaperStatusUseCase.java</td><td>208 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentTimeQuotaGuardService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/usecase/assessment/AssessmentMemberManagementTests.java</td><td>108, 128 (message); 180 (message); 214, 226 (fixture)</td><td>pinned/D</td><td>Asserts or passes a text of AssessmentMemberManageAccessService (phase 7); translated together with that class. Asserts or passes a text of AssessmentMemberManageAccessService / AssessmentPaperAuthoringAccessService (phase 7); translated together with that class. Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/usecase/assessment/CreateAssessmentPolicyTests.java</td><td>83, 190 (fixture); 98, 109, 120 (message)</td><td>D/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Asserts or passes a text of AssessmentPolicyValidator (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/usecase/assessment/CreateClassTestAssessmentPolicyTests.java</td><td>108, 199 (fixture); 153, 162, 172, 182 (message)</td><td>D/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Asserts or passes a text of AssessmentPolicyValidator (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/usecase/assessment/CreateClassTestSetupTests.java</td><td>119, 325, 361, 385 (fixture); 271 (message)</td><td>D/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Asserts or passes a text of AssessmentStreamConfigResolver (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/usecase/assessment/UpdateAssessmentStatusUseCaseTests.java</td><td>551 (message); 644, 654 (fixture)</td><td>pinned/D</td><td>Asserts or passes a text of AssessmentScheduleClosureService (phase 7); translated together with that class. Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/usecase/assessment/UpdateAssessmentUseCaseTests.java</td><td>150, 282, 332, 393, 409, 422, 434, 462, 507, 512, 514, 527, 536, 564 (fixture); 185 (message); 206 (message); 223 (message)</td><td>D/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Asserts or passes a text of the schedule conflict validators (phase 7); translated together with that class. Asserts or passes a text of AssessmentScheduleProctorConflictValidator (phase 7); translated together with that class. Asserts or passes a text of AssessmentScheduleRoomValidator (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/usecase/assessment/ViewMyAssessmentsUseCaseTests.java</td><td>284 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/usecase/assessmentappeal/ApproveAndClaimAssessmentAppealUseCaseTests.java</td><td>64 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/usecase/assessmentappeal/ApproveRejectAssessmentAppealUseCaseTests.java</td><td>117, 120, 130, 135 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/usecase/assessmentappeal/AssignAssessmentAppealReviewerUseCaseTests.java</td><td>147, 150, 156 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/usecase/assessmentappeal/CreateAssessmentAppealUseCaseTests.java</td><td>111 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.1: application/usecase/assessmentcandidate/AssignAssessmentCandidateScheduleUseCaseTests.java</td><td>153 (message)</td><td>pinned</td><td>Asserts or passes a text of the schedule conflict validators (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.1: application/usecase/assessmentcandidate/BulkAssignAssessmentCandidateScheduleUseCaseTests.java</td><td>172, 176 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentevaluation/AssessmentSessionResultCalculatorTests.java</td><td>143, 144, 145, 351 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentevaluation/RecordAssessmentAttemptEvaluationHumanGuardTests.java</td><td>152 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentevaluation/ViewAssessmentItemResponseEvaluationUseCaseTests.java</td><td>94, 95, 109, 123, 132, 139, 229, 230, 256 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/AssignGradingUseCaseTests.java</td><td>279 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentGradingAccessService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/ClearInvalidResultUseCaseTests.java</td><td>90, 100, 151 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/ExportAssessmentScoresExcelUseCaseTests.java</td><td>81, 96, 125, 136, 143, 156, 165, 192, 200, 213, 236, 238, 243 (fixture); 112, 113 (header); 258 (message)</td><td>D/C/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Excel/CSV column header or sheet name that production still writes in Vietnamese (kind C, phase 11 is deferred). Asserts or passes a text of AssessmentScoreExportSupport (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/ExportAssessmentScoresUseCaseTests.java</td><td>68, 169, 186, 188, 193, 195, 200, 208, 217 (fixture); 89 (message)</td><td>D/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Asserts or passes a text of AssessmentScoreExportSupport (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/GradingDecisionUseCasesTests.java</td><td>196, 218, 234, 246, 264, 271, 291, 305, 311, 321, 335, 356 (fixture); 280 (message)</td><td>D/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Asserts or passes a text of GradingActionSupport (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/PreviewGradingUseCaseTests.java</td><td>114, 115, 118, 183 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/RegradeResultUseCaseTests.java</td><td>109, 111, 138, 139, 199, 200, 210, 211 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/ViewClassTestGradingResultsUseCaseTests.java</td><td>88, 94 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentgrading/ViewResultStatusHistoryUseCaseTests.java</td><td>98 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentpaper/CreateClassTestPaperTests.java</td><td>210, 211, 262, 284 (fixture); 225 (message)</td><td>D/pinned</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D). Asserts or passes a text of AssessmentMemberManageAccessService / AssessmentPaperAuthoringAccessService (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.2: application/usecase/assessmentpaper/UpdateAssessmentPaperStatusUseCaseTests.java</td><td>301, 327 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.3: application/usecase/assessmentschedule/AddAssessmentScheduleProctorUseCaseTests.java</td><td>143 (message)</td><td>pinned</td><td>Asserts or passes a text of the schedule conflict validators (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.3: application/usecase/assessmentschedule/UpdateAssessmentScheduleUseCaseTests.java</td><td>199 (message); 219 (message)</td><td>pinned</td><td>Asserts or passes a text of AssessmentScheduleProctorConflictValidator (phase 7); translated together with that class. Asserts or passes a text of the schedule conflict validators (phase 7); translated together with that class.</td></tr>
+    <tr><td>job 4.3: application/usecase/assessmentsession/DeleteAssessmentSessionUseCaseTests.java</td><td>122, 126, 132, 134, 148, 150, 161, 172, 185, 195, 206, 221, 233, 249, 263 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.3: application/usecase/assessmentsession/ViewAssessmentSessionResultUseCaseTests.java</td><td>220 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+    <tr><td>job 4.3: application/usecase/assessmentsession/ViewMyAssessmentResultsUseCaseTests.java</td><td>87 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, role labels, reasons, titles) (D).</td></tr>
+      <tr><td>job 5.1: application/usecase/importfile/ViewImportRowsUseCaseTests.java</td><td>99, 206, 208 (fixture)</td><td>D</td><td>Excel column header &ldquo;Mã lớp&rdquo; and an import row error used as fixture data (import headers are data).</td></tr>
+    <tr><td>job 5.1: application/usecase/importfile/ViewImportSessionUseCaseTests.java</td><td>74, 75, 87 (fixture)</td><td>D</td><td>Excel column header &ldquo;Mã lớp&rdquo; and an import row error used as fixture data (import headers are data).</td></tr>
+    <tr><td>job 5.2: application/usecase/question/BulkUpdateQuestionStatusTransactionTests.java</td><td>82, 92 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, labels, search keywords).</td></tr>
+    <tr><td>job 5.2: application/usecase/question/BulkUpdateQuestionStatusUseCaseTests.java</td><td>293, 317 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, labels, search keywords).</td></tr>
+    <tr><td>job 5.2: application/usecase/question/QuestionImportCommitHandlerTests.java</td><td>72 (message)</td><td>pinned</td><td>Asserts a message of the phase 7 service QuestionImportCommitHandler; translated together with that class.</td></tr>
+    <tr><td>job 5.2: application/usecase/question/UpdateQuestionStatusUseCaseTests.java</td><td>163, 187 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, labels, search keywords).</td></tr>
+    <tr><td>job 5.2: application/usecase/question/ViewQuestionStatusCountsUseCaseTests.java</td><td>120, 123 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, labels, search keywords).</td></tr>
+    <tr><td>job 5.3: application/usecase/rubricschool/CloneSystemRubricToSchoolUseCaseTests.java</td><td>136 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, labels, search keywords).</td></tr>
+    <tr><td>job 5.3: application/usecase/rubricschool/RubricCriterionImportCommitHandlerTests.java</td><td>76 (message)</td><td>pinned</td><td>Asserts a message of the phase 7 import commit handler; translated together with that class.</td></tr>
+    <tr><td>job 5.3: application/usecase/rubricschool/RubricResultBandImportCommitHandlerTests.java</td><td>57 (message)</td><td>pinned</td><td>Asserts a message of the phase 7 import commit handler; translated together with that class.</td></tr>
+    <tr><td>job 5.3: application/usecase/rubricsystem/CreateSystemRubricResultBandsUseCaseTests.java</td><td>111, 112, 113, 114, 172, 173, 181, 190, 191 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, labels, search keywords).</td></tr>
+      <tr><td>job 6.1: application/usecase/school/CreateSchoolUseCaseTests.java</td><td>61, 63, 64, 66, 70, 74, 75, 83, 85, 86, 88, 102, 104, 105, 107, 116, 121, 122, 130, 132, 133, 135, 143, 162, 174, 184, 218, 220 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolclass/AcceptSchoolClassImportUseCaseTests.java</td><td>156, 229 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolclass/SchoolClassImportCommitHandlerTests.java</td><td>321 (message); 270, 276, 277, 282, 286 (fixture)</td><td>pinned/D</td><td>Asserts an import row error written by a phase 7 import commit handler; translated together with that handler. Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolclassuser/AcceptSchoolClassUserImportUseCaseTests.java</td><td>228 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolclassuser/SchoolClassUserImportCommitHandlerTests.java</td><td>343, 486 (message); 85, 119, 157, 178, 199, 221, 241, 262, 282, 304, 327, 328, 367, 368, 409, 474 (fixture)</td><td>pinned/D</td><td>Asserts an import row error written by a phase 7 import commit handler; translated together with that handler. Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schooldirectory/SchoolDirectoryImportCommitHandlerTests.java</td><td>53 (message); 45, 46, 67, 68 (fixture)</td><td>pinned/D</td><td>Asserts an import row error written by a phase 7 import commit handler; translated together with that handler. Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolgrade/AcceptSchoolGradeImportUseCaseTests.java</td><td>88, 115, 116, 117, 118, 119 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolgrade/CreateSchoolGradeUseCaseTests.java</td><td>67, 81, 95, 103 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolgrade/DeleteSchoolGradeUseCaseTests.java</td><td>115 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolgrade/PreviewSchoolGradeImportFromFileUseCaseTests.java</td><td>84, 88, 89 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolgrade/SchoolGradeImportCommitHandlerTests.java</td><td>76, 77, 98, 120, 121, 130, 142, 152, 169, 170, 188, 189, 207, 226, 276, 277, 278, 279, 280, 285, 286, 287, 288, 289 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolgrade/ViewSchoolGradeDetailsUseCaseTests.java</td><td>142 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolroom/AcceptSchoolRoomImportUseCaseTests.java</td><td>88, 114 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolroom/PreviewSchoolRoomImportFromFileUseCaseTests.java</td><td>83, 87, 88 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolroom/SchoolRoomImportCommitHandlerTests.java</td><td>63, 64, 86, 96, 109, 110, 117, 152, 128, 129, 144, 145, 161, 162, 173, 174, 193, 257, 261, 265, 269 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schoolroom/ViewSchoolRoomsUseCaseTests.java</td><td>90 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schooluser/AcceptSchoolUserImportUseCaseTests.java</td><td>229, 230, 231 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schooluser/CreateSchoolUserUseCaseTests.java</td><td>78, 174 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.1: application/usecase/schooluser/SchoolUserImportCommitHandlerTests.java</td><td>259, 349, 376, 411 (message); 274, 275, 516, 276, 305, 302, 303, 507, 304, 362, 425, 359, 360, 361, 424, 509, 518, 422, 423, 508, 517, 451, 498, 499, 500, 506, 515 (fixture)</td><td>pinned/D</td><td>Asserts an import row error written by a phase 7 import commit handler; translated together with that handler. Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+      <tr><td>job 6.2: application/port/input/usecase/order/CreateSubscriptionOrderUseCase.java</td><td>186, 205 (order description)</td><td>C</td><td>Text shown to the end user (an order description in invoices and order lists, a dashboard fallback class name, a topic-offer rationale label); rendered content (kind C), so it stays Vietnamese like the emails and Excel headers. </td></tr>
+    <tr><td>job 6.2: application/port/input/usecase/order/CreateTopUpOrderUseCase.java</td><td>58 (order description)</td><td>C</td><td>Text shown to the end user (an order description in invoices and order lists, a dashboard fallback class name, a topic-offer rationale label); rendered content (kind C), so it stays Vietnamese like the emails and Excel headers. </td></tr>
+    <tr><td>job 6.2: application/usecase/subscription/ForceSuspendSubscriptionUseCaseTests.java</td><td>47 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.2: application/usecase/subscription/FundQuotaFromBalanceUseCaseTests.java</td><td>182 (message)</td><td>pinned</td><td>Asserts a text written by a phase 7 class (an import commit handler or a service); translated together with that class.</td></tr>
+    <tr><td>job 6.2: application/usecase/subscription/PublishSubscriptionPlanUseCaseTests.java</td><td>76, 91 (message); 137 (fixture)</td><td>pinned/D</td><td>Asserts a text written by a phase 7 class (an import commit handler or a service); translated together with that class. Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.2: application/usecase/subscription/UnsuspendSubscriptionUseCaseTests.java</td><td>72, 137 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+      <tr><td>job 6.3: application/port/input/usecase/dashboard/ViewTeacherDashboardUseCase.java</td><td>47 (order description)</td><td>C</td><td>Text shown to the end user (an order description in invoices and order lists, a dashboard fallback class name, a topic-offer rationale label); rendered content (kind C), so it stays Vietnamese like the emails and Excel headers. </td></tr>
+    <tr><td>job 6.3: application/port/input/usecase/practiceplanning/BuildPracticePaperUseCase.java</td><td>74 (message)</td><td>pinned</td><td>Asserts a text written by a phase 7 class (an import commit handler or a service); translated together with that class.</td></tr>
+    <tr><td>job 6.3: application/port/input/usecase/practiceplanning/ViewPracticeTopicOffersUseCase.java</td><td>154, 156 (order description)</td><td>C</td><td>Text shown to the end user (an order description in invoices and order lists, a dashboard fallback class name, a topic-offer rationale label); rendered content (kind C), so it stays Vietnamese like the emails and Excel headers. </td></tr>
+    <tr><td>job 6.3: application/usecase/dashboard/ViewTeacherDashboardUseCaseTests.java</td><td>327 (order description); 92, 242, 287, 303, 304 (fixture)</td><td>C/D</td><td>Text shown to the end user (an order description in invoices and order lists, a dashboard fallback class name, a topic-offer rationale label); rendered content (kind C), so it stays Vietnamese like the emails and Excel headers.  Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.3: application/usecase/notification/ViewMyNotificationUseCaseTests.java</td><td>57, 58 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+    <tr><td>job 6.3: application/usecase/practiceplanning/BuildPracticePaperUseCaseTests.java</td><td>71, 78 (message)</td><td>pinned</td><td>Asserts a text written by a phase 7 class (an import commit handler or a service); translated together with that class.</td></tr>
+    <tr><td>job 6.3: application/usecase/practicesession/SubmitPracticeTurnUseCaseReplayTests.java</td><td>189 (fixture)</td><td>D</td><td>Vietnamese fixture data (names, addresses, Excel column headers used as import input); data (D).</td></tr>
+      <tr><td>job 7.1: application/port/input/service/QuestionSpreadsheetService.java</td><td>47-62, 288-292 (header)</td><td>C</td><td>Excel column headers of the question spreadsheet, written in Vietnamese by production (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 7.1: application/port/input/service/RubricCriterionImportCommitHandler.java</td><td>344 (accepted value)</td><td>D</td><td>Accepted import input value &ldquo;c&oacute;&rdquo; (yes) next to &ldquo;co&rdquo;; import values are data.</td></tr>
+    <tr><td>job 7.1: resolved pins</td><td>test lines pinned to the 7.1 handlers</td><td>&mdash;</td><td>The pinned message lines of QuestionImportCommitHandlerTests:72, RubricCriterionImportCommitHandlerTests:76, RubricResultBandImportCommitHandlerTests:57, SchoolClassImportCommitHandlerTests:321, SchoolClassUserImportCommitHandlerTests:343, 486, SchoolDirectoryImportCommitHandlerTests:53 and SchoolUserImportCommitHandlerTests:259, 349, 376, 411 are now English; their register rows above remain only for the fixture lines named in them.</td></tr>
+      <tr><td>job 7.2: application/service/OrderSettlementQuotaCarryForwardTests.java</td><td>154 (fixture)</td><td>D</td><td>Vietnamese plan name &ldquo;G&oacute;i n&#259;m&rdquo; used as fixture data.</td></tr>
+      <tr><td>job 7.3: application/service/AssessmentAppealAccessClassTestTests.java</td><td>86 (fixture)</td><td>D</td><td>Vietnamese assessment name used as fixture data.</td></tr>
+    <tr><td>job 7.3: application/service/AssessmentHumanGradingNotificationServiceTests.java</td><td>241 (fixture)</td><td>D</td><td>Vietnamese assessment name used as fixture data.</td></tr>
+    <tr><td>job 7.3: application/service/AssessmentScheduleCandidateConflictValidatorTests.java</td><td>81, 85, 147, 152, 153, 178, 182 (fixture)</td><td>D</td><td>Vietnamese personal names used as fixture data; the message assertions around them are English.</td></tr>
+    <tr><td>job 7.3: application/service/GradeLevelBandScopeGuardServiceTests.java</td><td>60, 108 (fixture)</td><td>D</td><td>Vietnamese grade name &ldquo;Kh&#7889;i 10&rdquo; used as fixture data and echoed by the message.</td></tr>
+    <tr><td>job 7.3: application/service/GradingActionSupportTests.java</td><td>156, 258, 267, 274, 282, 289, 295, 304, 319, 349 (fixture)</td><td>D</td><td>Vietnamese decision reasons typed by a teacher, used as fixture input.</td></tr>
+    <tr><td>job 7.3: application/service/GradingAssignmentNotificationServiceTests.java</td><td>88, 96, 102, 106, 117, 125, 136, 161, 186 (fixture)</td><td>D</td><td>Vietnamese student and assessment names used as fixture data.</td></tr>
+    <tr><td>job 7.3: resolved pins</td><td>use case and test lines pinned to phase 7 services</td><td>&mdash;</td><td>All rows above that say &ldquo;pinned to a phase 7 service&rdquo; are now English: the labels passed to AssessmentTimeQuotaGuardService (&ldquo;Blueprint version &rdquo;, &ldquo;Class test paper&rdquo;, &ldquo;Paper created from blueprint &rdquo;, &ldquo;Copied paper &rdquo;, &ldquo;Paper &rdquo;) and to SchoolSubscriptionActiveGuardService (&ldquo;create a class test&rdquo;, &ldquo;start a personalized AI practice session&rdquo;) in the 4.x/6.3 use cases, and the message assertions in the 4.x/5.x/6.x use case tests. Stale rows stay only for their fixture lines.</td></tr>
+      <tr><td>job 8: infrastructure/event/internal/consumer/AssessmentAppealEmailConsumer.java</td><td>50-52, 176</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/AssessmentResultLifecycleEmailConsumer.java</td><td>50-54, 207, 214, 217-220, 225</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/GradingAssignmentEmailConsumer.java</td><td>48-49, 198-201</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/InvoiceEmailConsumer.java</td><td>115, 192, 200</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/NotificationPushedEventConsumer.java</td><td>408-409, 417-418, 427, 436, 445, 473-474, 482, 490-491, 509-510, 519, 527, 549-550, 569-570, 581, 605-606, 614-615, 625-626, 634-635, 642-643, 650-651, 805-806, 817, 820-824</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/RegisterVerificationOtpEmailConsumer.java</td><td>47-48</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/RejectRegisterFormEventConsumer.java</td><td>32</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/ResetPasswordOtpEmailConsumer.java</td><td>51-52</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/SchoolDebtEmailConsumer.java</td><td>162, 171, 180, 189, 199, 232-233</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/UserCreatedEventConsumer.java</td><td>40-41</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/initializer/FrameworkInitializer.java</td><td>104-113, 117-128, 164-165, 176-177, 277-282, 284-287, 289-293, 298-302, 304-308, 310-314, 319-323, 325-329, 331-335, 340-344, 346-350, 352-355, 360-364, 366-370, 372-374, 379-383, 385-388, 390-393, 409-413, 415-417, 419-423, 428-432, 434-437, 439-443, 448-452, 454-458, 460-464, 469-472, 474-477, 479-481, 486-489, 491-494, 496-498, 503-507, 509-512, 514-517, 533-536, 538-540, 542-546, 551-554, 556-559, 561-565, 570-573, 575-579, 581-585, 590-593, 595-598, 600-602, 607-610, 612-615, 617-619, 624-627, 629-632, 634-637, 653-656, 658-660, 662-666, 671-674, 676-679, 681-685, 690-693, 695-699, 701-705, 710-713, 715-718, 720-723, 728-731, 733-736, 738-740, 745-748, 750-753, 755-758, 774-777, 779-781, 783-786, 791-794, 796-799, 801-805, 810-813, 815-819, 821-825, 830-834, 836-839, 841-844, 849-852, 854-857, 859-861, 866-869, 871-874, 876-879</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/GradeLevelInitializer.java</td><td>69-71</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/InterestDimensionInitializer.java</td><td>56-69</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/RoleInitializer.java</td><td>44, 51, 58, 65</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/SubscriptionPlanInitializer.java</td><td>91-92, 98-99, 105-106, 112-113, 119-120, 126-127</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/SupportedLanguageInitializer.java</td><td>32-33</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/SystemRubricTemplateInitializer.java</td><td>116-125, 136-137, 139-140, 142-143, 145-146, 158-160, 167-169, 176-178</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/service/FileProcessingService.java</td><td>269-275, 281-289, 295-296, 302-307, 313-315, 321-327, 333-340, 346-355, 361-366, 373-375, 378-380, 383-387, 399-401, 407-422, 431-437, 451-453, 457, 463-465</td><td>D</td><td>Import header aliases (accented and unaccented Vietnamese column names) that real uploaded files use; translating them would reject uploads.</td></tr>
+    <tr><td>job 8: infrastructure/service/SmtpEmailTemplateRenderService.java</td><td>97-100, 107-112, 118-121, 128-131, 138-141, 148-152, 158-161, 167-171, 192-197, 203-207, 213-216, 224-226, 233-236</td><td>C</td><td>Email subject and body text rendered for end users (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/AssessmentAppealEmailConsumerTests.java</td><td>71, 75, 77, 88, 92, 94, 104, 110, 120, 124, 132, 146, 160, 185, 209</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred); the test asserts them.</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/AssessmentResultLifecycleEmailConsumerTests.java</td><td>76, 80-81, 91, 97-98, 106, 113, 120, 124, 126, 134, 139, 147, 151-152, 160, 164, 172, 186, 198, 212, 232</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred); the test asserts them.</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/GradingAssignmentEmailConsumerTests.java</td><td>71, 78-79, 93, 128, 132, 134, 159, 173, 185, 205</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred); the test asserts them.</td></tr>
+    <tr><td>job 8: infrastructure/event/internal/consumer/NotificationPushedEventConsumerTests.java</td><td>193, 213, 239, 251, 422, 431, 451-452, 471, 477-478, 491, 509, 513, 525, 545, 654, 662, 664, 671, 680, 686, 696, 714, 733</td><td>C</td><td>Email subjects, role labels, push notification titles and bodies shown to end users (kind C, phase 11 is deferred); the test asserts them.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/SchoolDirectoryInitializerTests.java</td><td>64-65</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/initializer/SubscriptionPlanInitializerTests.java</td><td>39-44, 48-53, 57-62, 67-72, 162</td><td>D</td><td>Seed data (role, language, grade, plan, interest dimension, rubric template and framework names, descriptors and criteria texts) that the initializer writes into the database.</td></tr>
+    <tr><td>job 8: infrastructure/persistence/adapter/AssessmentGradingAssignmentRepositoryImplTests.java</td><td>69, 87</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/AssessmentCandidateConflictQueryTests.java</td><td>58, 85, 97, 107</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/GradingAssessmentKindFilterQueryTests.java</td><td>67, 74-75, 86, 97, 126, 136</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/GradingAttemptQueryTests.java</td><td>60-61, 72</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/GradingStudentIdentityQueryTests.java</td><td>68, 96-97, 107, 134, 136, 138, 148</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/GradingTaskDetailQueryTests.java</td><td>80, 102, 169, 171, 177, 206, 209, 215, 285</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaAssessmentDirectoryQueryRepositoryTests.java</td><td>72, 145-146, 151, 213</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaGradingFailureQueryRepositoryTests.java</td><td>54, 80, 103, 120-121, 137-139, 158, 171-172, 181-183, 199, 216, 228, 280</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaProctorScheduleQuerySmokeTests.java</td><td>65, 136</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaQuestionQueryRepositoryTests.java</td><td>64</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaSchoolAiCostQueryRepositoryTests.java</td><td>72, 107-108, 116, 129, 155, 174, 189, 226</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaSchoolWorkloadQueryRepositoryTests.java</td><td>54, 83, 102, 122-124, 139, 148, 163, 178-179, 187, 198-199, 208, 221-222, 236, 257, 276-277, 294, 306, 317-318, 332, 345-346, 361, 402</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaSchoolsAtRiskQueryRepositoryTests.java</td><td>58, 74, 77, 80, 82, 84, 107, 127, 129, 131, 136, 146, 148, 153, 162, 175, 185, 187, 190, 193, 202, 204, 210, 250, 279</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/JpaStudentAssessmentQueryRepositoryTests.java</td><td>59, 66, 75, 82, 90, 93, 98-100, 103, 108-109, 114, 119-120, 124, 129-130, 134, 140, 153-155, 160, 164, 170, 173, 175, 209</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/MonitoredAssessmentQuerySmokeTests.java</td><td>186</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/query/TeacherGradingAssessmentPickerQueryTests.java</td><td>71, 77, 81, 84, 95, 117, 150, 189</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/repository/SchoolClassRepositoryTests.java</td><td>472</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/repository/SchoolClassUserRepositoryTests.java</td><td>258-259, 280-281</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/persistence/repository/SchoolUserRepositoryTests.java</td><td>87-88, 90, 92, 110-113, 127-128, 142-143, 156-157, 163, 171-172, 186-188</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/service/FcmNotificationWebpushLinkTests.java</td><td>30</td><td>C</td><td>Push title and body fixture used as input of the link builder.</td></tr>
+    <tr><td>job 8: infrastructure/service/FileProcessingServiceTests.java</td><td>18, 23, 25</td><td>D</td><td>Import header aliases (accented and unaccented Vietnamese column names) that real uploaded files use; translating them would reject uploads.</td></tr>
+    <tr><td>job 8: infrastructure/service/PoiSpreadsheetWriterServiceTests.java</td><td>103, 105</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: infrastructure/service/SmtpEmailSendingServiceTests.java</td><td>47, 63, 76, 85, 100</td><td>D</td><td>Vietnamese fixture data (names, school and assessment names, SQL INSERT values, search keywords).</td></tr>
+    <tr><td>job 8: main/infrastructure/persistence/query/JpaAssessmentDirectoryQueryRepository.java</td><td>197 (comment)</td><td>D</td><td>Javadoc quotes the Vietnamese example name &ldquo;Nguy&#7877;n V&#259;n An&rdquo; to explain diacritic-insensitive search; the name is the subject of the comment.</td></tr>
+    <tr><td>job 8: test/infrastructure/persistence/query/JpaAssessmentDirectoryQueryRepositoryTests.java</td><td>140, 152 (comment)</td><td>D</td><td>Comments quote the Vietnamese example name and the letter &ldquo;&#273;&rdquo; (U+0111) that the test is about.</td></tr>
+    <tr><td>job 8: main/infrastructure/initializer/FrameworkInitializer.java, GradeLevelBandScopeInitializer.java, SystemAssessmentPolicyInitializer.java, SystemRubricTemplateInitializer.java</td><td>78 / 44 / 78, 84, 115 / 129 (comment)</td><td>D</td><td>Comments cite the official Vietnamese circular numbers (TT-BG&#272;&#272;T); the identifier is a proper name and is kept.</td></tr>
+    <tr><td>job 9: src/test/java/com/sep/vox/interfaces/rest/controller/RestSchoolControllerTests.java</td><td>224, 227-228, 283, 309</td><td>D</td><td>Excel column headers (&ldquo;M&atilde; l&#7899;p&rdquo;, &ldquo;H&#7885; t&ecirc;n&rdquo;, ...) used as import mapping keys; the importer matches them (kind D).</td></tr>
+    <tr><td>job 9: src/test/java/com/sep/vox/interfaces/rest/controller/RestAssessmentResultControllerTests.java</td><td>67</td><td>C</td><td>CSV header text returned by a mocked export use case; the production export still writes Vietnamese headers (kind C, phase 11 is deferred).</td></tr>
+    <tr><td>job 9: src/test/java/com/sep/vox/interfaces/graphql/controller/ (AssessmentAppealGraphQLTests, GradingGraphQLTests, GraphQLAssessmentAppealControllerTests, GraphQLAssessmentScheduleControllerTests, GraphQLQuestionControllerTests, GraphQLMyClassControllerTests)</td><td>personal names, room name, role names, question text</td><td>D</td><td>Vietnamese names and labels used as fixture data.</td></tr>
+    <tr><td>job 9: src/test/java/com/sep/vox/interfaces/graphql/controller/GraphQLImportControllerTests.java</td><td>110, 112</td><td>D</td><td>Import column header and a row error text used as stub data of the response record.</td></tr>
+  </tbody>
 </table></div>
+
+<h3>Final reconciliation (job 12.1)</h3>
+<ul>
+  <li>The register rows above that say &ldquo;kind C, phase 11 is deferred&rdquo; (QuestionSpreadsheetServiceTests, ExportAssessmentScores* headers, FcmNotificationWebpushLinkTests:30 and similar) are stale: phase 11 translated the production text. What still holds Vietnamese in those files is test fixture or input data (kind D), and the files are on <code>language-keep-list.txt</code> as such. No kind C row is left.</li>
+  <li>The row for <code>CreateAssessmentPaperUseCase</code> line 222 (&ldquo;fixture&rdquo;) was wrong: it was a production label (kind B). It is translated now (A3); the row no longer applies.</li>
+  <li>Three files were missing from the register and from phases 10: <code>architecture/PagingConventionTests</code>, <code>config/TestStoragePortConfig</code>, <code>support/OutboxTestSupport</code>. Translated under A3.</li>
+  <li>Remaining Vietnamese after phase 12: 123 Java files (<code>language-keep-list.txt</code>), 13 migrations (D3), <code>school-directory-seed.json</code>, <code>interest-quiz-seed.json</code>, and one currency example <code>31.200&#273;</code> in an <code>application.yaml</code> comment. The guard test scans Java only.</li>
+  <li>The IDE rewrote the Unicode escapes in the self-test snippets of <code>LanguageConventionTests</code> into literal Vietnamese once, which made the file flag itself; the escapes were restored. If it happens again the test fails on its own file.</li>
+</ul>
 
 <h3>Per-phase counts (comments translated, deleted, left; borderline cases)</h3>
 <div class="table-scroll"><table>
   <thead><tr><th>Job</th><th class="num">Translated</th><th class="num">Deleted</th><th class="num">Left</th><th>Borderline cases and security/money files touched</th></tr></thead>
-  <tbody></tbody>
+  <tbody>
+    <tr><td>2.1</td><td class="num">329</td><td class="num">0</td><td class="num">1</td><td>93 files. Left: 1 comment line (VnSearchKey, the letter &#273;). Money/security touched: payment/*, school/SchoolBalanceEntryType, subscription/*, dto/SchoolSubscriptionQuotaRecordDto, common/DecimalText. Added import OrderStatus in PaymentStatus because its translated Javadoc had a fully qualified {@link} (the only code change; verify.py reports it).</td></tr>
+    <tr><td>2.2</td><td class="num">589</td><td class="num">0</td><td class="num">0</td><td>80 files; nothing deleted because every comment records a reason or contract. Money/security touched: Order/Payment/SchoolBalance*/SchoolSubscription*/SchoolQuota* repositories, SubscriptionPlanRepository. QuestionStatusTransition status labels and actions are now English (kind B). Tests outside the phase that pinned changed messages were updated (see Implementation notes).</td></tr>
+      <tr><td>3.1</td><td class="num">296</td><td class="num">0</td><td class="num">0</td><td>44 files; nothing deleted because every comment records a reason, a contract or a recipient rule. Money/security touched: port/output/{PaymentProcessPort, QuotaDebt*, QuotaPricing*, QuotaUsageWarningConfigPort, ServiceFeePort, GoogleIdTokenVerifierPort (security)}, event/{InvoicePaid, SchoolDebt*, SchoolLockedDueToDebt, SchoolSubscription*}PayloadV1, common/DateMapper. Added import UnauthorizedException in GoogleIdTokenVerifierPort (its @throws used a fully qualified name; the only code change). 7 messages translated (AvatarUrlPolicy 4, DateMapper 2, ScoringRuleParamsMapper 5 literals); 6 test files keep fixtures, Excel headers or messages pinned to phase 7 (see keep register). Hand-checked 20 random remaining lines: all fixtures.</td></tr>
+      <tr><td>3.2</td><td class="num">772</td><td class="num">0</td><td class="num">0</td><td>90 files; nothing deleted because every comment records a reason, a contract or a number-matching rule. Money/security touched: response/input/{balance, subscription, payment, dashboard/SchoolFunding*}, response/output/{PaymentCheckoutResult, CheckoutAction, BankTransferDetails, CreatePaymentLinkCommand, PaymentLinkRemoteStatus, VerifiedGoogleIdentity (security)}, query/repository/{PlatformBusinessHealth, SchoolAiCost, SessionCost}. Added import CheckoutAction in PaymentCheckoutResponse (its Javadoc {@link} used a fully qualified name; the only code change, reported by verify.py). Quoted Vietnamese UI labels inside comments were rendered in English (e.g. &ldquo;Not allocated&rdquo;).</td></tr>
+      <tr><td>3.3</td><td class="num">223</td><td class="num">7</td><td class="num">0</td><td>64 files. Deleted (D2, restates the class name or narrates a change): the first line of the // header in CreateSchoolScoringRuleCommand:10, CreateScoringRuleCommand:10, UpdateSchoolScoringRuleCommand:10, UpdateScoringRuleCommand:10, SearchSchoolScoringRuleQuery:5, SearchScoringRuleQuery:5, and the trailing &ldquo;SỬA THÀNH LIST&rdquo; (&ldquo;CHANGED TO LIST&rdquo;) in CreateSystemRubricCriteriaCommand:16. Money/security touched: command/{order, payment, subscription}/*, query/balance/*, command/auth/GoogleTokenLoginCommand (security). No code change.</td></tr>
+        <tr><td>4.1</td><td class="num">176</td><td class="num">0</td><td class="num">0</td><td>98 files changed (main and test, features assessment, assessmentappeal, assessmentblueprint, assessmentcandidate, assessmentdirectory). Nothing deleted because every comment records a reason, a contract or a rule. Money/security touched: none by name (no payment, quota or balance class; <code>UpdateAssessmentStatusUseCase</code> and <code>CreateClassTestUseCase</code> only call quota/subscription guards, text only). Messages translated by a shared literal table (kinds A and B); stored free-text reasons of an appeal (&ldquo;The student filed an appeal.&rdquo;, status-change reasons) were translated too (default decision). No code change.</td></tr>
+        <tr><td>4.2</td><td class="num">316</td><td class="num">0</td><td class="num">0</td><td>60 files changed. Nothing deleted because every comment records a reason, a contract, a measured figure or a review reference. Money/security touched: none by name; <code>ViewGradingTaskDetailUseCase</code> and the grading use cases only carry text changes (the message prefix &ldquo;BẢO MẬT:&rdquo; became &ldquo;SECURITY:&rdquo;). Stored free-text reasons (bulk finalize, reclaim) were translated (default decision). Added no import; the fully qualified {@link} in UpdateAssessmentPaperItemUseCase already had an import, so the simple name is used. Unaccented messages in AssessmentSessionResultCalculator translated; &ldquo;No evaluation found for answer&rdquo; keeps the word &ldquo;evaluation&rdquo; because a test asserts it.</td></tr>
+        <tr><td>4.3</td><td class="num">124</td><td class="num">3</td><td class="num">0</td><td>61 files changed. Deleted (D2, narrates the next statement): the three numbered comments &ldquo;// 1. Kiểm tra tài khoản System Admin&rdquo;, &ldquo;// 2. Kiểm tra Assessment Policy tồn tại ...&rdquo; and &ldquo;// 3. Chỉ được xóa cứng khi đang DRAFT ...&rdquo; in DeleteSystemAssessmentPolicyUseCase:32,40,47. Money/security touched: CompleteAssessmentSessionGradingUseCase (quota deduction and FX rate, comments only), the policy use cases (school-scope guards; the &ldquo;BẢO MẬT:&rdquo; message prefix became &ldquo;SECURITY:&rdquo;). The mixed-language line in CompleteAssessmentSessionGradingUseCase:29 was translated. No code change.</td></tr>
+      <tr><td>7.1</td><td class="num">39</td><td class="num">0</td><td class="num">0</td><td>16 main files plus 11 pinned test lines in 10 test files. Nothing deleted: every comment records a reason, a scope rule or an input quirk. Security/money files: none.</td></tr>
+      <tr><td>7.2</td><td class="num">445</td><td class="num">0</td><td class="num">0</td><td>31 files (19 main, 12 test) by name: Quota, Order, Payment, Balance, Settlement, Debt, Pricing, Subscription, ExchangeRate. Nothing deleted: every comment records a reason, an invariant or a bug history. MONEY files touched (D5): ConsumeQuotaService, OrderSettlementService, CarryQuotaFundingAtPeriodStartService, DistributeQuotaToUsersService, ClassTestTokenQuotaGuardService, AssessmentTimeQuotaGuardService, QuotaPricingCalibrationService, SchoolDebtNotificationService, SchoolSubscription*GuardService, SubscriptionPeriodGuardService, SubscriptionPlan*Validator, SubscriptionPlanResolver, SubscriptionUpgradePolicyService, PaymentProcessResolver and their tests. The money amounts in messages changed from the &ldquo;&#273;&rdquo; suffix to &ldquo; VND&rdquo; (DistributeQuotaToUsersService.formatMoney and 4 log/messages); no arithmetic changed.</td></tr>
+      <tr><td>7.3</td><td class="num">653</td><td class="num">0</td><td class="num">0</td><td>93 files (53 main, 40 test paths; 80 with Vietnamese) plus 10 use case and 14 use case test files for pinned labels and messages. Nothing deleted: every comment records a reason, an invariant, a removed feature (REMOVED notes) or a test intent. Commented-out code noticed in ConfidenceReviewCalculator (lines 28-33 in the original) was translated, not removed (see Problems noticed). Security files touched (D5): AssessmentGradingAccessService, AssessmentRecordingAccessService, AssessmentResultAccessService, AssessmentAppealAccessService, SchoolScopedReadGuard and the other *AccessService classes (comments and messages only). Money files touched: none beyond 7.2.</td></tr>
+      <tr><td>8.1</td><td class="num">735</td><td class="num">4</td><td class="num">3</td><td>100 files changed (6 more hold only fixtures). Deleted (D2, narrates the next statement or is a stale instruction): FrameworkCriterionRepositoryImpl:33 and :38, RubricCriterionRepositoryImpl:100 (&ldquo;add this override into the class&rdquo;), SpringDataSchoolRoomRepository:19. Left: 3 comment lines that quote the Vietnamese example name or the letter &#273; (see keep register). Money/security touched (text only): SchoolBalance*, Order*, PaymentRecord*, SchoolSubscription*, SubscriptionPlan* repositories and mappers.</td></tr>
+    <tr><td>8.2</td><td class="num">194</td><td class="num">0</td><td class="num">0</td><td>36 files changed. Nothing deleted: every comment records a reason, a race or a contract. Money touched (text only): PendingOrderReconciler, SubscriptionExpiryJob, InvoiceEmailConsumer, SchoolDebtEmailConsumer.</td></tr>
+    <tr><td>8.3</td><td class="num">342</td><td class="num">0</td><td class="num">0</td><td>39 files changed. Nothing deleted: every comment records a reason, a security rule or a vendor quirk. Security touched (text only): SecurityConfig, GoogleIdTokenProvider, JwtAuthTokenProvider, CustomOidcUserService, CustomUserDetailsService, SecurityContextProvider, CorsProperties, AdminConsoleProperties. Money touched (text only): PayOSService, SePayPaymentProcessService, QuotaPricingService, the quota properties.</td></tr>
+    <tr><td>8.4</td><td class="num">118</td><td class="num">0</td><td class="num">6</td><td>14 files changed. Nothing deleted. Left: 6 comment lines that cite official circular numbers (TT-BG&#272;&#272;T), see keep register. The seed names and descriptors are kind D.</td></tr>
+  </tbody>
 </table></div>
+
+<h3>Deviations and notes, phase 2</h3>
+<ul>
+  <li>CHANGED (job 2.2): 9 test files outside the phase (application layer) asserted domain messages that this phase translated, so only those message literals were updated: RubricCriterionExamplesNormalizerTests, RecalculateAssessmentTimeDurationServiceTests, UpdateAssessmentStatusUseCaseTests, UpdateAssessmentUseCaseTests, DeleteAssessmentPaperUseCaseTests, CreateAssessmentScheduleUseCaseTests, UpdateAssessmentScheduleUseCaseTests, BulkUpdateQuestionStatusUseCaseTests, UpdateQuestionStatusUseCaseTests. Their other Vietnamese text waits for its own phase.</li>
+  <li>Cross-system impact of D1 (API-visible messages now English): value-object messages (e.g. &ldquo;The email format is invalid&rdquo;), domain exception messages, QuestionStatusTransition rejection reasons (<code>failed[].reason</code> of the bulk question endpoint, and the status labels inside them), schedule-window messages, rubric publish validation messages.</li>
+  <li>Mixed text until phase 3: QuestionScopeStatusTransition builds &ldquo;Only a DRAFT &lt;label&gt; can be published&rdquo; where <code>label</code> is still passed in Vietnamese by an application caller.</li>
+  <li>CHANGED (phase 3): the 6 test files of job 3.1 that keep Vietnamese strings are listed in the keep register (&ldquo;pinned&rdquo; = they assert a message of a phase 7 service, so they must change together with it; translating them now would break the suite).</li>
+  <li>CHANGED (phase 3): application/port/input/service tests are part of job 3.1 by its path ({@code application/port}); phase 7 should skip the 6 test files named in the keep register except the &ldquo;pinned&rdquo; ones.</li>
+  <li>Cross-system impact of D1 in phase 3 (API-visible messages now English): avatar URL errors (AvatarUrlPolicy), date parse errors (DateMapper), scoring-rule parameter errors (ScoringRuleParamsMapper). The wording of event payloads, commands and responses did not change, only their Javadoc.</li>
+</ul>
+<h3>Deviations and notes, phase 4</h3>
+<ul>
+  <li>CHANGED (phase 4): action and target labels that a use case passes to a phase 7 service stay Vietnamese and are in the keep register as &ldquo;pinned&rdquo;: the third argument of <code>AssessmentTimeQuotaGuardService.requireWithinPlan</code> (&ldquo;Phiên bản blueprint&rdquo;, &ldquo;Mã đề&rdquo;, &ldquo;Mã đề tạo từ blueprint&rdquo;, &ldquo;Mã đề sao chép&rdquo;, &ldquo;Bài kiểm tra trên lớp&rdquo;) and the label of <code>SchoolSubscriptionActiveGuardService.requireActiveForSchool</code> (&ldquo;tạo Class Test&rdquo;). The service builds the message around the label, so translating only the label would give mixed sentences; phase 7 must translate service and callers together (7 call sites in phase 4).</li>
+  <li>CHANGED (phase 4): test assertions on messages that come from phase 7 services (<code>AssessmentPolicyValidator</code>, <code>AssessmentMemberManageAccessService</code>, <code>AssessmentStreamConfigResolver</code>, the schedule conflict validators, <code>AssessmentScoreExportSupport</code>, <code>GradingActionSupport</code>, <code>AssessmentPaperAuthoringAccessService</code>, <code>AssessmentGradingAccessService</code>, <code>AssessmentScheduleClosureService</code>) stay Vietnamese and are in the keep register; phase 7 translates them with the service.</li>
+  <li>Kind C kept: the Excel/CSV headers and the sheet name &ldquo;Bảng điểm&rdquo; in <code>ExportAssessmentScoresUseCase</code> and <code>ExportAssessmentScoresExcelUseCase</code> and the tests that assert them.</li>
+  <li>Default decision: free-text reasons that the code stores in score/status history or on an appeal (for example &ldquo;The student filed an appeal.&rdquo;, &ldquo;Bulk finalization by assessment.&rdquo;, &ldquo;Reclaimed because the grading deadline passed.&rdquo;) were translated like other kind B text. Rows already stored keep their old Vietnamese text, so history views show a mix until old rows age out.</li>
+  <li>Default decision: the &ldquo;BẢO MẬT:&rdquo; message prefix became &ldquo;SECURITY:&rdquo; in phase 4 use cases; the same prefix in phase 7 services (for example <code>AssessmentAppealAccessService</code>, <code>AssessmentGradingAccessService</code>) is still Vietnamese until then. Mock exception messages &ldquo;BẢO MẬT&rdquo; in tests became &ldquo;SECURITY&rdquo;.</li>
+  <li>Cross-system impact of D1 in phase 4 (API-visible messages now English): every ResourceNotFound/Forbidden/IllegalArgument/Unauthorized message of the use cases in <code>assessment*</code> (assessments, appeals, blueprints, candidates, directories, evaluation, grading, item responses, papers, policies, schedules, sessions), including the entry-gate messages students see (&ldquo;You have not been marked present...&rdquo;) and the entry messages returned by ViewMyAssessmentsUseCase (<code>entryMessage</code>). A client that matches or shows these texts must be checked.</li>
+  <li>Problem noticed, not fixed: the apply script initially re-translated one pinned assertion (<code>AssessmentMemberManagementTests</code>) and a fixture (<code>lý do thừa</code>) through broad fragment keys; both were restored and the full usecase suite passes. No production problem.</li>
+</ul>
+<h3>Deviations and notes, phase 5</h3>
+<ul>
+  <li>Job 5.1: 55 files changed (2 more only hold the fixtures). 4 numbered narrating comments deleted by D2 (ViewFrameworkCriteriaUseCase 2, ViewSchoolFrameworkCriteriaUseCase 2); every other comment records a reason or a contract and was translated. Money/security touched: none by name.</li>
+  <li>Job 5.2: 59 files changed. Deleted (D2, narrates the next statement or restates the class name): the numbered comments at DeleteSystemScoringRuleUseCase:36,44,47 (the numbered &ldquo;5.&rdquo; comment was kept, translated, because it records a reason), and the first Javadoc sentence of 3 class comments that only restated the class name (UpdateQuestionStatusUseCase, PreviewQuestionBankImportFromFileUseCase, BulkUpdateQuestionStatusUseCaseTests). The mixed-language fragment &ldquo;T&#7841;o l&#7841;i b&#7857;ng AI&rdquo; in 3 English comments became &ldquo;Regenerate with AI&rdquo;. A mojibake literal in CreateQuestionAssetUseCase (&ldquo;&Auml;&lsquo;&atilde;&rdquo;) was translated as a whole.</li>
+  <li>Job 5.3: 79 files changed. Deleted (D2): 12 numbered narrating comments in ViewSystemRubricsUseCase, ViewSystemRubricDetailsUseCase, ViewSystemRubricVersionDetailsUseCase and SearchSystemRubricsUseCase, and 4 trailing import comments (&ldquo;B&#7892; SUNG&rdquo;, &ldquo;IMPORT TH&Ecirc;M RESPONSE M&#7898;I&rdquo;, &ldquo;S&#7917; d&#7909;ng Command d&ugrave;ng chung c&#7911;a b&aacute;c&rdquo;). Money/security touched: none by name; the &ldquo;B&#7842;O M&#7852;T:&rdquo; message prefix became &ldquo;SECURITY:&rdquo; and &ldquo;B&#7843;o m&#7853;t:&rdquo; became &ldquo;Security:&rdquo; in all school/system rubric use cases (text only).</li>
+  <li>CHANGED (job 5.3): the weight message of the four criterion use cases ends with &ldquo;(0.2 = 20%, 1 = 100%).&rdquo; instead of &ldquo;e.g. 20% is written as 0.2 and 100% as 1.&rdquo; so no &ldquo;% x&rdquo; sequence looks like a format specifier; verify.py still reports these 4 files because it read the Vietnamese &ldquo;% g&rdquo; as a placeholder (false positive; the strings are plain concatenation, never passed to a formatter).</li>
+  <li>CHANGED (job 5.3): CloneSystemRubricToSchoolUseCaseTests:226 asserted the substring &ldquo;gi&#7919; nguy&ecirc;n kh&#7889;i&rdquo;; it now asserts &ldquo;keeps that grade level&rdquo;, the translation of the message it matches.</li>
+  <li>Pinned (phase 7): the assertions on messages of QuestionImportCommitHandler, RubricCriterionImportCommitHandler and RubricResultBandImportCommitHandler stay Vietnamese. I first translated the last two by mistake, the tests failed, and I restored them.</li>
+  <li>Cross-system impact of D1 in phase 5 (API-visible messages now English): every exception message of the use cases in framework, gradelevel, importfile, interestdimension, supportedlanguage, topicsuggestion, question, questionbank, questiontopic, scoringrule, rubricschool, rubricsystem and rubricteacher, including the import session errors and the security messages (prefix &ldquo;SECURITY:&rdquo;).</li>
+  <li>Full ./gradlew test (unit suite) passes after phase 5. Hand-checked the remaining lines of the paths: all are fixtures or pinned assertions listed in the keep register.</li>
+</ul>
+<h3>Deviations and notes, phase 6</h3>
+<ul>
+  <li>Job 6.1: 85 files changed (11 more only hold fixtures or pinned assertions). Deleted (D2, narrates the next statement): the numbered comments in CreateSchoolGradeUseCase (1, 2, 3 prefix, 4, 5), AddSchoolRoomUseCase (1&ndash;5), the trailing import comment &ldquo;Bổ sung&rdquo; in CreateSchoolGradeUseCase and the line &ldquo;Dùng phương thức đã tối ưu để lấy schoolId&rdquo; (restates the call). Every other comment records a reason, a contract or a security rule and was translated. Money/security touched: the five auth use cases (GoogleTokenLogin, Login, Logout, OAuth2Login, Refresh) with text only; Logout and GoogleTokenLogin carry the longest &ldquo;why&rdquo; Javadoc.</li>
+  <li>Pinned (phase 8): the message &ldquo;The user has not been verified to log in&rdquo; in GoogleTokenLoginUseCase is meant to be word for word the one of CustomOidcUserService (infrastructure/security), which is still Vietnamese until phase 8; phase 8 must use the same English text.</li>
+  <li>Pinned (phase 7): assertions on <code>getErrorsJson()</code> of the SchoolClass, SchoolClassUser, SchoolGrade, SchoolRoom, SchoolUser and SchoolDirectory import commit handlers stay Vietnamese (listed in the keep register); Excel column headers and names used as import input are data (D).</li>
+  <li>Cross-system impact of D1 in job 6.1 (API-visible messages now English): every exception message of the use cases in auth (including the 401 texts of refresh, reset password and Google login), registration (register forms, OTP verification), role, user (profile), school, schooldirectory, schoolclass, schoolclassuser, schoolgrade, schoolroom and schooluser, and the success texts of RegisterFromSchoolDirectoryUseCase (&ldquo;The verification OTP has been sent&rdquo;, &ldquo;Please wait for an administrator to verify&rdquo;). The status labels inside the UpdateSchoolStatusUseCase message became &ldquo;active&rdquo;/&ldquo;deactivated&rdquo;.</li>
+  <li>Job 6.2: 41 files changed. Nothing deleted: every comment records a reason, a contract or a money invariant. Money touched (text only): all of balance, order, payment, subscription, metering. Kind C kept: the three order descriptions that the order stores and invoices show (&ldquo;Nâng cấp lên &lt;plan&gt;&rdquo;, &ldquo;Đăng ký &lt;plan&gt;&rdquo; in CreateSubscriptionOrderUseCase, &ldquo;Nạp thêm vào số dư&rdquo; in CreateTopUpOrderUseCase; keep register). Default decisions: the stored cancel reason &ldquo;Trường chủ động hủy đơn&rdquo; was translated (stored free-text reason, as in phase 4); the DISPLAY of amounts &ldquo;đ&rdquo; in messages became &ldquo; VND&rdquo; and the Vietnamese thousands format in the price-limit message became commas; &ldquo;Quyền truy cập bị từ chối&rdquo; became &ldquo;Access denied&rdquo; (the text phase 4 already used), so the phase 7 services that still say it must use the same English text.</li>
+  <li>CHANGED (job 6.2): verify.py reports SetQuotaDistributionPolicyUseCase:40 because it read the Vietnamese &ldquo;0% tới&rdquo; as a format specifier (false positive; the message is plain text). The distribution-ceiling message now says &ldquo;between 0 and 100 percent&rdquo;.</li>
+  <li>Pinned (phase 7): FundQuotaFromBalanceUseCaseTests asserts &ldquo;bị khóa&rdquo; (a message of SchoolSubscriptionDebtGuardService) and PublishSubscriptionPlanUseCaseTests asserts &ldquo;giá&rdquo; and &ldquo;Hạn mức&rdquo; (messages of the subscription plan replacement validator); they change together with those services. Cross-system impact of D1 in job 6.2 (API-visible messages now English): every exception message of the balance, order, payment, subscription and metering use cases, including the payment-gateway messages shown to the school when checking out or cancelling an order, and the 401 text of an invalid payment callback.</li>
+  <li>Job 6.3: 45 files changed. Nothing deleted: every comment records a reason, a contract, a measured figure or a security rule. Money/security touched: none by name (subscription guards are only called with a label). Kind C kept (display text): the fallback class name &ldquo;Không xác định&rdquo; of ViewTeacherDashboardUseCase and the two topic-offer rationale labels of ViewPracticeTopicOffersUseCase (keep register). Pinned (phase 7): the label &ldquo;bắt đầu buổi luyện tập cá nhân hóa AI&rdquo; that BuildPracticePaperUseCase passes to SchoolSubscriptionActiveGuardService and the two assertions on its message in BuildPracticePaperUseCaseTests. The reference to the task file name in ViewInterestQuizItemsUseCase was left as the file is named. Cross-system impact of D1 in job 6.3 (API-visible messages now English): the exception messages of the practice, proctoring, recording, stream, notification and dashboard use cases, including the messages of the stream-token endpoints used by the desktop app.</li>
+</ul>
+<h3>Deviations and notes, phase 8</h3>
+<ul>
+  <li>Kind C kept in phase 8 (end-user text): email subjects, role and round labels and the email body text in the event consumers and in <code>SmtpEmailTemplateRenderService</code>, and the push titles and bodies of <code>NotificationPushedEventConsumer</code>. Kind D kept: the import header aliases of <code>FileProcessingService</code> and every seed name, descriptor and criterion text in <code>infrastructure/initializer</code>. All are in the keep register.</li>
+  <li>Default decision: the text of the <code>failure_reason</code> that <code>SpringDataImportSessionRepository</code> writes into the database (&ldquo;Retry limit exceeded&rdquo;) was translated like the other stored, user-visible texts (A1). Existing rows keep the old Vietnamese text. verify.py reports this one file because the text sits inside a SQL block; the SQL itself is unchanged.</li>
+  <li>Resolved pin (phase 6): the two OAuth2 error messages of <code>CustomOidcUserService</code> are now word for word the ones of <code>GoogleTokenLoginUseCase</code> and <code>OAuth2LoginUseCase</code>.</li>
+  <li>CHANGED (job 8.2): the invalid-JSON fixture &ldquo;{khong-phai-json}&rdquo; in <code>AssessmentAppealEmailConsumerTests</code> became &ldquo;{not-json}&rdquo; and the one in <code>PayOSServiceTests</code> &ldquo;not json&rdquo;; verify.py reports the first because the text contains braces. The comment in <code>JpaLearnerProfileQueryRepository</code> that named a school (&ldquo;THPT Tr&#7847;n Th&ocirc;ng&rdquo;) now spells it without diacritics.</li>
+  <li>CHANGED (job 8.1): <code>{@link com.sep.vox.interfaces.shared.PageArguments#MAX_PAGE_SIZE}</code> in <code>JpaAssessmentGradingQueryRepository</code> became <code>{@code PageArguments.MAX_PAGE_SIZE}</code>: the infrastructure layer must not import an interfaces class, even for Javadoc.</li>
+  <li>Cross-system impact of D1 in phase 8 (API-visible messages now English): the 401 texts of Google sign-in (&ldquo;Google sign-in failed&rdquo;, &ldquo;Google sign-in is not configured on the system&rdquo;), the OAuth2 error descriptions of the OIDC login (<code>email_not_verified</code>, <code>user_not_found</code>), the <code>UsernameNotFoundException</code> text &ldquo;Incorrect login credentials&rdquo;, the JWT texts &ldquo;Token has expired&rdquo; and &ldquo;Invalid token&rdquo;, the <code>DisabledException</code> text &ldquo;Invalid user status&rdquo;, the file-import errors of <code>FileProcessingService</code>, the S3 storage errors, the gRPC health text &ldquo;The streaming service is currently not running&rdquo;, and the practice agent text &ldquo;Cannot connect to the AI service to start the practice session.&rdquo;. Log texts, mapper and consumer exception texts changed too; none of those reach a client.</li>
+  <li>Not run: <code>integrationTest</code> (no Docker). The 27 persistence test files, <code>FrameworkInitializerTests</code>, <code>SchoolDirectoryInitializerTests</code> and <code>SubscriptionPlanInitializerTests</code> were compiled only.</li>
+  <li>Problem noticed, not fixed: <code>JpaPlatformOperationalHealthQueryRepository</code> writes <code>java.sql.Date</code> fully qualified in code (AGENTS.md &ldquo;Import types&rdquo;); outside this plan.</li>
+</ul>
+
+
 
 </div>
 <script>

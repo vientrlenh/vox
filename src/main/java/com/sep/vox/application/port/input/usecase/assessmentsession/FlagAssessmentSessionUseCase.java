@@ -29,18 +29,18 @@ public class FlagAssessmentSessionUseCase implements IUseCase<FlagAssessmentSess
     @Transactional
     public java.util.UUID execute(FlagAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the assessment session not found"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of the session not found"));
 
         moderationAccessService.authorize(assessment, candidate);
 
         if (input.flagged()) {
             String reason = StringNormalization.trimAndCollapseSpaces(input.reason());
             if (reason == null || reason.isBlank()) {
-                throw new IllegalArgumentException("Phải nhập lý do khi đánh dấu nghi vấn");
+                throw new IllegalArgumentException("A reason is required when flagging as suspicious");
             }
             session.setFlagReason(reason);
         } else {

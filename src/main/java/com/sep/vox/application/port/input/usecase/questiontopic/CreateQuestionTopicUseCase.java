@@ -44,7 +44,7 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         QuestionBank questionBank = questionBankRepository.findById(command.questionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         requireCreateAccess(questionBank, schoolAdmin, currentSchoolId);
 
         QuestionTopic topic = QuestionTopic.draft(
@@ -56,10 +56,10 @@ public class CreateQuestionTopicUseCase implements IUseCase<CreateQuestionTopicC
     private void requireCreateAccess(QuestionBank questionBank, boolean schoolAdmin, UUID currentSchoolId) {
         if (questionBank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
+                throw new ForbiddenException("Access denied");
             }
         } else if (!schoolAdmin || currentSchoolId == null || !currentSchoolId.equals(questionBank.getSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 

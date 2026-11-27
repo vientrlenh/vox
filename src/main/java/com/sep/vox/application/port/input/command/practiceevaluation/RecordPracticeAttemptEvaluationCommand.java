@@ -15,8 +15,8 @@ public record RecordPracticeAttemptEvaluationCommand(
     int wordCount,
     List<PracticeCriterionScoreInput> criteria,
     String evaluatedAt
-    // Trước đây còn rawCriteria / turns / signals -- ba lát cắt thô chỉ phục vụ việc suy quan
-    // sát điểm yếu. Hồ sơ điểm yếu đã gỡ, use case không đọc chúng, nên bỏ khỏi command.
-    // Wire DTO của Kafka không đổi: Python vẫn phát đủ, Java bỏ qua.
+    // Before, there were also rawCriteria / turns / signals -- three raw slices that only served deriving weakness
+    // observations. The weakness profile has been removed and the use case does not read them, so they were dropped from the command.
+    // The Kafka wire DTO is unchanged: Python still publishes everything, Java ignores it.
 ) {
 }

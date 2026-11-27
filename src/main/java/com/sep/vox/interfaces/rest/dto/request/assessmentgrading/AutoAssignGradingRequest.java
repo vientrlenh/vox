@@ -26,20 +26,20 @@ public record AutoAssignGradingRequest(
 
     UUID scheduleId,
 
-    @NotNull(message = "Phải chọn vòng chấm")
+    @NotNull(message = "A grading round must be selected")
     GradingRoundType roundType,
 
     GradingSampleSelectionMode selectionMode,
 
-    @Min(value = 1, message = "Tỉ lệ chọn mẫu phải từ 1%")
-    @Max(value = 100, message = "Tỉ lệ chọn mẫu tối đa 100%")
+    @Min(value = 1, message = "Sampling rate must be at least 1%")
+    @Max(value = 100, message = "Sampling rate must not exceed 100%")
     Integer percent,
 
     List<UUID> candidateResultIds,
 
     Instant deadlineAt,
 
-    @NotEmpty(message = "Phải chọn ít nhất một giáo viên để phân công")
+    @NotEmpty(message = "At least one teacher must be selected for assignment")
     List<UUID> teacherIds
 ) {
 

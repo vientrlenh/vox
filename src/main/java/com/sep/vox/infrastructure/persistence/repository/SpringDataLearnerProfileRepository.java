@@ -19,7 +19,7 @@ public interface SpringDataLearnerProfileRepository
 
     Optional<LearnerProfileJpaEntity> findByStudentId(UUID studentId);
 
-    /** Khoá FOR SHARE hồ sơ trước khi cập nhật tại chỗ -- tránh hai request cùng ghi đè nhau. */
+    /** FOR SHARE lock on the profile before updating in place -- prevents two requests from overwriting each other. */
     @Lock(LockModeType.PESSIMISTIC_READ)
     Optional<LearnerProfileJpaEntity> findWithLockByStudentId(UUID studentId);
     @Query(value = """

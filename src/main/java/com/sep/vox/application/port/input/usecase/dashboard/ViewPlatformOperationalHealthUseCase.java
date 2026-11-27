@@ -24,11 +24,11 @@ import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealt
 import com.sep.vox.domain.common.ZoneConstant;
 
 /**
- * Sức khỏe đường chấm AI + kỳ thi đang chạy, cho dashboard system admin.
+ * Health of the AI grading pipeline + the assessments running now, for the system admin dashboard.
  *
- * <p>Chuỗi ngày được làm ĐẦY ở đây chứ không ở DB: query chỉ trả về ngày có phiên, còn biểu đồ cần
- * mọi ngày trong cửa sổ — thiếu ngày thì các cột bị dồn lại và một ngày chết hoàn toàn (0 phiên) sẽ
- * biến mất thay vì hiện thành khoảng trống, tức là đúng ngày đáng chú ý nhất lại vô hình.
+ * <p>The day series is FILLED here and not in the DB: the query only returns days that have sessions, while the
+ * chart needs every day in the window -- without the gaps the bars get squeezed together and a completely dead
+ * day (0 sessions) disappears instead of showing as a hole, so the most notable day is exactly the invisible one.
  */
 @Service
 @RequiredArgsConstructor
@@ -117,7 +117,7 @@ public class ViewPlatformOperationalHealthUseCase
     private record DailyOutcomes(List<GradingOutcomeBucketResponse> daily, long graded, long failed) {
     }
 
-    /** Làm tròn 1 chữ số thập phân: 98,7% đọc được, còn 98,66666% thì không thêm thông tin gì. */
+    /** Rounds to 1 decimal place: 98.7% is readable, while 98.66666% adds no information. */
     private static Double successRatePercent(long graded, long failed) {
         long attempted = graded + failed;
         if (attempted == 0L) {

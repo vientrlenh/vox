@@ -95,7 +95,7 @@ public class RestAssessmentController {
         PageArguments.validate(page, size);
         PageResult<StudentAssessmentSummaryResponse> data = viewMyAssessmentsUseCase.execute(
             ViewMyAssessmentsQueryMapper.fromRequest(kind, status, page, size, sort));
-        return ResponseEntity.ok(ApiResponse.success("Lấy danh sách bài thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Assessments retrieved successfully", data));
     }
 
     @PostMapping
@@ -103,7 +103,7 @@ public class RestAssessmentController {
     public ResponseEntity<ApiResponse<AssessmentDto>> create(@Valid @RequestBody CreateAssessmentRequest request) {
         AssessmentDto data = createAssessmentUseCase.execute(CreateAssessmentRequest.toCommand(request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo bài kiểm tra thành công", data));
+            .body(ApiResponse.success("Class test created successfully", data));
     }
 
     @PutMapping("/{id}")
@@ -112,7 +112,7 @@ public class RestAssessmentController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentRequest request) {
         AssessmentDto data = updateAssessmentUseCase.execute(UpdateAssessmentRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Class test updated successfully", data));
     }
 
     @PatchMapping("/{id}/blueprint")
@@ -121,7 +121,7 @@ public class RestAssessmentController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody AttachAssessmentBlueprintRequest request) {
         AssessmentDto data = attachAssessmentBlueprintUseCase.execute(AttachAssessmentBlueprintRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Gắn blueprint vào bài kiểm tra thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Blueprint attached to the class test successfully", data));
     }
 
     @PatchMapping("/{id}/status")
@@ -130,7 +130,7 @@ public class RestAssessmentController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentStatusRequest request) {
         AssessmentDto data = updateAssessmentStatusUseCase.execute(UpdateAssessmentStatusRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Class test status updated successfully", data));
     }
 
     @PatchMapping("/{id}/delivery-mode")
@@ -139,14 +139,14 @@ public class RestAssessmentController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentDeliveryModeRequest request) {
         AssessmentDto data = updateAssessmentDeliveryModeUseCase.execute(UpdateAssessmentDeliveryModeRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật hình thức làm bài thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Answering format updated successfully", data));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<DeleteAssessmentResponse>> delete(@PathVariable UUID id) {
         DeleteAssessmentResponse data = deleteAssessmentUseCase.execute(new DeleteAssessmentCommand(id));
-        return ResponseEntity.ok(ApiResponse.success("Xóa bài kiểm tra thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Class test deleted successfully", data));
     }
 
     // The three council endpoints below are open to TEACHER because the council chair calls in the paper author / approver
@@ -159,7 +159,7 @@ public class RestAssessmentController {
             @Valid @RequestBody CreateAssessmentMemberRequest request) {
         AssessmentMemberDto data = createAssessmentMemberUseCase.execute(CreateAssessmentMemberRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Gán collaborator cho bài kiểm tra thành công", data));
+            .body(ApiResponse.success("Collaborator assigned to the class test successfully", data));
     }
 
     @PutMapping("/{assessmentId}/members/{memberId}")
@@ -169,7 +169,7 @@ public class RestAssessmentController {
             @PathVariable("memberId") UUID memberId,
             @Valid @RequestBody UpdateAssessmentMemberRequest request) {
         AssessmentMemberDto data = updateAssessmentMemberUseCase.execute(UpdateAssessmentMemberRequest.toCommand(assessmentId, memberId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật collaborator cho bài kiểm tra thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Collaborator of the class test updated successfully", data));
     }
 
     @DeleteMapping("/{assessmentId}/members/{memberId}")
@@ -178,7 +178,7 @@ public class RestAssessmentController {
             @PathVariable("assessmentId") UUID assessmentId,
             @PathVariable("memberId") UUID memberId) {
         deleteAssessmentMemberUseCase.execute(new DeleteAssessmentMemberCommand(assessmentId, memberId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa collaborator khỏi bài kiểm tra thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Collaborator removed from the class test successfully"));
     }
 
     @PatchMapping("/{assessmentId}/secure-pool/status")
@@ -189,7 +189,7 @@ public class RestAssessmentController {
         AssessmentSecurePoolDto data = updateAssessmentSecurePoolStatusUseCase.execute(
             UpdateAssessmentSecurePoolStatusRequest.toCommand(assessmentId, request)
         );
-        return ResponseEntity.ok(ApiResponse.success("Mở khoá câu hỏi đề thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Assessment questions unlocked successfully", data));
     }
 
     @GetMapping("/{assessmentId}/schedules/{scheduleId}/otp")
@@ -197,7 +197,7 @@ public class RestAssessmentController {
     public ResponseEntity<ApiResponse<GetAssessmentScheduleOtpResponse>> getAssessmentScheduleOtp(@PathVariable("assessmentId") UUID assessmentId, @PathVariable("scheduleId") UUID scheduleId) {
         GetAssessmentScheduleOtpQuery query = new GetAssessmentScheduleOtpQuery(assessmentId, scheduleId);
         GetAssessmentScheduleOtpResponse data = getAssessmentScheduleOtpUseCase.execute(query);
-        return ResponseEntity.ok(ApiResponse.success("Mã OTP cho lịch thi được lấy thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("OTP for the schedule retrieved successfully", data));
     }
 
     @PostMapping("/{assessmentId}/otp/verify")
@@ -206,13 +206,13 @@ public class RestAssessmentController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody VerifyAssessmentOtpRequest request) {
         AssessmentEntryTicketResponse data = verifyAssessmentScheduleOtpUseCase.execute(new VerifyAssessmentScheduleOtpCommand(assessmentId, request.otp()));
-        return ResponseEntity.ok(ApiResponse.success("Xác thực OTP thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("OTP verified successfully", data));
     }
 
     @PostMapping("/{assessmentId}/class-test/start")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<?>> startClassTest(@PathVariable("assessmentId") UUID assessmentId) {
         AssessmentEntryTicketResponse data = startClassTestSessionUseCase.execute(new StartClassTestSessionCommand(assessmentId));
-        return ResponseEntity.ok(ApiResponse.success("Bắt đầu bài kiểm tra thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Class test started successfully", data));
     }
 }

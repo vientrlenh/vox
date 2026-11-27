@@ -52,10 +52,10 @@ public interface SpringDataRegisterFormRepository extends JpaRepository<Register
     long countByCreatedAtAfter(Instant after);
 
     /**
-     * {@code MIN} thay vì {@code findFirstBy...OrderBy...} trả về cả entity: chỗ gọi chỉ cần một mốc
-     * thời gian, nạp nguyên đơn đăng ký kèm mọi cột về để đọc đúng {@code createdAt} là lãng phí.
+     * {@code MIN} instead of {@code findFirstBy...OrderBy...} returning the whole entity: the caller only needs a timestamp,
+     * and loading the entire registration form with every column just to read {@code createdAt} is wasteful.
      *
-     * @return null khi không còn đơn nào ở trạng thái này
+     * @return null when no form remains in this status
      */
     @Query("SELECT MIN(r.createdAt) FROM RegisterFormJpaEntity r WHERE r.status = :status")
     Instant findOldestCreatedAtByStatus(@Param("status") String status);

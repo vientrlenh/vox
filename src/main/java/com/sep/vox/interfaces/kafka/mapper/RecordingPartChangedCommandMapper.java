@@ -28,13 +28,13 @@ public final class RecordingPartChangedCommandMapper {
     }
 
     /**
-     * source là một phần khoá tra cứu của hàng bản ghi, nên nó không được phép rỗng.
+     * source is part of the lookup key of the recording row, so it must not be empty.
      *
-     * <p>Một khoá chứa null không khớp gì trong SQL: mỗi event thiếu source sẽ không tìm thấy
-     * hàng của chính nó và đẻ thêm một hàng mới, lần sau lại tiếp -- hàng nhân bản âm thầm thay
-     * vì được cập nhật. UNKNOWN giữ cho khoá toàn phần, và vì nó xếp dưới mọi nguồn đã biết
-     * (xem RecordingPrecedence.rankOf) nên nó không bao giờ được chọn làm bản chuẩn nếu có một
-     * bản biết rõ nguồn của mình.
+     * <p>A key containing null matches nothing in SQL: every event missing source would not find
+     * its own row and would spawn a new one, and again next time -- silently duplicated rows instead
+     * of an update. UNKNOWN keeps the key complete, and because it ranks below every known source
+     * (see RecordingPrecedence.rankOf) it is never chosen as the canonical copy if there is
+     * one that knows its own source.
      */
     private static String toSource(String raw) {
         return (raw == null || raw.isBlank()) ? "UNKNOWN" : raw.trim().toUpperCase(Locale.ROOT);
@@ -43,7 +43,7 @@ public final class RecordingPartChangedCommandMapper {
     private static AssessmentRequiredStreamType toStreamType(String raw) {
         AssessmentRequiredStreamType type = AssessmentRequiredStreamType.valueOf(raw.trim().toUpperCase());
         if (type == AssessmentRequiredStreamType.CAMERA_AND_SCREEN) {
-            throw new IllegalArgumentException("Một bản ghi không thể có streamType CAMERA_AND_SCREEN: " + raw);
+            throw new IllegalArgumentException("A recording cannot have streamType CAMERA_AND_SCREEN: " + raw);
         }
         return type;
     }

@@ -36,7 +36,7 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * 1 Rubric Version được phép gắn với nhiều Assessment Policy khác scope (ngôn ngữ/framework).
+ * 1 Rubric Version may be attached to many Assessment Policies with different scopes (language/framework).
  */
 class CreateSystemAssessmentPolicyUseCaseTests {
 
@@ -122,7 +122,7 @@ class CreateSystemAssessmentPolicyUseCaseTests {
 
         List<CreateAssessmentPolicyCommand> commands = List.of(
                 command(UUID.randomUUID()),
-                command(UUID.randomUUID()) // ngôn ngữ khác -> scope khác, cùng rubricVersionId
+                command(UUID.randomUUID()) // another language -> another scope, same rubricVersionId
         );
 
         org.assertj.core.api.Assertions.assertThat(useCase.execute(commands)).hasSize(2);
@@ -135,6 +135,6 @@ class CreateSystemAssessmentPolicyUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(List.of(command(languageId), command(languageId))))
                 .isInstanceOf(ResourceDuplicatedException.class)
-                .hasMessageContaining("trùng ngôn ngữ và Khung");
+                .hasMessageContaining("same language and framework");
     }
 }

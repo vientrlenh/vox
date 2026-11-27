@@ -450,7 +450,7 @@ public class GraphQLSchoolController {
     @QueryMapping(name = "schoolDirectoryCursorPage")
     public CursorPage<SchoolDirectoryDto> schoolDirectoryCursorPage(@Argument(name = "cursor") UUID cursor, @Argument(name = "limit") Integer limit) {
         if (limit == null || limit <= 0) {
-            throw new IllegalArgumentException("Giới hạn số phần tử lấy lên không hợp lệ");
+            throw new IllegalArgumentException("Invalid limit on the number of items to fetch");
         }
         ViewSchoolDirectoryCursorPageQuery query = new ViewSchoolDirectoryCursorPageQuery(cursor, limit);
         return viewSchoolDirectoryCursorPageUseCase.execute(query);

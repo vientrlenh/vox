@@ -93,7 +93,7 @@ class ClaimClassTestGradingUseCaseTests {
 
     @Test
     void should_reject_when_caller_is_not_the_chair() {
-        doThrow(new ForbiddenException("BẢO MẬT"))
+        doThrow(new ForbiddenException("SECURITY"))
             .when(assessmentGradingAccessService).authorizeClassTestChair(eq(ASSESSMENT_ID), eq(CHAIR_ID));
 
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID)))
@@ -102,12 +102,12 @@ class ClaimClassTestGradingUseCaseTests {
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
 
-    /** Vòng phúc khảo gắn với một đơn cụ thể — phải đi qua màn đơn, nơi biết luật COI. */
+    /** The appeal round is tied to one specific appeal -- it must go through the appeal screen, which knows the COI rule. */
     @Test
     void should_reject_appeal_round() {
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.APPEAL, RESULT_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("màn đơn phúc khảo");
+            .hasMessageContaining("appeal screen");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -120,10 +120,10 @@ class ClaimClassTestGradingUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID)))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("không thuộc bài kiểm tra này");
+            .hasMessageContaining("does not belong to this assessment");
     }
 
-    /** SPOT_CHECK chỉ nhận bài đã RELEASED — luật nằm ở GradingRoundPolicy, không suy lại. */
+    /** SPOT_CHECK only takes RELEASED submissions -- the rule lives in GradingRoundPolicy and is not re-derived. */
     @Test
     void should_reject_result_whose_status_does_not_match_the_round() {
         when(assessmentCandidateResultRepository.findByIdIn(anyCollection())).thenReturn(List.of(
@@ -142,7 +142,7 @@ class ClaimClassTestGradingUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.SPOT_CHECK, RESULT_ID)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("đang được chấm");
+            .hasMessageContaining("is being graded");
     }
 
     @Test

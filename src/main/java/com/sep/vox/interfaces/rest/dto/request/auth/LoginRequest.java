@@ -6,12 +6,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record LoginRequest(
-        @NotBlank(message = "Tên đăng nhập là bắt buộc") String login,
+        @NotBlank(message = "Login name is required") String login,
 
-        @NotBlank(message = "Mật khẩu là bắt buộc") String password, 
+        @NotBlank(message = "Password is required") String password, 
 
         @Valid
-        @NotNull(message = "Thông tin của thiết bị là bắt buộc")
+        @NotNull(message = "Device information is required")
         ClientDeviceRequest device
 ) {
 

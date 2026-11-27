@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateAssessmentPaperItemRequest(
-    @NotNull(message = "QuestionId là bắt buộc")
+    @NotNull(message = "QuestionId is required")
     UUID questionId
 ) {
 

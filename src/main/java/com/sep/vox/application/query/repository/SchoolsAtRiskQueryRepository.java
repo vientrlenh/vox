@@ -7,25 +7,25 @@ import com.sep.vox.application.query.dto.SchoolRiskBucket;
 import com.sep.vox.domain.common.PageResult;
 
 /**
- * Danh sách trường trong một nhóm "cần chú ý" — chỗ đáp của bốn dòng trên thẻ cùng tên ở trang tổng
- * quan hệ thống.
+ * The list of schools in one "needs attention" bucket -- where the four rows of the card of the same name on the
+ * system overview page land.
  *
- * <p>KHÔNG dùng lại màn "Trường &amp; gói" có sẵn cho việc này, dù nó cũng lọc theo trạng thái: màn
- * đó lọc theo DÒNG thuê bao còn thẻ đếm theo TRƯỜNG. Một trường có kỳ 2024 đã hết và kỳ 2025 đang
- * chạy sẽ nằm trong danh sách {@code status=EXPIRED} của màn đó nhưng KHÔNG thuộc nhóm "đã hết hạn"
- * — bấm vào thẻ ghi 5 rồi thấy 9 dòng thì không con số nào còn đáng tin.
+ * <p>Does NOT reuse the existing "Schools &amp; plans" screen for this, even though it also filters by status: that
+ * screen filters by subscription ROW while the card counts by SCHOOL. A school whose 2024 period has ended and whose 2025 period is
+ * running would be in that screen's {@code status=EXPIRED} list but does NOT belong to the "expired" bucket
+ * -- click a card that says 5 and see 9 rows, and no number is trustworthy any more.
  *
- * <p>Vì thế vị từ ở đây là bản sao ĐÚNG TỪNG CHỮ của
- * {@link PlatformBusinessHealthQueryRepository#countSchoolSubscriptionHealth}: gộp về một dòng mỗi
- * trường trước, rồi mới phân nhóm.
+ * <p>So the predicate here is a WORD-FOR-WORD copy of
+ * {@link PlatformBusinessHealthQueryRepository#countSchoolSubscriptionHealth}: collapse to one row per
+ * school first, and only then assign buckets.
  */
 public interface SchoolsAtRiskQueryRepository {
 
     /**
-     * @param now             thời điểm xét kỳ thuê bao nào đang phủ — truyền cùng giá trị đã dùng để
-     *                        đếm, nếu không thì một kỳ hết hạn giữa hai lần gọi sẽ làm số đếm và
-     *                        danh sách lệch nhau
-     * @param expiringThrough ngưỡng cảnh báo sắp hết hạn, BAO GỒM; chỉ dùng cho
+     * @param now             the moment used to decide which subscription period is covering -- pass the same value that was used to
+     *                        count, otherwise a period that expires between the two calls will make the count and the
+     *                        list disagree
+     * @param expiringThrough the expiring-soon warning threshold, INCLUSIVE; only used for
      *                        {@link SchoolRiskBucket#EXPIRING_SOON}
      */
     PageResult<SchoolAtRiskDto> findByBucket(

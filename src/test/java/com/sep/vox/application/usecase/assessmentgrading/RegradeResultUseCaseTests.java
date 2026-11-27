@@ -47,10 +47,10 @@ import com.sep.vox.domain.repository.AssessmentItemEvaluationRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Use case phức tạp nhất của tính năng: nó vừa ghi đè phán quyết của AI, vừa quyết định
- * bài đi về trạng thái nào. Hai chỗ dễ sai nhất được khoá ở đây — bản cũ không được
- * SUPERSEDED thì điểm cũ vẫn được tính, và trạng thái đích lấy nhầm mặc định thì hậu
- * kiểm sẽ thu hồi điểm đã công bố của học sinh.
+ * The most complex use case of the feature: it both overrides the AI's ruling and decides which
+ * status the submission goes to. The two easiest places to get wrong are locked here -- if the old version is not
+ * SUPERSEDED the old score is still counted, and if the target status takes the wrong default the post-check
+ * would withdraw a score already published to the student.
  */
 class RegradeResultUseCaseTests {
 
@@ -252,9 +252,9 @@ class RegradeResultUseCaseTests {
 
         useCase.execute(command());
 
-        // resultStatusAfter(SPOT_CHECK, REGRADED) = null nghĩa là GIỮ NGUYÊN. Nếu để
-        // resolveDefaultStatus tự quyết, bài có item cần soi sẽ bị kéo về
-        // PENDING_REVIEW — tức thu hồi điểm đã công bố vì một lý do kỹ thuật.
+        // resultStatusAfter(SPOT_CHECK, REGRADED) = null means KEEP AS IS. If resolveDefaultStatus
+        // were left to decide, a submission with an item that needs checking would be pulled back to
+        // PENDING_REVIEW -- i.e. withdrawing a published score for a technical reason.
         verify(upsertAssessmentCandidateResultUseCase).execute(sessionId, AssessmentCandidateResultStatus.RELEASED);
     }
 
@@ -302,7 +302,7 @@ class RegradeResultUseCaseTests {
 
         useCase.execute(command());
 
-        // Nộp là chốt COMPLETED: thiếu một phần mà vẫn cho nộp thì phần đó khoá cứng.
+        // Submitting finalizes COMPLETED: if a section is missing and submission is still allowed, that section is locked in for good.
         verify(gradingItemScoreResolver).resolve(any(), any(), eq(true));
     }
 

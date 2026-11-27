@@ -14,9 +14,9 @@ import com.sep.vox.infrastructure.service.FcmNotificationService;
 import com.sep.vox.infrastructure.service.NoOpPushNotificationService;
 
 /**
- * Hai adapter của PushNotificationPort được chọn bằng hai @ConditionalOnProperty bù nhau.
- * Nếu điều kiện lệch, hậu quả là một trong hai lỗi im lặng: không có bean nào (app không
- * khởi động được) hoặc có hai bean (NoUniqueBeanDefinitionException lúc inject).
+ * The two adapters of PushNotificationPort are chosen by two complementary @ConditionalOnProperty.
+ * If the conditions drift apart, the consequence is one of two silent failures: no bean at all (the app cannot
+ * start) or two beans (NoUniqueBeanDefinitionException at injection).
  */
 class PushNotificationWiringTests {
 
@@ -52,8 +52,8 @@ class PushNotificationWiringTests {
 
     @Test
     void doesNotRegisterNoOpAdapterWhenFirebaseIsEnabled() {
-        // Không dựng FcmNotificationService ở đây vì nó cần bean FirebaseMessaging thật;
-        // điều cần khẳng định là bản NoOp phải rút lui, để không có hai bean cùng lúc.
+        // FcmNotificationService is not built here because it needs a real FirebaseMessaging bean;
+        // what must be asserted is that the NoOp version steps back, so there are not two beans at once.
         new ApplicationContextRunner()
             .withUserConfiguration(NoOpPushNotificationService.class)
             .withPropertyValues("firebase.enabled=true")

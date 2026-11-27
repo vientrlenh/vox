@@ -44,9 +44,9 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
     public List<UUID> execute(CreateSchoolRubricResultBandsCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
 
         RubricVersion version = loadDraftVersionOwnedBySchool(command, currentUserId);
@@ -83,35 +83,35 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
         try {
             return rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric này từ trước. Vui lòng kiểm tra lại.");
+            throw new IllegalArgumentException("Data save error: the result band code (Code) or order already exists in this Rubric version. Please check again.");
         }
     }
 
     private RubricVersion loadDraftVersionOwnedBySchool(CreateSchoolRubricResultBandsCommand command, UUID currentUserId) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric version not found."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được thêm Thang điểm kết quả khi Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Result bands can only be added while the Rubric is in DRAFT status.");
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
 
         if (rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId()) || !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to edit a Rubric of another school.");
         }
         return version;
     }
 
     private void requireActiveSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+            throw new ForbiddenException("Action denied: this school is disabled in the system.");
         }
     }
 
@@ -121,11 +121,11 @@ public class CreateSchoolRubricResultBandsUseCase implements IUseCase<CreateScho
                                   NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin,
                                   Set<Integer> ordersSoFar) {
         if (!uniqueCodes.add(safeCode)) {
-            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
+            throw new IllegalArgumentException("The submitted data repeats the result band code (Code): " + safeCode);
         }
 
         if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
-            throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
+            throw new IllegalArgumentException("Result band '" + safeName + "': the minimum converted score must not be greater than the maximum.");
         }
 
         RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);

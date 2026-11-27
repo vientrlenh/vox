@@ -36,21 +36,21 @@ public class ImportSessionAcceptanceGuard {
             UUID currentUserId,
             Instant now) {
         ImportSession session = importSessionRepository.findById(importSessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import với id: " + importSessionId));
+            .orElseThrow(() -> new ResourceNotFoundException("Import session not found with id: " + importSessionId));
 
         if (session.getType() != expectedType) {
             throw new IllegalArgumentException(wrongTypeMessage);
         }
         if (!session.isCreatedBy(currentUserId)) {
-            throw new IllegalArgumentException("Phiên import không thuộc người dùng hiện tại");
+            throw new IllegalArgumentException("The import session does not belong to the current user");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept");
+            throw new IllegalArgumentException("The import session is not in a state that allows accept");
         }
         if (session.getExpiresAt() != null && session.getExpiresAt().isBefore(now)) {
             session.setStatus(ImportSessionStatus.EXPIRED);
             importSessionRepository.save(session);
-            throw new IllegalArgumentException("Phiên import đã hết hạn");
+            throw new IllegalArgumentException("The import session has expired");
         }
     }
 
@@ -65,7 +65,7 @@ public class ImportSessionAcceptanceGuard {
             .toList();
         if (!missingFields.isEmpty()) {
             throw new IllegalArgumentException(
-                "Mapping import thiếu trường bắt buộc: " + String.join(", ", missingFields)
+                "Import mapping is missing required fields: " + String.join(", ", missingFields)
             );
         }
     }

@@ -36,14 +36,14 @@ import com.sep.vox.domain.model.assessment.AssessmentKind;
 @RequiredArgsConstructor
 public class ExportAssessmentScoresExcelUseCase implements IUseCase<ExportAssessmentScoresQuery, byte[]> {
 
-    private static final String SHEET_NAME = "Bảng điểm";
+    private static final String SHEET_NAME = "Scores";
     private static final String CELL_DATE_FORMAT = "HH:mm dd/MM/yyyy";
     private static final DateTimeFormatter FILE_STAMP_FORMAT =
         DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(DateMapper.DEFAULT_INPUT_ZONE);
 
     private static final List<String> HEADERS = List.of(
-        "Mã bài", "Họ tên", "Email", "Lớp", "Kỳ thi", "Ca thi", "Điểm", "Xếp loại",
-        "Trạng thái", "Vòng chấm cuối", "Kết luận", "Người chấm", "Thời điểm công bố");
+        "Result code", "Full name", "Email", "Class", "Assessment", "Schedule", "Score", "Result band",
+        "Status", "Last grading round", "Conclusion", "Grader", "Released at");
 
     /**
      * Column width cap in characters. Auto-sizing shrinks to the longest cell, and one long assessment name is enough

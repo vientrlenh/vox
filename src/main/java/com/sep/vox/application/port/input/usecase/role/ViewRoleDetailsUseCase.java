@@ -22,7 +22,7 @@ public class ViewRoleDetailsUseCase implements IUseCase<ViewRoleDetailsQuery, Ro
     @Transactional(readOnly = true)
     public RoleDto execute(ViewRoleDetailsQuery input) {
         Role role = roleRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested role was not found"));
         return RoleDtoMapper.toRoleDto(role);
     }
     

@@ -111,12 +111,12 @@ class AddAssessmentCandidateUseCaseTests {
             c.setId(UUID.randomUUID());
             return c;
         });
-        doThrow(new BusinessRuleViolationException("Đã vượt quá hạn mức"))
+        doThrow(new BusinessRuleViolationException("The quota has been exceeded"))
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(assessment);
 
         assertThatThrownBy(() -> useCase.execute(new AddAssessmentCandidateCommand(assessmentId, studentId)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("vượt quá hạn mức");
+            .hasMessageContaining("quota has been exceeded");
     }
 
     @Test
@@ -182,7 +182,7 @@ class AddAssessmentCandidateUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new AddAssessmentCandidateCommand(assessmentId, studentId)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessage("Học sinh không thuộc lớp bạn phụ trách");
+            .hasMessage("The student is not in a class you are in charge of");
         verify(assessmentCandidateRepository, never()).save(any());
     }
 

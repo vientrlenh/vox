@@ -48,7 +48,7 @@ public class PracticeAgentAvailabilityClient implements PracticeAgentAvailabilit
             }
         } catch (Exception exception) {
             throw new IllegalStateException(
-                "Không thể kết nối dịch vụ AI để bắt đầu phiên luyện.",
+                "Cannot connect to the AI service to start the practice session.",
                 exception
             );
         }

@@ -40,7 +40,7 @@ public class UpdateFrameworkCriterionUseCase
         try {
             frameworkCriterionRepository.save(criterion);
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại", e);
+            throw new IllegalArgumentException("Criterion code already exists", e);
         }
 
         return criterion.getId();
@@ -48,24 +48,24 @@ public class UpdateFrameworkCriterionUseCase
 
     private FrameworkVersion getVersion(UpdateFrameworkCriterionCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
     }
 
     private FrameworkCriterion getCriterion(UpdateFrameworkCriterionCommand command) {
         return frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí"));
+            .orElseThrow(() -> new ResourceNotFoundException("Criterion not found"));
     }
 
     private void checkValidRequest(UpdateFrameworkCriterionCommand command, FrameworkVersion version,
             FrameworkCriterion criterion) {
         if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể cập nhật tiêu chí khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Criteria can only be updated while the version is in DRAFT status");
 
         if (!criterion.getFrameworkVersionId().equals(command.versionId()))
-            throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
+            throw new IllegalArgumentException("The criterion does not belong to this version");
 
         requireValidUniqueCode(command);
         requireOrderKeepsSequenceContinuous(command);
@@ -74,10 +74,10 @@ public class UpdateFrameworkCriterionUseCase
     private void requireValidUniqueCode(UpdateFrameworkCriterionCommand command) {
         String safeCode = StringNormalization.normalizeCode(command.code());
         if (!FrameworkCriterionCode.ALLOWED_CODES.contains(safeCode)) {
-            throw new IllegalArgumentException("Mã tiêu chí không hợp lệ: " + safeCode);
+            throw new IllegalArgumentException("Invalid criterion code: " + safeCode);
         }
         if (frameworkCriterionRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.criterionId())) {
-            throw new IllegalArgumentException("Mã tiêu chí đã tồn tại");
+            throw new IllegalArgumentException("Criterion code already exists");
         }
     }
 
@@ -88,12 +88,12 @@ public class UpdateFrameworkCriterionUseCase
                 .map(fc -> fc.getOrder())
                 .collect(Collectors.toSet());
         if (!otherOrders.add(command.order())) {
-            throw new IllegalArgumentException("Thứ tự tiêu chí bị trùng lặp: " + command.order());
+            throw new IllegalArgumentException("Duplicate criterion order: " + command.order());
         }
         int expectedOrder = otherOrders.size();
         for (int i = 1; i <= expectedOrder; i++) {
             if (!otherOrders.contains(i)) {
-                throw new IllegalArgumentException("Thứ tự tiêu chí phải tăng dần liên tục từ 1, không được bỏ số");
+                throw new IllegalArgumentException("Criterion order must increase continuously from 1 without skipping a number");
             }
         }
     }

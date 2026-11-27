@@ -9,40 +9,40 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateSystemRubricCriteriaRequest(
-        @NotEmpty(message = "Phải có ít nhất 1 tiêu chí được gửi lên")
+        @NotEmpty(message = "At least 1 criterion must be submitted")
         @Valid
         List<CriterionItemRequest> criteria
 ) {
         public record CriterionItemRequest(
-                @NotNull(message = "Framework Criterion ID không được để trống")
+                @NotNull(message = "Framework Criterion ID must not be blank")
                 UUID frameworkCriterionId,
 
-                @NotBlank(message = "Mã tiêu chí không được để trống")
+                @NotBlank(message = "Criterion code must not be blank")
                 String code,
 
-                @NotBlank(message = "Tên tiêu chí không được để trống")
+                @NotBlank(message = "Criterion name must not be blank")
                 String name,
 
                 String description,
 
-                @Valid // Để Spring validate luôn cả các ví dụ bên trong
-                List<CriterionExampleRequest> examples, // BỔ SUNG EXAMPLES
+                @Valid // So that Spring also validates the examples inside
+                List<CriterionExampleRequest> examples,
 
-                @NotNull(message = "Trọng số không được để trống")
-                @DecimalMin(value = "0.0", message = "Trọng số phải lớn hơn hoặc bằng 0")
+                @NotNull(message = "Weight must not be blank")
+                @DecimalMin(value = "0.0", message = "Weight must be greater than or equal to 0")
                 BigDecimal weight,
 
-                @NotNull(message = "Điểm tối thiểu không được để trống")
+                @NotNull(message = "Minimum score must not be blank")
                 BigDecimal minScore,
 
-                @NotNull(message = "Điểm tối đa không được để trống")
+                @NotNull(message = "Maximum score must not be blank")
                 BigDecimal maxScore,
 
-                @NotNull(message = "Thứ tự (Order) không được để trống")
-                @Min(value = 1, message = "Thứ tự (Order) phải lớn hơn 0")
+                @NotNull(message = "Order must not be blank")
+                @Min(value = 1, message = "Order must be greater than 0")
                 Integer order,
 
-                @NotNull(message = "Cờ bắt buộc (Is Required) không được để trống")
+                @NotNull(message = "Is Required flag must not be blank")
                 Boolean isRequired
         ) {
             private CreateSystemRubricCriteriaCommand.CriterionItemCommand asCriterionItemCommand() {
@@ -72,13 +72,13 @@ public record CreateSystemRubricCriteriaRequest(
         }
 
         public record CriterionExampleRequest(
-                @NotBlank(message = "Nội dung ví dụ (transcript) không được để trống")
+                @NotBlank(message = "Example content (transcript) must not be blank")
                 String transcript,
 
-                @NotBlank(message = "Giải thích (explanation) không được để trống")
+                @NotBlank(message = "Explanation must not be blank")
                 String explanation,
 
-                @NotNull(message = "Điểm kỳ vọng không được để trống")
+                @NotNull(message = "Expected score must not be blank")
                 BigDecimal expectedScore
         ) {}
 

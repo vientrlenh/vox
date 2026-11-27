@@ -42,7 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String email = authTokenPort.getEmailFromToken(jwtToken);
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
                 if (!userDetails.isEnabled()) {
-                    throw new DisabledException("Trạng thái người dùng không hợp lệ");
+                    throw new DisabledException("Invalid user status");
                 }
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

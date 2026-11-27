@@ -40,6 +40,6 @@ public interface SpringDataDimensionInterestScoreRepository
         @Param("score") java.math.BigDecimal score
     );
 
-    // GỠ: copyScores. Nó chỉ tồn tại để chép 6 dòng điểm sang learner_profiles bản mới mỗi lần
-    // hồ sơ đổi. Từ khi hồ sơ về 1-1 và cập nhật tại chỗ thì id không đổi, điểm nằm yên một chỗ.
+    // REMOVED: copyScores. It only existed to copy the 6 score rows to the new learner_profiles version every time the
+    // profile changed. Since the profile became 1-1 and updated in place, the id does not change and the scores stay in one place.
 }

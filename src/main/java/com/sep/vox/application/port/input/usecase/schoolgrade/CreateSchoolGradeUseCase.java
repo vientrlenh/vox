@@ -13,7 +13,7 @@ import com.sep.vox.domain.model.user.UserStatus;
 import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository; // Bổ sung
+import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.application.exception.DataConflictException;
 import lombok.RequiredArgsConstructor;
@@ -36,47 +36,42 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
     @Override
     @Transactional
     public UUID execute(CreateSchoolGradeCommand command) {
-        // 1. Kiểm tra ngày tháng
         validateDates(command);
 
-        // 2. Validate User & Security
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         checkUserAccess(currentUserId, command.schoolId());
 
-        // 3. Validate Khối lớp -- catalog dùng chung nên không còn kiểm tra thuộc trường nào,
-        //    chỉ cần khối tồn tại và chưa bị xóa mềm.
+        // The grade level catalogue is shared, so there is no school check any more: the level only has to exist and
+        // not be soft-deleted.
         gradeLevelRepository.findById(command.gradeLevelId())
                 .filter(gl -> gl.getStatus() == GradeLevelStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Khối lớp không tồn tại hoặc đã ngừng sử dụng."));
+                .orElseThrow(() -> new ResourceNotFoundException("The grade level does not exist or is no longer in use."));
 
-        // 4. Kiểm tra trùng mã trong phạm vi (trường, khối)
         String normalizedCode = StringNormalization.normalizeCode(command.code());
         if (schoolGradeRepository.existsBySchoolIdAndGradeLevelIdAndCode(
                 command.schoolId(), command.gradeLevelId(), normalizedCode)) {
-            throw new ResourceDuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
+            throw new ResourceDuplicatedException("The school year code already exists in this grade level.");
         }
 
-        // 5. Lưu và trả về UUID
         return saveNewGrade(command, normalizedCode, currentUserId);
     }
 
     private void validateDates(CreateSchoolGradeCommand command) {
         if (!command.startDate().isBefore(command.endDate())) {
-            throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc.");
+            throw new IllegalArgumentException("The start date must be before the end date.");
         }
     }
 
     private void checkUserAccess(UUID userId, UUID targetSchoolId) {
         if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
 
-        // Dùng phương thức đã tối ưu để lấy schoolId
         UUID userSchoolId = schoolUserRepository.findSchoolIdByUserId(userId)
-                .orElseThrow(() -> new ForbiddenException("Người dùng chưa được gán vào trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("The user has not been assigned to any school."));
 
         if (!userSchoolId.equals(targetSchoolId)) {
-            throw new ForbiddenException("Bạn không có quyền thao tác trên trường học này.");
+            throw new ForbiddenException("You are not allowed to act on this school.");
         }
     }
 
@@ -93,7 +88,7 @@ public class CreateSchoolGradeUseCase implements IUseCase<CreateSchoolGradeComma
             return schoolGradeRepository.save(newGrade).getId();
         } catch (DataConflictException e) {
             // Race-condition guard: two requests that create the same code both pass the exists check and only then hit the unique index.
-            throw new ResourceDuplicatedException("Mã năm học đã tồn tại trong Khối lớp này.");
+            throw new ResourceDuplicatedException("The school year code already exists in this grade level.");
         }
     }
 }

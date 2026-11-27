@@ -34,37 +34,32 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
     public UUID execute(AddSchoolRoomCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        // 1. Validate User & Permission (Guard Clause)
         validateUserAndAccess(currentUserId, command.schoolId());
 
-        // 2. Kiểm tra sự tồn tại của trường
         if (!schoolRepository.existsById(command.schoolId())) {
-            throw new ResourceNotFoundException("Không tìm thấy trường học.");
+            throw new ResourceNotFoundException("School not found.");
         }
 
-        // 3. Chuẩn hóa & Kiểm tra trùng lặp
         String safeCode = StringNormalization.normalizeCode(command.code());
         if (schoolRoomRepository.existsBySchoolIdAndCode(command.schoolId(), safeCode)) {
-            throw new ResourceDuplicatedException("Mã phòng học đã tồn tại trong trường.");
+            throw new ResourceDuplicatedException("The room code already exists in the school.");
         }
 
-        // 4. Lưu dữ liệu
         SchoolRoom savedRoom = saveRoom(command, safeCode, currentUserId);
 
-        // 5. Trả về response
         return savedRoom.getId();
     }
 
     private void validateUserAndAccess(UUID userId, UUID targetSchoolId) {
         if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
 
-        // Nếu là System Admin (không có SchoolUser), có thể cho qua.
-        // Nếu là School Admin, phải check trùng schoolId.
+        // A System Admin (who has no SchoolUser) may pass.
+        // A School Admin must match the schoolId.
         schoolUserRepository.findSchoolIdByUserId(userId).ifPresent(userSchoolId -> {
             if (!userSchoolId.equals(targetSchoolId)) {
-                throw new ForbiddenException("Bạn không có quyền quản lý trường học này.");
+                throw new ForbiddenException("You are not allowed to manage this school.");
             }
         });
     }

@@ -23,13 +23,13 @@ public class DeleteNotificationDeviceUseCase implements IUseCase<String, Void> {
     public Void execute(String input) {
         String installationId = StringNormalization.trimAndCollapseSpaces(input);
         if (installationId == null || installationId.isEmpty()) {
-            throw new IllegalArgumentException("FID không được để trống");
+            throw new IllegalArgumentException("FID must not be empty");
         }
 
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         int removed = notificationDeviceRepository.deleteByUserIdAndInstallationId(userId, installationId);
         if (removed == 0) {
-            throw new ResourceNotFoundException("Không tìm thấy thiết bị nhận thông báo");
+            throw new ResourceNotFoundException("Notification device not found");
         }
         return null;
     }

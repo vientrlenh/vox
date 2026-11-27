@@ -44,16 +44,16 @@ public class MissingResponseBackfillService {
     private final AssessmentItemEvaluationRepository assessmentItemEvaluationRepository;
 
     /**
-     * Câu này có thật sự KHÔNG có nội dung nào không.
+     * Does this answer really have NO content at all.
      *
-     * <p>Xét cả transcript của TỪNG LƯỢT chứ không chỉ ô tổng của response: có đường ghi chỉ
-     * điền transcript ở mức lượt, nên chỉ nhìn response sẽ kết luận nhầm là rỗng.
+     * <p>Looks at the transcript of EACH TURN too, not only the response's total cell: some write paths only
+     * fill in the transcript at turn level, so looking at the response alone would wrongly conclude it is empty.
      *
-     * <p>Định nghĩa nằm ở đây thay vì viết riêng tại từng nơi gọi, vì trước đây đúng chuyện đó
-     * đã xảy ra: đường nộp bài có rào này, còn {@code UpholdResultUseCase} thì không -- và một
-     * câu học sinh đã nói 2 lượt (41 giây + 36 giây, đủ audio lẫn transcript) bị ghi 0 điểm kèm
-     * câu "Thí sinh không đưa ra câu trả lời nào cho câu hỏi này" (đo được 2026-08-17, phiên
-     * 01a0101d). Một vị từ, một nơi định nghĩa.
+     * <p>The definition lives here instead of being written separately at each call site, because exactly that
+     * happened before: the submit path had this guard, while {@code UpholdResultUseCase} did not -- and an
+     * answer a student spoke in 2 turns (41 seconds + 36 seconds, with both audio and transcript) was recorded as 0 points with the
+     * sentence "The candidate gave no answer to this question" (measured 2026-08-17, session
+     * 01a0101d). One predicate, one place to define it.
      */
     public boolean isSilentAnswer(AssessmentItemResponse response) {
         if (response.getTranscript() != null && !response.getTranscript().isBlank()) {
@@ -64,28 +64,28 @@ public class MissingResponseBackfillService {
     }
 
     /**
-     * Ghi bản chấm 0 điểm cho một response ĐÃ TỒN TẠI nhưng thí sinh không nói gì.
+     * Records a 0-point grade for a response that ALREADY EXISTS but where the candidate said nothing.
      *
-     * <p>Khác {@link #backfill}: ở đó câu chưa từng được đưa ra nên không có dòng nào; ở đây thí
-     * sinh ĐÃ được hỏi, AI đã hỏi lại tới trần rồi cắt câu, nhưng transcript vẫn rỗng.
+     * <p>Different from {@link #backfill}: there the question was never presented so no row exists; here the
+     * candidate WAS asked, the AI asked again up to the cap and then cut the question off, yet the transcript is still empty.
      *
-     * <p>Vì sao không để LLM chấm: nó nhận đề bài đầy đủ nhưng phần trả lời rỗng, và vẫn sẽ trả
-     * về một con điểm -- suy ra từ hư không, nhìn không phân biệt được với điểm thật. Không nói
-     * gì thì 0 là câu trả lời duy nhất đúng, và ghi thẳng ở đây vừa chắc chắn vừa khỏi tốn một
-     * lượt gọi model.
+     * <p>Why not let the LLM grade it: it receives the full question but an empty answer, and will still return
+     * a score -- inferred from thin air, indistinguishable from a real score. When nothing was said,
+     * 0 is the only correct answer, and writing it directly here is both certain and saves a model
+     * call.
      *
-     * <p>Tự kiểm {@link #isSilentAnswer} chứ không tin người gọi: đây là hàm ghi thẳng 0 điểm
-     * kèm câu "thí sinh không trả lời", tức nó phát ngôn một kết luận về học sinh. Kết luận đó
-     * phải do chính dữ liệu quyết định, không do nơi gọi nhớ hay quên kiểm.
+     * <p>Checks {@link #isSilentAnswer} itself instead of trusting the caller: this function writes 0 points directly
+     * with the sentence "the candidate gave no answer", i.e. it makes a statement about the student. That statement
+     * must be decided by the data itself, not by whether the caller remembers or forgets to check.
      *
-     * @return true nếu đã ghi (tức response này thật sự rỗng); false khi câu có nội dung và
-     *         không được phép cho 0
+     * @return true if recorded (i.e. this response really is empty); false when the question has content and
+     *         must not be given 0
      */
     public boolean recordSilentAnswer(UUID responseId, UUID paperItemId) {
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(responseId).orElse(null);
         if (response != null && !isSilentAnswer(response)) {
             log.warn(
-                "Từ chối ghi 0 điểm cho câu {}: câu này CÓ nội dung trả lời, phải để người chấm xử lý.",
+                "Refusing to record 0 points for question {}: this question HAS answer content and must be handled by a grader.",
                 responseId
             );
             return false;
@@ -95,9 +95,9 @@ public class MissingResponseBackfillService {
                 paperItemId,
                 GRADED_BY,
                 NO_RECORDING,
-                "Thí sinh không đưa ra câu trả lời nào cho câu hỏi này.",
+                "The candidate gave no answer to this question.",
                 Instant.now()));
-        log.info("Câu {} không có nội dung trả lời -- ghi 0 điểm, không gọi LLM.", responseId);
+        log.info("Question {} has no answer content -- recording 0 points, not calling the LLM.", responseId);
         return true;
     }
 
@@ -123,7 +123,7 @@ public class MissingResponseBackfillService {
             created++;
         }
         if (created > 0) {
-            log.info("Phiên {}: lấp {} câu không có bản ghi (0 điểm, chờ giáo viên xem lại).",
+            log.info("Session {}: filling {} questions with no recording (0 points, awaiting teacher review).",
                 sessionId, created);
         }
         return created;
@@ -158,7 +158,7 @@ public class MissingResponseBackfillService {
                 paperItem.getId(),
                 GRADED_BY,
                 NO_RECORDING,
-                "Không thu được bản ghi cho câu này.",
+                "No recording was captured for this question.",
                 now));
     }
 }

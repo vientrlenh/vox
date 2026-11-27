@@ -121,6 +121,6 @@ class UpdateSchoolRubricCriterionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");
+            .hasMessage("Cannot update the criterion because the data is duplicated or invalid.");
     }
 }

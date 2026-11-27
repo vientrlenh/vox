@@ -66,32 +66,32 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
 
         // Security checkpoint 1: the School Admin must belong to this school.
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tìm kiếm Rubric của trường học khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to search the Rubrics of another school.");
         }
 
         // Security checkpoint 2: the school must be active.
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
+            throw new ForbiddenException("Action denied: this school is disabled.");
         }
     }
 
     // Security checkpoint 3: the Rubric must belong to the school.
     private void requireSchoolOwnedRubric(SearchSchoolRubricVersionsQuery query) {
         Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("The requested Rubric was not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Rubric này không thuộc về trường học của bạn.");
+            throw new ForbiddenException("SECURITY: this Rubric does not belong to your school.");
         }
     }
 }

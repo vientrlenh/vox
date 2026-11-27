@@ -33,12 +33,12 @@ import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
- * Phần dùng chung của bốn hành động chấm bài: mở đầu (phân quyền + kiểm luật vòng ×
- * hành động) và kết thúc (đổi trạng thái bài, ghi audit, đóng phân công, phát sự kiện).
+ * The shared part of the four grading actions: the opening (authorization + checking the round × action
+ * rule) and the closing (change the assessment status, write audit, close the assignment, publish the event).
  *
- * <p>Tồn tại vì bốn use case chỉ khác nhau ở đúng phần giữa. Nếu để mỗi use case tự
- * viết cả preamble lẫn postamble thì bốn bản sao sẽ trôi khỏi nhau, và cái trôi xa
- * nhất sẽ là cái quên ghi audit.
+ * <p>Exists because the four use cases differ only in the middle part. If each use case wrote
+ * its own preamble and postamble, the four copies would drift apart, and the one that drifts
+ * furthest would be the one that forgets to write the audit.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,7 +53,7 @@ public class GradingActionSupport {
     private final OutboxRepository outboxRepository;
     private final JsonSerializationPort jsonSerializationPort;
 
-    /** Ngữ cảnh đã qua mọi kiểm tra, kèm ảnh chụp trạng thái trước khi thao tác. */
+    /** The context that has passed every check, with a snapshot of the state before the action. */
     public record PreparedAction(
         GradingContext context,
         UUID currentUserId,
@@ -81,7 +81,7 @@ public class GradingActionSupport {
         GradingRoundType roundType = requireActionableRound(context, outcome);
         String normalizedReason = reason == null || reason.isBlank() ? null : reason.trim();
         if (GradingRoundPolicy.requiresReason(outcome) && normalizedReason == null) {
-            throw new IllegalArgumentException("Phải nhập lý do cho quyết định này.");
+            throw new IllegalArgumentException("A reason must be entered for this decision.");
         }
 
         return new PreparedAction(
@@ -97,19 +97,19 @@ public class GradingActionSupport {
     private GradingRoundType requireActionableRound(GradingContext context, GradingOutcome outcome) {
         AssessmentGradingAssignment assignment = context.assignment();
         if (assignment.isCompleted()) {
-            throw new IllegalArgumentException("Bạn đã chốt kết quả cho bài thi này.");
+            throw new IllegalArgumentException("You have already finalized the result for this assessment.");
         }
         GradingRoundType roundType = assignment.getRoundType();
         if (roundType == null) {
-            throw new IllegalArgumentException("Phân công này thiếu vòng chấm.");
+            throw new IllegalArgumentException("This assignment is missing a grading round.");
         }
         if (!GradingRoundPolicy.isAllowed(roundType, outcome)) {
-            throw new IllegalArgumentException("Hành động này không hợp lệ với vòng chấm hiện tại.");
+            throw new IllegalArgumentException("This action is not valid for the current grading round.");
         }
         // Another flow (appeal, finalization) may have moved the result while the teacher had the
         // grading screen open; the assignment is then still ASSIGNED but there is nothing left to do.
         if (!GradingRoundPolicy.isAssignable(roundType, context.candidateResult().getStatus())) {
-            throw new IllegalArgumentException("Bài thi này không còn ở trạng thái xử lý được của vòng chấm.");
+            throw new IllegalArgumentException("This assessment is no longer in a state the grading round can handle.");
         }
         return roundType;
     }
@@ -314,7 +314,7 @@ public class GradingActionSupport {
     public UUID requireStudentId(AssessmentCandidateResult result) {
         UUID studentId = resolveStudentId(result);
         if (studentId == null) {
-            throw new ResourceNotFoundException("Không tìm thấy thí sinh của bài thi.");
+            throw new ResourceNotFoundException("Candidate of the assessment not found.");
         }
         return studentId;
     }

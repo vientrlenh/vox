@@ -38,7 +38,7 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         AssessmentPolicy policy = loadSystemPolicy(command);
 
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("An Assessment Policy can only be updated while it is DRAFT.");
         }
 
         requireTargetBandOfPolicyFramework(command, policy);
@@ -52,18 +52,18 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
     private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
     }
 
     private AssessmentPolicy loadSystemPolicy(UpdateAssessmentPolicyCommand command) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
 
         if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
+            throw new ForbiddenException("Action denied: a school's Assessment Policy cannot be modified here.");
         }
         return policy;
     }
@@ -71,20 +71,20 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
     private void requireTargetBandOfPolicyFramework(UpdateAssessmentPolicyCommand command, AssessmentPolicy policy) {
         // frameworkVersionId stays the same and cannot be changed
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Target band (targetFrameworkBandId) not found."));
         if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
-            throw new IllegalArgumentException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
+            throw new IllegalArgumentException("The target band must belong to the Framework Version of this Policy.");
         }
     }
 
     /** Validates the effective period against the end date that will be stored (omitted keeps the stored one). */
     private Instant effectiveToAfterValidation(UpdateAssessmentPolicyCommand command, AssessmentPolicy policy) {
         if (command.effectiveFrom() == null) {
-            throw new IllegalArgumentException("Ngày bắt đầu hiệu lực (effectiveFrom) không được để trống.");
+            throw new IllegalArgumentException("The effective start date (effectiveFrom) must not be empty.");
         }
         Instant effectiveTo = command.effectiveToProvided() ? command.effectiveTo() : policy.getEffectiveTo();
         if (effectiveTo != null && command.effectiveFrom().isAfter(effectiveTo)) {
-            throw new IllegalArgumentException("Ngày bắt đầu hiệu lực không được sau ngày kết thúc hiệu lực.");
+            throw new IllegalArgumentException("The effective start date must not be after the effective end date.");
         }
         return effectiveTo;
     }

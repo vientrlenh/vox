@@ -32,10 +32,10 @@ public final class PageArguments {
      */
     public static void validate(Integer page, Integer size) {
         if (page == null || page <= 0) {
-            throw new IllegalArgumentException("Số trang yêu cầu không hợp lệ");
+            throw new IllegalArgumentException("Requested page number is invalid");
         }
         if (size == null || size <= 0 || size > MAX_PAGE_SIZE) {
-            throw new IllegalArgumentException("Kích cỡ trang yêu cầu không hợp lệ");
+            throw new IllegalArgumentException("Requested page size is invalid");
         }
     }
 }

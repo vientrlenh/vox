@@ -52,24 +52,24 @@ public class CreateSystemRubricUseCase implements IUseCase<CreateSystemRubricCom
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
     }
 
     private void requireExistingLanguage(UUID languageId) {
         if (!languageRepository.existsById(languageId)) {
-            throw new ResourceNotFoundException("Ngôn ngữ không tồn tại.");
+            throw new ResourceNotFoundException("The language does not exist.");
         }
     }
 
     private void requireActiveFramework(UUID frameworkId) {
         Framework framework = frameworkRepository.findById(frameworkId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Framework not found."));
         if (!framework.isActive() ) {
-            throw new IllegalArgumentException("Không thể sử dụng Khung tiêu chuẩn (Framework) này vì nó đang bị vô hiệu hóa.");
+            throw new IllegalArgumentException("Cannot use this Framework because it is disabled.");
         }
     }
 }

@@ -3,11 +3,11 @@ package com.sep.vox.application.port.input.command.assessmentgrading;
 import java.util.UUID;
 
 /**
- * Chốt sổ kỳ thi: công bố các bài còn chờ người chấm theo điểm AI đang có.
+ * Closes out an assessment: publishes the submissions still waiting for a grader using the AI scores currently held.
  *
- * @param releasePendingWithAiScores xác nhận của admin rằng bài chưa ai chấm được
- *        công bố theo điểm AI đang có. Bắt buộc {@code true} khi preview còn bài chặn
- *        — mặc định {@code false} để không ai vô tình công bố điểm chưa được người xem.
+ * @param releasePendingWithAiScores the admin's confirmation that submissions nobody has graded may be
+ *        published with the AI scores currently held. Must be {@code true} when the preview still has blocking submissions
+ *        -- {@code false} by default so nobody accidentally publishes scores that no person has looked at.
  */
 public record BulkFinalizeAssessmentResultsCommand(
     UUID assessmentId,

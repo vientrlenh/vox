@@ -23,8 +23,8 @@ public interface SpringDataSchoolClassUserRepository extends JpaRepository<Schoo
     Page<SchoolClassUserJpaEntity> findBySchoolClassId(UUID schoolClassId, Pageable pageable);
     boolean existsBySchoolClassId(UUID schoolClassId);
 
-    // Lọc vai trò bằng EXISTS chứ không JOIN role: user mang nhiều vai trò sẽ bị
-    // nhân dòng nếu JOIN, làm sai cả nội dung trang lẫn totalElements.
+    // Filter roles with EXISTS rather than JOIN role: a user with several roles would
+    // have rows multiplied by a JOIN, corrupting both the page content and totalElements.
     @Query("""
         SELECT scu
         FROM SchoolClassUserJpaEntity scu

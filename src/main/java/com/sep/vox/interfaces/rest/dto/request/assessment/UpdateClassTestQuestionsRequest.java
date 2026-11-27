@@ -14,7 +14,7 @@ public record UpdateClassTestQuestionsRequest(
     UUID paperId,
 
     @Valid
-    @NotEmpty(message = "Danh sách section không được để trống")
+    @NotEmpty(message = "Section list must not be blank")
     List<ClassTestSectionRequest> sections
 ) {
 

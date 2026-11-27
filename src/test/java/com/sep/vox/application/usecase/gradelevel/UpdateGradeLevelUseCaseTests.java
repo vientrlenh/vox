@@ -56,7 +56,7 @@ class UpdateGradeLevelUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessage("Thứ tự khối học đã được sử dụng.");
+            .hasMessage("Grade level order is already in use.");
     }
 
     @Test

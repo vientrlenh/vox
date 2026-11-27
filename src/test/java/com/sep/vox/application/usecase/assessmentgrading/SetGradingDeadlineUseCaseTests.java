@@ -33,8 +33,8 @@ import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 
 /**
- * Đặt hạn hàng loạt. Hai điểm dễ sai: ghi nửa chừng rồi mới phát hiện một dòng không
- * hợp lệ, và quên xoá dấu đã-nhắc khiến hạn mới không bao giờ được nhắc.
+ * Bulk deadline setting. Two easy mistakes: writing half way and only then discovering that one row is
+ * invalid, and forgetting to clear the already-reminded mark so the new deadline is never reminded.
  */
 class SetGradingDeadlineUseCaseTests {
 
@@ -101,7 +101,7 @@ class SetGradingDeadlineUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
             command(List.of(assignment.getId()), Instant.now().minus(1, ChronoUnit.HOURS))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("tương lai");
+            .hasMessageContaining("in the future");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -110,7 +110,7 @@ class SetGradingDeadlineUseCaseTests {
     void should_reject_an_empty_selection() {
         assertThatThrownBy(() -> useCase.execute(command(List.of(), Instant.now().plus(1, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("ít nhất một");
+            .hasMessageContaining("At least one");
     }
 
     @Test
@@ -122,7 +122,7 @@ class SetGradingDeadlineUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
             command(List.of(open.getId(), closed.getId()), Instant.now().plus(2, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã chốt");
+            .hasMessageContaining("finalized");
 
         // No row is written: a partly broken batch is harder to clean up than a batch that is
         // rejected entirely.
@@ -144,7 +144,7 @@ class SetGradingDeadlineUseCaseTests {
     void should_refuse_a_row_belonging_to_another_school() {
         UUID otherSchoolId = UUID.randomUUID();
         AssessmentGradingAssignment assignment = given(otherSchoolId);
-        doThrow(new ForbiddenException("BẢO MẬT")).when(assessmentGradingAccessService)
+        doThrow(new ForbiddenException("SECURITY")).when(assessmentGradingAccessService)
             .authorizeSchoolAdmin(any(), any());
 
         assertThatThrownBy(() -> useCase.execute(

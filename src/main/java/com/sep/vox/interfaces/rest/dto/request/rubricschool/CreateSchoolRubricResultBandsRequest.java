@@ -13,27 +13,27 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public record CreateSchoolRubricResultBandsRequest(
-        @NotEmpty(message = "Phải có ít nhất 1 thang điểm được gửi lên")
-        @Valid // Bắt buộc để Spring check validate bên trong List
+        @NotEmpty(message = "At least 1 score band must be submitted")
+        @Valid // Required so that Spring validates the elements inside the List
         List<ResultBandItemRequest> resultBands
 ) {
         public record ResultBandItemRequest(
-                @NotBlank(message = "Mã thang điểm không được để trống")
+                @NotBlank(message = "Score band code must not be blank")
                 String code,
 
-                @NotBlank(message = "Tên thang điểm (VD: Giỏi, Khá, Pass) không được để trống")
+                @NotBlank(message = "Score band name (e.g. Excellent, Good, Pass) must not be blank")
                 String name,
 
                 String description,
 
-                @NotNull(message = "Điểm quy đổi tối thiểu không được để trống")
+                @NotNull(message = "Minimum converted score must not be blank")
                 BigDecimal mappedScoreMin,
 
-                @NotNull(message = "Điểm quy đổi tối đa không được để trống")
+                @NotNull(message = "Maximum converted score must not be blank")
                 BigDecimal mappedScoreMax,
 
-                @NotNull(message = "Thứ tự không được để trống")
-                @Min(value = 1, message = "Thứ tự (Order) phải lớn hơn 0")
+                @NotNull(message = "Order must not be blank")
+                @Min(value = 1, message = "Order must be greater than 0")
                 Integer order
         ) {}
 

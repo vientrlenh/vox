@@ -18,6 +18,6 @@ public interface UserRoleRepository {
     List<UserRole> findByRoleIdIn(Collection<UUID> roleIds, int pageNumber, int size);
     long countByRoleId(UUID roleId);
 
-    /** Toàn hệ thống (không theo trường) -- mirror SchoolUserRepository.findBySchoolIdWithRole, lọc user.status <> DISABLED. */
+    /** System-wide (not per school) -- mirrors SchoolUserRepository.findBySchoolIdWithRole, filters user.status <> DISABLED. */
     List<UUID> findActiveUserIdsByRoleCode(String roleCode);
 }

@@ -95,8 +95,8 @@ class UpdateAssessmentSessionRemainingTimeUseCaseTests {
     }
 
     /**
-     * Giá trị do máy học viên gửi lên, nên một con số lớn bất thường không được phép trở thành thời
-     * gian thi thật.
+     * The value is sent by the examinee's machine, so an abnormally large number must not become the
+     * real assessment time.
      */
     @Test
     void should_clamp_a_value_above_the_assigned_paper_duration() {
@@ -113,8 +113,8 @@ class UpdateAssessmentSessionRemainingTimeUseCaseTests {
     }
 
     /**
-     * Mã đề chưa có thời lượng thì không có chặn trên để áp; ràng buộc "chỉ đi lùi" ở tầng DB vẫn
-     * giữ cho giá trị không tăng.
+     * A paper with no duration has no upper bound to apply; the "only go backwards" constraint at the DB layer still
+     * keeps the value from increasing.
      */
     @Test
     void should_skip_the_ceiling_when_the_paper_has_no_duration() {

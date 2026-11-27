@@ -12,16 +12,16 @@ import com.sep.vox.domain.model.order.OrderStatus;
 import com.sep.vox.domain.model.order.OrderType;
 
 /**
- * "Ý định mua" của trường -- thay cho subscription_request + token_purchase cũ, và mang luôn phần
- * vòng đời thanh toán mà invoice cũ ôm nhầm.
+ * The school's "purchase intent" -- replaces the old subscription_request + token_purchase, and also carries the
+ * payment lifecycle that the old invoice wrongly held.
  */
 public interface OrderRepository {
     Optional<Order> findById(UUID id);
 
     /**
-     * Khóa đơn tới hết transaction trước khi chốt kết quả thanh toán. Webhook cổng và
-     * PendingOrderReconciler có thể cùng chốt một đơn: không khóa thì cả hai đọc thấy PENDING
-     * trước khi bên kia commit và cấp gói/cộng tiền hai lần.
+     * Locks the order until the end of the transaction before settling the payment result. The gateway webhook and
+     * PendingOrderReconciler may settle the same order: without the lock both read PENDING
+     * before the other commits and grant the plan/add money twice.
      */
     Optional<Order> findByIdForUpdate(UUID id);
 
@@ -30,34 +30,34 @@ public interface OrderRepository {
     List<Order> findBySchoolId(UUID schoolId);
     PageResult<Order> findBySchoolId(UUID schoolId, int page, int size);
 
-    /** Danh sách đơn cho System Admin -- mọi bộ lọc đều bỏ qua được bằng null. */
+    /** List of orders for the System Admin -- every filter can be skipped with null. */
     PageResult<Order> findForAdmin(UUID schoolId, OrderStatus status, OrderType type, String keyword, int page, int size);
     List<Order> findByStatus(OrderStatus status);
 
     /**
-     * Đơn gói đang mở của trường, soi đúng điều kiện của uq_orders_one_open_subscription_order
-     * (PENDING + type IN (SUBSCRIPTION_REQUEST, SUBSCRIPTION_UPGRADE)). Dùng để chặn TRƯỚC ở use case
-     * với thông báo tử tế, thay vì để unique index ném DataIntegrityViolationException lên người dùng.
+     * The open subscription order of a school, matching exactly the condition of uq_orders_one_open_subscription_order
+     * (PENDING + type IN (SUBSCRIPTION_REQUEST, SUBSCRIPTION_UPGRADE)). Used to block EARLY in the use case
+     * with a proper message, instead of letting the unique index throw DataIntegrityViolationException at the user.
      */
     Optional<Order> findOpenSubscriptionOrderBySchoolId(UUID schoolId);
 
     boolean existsBySchoolIdAndTypeInAndStatus(UUID schoolId, List<OrderType> types, OrderStatus status);
 
-    /** Doanh thu đã thu trong kỳ. {@code from} bao gồm, {@code to} KHÔNG bao gồm. */
+    /** Revenue collected in the period. {@code from} is inclusive, {@code to} is NOT inclusive. */
     BigDecimal sumTotalAmountByStatusInRange(OrderStatus status, Instant from, Instant to);
 
     /**
-     * Đơn theo trạng thái trong một kỳ, cùng quy ước khoảng với
-     * {@link #sumTotalAmountByStatusInRange}. Dùng cho các màn thống kê cần TÁCH NHÓM số tiền (theo
-     * tháng, theo loại đơn) chứ không chỉ cần một tổng.
+     * Orders by status in a period, with the same range convention as
+     * {@link #sumTotalAmountByStatusInRange}. Used by statistics screens that need to SPLIT the amount into groups (by
+     * month, by order type) rather than just a total.
      */
     List<Order> findByStatusInRange(OrderStatus status, Instant from, Instant to);
 
     /**
-     * Như {@link #findByStatusInRange} nhưng CHỈ của một trường -- dùng cho màn quản trị cấp trường.
+     * Same as {@link #findByStatusInRange} but ONLY for one school -- for the school-level admin screen.
      *
-     * <p>Có mặt riêng vì bản không lọc trường ở trên đọc đơn của toàn hệ thống: gọi nhầm bản đó từ
-     * màn của một trường thì tổng chi và biểu đồ chi tiêu của họ thành số liệu gộp của mọi trường.
+     * <p>Exists separately because the unfiltered version above reads the orders of the whole system: calling it by mistake from
+     * a school screen would turn its spending total and spending chart into aggregates of every school.
      */
     List<Order> findBySchoolIdAndStatusInRange(UUID schoolId, OrderStatus status, Instant from, Instant to);
 }

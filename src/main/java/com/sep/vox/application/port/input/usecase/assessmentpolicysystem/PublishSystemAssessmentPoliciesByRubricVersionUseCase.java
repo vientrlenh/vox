@@ -44,10 +44,10 @@ public class PublishSystemAssessmentPoliciesByRubricVersionUseCase
         // Validate and publish each policy (roll everything back if one policy is invalid)
         for (AssessmentPolicy policy : draftPolicies) {
             FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
+                    .orElseThrow(() -> new ResourceNotFoundException("The linked Framework Version was not found."));
             if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-                throw new IllegalArgumentException("Không thể xuất bản Assessment Policy (ID: " + policy.getId()
-                        + ") vì Phiên bản Khung tiêu chuẩn liên kết không còn ở trạng thái PUBLISHED.");
+                throw new IllegalArgumentException("Cannot publish Assessment Policy (ID: " + policy.getId()
+                        + ") because the linked Framework Version is no longer PUBLISHED.");
             }
 
             policy.setStatus(AssessmentPolicyStatus.PUBLISHED);
@@ -60,23 +60,23 @@ public class PublishSystemAssessmentPoliciesByRubricVersionUseCase
     private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
     }
 
     private List<AssessmentPolicy> loadDraftPolicies(PublishSystemAssessmentPoliciesByRubricVersionCommand command) {
         RubricVersion rubricVersion = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric version not found."));
         if (rubricVersion.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể publish hàng loạt Assessment Policy khi Rubric Version liên kết đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Assessment Policies can only be published in bulk while the linked Rubric Version is DRAFT.");
         }
 
         List<AssessmentPolicy> draftPolicies = assessmentPolicyRepository
                 .findDraftSystemWideByRubricVersionId(command.rubricVersionId());
         if (draftPolicies.isEmpty()) {
-            throw new ResourceNotFoundException("Không có Assessment Policy hệ thống nào đang ở trạng thái DRAFT liên kết với Rubric Version này.");
+            throw new ResourceNotFoundException("No DRAFT system Assessment Policy is linked to this Rubric Version.");
         }
         return draftPolicies;
     }

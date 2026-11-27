@@ -62,14 +62,14 @@ public class RegisterBySelfDeclaredUseCase implements IUseCase<RegisterBySelfDec
 
     private void rejectDuplicateOrIncompleteRegistration(RegisterBySelfDeclaredCommand command) {
         // Do NOT block by domain any more: several campuses of one school sharing a single domain is normal
-        // (e.g. Phổ thông Năng Khiếu has 2 campuses on ptnk.edu.vn), and each campus is an independent School.
+        // (e.g. Pho Thong Nang Khieu high school has 2 campuses on ptnk.edu.vn), and each campus is an independent School.
         // Blocking by domain would make the campus that applies later unable to register for good -- the old
         // blockingFormStatuses also counted APPROVED, so there was no expiry to wait for. The real identity of a
         // school is the SCHOOL CODE, and ProvisionSchoolService still guards the code against duplicates.
         registrationContactDuplicateGuardService.requireContactNotInUse(command.contactEmail(), command.contactPhone());
 
         if (command.documentUrls() == null || command.documentUrls().isEmpty()) {
-            throw new IllegalArgumentException("Cần gửi tài liệu để xác thực");
+            throw new IllegalArgumentException("A verification document is required");
         }
     }
 

@@ -66,7 +66,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
     @Transactional
     public List<UUID> execute(List<CreateAssessmentPolicyCommand> commands) {
         if (commands == null || commands.isEmpty()) {
-            throw new IllegalArgumentException("Danh sách Assessment Policy cần tạo không được để trống.");
+            throw new IllegalArgumentException("The list of Assessment Policies to create must not be empty.");
         }
 
         UUID schoolId = requireSchoolOfCaller(commands);
@@ -88,12 +88,12 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
 
     private UUID requireSchoolOfCaller(List<CreateAssessmentPolicyCommand> commands) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Account not found."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account has been locked.");
 
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("You do not belong to any school."));
         UUID schoolId = commands.get(0).schoolId();
-        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("BẢO MẬT: Không thể tạo Policy cho trường khác.");
+        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("SECURITY: A Policy cannot be created for another school.");
         return schoolId;
     }
 
@@ -123,50 +123,50 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
 
     private void requireSameSchool(CreateAssessmentPolicyCommand command, UUID schoolId) {
         if (!schoolId.equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Không thể tạo Policy cho trường khác.");
+            throw new ForbiddenException("SECURITY: A Policy cannot be created for another school.");
         }
     }
 
     private FrameworkVersion requirePublishedFrameworkVersion(CreateAssessmentPolicyCommand command) {
         FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
+                .orElseThrow(() -> new ResourceNotFoundException("Framework version not found."));
         if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể tạo Assessment Policy trên Framework đã PUBLISHED.");
+            throw new IllegalArgumentException("An Assessment Policy can only be created on a PUBLISHED Framework.");
         }
         return frameworkVersion;
     }
 
     private void requireLanguageExists(CreateAssessmentPolicyCommand command) {
         if (!languageRepository.existsById(command.languageId())) {
-            throw new ResourceNotFoundException("Ngôn ngữ chỉ định không tồn tại.");
+            throw new ResourceNotFoundException("The specified language does not exist.");
         }
     }
 
     private void requireSingleScopeInSchool(CreateAssessmentPolicyCommand command, UUID schoolId) {
         int scopeCount = (command.schoolClassId() != null ? 1 : 0) + (command.schoolGradeId() != null ? 1 : 0) + (command.gradeLevelId() != null ? 1 : 0);
         if (scopeCount != 1) {
-            throw new IllegalArgumentException("Phải chọn đúng 1 phạm vi áp dụng: Lớp, Khối năm học, HOẶC Khối.");
+            throw new IllegalArgumentException("Exactly 1 scope must be chosen: Class, School grade, OR Grade level.");
         }
 
         if (command.schoolClassId() != null) {
-            SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Lớp học."));
-            if (!schoolId.equals(schoolClass.getSchoolId())) throw new ForbiddenException("Lớp học không thuộc trường của bạn.");
+            SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId()).orElseThrow(() -> new ResourceNotFoundException("Class not found."));
+            if (!schoolId.equals(schoolClass.getSchoolId())) throw new ForbiddenException("The class does not belong to your school.");
         } else if (command.schoolGradeId() != null) {
-            SchoolGrade schoolGrade = schoolGradeRepository.findById(command.schoolGradeId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khối năm học."));
-            if (!schoolId.equals(schoolGrade.getSchoolId())) throw new ForbiddenException("Khối năm học không thuộc trường của bạn.");
+            SchoolGrade schoolGrade = schoolGradeRepository.findById(command.schoolGradeId()).orElseThrow(() -> new ResourceNotFoundException("School grade not found."));
+            if (!schoolId.equals(schoolGrade.getSchoolId())) throw new ForbiddenException("The school grade does not belong to your school.");
         } else {
             // Grade level is a shared catalog: it only has to exist, it no longer belongs to a school.
             if (gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-                throw new ResourceNotFoundException("Không tìm thấy Khối.");
+                throw new ResourceNotFoundException("Grade level not found.");
             }
         }
     }
 
     private void requireTargetBandWithinCeiling(CreateAssessmentPolicyCommand command, GradeLevelBandScopeGuardService.Batch bandScopeBatch) {
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu."));
+                .orElseThrow(() -> new ResourceNotFoundException("Target band not found."));
         if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
-            throw new IllegalArgumentException("Band mục tiêu phải thuộc đúng Khung năng lực đang chọn.");
+            throw new IllegalArgumentException("The target band must belong to the selected competency framework.");
         }
 
         // Band ceiling per grade level. The Class / school grade has to be traced back to its Grade level, not only
@@ -177,9 +177,9 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
     }
 
     private void requireValidEffectivePeriod(CreateAssessmentPolicyCommand command) {
-        if (command.effectiveFrom() == null) throw new IllegalArgumentException("Ngày bắt đầu không được trống.");
+        if (command.effectiveFrom() == null) throw new IllegalArgumentException("The start date must not be empty.");
         if (command.effectiveTo() != null && command.effectiveFrom().isAfter(command.effectiveTo())) {
-            throw new IllegalArgumentException("Ngày kết thúc không được trước ngày bắt đầu.");
+            throw new IllegalArgumentException("The end date must not be before the start date.");
         }
     }
 
@@ -197,24 +197,24 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                 command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId());
         if (!scopeClaimsInBatch.add(scopeClaimKey)) {
             throw new ResourceDuplicatedException(
-                    "Trong cùng một lần tạo có hai Assessment Policy trùng phạm vi áp dụng."
-                            + " Mỗi phạm vi chỉ được một chính sách.");
+                    "The same creation request contains two Assessment Policies with the same scope."
+                            + " Each scope may have only one policy.");
         }
     }
 
     private void requireUsableRubricVersion(CreateAssessmentPolicyCommand command, FrameworkVersion frameworkVersion, UUID schoolId) {
         UUID rubricVersionId = command.rubricVersionId();
         RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric version not found, ID: " + rubricVersionId));
         Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent rubric not found for version ID: " + rubricVersionId));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !schoolId.equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("Phiên bản Rubric không thuộc trường học của bạn.");
+            throw new ForbiddenException("The rubric version does not belong to your school.");
         }
         requireRubricVersionNotArchived(rubricVersion);
         if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
-            throw new IllegalArgumentException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
+            throw new IllegalArgumentException("The rubric version and the competency framework do not match.");
         }
     }
 
@@ -241,7 +241,7 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
     private void requireRubricVersionNotArchived(RubricVersion rubricVersion) {
         if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
             throw new IllegalArgumentException(
-                    "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");
+                    "A Policy cannot be attached to an archived (ARCHIVED) rubric version.");
         }
     }
 
@@ -256,8 +256,8 @@ public class CreateSchoolAssessmentPolicyUseCase implements IUseCase<List<Create
                 schoolId, command.languageId(), command.frameworkVersionId(),
                 command.gradeLevelId(), command.schoolGradeId(), command.schoolClassId());
         if (isDuplicated) {
-            throw new ResourceDuplicatedException("Phạm vi này đã có một Assessment Policy còn hiệu lực"
-                    + " (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
+            throw new ResourceDuplicatedException("This scope already has an Assessment Policy in force"
+                    + " (DRAFT or PUBLISHED). Archive the old one before creating a new one.");
         }
     }
 

@@ -15,15 +15,15 @@ import com.sep.vox.domain.model.payment.PaymentProvider;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Chữ ký webhook là ranh giới xác thực duy nhất của endpoint callback — nó được gọi bởi cổng
- * thanh toán chứ không phải bởi client đã đăng nhập, nên không có JWT nào đứng sau.
+ * The webhook signature is the only authentication boundary of the callback endpoint -- it is called by the payment
+ * gateway and not by a logged-in client, so there is no JWT behind it.
  *
- * <p>Test đi qua {@code verifyCallback} thay vì gọi thẳng hàm ký, để phủ cả đường parse payload:
- * chữ ký đúng mà bóc sai orderCode thì tiền vẫn vào nhầm hóa đơn.
+ * <p>The tests go through {@code verifyCallback} instead of calling the signing function directly, to cover the payload parsing path too:
+ * a correct signature with a wrongly extracted orderCode would still put the money into the wrong invoice.
  *
- * <p>Vector dưới đây được tính độc lập bằng {@code openssl dgst -sha256 -hmac} trên chuỗi
- * {@code amount=3000&code=00&desc=&orderCode=123}, để test không chỉ khẳng định lại chính thuật
- * toán mà nó đang kiểm tra.
+ * <p>The vector below was computed independently with {@code openssl dgst -sha256 -hmac} over the string
+ * {@code amount=3000&code=00&desc=&orderCode=123}, so the test does not merely re-assert the very
+ * algorithm it is checking.
  */
 class PayOSServiceTests {
 
@@ -37,9 +37,9 @@ class PayOSServiceTests {
 
     @BeforeEach
     void setUp() {
-        // payOSClient chỉ được dùng ở createPaymentLink/getPaymentLinkStatus, không đụng tới ở đây.
-        // clientId/apiKey cũng vậy -- chúng chỉ phục vụ isConfigured(), nhưng phải đặt giá trị thật
-        // để test không vô tình chạy trên một adapter tự coi mình là chưa cấu hình.
+        // payOSClient is only used in createPaymentLink/getPaymentLinkStatus, not touched here.
+        // The same goes for clientId/apiKey -- they only serve isConfigured(), but real values must be set
+        // so the test does not accidentally run on an adapter that considers itself unconfigured.
         service = new PayOSService(
             null, JsonMapper.builder().build(), "client-id", "api-key", CHECKSUM_KEY,
             "https://vox.test/return", "https://vox.test/cancel");
@@ -119,13 +119,13 @@ class PayOSServiceTests {
         assertThat(result.status()).isEqualTo(PaymentLinkRemoteStatus.FAILED);
     }
 
-    /** Body rác/không phải JSON phải trả invalid chứ không được ném ra ngoài thành lỗi 500. */
+    /** A garbage/non-JSON body must return invalid and must not be thrown outward as a 500 error. */
     @Test
     void rejectsMalformedBodyWithoutThrowing() {
-        assertThat(verify("khong phai json".getBytes(StandardCharsets.UTF_8)).valid()).isFalse();
+        assertThat(verify("not json".getBytes(StandardCharsets.UTF_8)).valid()).isFalse();
     }
 
-    /** Payload thiếu data hoặc signature cũng phải là invalid, không phải NullPointerException. */
+    /** A payload missing data or signature must also be invalid, not a NullPointerException. */
     @Test
     void rejectsPayloadMissingDataOrSignature() {
         assertThat(verify("{\"signature\":\"abc\"}".getBytes(StandardCharsets.UTF_8)).valid()).isFalse();

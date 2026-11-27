@@ -35,9 +35,9 @@ public class ImportCommitService {
     }
     
     public void commit(UUID sessionId) {
-        ImportSession session = importSessionRepository.findById(sessionId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import yêu cầu"));
+        ImportSession session = importSessionRepository.findById(sessionId).orElseThrow(() -> new ResourceNotFoundException("Requested import session not found"));
         ImportCommitHandler handler = handlers.get(session.getType());
-        if (handler == null) throw new IllegalStateException("Thiếu handler cho " + session.getType());
+        if (handler == null) throw new IllegalStateException("Missing handler for " + session.getType());
 
         List<ImportRow> rows = importRowRepository.findBySessionId(sessionId);
         try {
@@ -63,7 +63,7 @@ public class ImportCommitService {
     }
 
     private void recordFailed(ImportSession session, Exception e) {
-        log.error("Lỗi khi xử lý phiên import {} (type={})", session.getId(), session.getType(), e);
+        log.error("Error while processing import session {} (type={})", session.getId(), session.getType(), e);
         session.setStatus(ImportSessionStatus.FAILED);
         session.setFailureReason(
             e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()
@@ -74,7 +74,7 @@ public class ImportCommitService {
         try {
             importRowRepository.saveAll(rows);
         } catch (Exception e) {
-            log.error("Không lưu được trạng thái các dòng import", e);
+            log.error("Could not save the status of the import rows", e);
         }
     }
 

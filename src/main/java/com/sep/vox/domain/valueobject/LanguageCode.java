@@ -9,7 +9,7 @@ public record LanguageCode(
 
     public LanguageCode {
         if (value != null && !UPPERCASE_CHARACTER_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Mã ngôn ngữ không hợp lệ");
+            throw new IllegalArgumentException("The language code is invalid");
         }
     }
 }

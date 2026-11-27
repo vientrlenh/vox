@@ -5,16 +5,16 @@ import java.math.BigDecimal;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 
 /**
- * Kết quả một lần nạp tiền từ ví tự nạp vào ví hạn mức.
+ * The result of one top-up from the top-up wallet into the quota wallet.
  *
- * <p>Trả về CẢ HAI phía của phép chuyển vì màn hình phải cập nhật cả hai con số cùng lúc, và vì đây
- * là cách duy nhất để người vừa bấm thấy ngay rằng tiền đã đi đúng chỗ -- một thao tác không hoàn lại
- * được thì không nên bắt người ta mở màn khác để kiểm tra.
+ * <p>Returns BOTH sides of the transfer because the screen must update both numbers at once, and because this is
+ * the only way for the person who just clicked to see immediately that the money went to the right place -- an operation that cannot
+ * be undone should not make people open another screen to check.
  *
- * @param pool             ví hạn mức SAU khi nạp -- {@code fundedFromBalanceVnd} trong đó là tổng
- *                         cộng dồn của kỳ, không phải riêng lần nạp này
- * @param fundedAmountVnd  số vừa chuyển, luôn dương
- * @param balanceAfterVnd  số dư ví tự nạp còn lại, khớp đúng với bút toán vừa ghi
+ * @param pool             the quota wallet AFTER the top-up -- the {@code fundedFromBalanceVnd} in it is the
+ *                         running total of the period, not only this top-up
+ * @param fundedAmountVnd  the amount just transferred, always positive
+ * @param balanceAfterVnd  the remaining top-up wallet balance, matching exactly the entry just recorded
  */
 public record QuotaFundingResponse(
     SchoolSubscriptionQuotaRecordDto pool,

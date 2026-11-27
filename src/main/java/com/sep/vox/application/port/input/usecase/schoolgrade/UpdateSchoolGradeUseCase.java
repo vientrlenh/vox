@@ -32,7 +32,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
     @Transactional
     public UUID execute(UpdateSchoolGradeCommand command) {
         SchoolGrade grade = schoolGradeRepository.findById(command.schoolGradeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy năm học/khóa học (School Grade)."));
+                .orElseThrow(() -> new ResourceNotFoundException("School year/course (School Grade) not found."));
 
         // school_grades carries schoolId directly -- the grade level no longer has to serve as a "bridge".
 
@@ -42,7 +42,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
         int updatedRows = updateAtomically(command);
 
         if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thông tin nào thay đổi.");
+            throw new ResourceNotFoundException("Update failed or no information changed.");
         }
 
         return command.schoolGradeId();
@@ -52,16 +52,16 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
         // exists call instead of loading the user, for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
 
         // SECURITY GUARD: check the school user's rights (a system admin skips it)
         if (!userContextPort.isSystemAdmin()) {
             SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác."));
+                .orElseThrow(() -> new ForbiddenException("SECURITY: You are not allowed to edit another school's data."));
             // Compare the user's SchoolId with the SchoolId of this school grade
             if (!schoolUser.getSchoolId().equals(grade.getSchoolId())) {
-                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác.");
+                throw new ForbiddenException("SECURITY: You are not allowed to edit another school's data.");
             }
         }
     }
@@ -71,7 +71,7 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
         LocalDate endDate = (command.endDate() != null) ? command.endDate() : grade.getEndDate();
 
         if (startDate != null && endDate != null && !startDate.isBefore(endDate)) {
-            throw new IllegalArgumentException("Ngày bắt đầu phải diễn ra trước ngày kết thúc.");
+            throw new IllegalArgumentException("The start date must fall before the end date.");
         }
     }
 

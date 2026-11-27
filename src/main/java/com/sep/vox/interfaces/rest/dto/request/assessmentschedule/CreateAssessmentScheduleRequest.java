@@ -7,13 +7,13 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateAssessmentScheduleRequest(
-    @NotNull(message = "Phòng học là bắt buộc")
+    @NotNull(message = "Room is required")
     UUID schoolRoomId,
 
-    @NotNull(message = "Thời gian bắt đầu là bắt buộc")
+    @NotNull(message = "Start time is required")
     Instant startDate,
 
-    @NotNull(message = "Thời gian kết thúc là bắt buộc")
+    @NotNull(message = "End time is required")
     Instant endDate
 ) {
 

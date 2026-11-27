@@ -21,19 +21,19 @@ import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
- * Giáo viên kết luận bài là vi phạm thật -> result INVALID, không nhập điểm.
+ * A teacher concludes that the submission is a real violation -> result INVALID, no score entered.
  *
- * <p>Hai thay đổi so với bản cũ:
+ * <p>Two changes compared with the old version:
  * <ul>
- *   <li><strong>Lý do bắt buộc</strong> (ép ở {@code GradingRoundPolicy}). Bản cũ để
- *       trống được, nên tranh chấp về sau không giải trình được.
- *   <li><strong>Bỏ ràng buộc {@code session.isFlagged()}</strong>. Gian lận thường lộ
- *       ra khi ĐỌC BÀI chứ không chỉ khi giám thị kịp bấm cờ lúc thi; bắt phải có cờ
- *       trước là buộc giáo viên hoặc bỏ qua vi phạm, hoặc đi đường vòng.
+ *   <li><strong>The reason is mandatory</strong> (enforced in {@code GradingRoundPolicy}). The old version allowed
+ *       it to be empty, so a later dispute could not be justified.
+ *   <li><strong>The {@code session.isFlagged()} requirement is dropped</strong>. Cheating often shows up
+ *       when READING THE SUBMISSION, not only when the proctor manages to raise a flag during the assessment; requiring a flag
+ *       first forces the teacher either to ignore the violation or to take a detour.
  * </ul>
  *
- * <p>Quyền đến từ <em>dòng phân công</em> chứ không từ vai trò coi thi: giáo viên
- * được giao bài nào thì quyết được đúng bài đó.
+ * <p>The permission comes from the <em>assignment row</em>, not from the proctor role: a teacher
+ * who is assigned a submission can decide exactly that submission.
  */
 @Service
 @RequiredArgsConstructor

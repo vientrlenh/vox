@@ -31,11 +31,11 @@ import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 
 /**
- * Xem trước file import chủ đề vào MỘT ngân hàng câu hỏi.
+ * Previews the topic import file into ONE question bank.
  *
- * <p>Ngân hàng đích ghim vào {@code session.importedEntityId} ngay tại đây — cùng cách
- * {@code PreviewSystemRubricCriterionImportFromFileUseCase} ghim rubricVersionId. Nhờ vậy file
- * Excel không cần chứa id ngân hàng, và cũng không thể chứa: mỗi dòng chỉ mang code/tên/mô tả.
+ * <p>The target bank is pinned into {@code session.importedEntityId} right here -- the same way
+ * {@code PreviewSystemRubricCriterionImportFromFileUseCase} pins rubricVersionId. That way the Excel file does not
+ * need to contain the bank id, and it cannot: each row only carries code/name/description.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,7 +59,7 @@ public class PreviewQuestionTopicImportFromFileUseCase
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         questionBankManageAccessService.requireManageAccess(questionBank, currentUserId);
 
         ParseImportFileResult parsed = fileProcessingPort.parse(input.file(), ImportType.QUESTION_TOPIC);
@@ -80,10 +80,10 @@ public class PreviewQuestionTopicImportFromFileUseCase
 
     private void validateCommand(PreviewQuestionTopicImportFromFileCommand input) {
         if (input == null || input.file() == null) {
-            throw new IllegalArgumentException("File import không được để trống");
+            throw new IllegalArgumentException("The import file must not be empty");
         }
         if (input.questionBankId() == null) {
-            throw new IllegalArgumentException("Ngân hàng câu hỏi không được để trống");
+            throw new IllegalArgumentException("The question bank must not be empty");
         }
     }
 

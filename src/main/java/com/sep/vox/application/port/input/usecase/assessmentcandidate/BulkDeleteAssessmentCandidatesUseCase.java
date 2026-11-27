@@ -53,7 +53,7 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
     @Transactional
     public Void execute(BulkDeleteAssessmentCandidatesCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -66,7 +66,7 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
         // Looked up by (id, assessmentId) so a missing row means an id that does not exist or belongs to another assessment --
         // the whole batch fails instead of silently deleting only part of it.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
-            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Candidate not found");
         }
 
         requireNoCandidateHasAttempt(candidates);
@@ -89,8 +89,8 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
             // request, so this is a safety net for a list that just changed, and the user only needs to
             // know they must select again.
             throw new IllegalArgumentException(busyCandidateIds.size()
-                + " thí sinh trong danh sách đã có bài thi nên không thể xóa khỏi kỳ thi."
-                + " Hãy tải lại danh sách và chọn lại.");
+                + " candidates in the list already have a submission and cannot be removed from the assessment."
+                + " Reload the list and select again.");
         }
     }
 
@@ -108,6 +108,6 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

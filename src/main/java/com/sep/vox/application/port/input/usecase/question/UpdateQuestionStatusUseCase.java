@@ -22,11 +22,9 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.service.question.QuestionStatusTransition;
 
 /**
- * Cập nhật trạng thái một câu hỏi.
- *
- * <p>Quy tắc chuyển trạng thái nằm ở {@link QuestionStatusTransition} và dùng chung với đường đi
- * hàng loạt, nên hai endpoint không thể lệch nhau. Ở đây lý do từ chối được dịch ngược thành
- * exception để giữ nguyên HTTP status của endpoint đơn (404 / 403 / 400).
+ * The transition rules live in {@link QuestionStatusTransition} and are shared with the bulk
+ * path, so the two endpoints cannot drift apart. Here the rejection reason is translated back into an
+ * exception to keep the HTTP status of the single-item endpoint (404 / 403 / 400).
  */
 @Service
 @RequiredArgsConstructor

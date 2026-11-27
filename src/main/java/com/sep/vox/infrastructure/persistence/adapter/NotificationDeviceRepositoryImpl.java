@@ -43,7 +43,7 @@ public class NotificationDeviceRepositoryImpl implements NotificationDeviceRepos
             .toList();
     }
 
-    /** {@code @Modifying} cần transaction; consumer gọi ngoài transaction nên mở ở đây. */
+    /** {@code @Modifying} needs a transaction; the consumer calls outside one, so it is opened here. */
     @Override
     @Transactional
     public int deleteByInstallationIdIn(Collection<String> installationIds) {

@@ -46,7 +46,7 @@ public class FileProcessingService implements FileProcessingPort {
         ParsedImportTable table = switch (extension) {
             case "xlsx", "xls" -> parseExcel(file.fileName(), file.content());
             case "csv" -> parseCsv(file.fileName(), file.content());
-            default -> throw new IllegalArgumentException("Định dạng file không được hỗ trợ để parse");
+            default -> throw new IllegalArgumentException("File format is not supported for parsing");
         };
 
         Map<String, String> suggestedMapping = suggestMapping(table.headers(), type);
@@ -61,13 +61,13 @@ public class FileProcessingService implements FileProcessingPort {
 
     private void validate(UploadedFile file, ImportType type) {
         if (file == null) {
-            throw new IllegalArgumentException("File import không được để trống");
+            throw new IllegalArgumentException("Import file must not be empty");
         }
         if (type == null) {
-            throw new IllegalArgumentException("Loại import không được để trống");
+            throw new IllegalArgumentException("Import type must not be blank");
         }
         if (file.content() == null || file.content().length == 0 || file.size() <= 0) {
-            throw new IllegalArgumentException("File import không được để trống");
+            throw new IllegalArgumentException("Import file must not be empty");
         }
     }
 
@@ -93,17 +93,17 @@ public class FileProcessingService implements FileProcessingPort {
         switch (extension) {
             case "xlsx" -> {
                 if (!isZipMagic) {
-                    throw new IllegalArgumentException("Nội dung file không đúng định dạng xlsx");
+                    throw new IllegalArgumentException("File content is not in xlsx format");
                 }
             }
             case "xls" -> {
                 if (!isOle2Magic) {
-                    throw new IllegalArgumentException("Nội dung file không đúng định dạng xls");
+                    throw new IllegalArgumentException("File content is not in xls format");
                 }
             }
             case "csv" -> {
                 if (isZipMagic || isOle2Magic) {
-                    throw new IllegalArgumentException("File CSV chứa nội dung nhị phân không hợp lệ");
+                    throw new IllegalArgumentException("The CSV file contains invalid binary content");
                 }
             }
             default -> {
@@ -127,7 +127,7 @@ public class FileProcessingService implements FileProcessingPort {
         try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(content))) {
             return readFirstSheet(workbook);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Không thể đọc dữ liệu từ file " + fileName, e);
+            throw new IllegalArgumentException("Cannot read data from file " + fileName, e);
         }
     }
 
@@ -136,7 +136,7 @@ public class FileProcessingService implements FileProcessingPort {
         DataFormatter formatter = new DataFormatter();
         Row headerRow = sheet.getRow(sheet.getFirstRowNum());
         if (headerRow == null) {
-            throw new IllegalArgumentException("File import thiếu header");
+            throw new IllegalArgumentException("Import file is missing a header");
         }
 
         List<String> headers = getHeadersFromExcelHeader(headerRow, formatter);
@@ -187,7 +187,7 @@ public class FileProcessingService implements FileProcessingPort {
         ) {
             return readCsvRecords(parser);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Không thể đọc dữ liệu từ file " + fileName, e);
+            throw new IllegalArgumentException("Cannot read data from file " + fileName, e);
         }
     }
 
@@ -209,7 +209,7 @@ public class FileProcessingService implements FileProcessingPort {
 
     private void validateHeaders(List<String> headers) {
         if (headers.isEmpty() || headers.stream().allMatch(h -> h.isBlank())) {
-            throw new IllegalArgumentException("File import thiếu header");
+            throw new IllegalArgumentException("Import file is missing a header");
         }
     }
 

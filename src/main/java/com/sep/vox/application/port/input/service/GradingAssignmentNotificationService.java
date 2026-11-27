@@ -32,15 +32,15 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Báo cho giáo viên rằng họ vừa được giao một vòng chấm.
+ * Notifies teachers that they have just been given a grading round.
  *
- * <p>Gọi từ ba đường GIAO VIỆC: gán tay ({@code AssignGradingUseCase}), gán tự động
- * ({@code AutoAssignGradingUseCase}), và chuyển người chấm ({@code ReassignGradingUseCase}).
- * KHÔNG gọi từ {@code ClaimClassTestGradingUseCase} -- ở đó giáo viên tự bấm nhận bài, và báo
- * lại chính việc họ vừa làm là tiếng ồn thuần tuý.
+ * <p>Called from the three paths that HAND OUT work: manual assignment ({@code AssignGradingUseCase}), automatic assignment
+ * ({@code AutoAssignGradingUseCase}), and grader transfer ({@code ReassignGradingUseCase}).
+ * NOT called from {@code ClaimClassTestGradingUseCase} -- there the teacher clicks to take the assessment themselves, and
+ * reporting back what they just did is pure noise.
  *
- * <p>Mọi truy vấn đều theo LÔ: gán tự động rải cả lớp trong một lần gọi, nên hỏi lẻ từng phân
- * công là N+1 ngay giữa một transaction đang giữ khoá.
+ * <p>Every query is by BATCH: automatic assignment spreads a whole class in one call, so asking per assignment
+ * one at a time is N+1 in the middle of a transaction holding a lock.
  */
 @Service
 @RequiredArgsConstructor
@@ -73,14 +73,14 @@ public class GradingAssignmentNotificationService {
             AssessmentCandidateResult result = resultsById.get(assignment.getCandidateResultId());
             Assessment assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
             if (result == null || assessment == null || assignment.getTeacherId() == null) {
-                log.warn("Bỏ qua thông báo giao chấm, thiếu dữ liệu: assignmentId={}", assignment.getId());
+                log.warn("Skipping the grading-assignment notification, missing data: assignmentId={}", assignment.getId());
                 continue;
             }
             saveAssignmentOpenedEvent(
                 assignment, assessment, candidateLabel(assessment, result, studentNamesByResultId), now);
         }
 
-        log.info("Đã báo giao chấm cho {} phân công", assignments.size());
+        log.info("Notified about the grading assignment for {} assignments", assignments.size());
     }
 
     private Map<UUID, AssessmentCandidateResult> loadResultsById(List<AssessmentGradingAssignment> assignments) {

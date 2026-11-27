@@ -123,15 +123,15 @@ public class SecurityConfig {
         "/api/v1/auth/logout"
     };
 
-    // Toàn bộ /admin/** do adminConsoleFilterChain lo, chain đó khai securityMatcher riêng nên
-    // request tới đây KHÔNG bao giờ rơi xuống chain chính -- đừng thêm /admin/** vào
-    // PERMITTED_PATTERNS ở trên, nó sẽ không có tác dụng gì ngoài việc gây hiểu nhầm.
+    // Everything under /admin/** is handled by adminConsoleFilterChain, which declares its own securityMatcher, so
+    // requests to it NEVER fall through to the main chain -- do not add /admin/** to
+    // PERMITTED_PATTERNS above, it would have no effect other than causing confusion.
     private static final String ADMIN_CONSOLE_PATTERN = "/admin/**";
     private static final String ADMIN_CONSOLE_HOME = "/admin/";
     private static final String ADMIN_CONSOLE_LOGIN_PATH = "/admin/login";
     private static final String ADMIN_CONSOLE_LOGOUT_PATH = "/admin/logout";
 
-    // Tên tham số do UI của SBA đặt, không phải mình chọn -- xem nút đăng nhập trong bundle.
+    // The parameter names are set by the SBA UI, not chosen by us -- see the login button in the bundle.
     private static final String ADMIN_CONSOLE_REDIRECT_PARAMETER = "redirectTo";
 
     private static final String[] ADMIN_CONSOLE_PUBLIC_PATTERNS = {
@@ -141,14 +141,14 @@ public class SecurityConfig {
         "/admin/variables.css"
     };
 
-    // Đường đăng ký của SBA client. Chỉ ĐÚNG path này, và chỉ với POST, đi vào chain Basic --
-    // xem adminRegistrationFilterChain. UI cũng gọi GET trên chính path này để lấy danh sách
-    // instance, nhưng GET là request của trình duyệt nên phải rơi xuống chain phiên đăng nhập.
+    // Registration path of the SBA client. ONLY this exact path, and only with POST, goes into the Basic chain --
+    // see adminRegistrationFilterChain. The UI also calls GET on this same path to fetch the list of
+    // instances, but GET is a browser request so it must fall through to the login-session chain.
     private static final String ADMIN_CONSOLE_REGISTRATION_PATH = "/admin/instances";
 
-    // Vai trò chỉ tồn tại cho chain này, không nằm trong bảng role của nghiệp vụ. Cố ý tách
-    // khỏi hệ thống role trong DB: tài khoản xem được heapdump/env của mọi service là chuyện
-    // vận hành, không phải một cấp bậc người dùng trong sản phẩm.
+    // A role that exists only for this chain, not in the business role table. Intentionally kept apart
+    // from the role system in the DB: an account that can see the heapdump/env of every service is an
+    // operations matter, not a user level in the product.
     private static final String ADMIN_CONSOLE_ROLE = "ADMIN_CONSOLE";
 
     private static final List<String> CORS_ALLOWED_METHODS = List.of(
@@ -163,36 +163,36 @@ public class SecurityConfig {
     private static final boolean CORS_ALLOW_CREDENTIALS = true;
     private static final List<String> CORS_ALLOWED_HEADERS = List.of("*");
 
-    // Content-Disposition không nằm trong danh sách header an toàn mặc định của CORS, nên
-    // nếu không khai ở đây thì các endpoint xuất file (bảng điểm CSV/Excel, template câu hỏi)
-    // vẫn tải được nhưng JavaScript đọc ra tên file là null và phải tự bịa tên.
+    // Content-Disposition is not in the default safe-header list of CORS, so
+    // if it is not declared here the file export endpoints (CSV/Excel score sheets, question templates)
+    // still download but JavaScript reads the file name as null and has to invent one.
     private static final List<String> CORS_EXPOSED_HEADERS = List.of(HttpHeaders.CONTENT_DISPOSITION);
 
-    // Không đặt thì Spring bỏ trống Access-Control-Max-Age và trình duyệt preflight lại
-    // trước GẦN NHƯ MỌI request -- với client GraphQL là gấp đôi số vòng mạng cho mỗi query.
+    // If not set, Spring leaves Access-Control-Max-Age empty and the browser sends a preflight again
+    // before ALMOST EVERY request -- for a GraphQL client that doubles the network round trips per query.
     private static final Duration CORS_MAX_AGE = Duration.ofMinutes(30);
 
-    // Origin theo chuẩn trình duyệt: scheme://host[:port], không path, không '/' cuối.
+    // Origin in the browser's standard form: scheme://host[:port], no path, no trailing '/'.
     private static final Pattern ORIGIN_PATTERN = Pattern.compile("^https?://[^/\\s]+$");
 
     /**
-     * Chain CHỈ dành cho lời gọi đăng ký của SBA client: {@code POST /admin/instances}.
+     * Chain ONLY for the registration call of the SBA client: {@code POST /admin/instances}.
      *
-     * <p>Tách riêng khỏi chain UI bên dưới là để logout còn có nghĩa, không phải để cho gọn.
-     * Trình duyệt sau khi bị hỏi HTTP Basic một lần sẽ NHỚ và tự gắn lại header
-     * {@code Authorization} vào mọi request tiếp theo, và không có cách chuẩn nào bảo nó quên.
-     * Nếu BasicAuthenticationFilter nằm chung chain với UI thì bấm đăng xuất xong session bị huỷ
-     * thật, nhưng request kế tiếp vẫn mang Basic header nên được xác thực lại ngay -- người dùng
-     * "đăng xuất" mà vẫn xem được toàn bộ trang.
+     * <p>Separated from the UI chain below so that logout still means something, not for tidiness.
+     * After a browser has been asked for HTTP Basic once it REMEMBERS and re-attaches the
+     * {@code Authorization} header to every following request, and there is no standard way to make it forget.
+     * If BasicAuthenticationFilter shared a chain with the UI, then after clicking logout the session is really destroyed,
+     * but the next request still carries the Basic header and is authenticated again immediately -- the user
+     * "logs out" yet can still see the whole page.
      *
-     * <p>Giới hạn đúng METHOD + PATH chứ không phải cả {@code /admin/instances}: UI cũng gọi
-     * GET trên chính path đó để lấy danh sách instance, mà GET là thứ trình duyệt phát ra và
-     * phải đi bằng phiên đăng nhập.
+     * <p>Restricted to exactly METHOD + PATH and not all of {@code /admin/instances}: the UI also calls
+     * GET on that same path to fetch the instance list, and GET is what the browser issues and
+     * must go through the login session.
      *
-     * <p>Lưu ý khi đổi cấu hình sau này: client còn gọi {@code DELETE /admin/instances/{id}} nếu
-     * bật {@code auto-deregistration}. Mặc định nó TẮT ngoài môi trường cloud
-     * (ClientProperties.isAutoDeregistration) nên ở đây không mở. Bật lên thì phải mở thêm cho
-     * method đó, và cân nhắc luôn việc nút gỡ đăng ký trên UI dùng chung path.
+     * <p>Note when changing the configuration later: the client also calls {@code DELETE /admin/instances/{id}} if
+     * {@code auto-deregistration} is on. By default it is OFF outside cloud environments
+     * (ClientProperties.isAutoDeregistration) so it is not opened here. If turned on, it must be opened for
+     * that method too, and consider that the deregister button in the UI uses the same path.
      */
     @Bean
     @Order(1)
@@ -207,7 +207,7 @@ public class SecurityConfig {
             .httpBasic(Customizer.withDefaults())
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // Lời gọi server-to-server, không có cookie và không có chỗ nào để giữ CSRF token.
+            // A server-to-server call, with no cookie and nowhere to hold a CSRF token.
             .csrf(csrf -> csrf.disable());
         return http.build();
     }
@@ -310,10 +310,10 @@ public class SecurityConfig {
         if (StringUtils.hasText(cookieDomain)) {
             if (cookieDomain.startsWith(".")) {
                 throw new IllegalStateException(
-                    "app.cookie.domain = '" + cookieDomain + "' -- bỏ dấu chấm ở đầu. Tomcat theo "
-                        + "RFC 6265 từ chối domain dạng này và ném lỗi ở TỪNG request, khiến mọi "
-                        + "endpoint trả 500. Dùng '" + cookieDomain.substring(1)
-                        + "', nó đã phủ sẵn mọi subdomain.");
+                    "app.cookie.domain = '" + cookieDomain + "' -- remove the leading dot. Tomcat, following "
+                        + "RFC 6265, rejects a domain of this form and throws an error on EVERY request, making every "
+                        + "endpoint return 500. Use '" + cookieDomain.substring(1)
+                        + "', it already covers every subdomain.");
             }
             repository.setCookieCustomizer(cookie -> cookie.domain(cookieDomain));
         }
@@ -428,16 +428,16 @@ public class SecurityConfig {
     }
 
     /**
-     * Chặn ngay lúc khởi động thay vì để app chạy với tài khoản rỗng. Không có chỗ này thì
-     * {@code User.withUsername(null)} ném NullPointerException trần giữa lúc dựng filter chain,
-     * còn mật khẩu rỗng thì tệ hơn nữa: app lên bình thường và {@code /admin/**} nhận đúng một
-     * chuỗi rỗng làm mật khẩu.
+     * Blocks at startup instead of letting the app run with an empty account. Without this,
+     * {@code User.withUsername(null)} throws a bare NullPointerException while the filter chain is being built,
+     * and an empty password is even worse: the app comes up normally and {@code /admin/**} accepts exactly one
+     * empty string as the password.
      */
     private String requireConfigured(String value, String property, String environmentVariable) {
         if (value == null || value.isBlank()) {
             throw new IllegalStateException(
-                property + " đang trống -- /admin/** mở ra toàn bộ actuator của mọi instance đã "
-                    + "đăng ký nên không có mật khẩu mặc định. Đặt biến môi trường "
+                property + " is empty -- /admin/** opens the whole actuator of every instance that has "
+                    + "registered, so there is no default password. Set the environment variable "
                     + environmentVariable + ".");
         }
         return value;
@@ -453,8 +453,8 @@ public class SecurityConfig {
 
         if (allowedOrigins.isEmpty()) {
             throw new IllegalStateException(
-                "app.cors.allowed-origins đang trống -- mọi request cross-origin sẽ bị chặn. "
-                    + "Đặt biến môi trường CORS_ALLOWED_ORIGINS.");
+                "app.cors.allowed-origins is empty -- every cross-origin request will be blocked. "
+                    + "Set the environment variable CORS_ALLOWED_ORIGINS.");
         }
 
         List<String> malformed = allowedOrigins.stream()
@@ -462,8 +462,8 @@ public class SecurityConfig {
             .toList();
         if (!malformed.isEmpty()) {
             throw new IllegalStateException(
-                "app.cors.allowed-origins chỉ nhận origin dạng scheme://host[:port], "
-                    + "không path, không '/' ở cuối, không wildcard. Sai: " + malformed);
+                "app.cors.allowed-origins only accepts origins in the form scheme://host[:port], "
+                    + "no path, no trailing '/', no wildcard. Invalid: " + malformed);
         }
 
         return allowedOrigins;

@@ -55,7 +55,7 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
         Instant now = Instant.now();
         Order savedOrder = orderRepository.save(Order.forTopUp(
             schoolId,
-            "Nạp thêm vào số dư",
+            "Top up balance",
             creditAmountVnd,
             serviceFeeVnd,
             now
@@ -71,7 +71,7 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
     private void requireActiveSubscription(UUID schoolId) {
         boolean hasActiveSubscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId).isPresent();
         if (!hasActiveSubscription) {
-            throw new IllegalArgumentException("Trường chưa có gói đăng ký nào đang hoạt động để nạp thêm.");
+            throw new IllegalArgumentException("The school has no active subscription to top up.");
         }
     }
 
@@ -87,24 +87,25 @@ public class CreateTopUpOrderUseCase implements IUseCase<CreateTopUpOrderCommand
 
     private static void requireWithinMaxTotal(BigDecimal creditAmountVnd, BigDecimal serviceFeeVnd) {
         if (creditAmountVnd.add(serviceFeeVnd).compareTo(MAX_TOTAL_AMOUNT_VND) > 0) {
-            throw new IllegalArgumentException("Số tiền nạp vượt quá giới hạn cho phép");
+            throw new IllegalArgumentException("The top-up amount exceeds the allowed limit");
         }
     }
 
     /**
-     * Tiền qua cổng là số nguyên đồng -- VND không còn đơn vị lẻ và PayOS/SePay đều từ chối số thập
-     * phân. Bắt ở đây thay vì để Postgres làm tròn im lặng: trường xin nạp 100.000,5đ mà nhận
-     * 100.001đ thì số dư lệch với số tiền đã trả, và lệch đúng vào chỗ khó lần ra nhất.
+     * Money through the gateway is a whole number of dong -- VND has no minor unit and both PayOS and SePay reject
+     * decimals. Caught here instead of letting Postgres round silently: a school asking to top up 100,000.5 VND
+     * and receiving 100,001 would end up with a balance that differs from the amount paid, and in the place that
+     * is hardest to trace.
      */
     private static BigDecimal validatedCreditAmount(BigDecimal creditAmountVnd) {
         if (creditAmountVnd == null) {
-            throw new IllegalArgumentException("Số tiền nạp không được để trống");
+            throw new IllegalArgumentException("The top-up amount must not be empty");
         }
         if (creditAmountVnd.signum() <= 0) {
-            throw new IllegalArgumentException("Số tiền nạp phải lớn hơn 0");
+            throw new IllegalArgumentException("The top-up amount must be greater than 0");
         }
         if (creditAmountVnd.stripTrailingZeros().scale() > 0) {
-            throw new IllegalArgumentException("Số tiền nạp phải là số nguyên VND, không có phần thập phân");
+            throw new IllegalArgumentException("The top-up amount must be a whole VND amount with no decimal part");
         }
         return creditAmountVnd;
     }

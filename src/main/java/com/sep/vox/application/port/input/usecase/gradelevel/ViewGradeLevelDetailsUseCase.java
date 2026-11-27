@@ -30,11 +30,11 @@ public class ViewGradeLevelDetailsUseCase implements IUseCase<ViewGradeLevelDeta
     public GradeLevelDto execute(ViewGradeLevelDetailsQuery input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
 
         GradeLevel gradeLevel = gradeLevelRepository.findById(input.gradeLevelId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khối học."));
+            .orElseThrow(() -> new ResourceNotFoundException("Grade level not found."));
 
         return GradeLevelDto.toDto(gradeLevel);
     }

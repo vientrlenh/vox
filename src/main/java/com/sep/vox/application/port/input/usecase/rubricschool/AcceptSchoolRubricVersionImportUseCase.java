@@ -65,32 +65,32 @@ public class AcceptSchoolRubricVersionImportUseCase implements IUseCase<AcceptSc
 
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
 
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Does not belong to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId))
-            throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
+            throw new ForbiddenException("SECURITY: the school security id does not match.");
     }
 
     private ImportSession loadPreviewedSessionOfSchool(AcceptSchoolRubricVersionImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
+                .orElseThrow(() -> new ResourceNotFoundException("Import session not found."));
 
         if (session.getType() != ImportType.RUBRIC_VERSION || session.getImportedEntityId() == null
                 || session.getSchoolId() == null || !session.getSchoolId().equals(command.schoolId())) {
-            throw new IllegalArgumentException("Dữ liệu phiên làm việc không thuộc trường học của bạn hoặc sai cấu trúc định dạng.");
+            throw new IllegalArgumentException("The session data does not belong to your school or has a malformed structure.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để phê duyệt.");
+            throw new IllegalArgumentException("The session status does not allow approval.");
         }
         return session;
     }
 
     private void requireSchoolOwnedRubric(UUID rubricId, UUID schoolId) {
-        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường học bạn.");
+            throw new ForbiddenException("Security: this Rubric is not owned by your school.");
         }
     }
 }

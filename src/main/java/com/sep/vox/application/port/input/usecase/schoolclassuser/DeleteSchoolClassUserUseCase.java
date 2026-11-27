@@ -61,75 +61,75 @@ public class DeleteSchoolClassUserUseCase implements IUseCase<DeleteSchoolClassU
 
     private void validateCommand(DeleteSchoolClassUserCommand input) {
         if (input.schoolId() == null) {
-            throw new IllegalArgumentException("Trường học không được để trống");
+            throw new IllegalArgumentException("The school must not be empty");
         }
         if (input.classId() == null) {
-            throw new IllegalArgumentException("Lớp học không được để trống");
+            throw new IllegalArgumentException("The class must not be empty");
         }
         if (input.userId() == null) {
-            throw new IllegalArgumentException("Người dùng không được để trống");
+            throw new IllegalArgumentException("The user must not be empty");
         }
     }
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         validateCurrentUserIsActive(user);
         return user;
     }
 
     private void validateCurrentUserIsActive(User currentUser) {
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("The current user is not active");
         }
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("The current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
         if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
-            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
+            throw new IllegalArgumentException("The school does not match the current user");
         }
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("The school is not active");
         }
     }
 
     private SchoolClass validateSchoolClass(UUID classId, UUID schoolId) {
         SchoolClass schoolClass = schoolClassRepository.findById(classId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
         if (!Objects.equals(schoolClass.getSchoolId(), schoolId)) {
-            throw new ResourceNotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Class not found");
         }
         if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
-            throw new IllegalArgumentException("Lớp học không hoạt động");
+            throw new IllegalArgumentException("The class is not active");
         }
         return schoolClass;
     }
 
     private void validateTargetUser(UUID userId, UUID schoolId) {
         User targetUser = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (targetUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng không hoạt động");
+            throw new IllegalArgumentException("The user is not active");
         }
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(targetUser.getId()).orElse(null);
         if (!Objects.equals(targetSchoolUser != null ? targetSchoolUser.getSchoolId() : null, schoolId)) {
-            throw new IllegalArgumentException("Người dùng không thuộc trường hiện tại");
+            throw new IllegalArgumentException("The user does not belong to the current school");
         }
     }
 
     private SchoolClassUser findMembership(UUID userId, UUID classId) {
         return schoolClassUserRepository.findByUserIdAndSchoolClassId(userId, classId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng trong lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found in the class"));
     }
 }

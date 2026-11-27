@@ -74,10 +74,10 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
         userContextPort = mock(UserContextPort.class);
         useCase = new UpdateAssessmentScheduleStatusUseCase(
             assessmentRepository, assessmentScheduleRepository, assessmentScheduleProctorRepository,
-            // Validator thật trên proctor repo đã mock: mặc định "giáo viên rảnh", test dời ca bên
-            // dưới bật cờ trùng lịch lên để kiểm tra luật.
+            // The real validator on the mocked proctor repo: by default "the teacher is free"; the test that moves a schedule below
+            // turns the overlap flag on to check the rule.
             new AssessmentScheduleProctorConflictValidator(assessmentScheduleProctorRepository),
-            // Validator thí sinh cũng dùng bản thật trên candidate repo đã mock, cùng lý do.
+            // The candidate validator is also the real one on the mocked candidate repo, for the same reason.
             new AssessmentScheduleCandidateConflictValidator(assessmentCandidateRepository, mock(UserRepository.class)),
             assessmentCandidateRepository,
             assessmentMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort);
@@ -131,7 +131,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command("PUBLISH", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Còn 1 học sinh chưa được gán đề");
+            .hasMessageContaining("There are still 1 students not assigned a paper");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -143,7 +143,7 @@ class UpdateAssessmentScheduleStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command("PUBLISH", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Ca thi chưa có thí sinh nào");
+            .hasMessageContaining("The assessment schedule has no candidate");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 

@@ -14,7 +14,7 @@ final class JsonValueObjectMapper {
         try {
             return JSON_MAPPER.writeValueAsString(value);
         } catch (Exception e) {
-            throw new IllegalStateException("Lỗi khi serialize giá trị sang json", e);
+            throw new IllegalStateException("Failed to serialize value to JSON", e);
         }
     }
 
@@ -22,7 +22,7 @@ final class JsonValueObjectMapper {
         try {
             return JSON_MAPPER.readValue(json, type);
         } catch (Exception e) {
-            throw new IllegalStateException("Lỗi khi deserialize giá trị json sang lớp", e);
+            throw new IllegalStateException("Failed to deserialize JSON value to class", e);
         }
     }
 
@@ -30,7 +30,7 @@ final class JsonValueObjectMapper {
         try {
             return JSON_MAPPER.readValue(json, typeRef);
         } catch (Exception e) {
-            throw new IllegalStateException("Lỗi khi deserialize giá trị json sang kiểu", e);
+            throw new IllegalStateException("Failed to deserialize JSON value to type", e);
         }
     }
 }

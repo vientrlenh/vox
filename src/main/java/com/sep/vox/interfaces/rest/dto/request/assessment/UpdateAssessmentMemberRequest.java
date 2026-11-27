@@ -7,7 +7,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateAssessmentMemberRequest(
-    @NotNull(message = "Role là bắt buộc")
+    @NotNull(message = "Role is required")
     AssessmentMemberRole role
 ) {
 

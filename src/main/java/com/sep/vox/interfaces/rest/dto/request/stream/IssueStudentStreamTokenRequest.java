@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 
 
 public record IssueStudentStreamTokenRequest(
-    @NotNull(message = "Phiên thi không được để trống")
+    @NotNull(message = "Assessment session must not be blank")
     UUID assessmentSessionId,
 
     /**

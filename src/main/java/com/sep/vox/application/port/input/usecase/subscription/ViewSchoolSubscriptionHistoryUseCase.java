@@ -24,7 +24,7 @@ public class ViewSchoolSubscriptionHistoryUseCase implements IUseCase<ViewSchool
     @Override
     public List<SchoolSubscriptionDto> execute(ViewSchoolSubscriptionHistoryQuery input) {
         if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return schoolSubscriptionRepository.findBySchoolId(input.schoolId()).stream()
             .sorted(Comparator.comparing((SchoolSubscription subscription) -> subscription.getCreatedAt()).reversed())

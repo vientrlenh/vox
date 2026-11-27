@@ -10,10 +10,10 @@ public interface ScoringRuleRepository {
     Optional<ScoringRule> findById(UUID id);
     ScoringRule save(ScoringRule rule);
 
-    // Kiểm tra trùng mã Code trong phạm vi 1 Assessment Policy (code chỉ cần unique theo từng Policy)
+    // Checks for a duplicate Code within 1 Assessment Policy (code only needs to be unique per Policy)
     boolean existsByPolicyIdAndCode(UUID policyId, String code);
 
-    // Tìm kiếm/phân trang danh sách Scoring Rule thuộc 1 Assessment Policy, sắp theo priority tăng dần
+    // Search/paginate the Scoring Rules of 1 Assessment Policy, sorted by priority ascending
     PageResult<ScoringRule> searchByPolicyId(UUID policyId, String keyword, Boolean isActive, int page, int size);
 
     void deleteById(UUID id);

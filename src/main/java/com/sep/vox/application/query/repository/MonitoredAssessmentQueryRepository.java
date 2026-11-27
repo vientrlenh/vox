@@ -26,6 +26,6 @@ public interface MonitoredAssessmentQueryRepository {
      */
     List<MonitoredAssessmentSummary> findMonitorableByTeacher(UUID teacherId, UUID assessmentId, Instant now, Instant leadUntil);
 
-    /** Bản cho school admin: mọi kỳ thi của trường, không cần được phân công ca nào. */
+    /** The school admin version: every assessment of the school, without needing to be assigned to any schedule. */
     List<MonitoredAssessmentSummary> findMonitorableBySchool(UUID schoolId, UUID assessmentId, Instant now, Instant leadUntil);
 }

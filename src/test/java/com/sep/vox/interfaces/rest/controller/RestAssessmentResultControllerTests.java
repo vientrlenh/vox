@@ -64,7 +64,7 @@ class RestAssessmentResultControllerTests {
 
     @BeforeEach
     void stubExports() {
-        when(exportAssessmentScoresUseCase.execute(any())).thenReturn("Mã bài\r\n");
+        when(exportAssessmentScoresUseCase.execute(any())).thenReturn("Result code\r\n");
         when(exportAssessmentScoresExcelUseCase.execute(any())).thenReturn(new byte[] {80, 75, 3, 4});
         when(exportAssessmentScoresExcelUseCase.exportFileName(any()))
             .thenReturn("bang-diem-lop-20260806120000.xlsx");

@@ -9,38 +9,36 @@ public interface MailTemplatePort {
     String renderAppealRejectedEmail(String assessmentName, String reason);
     String renderAppealPublishedEmail(String assessmentName, String scoreBefore, String scoreAfter);
 
-    // ---- thông báo vòng đời điểm ------------------------------------------
+    // ---- score lifecycle notifications ------------------------------------------
     //
-    // Bảy mail dưới đây dùng chung MỘT template (`result-notification.html`) với các
-    // ô tiêu đề / dẫn nhập / nội dung. Chúng chỉ khác nhau ở CHỮ, nên bảy file HTML
-    // gần giống hệt sẽ là bảy chỗ phải sửa mỗi lần đổi thương hiệu hoặc bố cục.
-    // Chữ nghĩa vẫn nằm ở tầng render, không rò xuống listener.
+    // The seven mails below share ONE template (`result-notification.html`) with
+    // title / lead-in / body slots. They differ only in their TEXT, so seven nearly
+    // identical HTML files would be seven places to edit on every rebrand or layout change.
+    // The wording itself stays in the render layer and does not leak down to the listener.
 
-    /** Điểm được công bố lần đầu. */
+    /** The score is published for the first time. */
     String renderResultReleasedEmail(String assessmentName, String totalScore);
 
-    /** Điểm ĐÃ công bố nay thay đổi (hậu kiểm hoặc phúc khảo). */
+    /** An ALREADY published score has changed (post-review or appeal). */
     String renderResultRegradedEmail(String assessmentName, String roundLabel, String scoreBefore, String scoreAfter);
 
     String renderResultInvalidatedEmail(String assessmentName, String reason);
 
     String renderResultInvalidClearedEmail(String assessmentName, String reason);
 
-    /** Đơn phúc khảo đã được duyệt và đã có người chấm. */
+    /** An appeal has been approved and a grader has been assigned. */
     String renderAppealApprovedEmail(String assessmentName, String deadline);
 
-    /** Kết quả chốt PASSED/FAILED sau khi kỳ thi công bố. */
+    /** The final PASSED/FAILED outcome after the assessment is published. */
     String renderResultOutcomeDecidedEmail(String assessmentName, String outcomeLabel, String totalScore);
 
-    /** Nhắc giáo viên phân công sắp/đã tới hạn. */
+    /** Reminds a teacher that a grading assignment is about to be due or is overdue. */
     String renderGradingDeadlineReminderEmail(String assessmentName, String roundLabel, String deadline);
 
-    /** Báo admin có giáo viên trả lại phân công. */
+    /** Tells the admin that a teacher has returned a grading assignment. */
     String renderGradingDeclinedEmail(String assessmentName, String teacherName, String reason);
 
-    /**
-     * Hóa đơn thanh toán PayOS thành công (subscription mới/gia hạn/mua thêm token).
-     */
+    /** A successful PayOS invoice payment (new subscription / renewal / extra token purchase). */
     String renderInvoicePaidEmail(
         String schoolName,
         String invoiceNumber,
@@ -50,23 +48,23 @@ public interface MailTemplatePort {
         String validUntilLabel
     );
 
-    // ---- nợ hạn mức AI (mục 13, AI_USAGE_QUOTA_USD_MIGRATION.md) ----------
+    // ---- AI quota debt (section 13, AI_USAGE_QUOTA_USD_MIGRATION.md) ----------
 
-    /** Nợ hạn mức AI của trường vừa vượt trần cảnh báo -- gửi mọi SYSTEM_ADMIN. */
+    /** A school's AI quota debt has just exceeded the warning cap -- sent to every SYSTEM_ADMIN. */
     String renderDebtCapExceededEmail(String schoolName, String quotaLabel, String overageLabel, String capLabel);
 
-    /** Trường vừa bị khóa vì chi phí AI thật vượt hạn mức -- gửi mọi SCHOOL_ADMIN của trường. */
+    /** The school has just been locked because the real AI cost exceeded its quota -- sent to every SCHOOL_ADMIN of the school. */
     String renderSchoolLockedDueToDebtEmail(String schoolName);
 
-    /** Trường vừa hết nợ hạn mức AI (mua thêm/gia hạn/nâng cấp) -- gửi mọi SCHOOL_ADMIN của trường. */
+    /** The school's AI quota debt is cleared (extra purchase/renewal/upgrade) -- sent to every SCHOOL_ADMIN of the school. */
     String renderSchoolDebtClearedEmail(String schoolName);
 
-    // ---- đình chỉ/gỡ đình chỉ gói subscription -----------------------------
+    // ---- subscription suspension / unsuspension -----------------------------
 
-    /** Gói subscription của trường vừa bị đình chỉ (System Admin hoặc job tự động) -- gửi mọi SCHOOL_ADMIN của trường. */
+    /** The school's subscription has just been suspended (by a System Admin or an automatic job) -- sent to every SCHOOL_ADMIN of the school. */
     String renderSchoolSubscriptionSuspendedEmail(String schoolName, String reason);
 
-    /** Gói subscription của trường vừa được gỡ đình chỉ -- gửi mọi SCHOOL_ADMIN của trường. */
+    /** The school's subscription has just been unsuspended -- sent to every SCHOOL_ADMIN of the school. */
     String renderSchoolSubscriptionUnsuspendedEmail(String schoolName);
 
 }

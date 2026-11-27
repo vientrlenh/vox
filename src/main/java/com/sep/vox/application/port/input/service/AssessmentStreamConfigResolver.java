@@ -25,14 +25,14 @@ public class AssessmentStreamConfigResolver {
     public StreamConfig resolve(List<String> rawTypes, AssessmentStreamTypePermission rawPermission) {
         if (rawTypes == null || rawTypes.isEmpty()) {
             if (rawPermission != null) {
-                throw new IllegalArgumentException("Không thể đặt quyền stream khi không yêu cầu stream nào");
+                throw new IllegalArgumentException("Stream permission cannot be set when no stream is requested");
             }
             return new StreamConfig(null, null);
         }
 
         Set<String> types = new LinkedHashSet<>(rawTypes);
         if (types.contains(null) || !PERMITTED_STREAM_TYPES.containsAll(types)) {
-            throw new IllegalArgumentException("Các loại stream gửi yêu cầu không được hỗ trợ");
+            throw new IllegalArgumentException("The requested stream types are not supported");
         }
 
         if (types.size() == 1) {
@@ -40,7 +40,7 @@ public class AssessmentStreamConfigResolver {
         }
 
         if (rawPermission == null) {
-            throw new IllegalArgumentException("Quyền cho các stream là bắt buộc cho 2 loại đồng thời");
+            throw new IllegalArgumentException("Permission for the streams is required when both types are requested together");
         }
         return new StreamConfig(
             AssessmentRequiredStreamType.CAMERA_AND_SCREEN,
@@ -50,7 +50,7 @@ public class AssessmentStreamConfigResolver {
 
     private StreamConfig resolveSingleType(String type, AssessmentStreamTypePermission rawPermission) {
         if (rawPermission != null) {
-            throw new IllegalArgumentException("Quyền stream chỉ áp dụng khi yêu cầu đồng thời cả hai loại stream");
+            throw new IllegalArgumentException("Stream permission only applies when both stream types are requested together");
         }
         return new StreamConfig(AssessmentRequiredStreamType.valueOf(type), null);
     }

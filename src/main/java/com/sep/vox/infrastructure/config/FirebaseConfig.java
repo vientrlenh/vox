@@ -23,12 +23,12 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.sep.vox.infrastructure.properties.FirebaseProperties;
 
 /**
- * Chỉ nạp khi {@code firebase.enabled=true}.
+ * Only loaded when {@code firebase.enabled=true}.
  *
- * <p>Cờ bật/tắt là bắt buộc chứ không phải tiện ích: thiếu nó thì mọi máy dev và mọi
- * @SpringBootTest chưa có service account đều chết ngay ở khâu load context, vì bean
- * này ném IOException khi không tìm thấy credentials. Khi tắt, NoOpPushNotificationService
- * đứng thay để phần còn lại của hệ thống vẫn chạy bình thường.
+ * <p>The on/off flag is mandatory and not a convenience: without it every dev machine and every
+ * @SpringBootTest that has no service account dies right at context load, because this bean
+ * throws IOException when it cannot find the credentials. When it is off, NoOpPushNotificationService
+ * stands in so the rest of the system runs normally.
  */
 @Configuration
 @EnableConfigurationProperties(FirebaseProperties.class)
@@ -72,8 +72,8 @@ public class FirebaseConfig {
 
         if (!properties.hasPath()) {
             throw new IllegalStateException(
-                "firebase.enabled=true nhưng chưa cấu hình credentials: đặt firebase.credentials.path "
-                    + "(đường dẫn file service account .json) hoặc firebase.credentials.json (nội dung JSON/base64)"
+                "firebase.enabled=true but credentials are not configured: set firebase.credentials.path "
+                    + "(path of the service account .json file) or firebase.credentials.json (JSON/base64 content)"
             );
         }
 
@@ -86,8 +86,8 @@ public class FirebaseConfig {
         Resource resource = resourceLoader.getResource(location);
         if (!resource.exists()) {
             throw new IllegalStateException(
-                "Không tìm thấy Firebase service account tại: " + location
-                    + " (giá trị cấu hình: " + properties.credentials().path() + ")"
+                "Firebase service account not found at: " + location
+                    + " (configured value: " + properties.credentials().path() + ")"
             );
         }
 
@@ -96,8 +96,8 @@ public class FirebaseConfig {
         // error. Pointing at the folder that contains the file by mistake is very easy to do.
         if (resource.isFile() && resource.getFile().isDirectory()) {
             throw new IllegalStateException(
-                "firebase.credentials.path đang trỏ vào một thư mục: " + location
-                    + " -- cần trỏ thẳng tới file service account .json"
+                "firebase.credentials.path points to a directory: " + location
+                    + " -- it must point directly to the service account .json file"
             );
         }
 
@@ -133,7 +133,7 @@ public class FirebaseConfig {
             return Base64.getDecoder().decode(trimmed);
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException(
-                "firebase.credentials.json không phải JSON hợp lệ cũng không phải base64 hợp lệ", e
+                "firebase.credentials.json is neither valid JSON nor valid base64", e
             );
         }
     }

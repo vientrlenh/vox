@@ -154,7 +154,7 @@ public class AssessmentPolicy extends BaseModel {
     // a published policy must not be edited
     public void assertMutable() {
         if (isPublished()) {
-            throw new IllegalArgumentException("Policy đã được xuất bản, hãy tạo version mới nếu cần sửa");
+            throw new IllegalArgumentException("The policy has been published, create a new version if it needs to change");
         }
     }
 

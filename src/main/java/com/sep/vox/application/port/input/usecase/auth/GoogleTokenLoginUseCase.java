@@ -13,19 +13,19 @@ import com.sep.vox.application.port.output.GoogleIdTokenVerifierPort;
 import com.sep.vox.application.response.input.auth.LoginResponse;
 
 /**
- * Đăng nhập Google cho ứng dụng NATIVE: kiểm chứng ID token rồi giao lại cho
+ * Google login for the NATIVE app: verifies the ID token, then hands over to
  * {@link OAuth2LoginUseCase}.
  *
- * <p>Cố ý MỎNG. Toàn bộ phần dựng phiên -- tra người dùng đang hoạt động, tạo device session, phát
- * refresh token, gom vai trò -- đã nằm trong {@link OAuth2LoginUseCase} và được đường web dùng hằng
- * ngày. Chép lại ở đây là tự tạo ra hai định nghĩa của "đăng nhập thành công", và cái ít người dùng
- * hơn sẽ là cái âm thầm trôi khỏi cái kia: một bản sửa luật phiên đăng nhập sẽ được áp cho web và
- * quên mất native.
+ * <p>Deliberately THIN. All of the session building -- looking up the active user, creating the device
+ * session, issuing the refresh token, collecting the roles -- already lives in {@link OAuth2LoginUseCase}
+ * and is used by the web path every day. Copying it here would create two definitions of "successful
+ * login", and the less used one would silently drift away from the other: a fix to the login session
+ * rules would be applied to the web and forgotten for native.
  *
- * <p>Lớp này vì thế chỉ chịu trách nhiệm đúng MỘT việc mà đường web không phải làm: thay thế phần
- * bảo vệ mà Spring Security tự lo trong luồng redirect. Ở đường web, tới lúc
- * {@code OAuth2AuthenticationSuccessHandler} chạy thì token đã được đổi và kiểm bởi chính Spring;
- * ở đây thì không, nên {@link GoogleIdTokenVerifierPort} phải làm đúng phần đó trước.
+ * <p>So this class is responsible for exactly ONE thing the web path does not have to do: replacing the
+ * protection that Spring Security provides on its own in the redirect flow. On the web path, by the time
+ * {@code OAuth2AuthenticationSuccessHandler} runs the token has already been exchanged and checked by
+ * Spring itself; here it has not, so {@link GoogleIdTokenVerifierPort} must do that part first.
  */
 @Service
 @RequiredArgsConstructor
@@ -38,15 +38,15 @@ public class GoogleTokenLoginUseCase implements IUseCase<GoogleTokenLoginCommand
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
 
     /**
-     * Email CHƯA xác minh bị từ chối ngay tại đây, trước khi tra người dùng.
+     * An UNVERIFIED email is rejected right here, before the user lookup.
      *
-     * <p>Cùng luật với {@code CustomOidcUserService} ở đường web, và cùng lý do: email là KHOÁ tra
-     * người dùng của {@link OAuth2LoginUseCase}. Một tài khoản Google chưa xác minh email có thể
-     * mang địa chỉ của người khác, nên bỏ phép kiểm này là biến "đăng nhập bằng Google" thành "đăng
-     * nhập bằng bất kỳ email nào mình gõ ra được".
+     * <p>Same rule as {@code CustomOidcUserService} on the web path, and for the same reason: the email is the
+     * lookup KEY of {@link OAuth2LoginUseCase}. A Google account without a verified email can carry someone
+     * else's address, so dropping this check would turn "log in with Google" into "log in with any email I can
+     * type".
      *
-     * <p>Thông báo lỗi giữ nguyên văn của đường web -- cùng một tình huống thì người dùng phải đọc
-     * được cùng một câu, dù họ đang đứng ở trình duyệt hay ở ứng dụng.
+     * <p>The error message is kept word for word from the web path -- in the same situation the user must read
+     * the same sentence, whether they are in a browser or in the app.
      */
     @Override
     @Transactional
@@ -54,7 +54,7 @@ public class GoogleTokenLoginUseCase implements IUseCase<GoogleTokenLoginCommand
         VerifiedGoogleIdentity identity = googleIdTokenVerifierPort.verify(input.idToken());
 
         if (!identity.emailVerified()) {
-            throw new UnauthorizedException("Người dùng chưa được xác thực để đăng nhập");
+            throw new UnauthorizedException("The user has not been verified to log in");
         }
 
         return oAuth2LoginUseCase.execute(new OAuth2LoginCommand(

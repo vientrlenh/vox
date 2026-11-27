@@ -58,23 +58,23 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
     private void requireActiveSchoolAdminOf(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not assigned to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to view the Scoring Rules of another school.");
         }
     }
 
     private void requirePolicyOfSchool(UUID policyId, UUID schoolId) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to view the Scoring Rules of another school.");
         }
     }
 

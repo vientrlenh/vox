@@ -18,10 +18,10 @@ import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeSes
 public interface SpringDataPracticeSessionRepository
         extends JpaRepository<PracticeSessionJpaEntity, UUID> {
 
-    // Khoá row cho suốt transaction resolve-next-question (gói 11 mục 2.4 bước 4) -- một
-    // request thứ 2 (Python retry sau timeout, xem practice_session_client.py) cho CÙNG
-    // session phải đợi request đầu commit xong rồi mới đọc, chứ không được chạy song song
-    // và cùng chọn/lưu 1 câu MAIN mới độc lập với nhau (race → có thể vỡ ràng buộc slot).
+    // Row lock for the whole resolve-next-question transaction (plan 11 section 2.4 step 4) -- a second
+    // request (Python retry after a timeout, see practice_session_client.py) for the SAME
+    // session must wait for the first request to commit before reading, and must not run in parallel
+    // and each independently choose/save a new MAIN question (race → can break the slot constraint).
     @Query(value = "SELECT * FROM practice_sessions WHERE id = :id FOR UPDATE", nativeQuery = true)
     Optional<PracticeSessionJpaEntity> findByIdForUpdate(@Param("id") UUID id);
 
@@ -50,9 +50,9 @@ public interface SpringDataPracticeSessionRepository
                          WHERE evaluation.practice_response_id = response.id
                      )
                )::int AS pendingEvaluations,
-               -- Thang chấm của luyện tập là 0-100 CỐ ĐỊNH -- Azure trả HundredMark nên đây
-               -- là thang gốc. Vẫn trả về cho client thay vì để client tự biết: mẫu số viết
-               -- cứng ở giao diện chính là lỗi đã gặp (in " / 100" khi dữ liệu là 0-10).
+               -- The practice grading scale is a FIXED 0-100 -- Azure returns HundredMark so this
+               -- is the original scale. It is still returned to the client instead of letting the client know it: a denominator
+               -- hardcoded in the UI is a bug we have already hit (printing " / 100" when the data was 0-10).
                0   AS scoreScaleMin,
                100 AS scoreScaleMax
         FROM practice_sessions session
@@ -87,9 +87,9 @@ public interface SpringDataPracticeSessionRepository
                          WHERE evaluation.practice_response_id = response.id
                      )
                )::int AS pendingEvaluations,
-               -- Thang chấm của luyện tập là 0-100 CỐ ĐỊNH -- Azure trả HundredMark nên đây
-               -- là thang gốc. Vẫn trả về cho client thay vì để client tự biết: mẫu số viết
-               -- cứng ở giao diện chính là lỗi đã gặp (in " / 100" khi dữ liệu là 0-10).
+               -- The practice grading scale is a FIXED 0-100 -- Azure returns HundredMark so this
+               -- is the original scale. It is still returned to the client instead of letting the client know it: a denominator
+               -- hardcoded in the UI is a bug we have already hit (printing " / 100" when the data was 0-10).
                0   AS scoreScaleMin,
                100 AS scoreScaleMax
         FROM practice_sessions session
@@ -111,13 +111,13 @@ public interface SpringDataPracticeSessionRepository
                session.offered_topic_ids_json AS offeredTopicIdsJson,
                session.started_at AS startedAt,
                session.ended_at AS endedAt,
-               -- Cùng phép đếm mà màn CHI TIẾT dùng để quyết định hiện băng "đang chấm"
-               -- (countAwaitingEvaluation). Danh sách phải hỏi cùng câu hỏi đó, nếu không
-               -- hai màn hình nói hai điều khác nhau về cùng một phiên: ngoài hiện 72, bấm
-               -- vào bảo đang chấm, lát sau thành 76.
+               -- The same count the DETAIL screen uses to decide whether to show the "grading" banner
+               -- (countAwaitingEvaluation). The list must ask the same question, otherwise
+               -- two screens say two different things about the same session: the outside shows 72, tapping
+               -- in says grading, and a moment later it becomes 76.
                --
-               -- Tính ngay trong câu truy vấn danh sách thay vì gọi thêm một vòng cho mỗi
-               -- phiên: lịch sử trả tối đa vài chục dòng, mà N+1 ở đây là N+1 thật.
+               -- Computed inside the list query itself instead of one extra round per
+               -- session: the history returns at most a few dozen rows, but the N+1 here is a real N+1.
                (
                    SELECT COUNT(*)
                    FROM practice_item_responses response
@@ -172,23 +172,23 @@ public interface SpringDataPracticeSessionRepository
     List<PracticeSessionJpaEntity> findStaleInProgressForUpdate(@Param("staleBefore") Instant staleBefore);
 
   
-    // KHÔNG lọc question_complete nữa (2026-08-07).
+    // Does NOT filter question_complete any more (2026-08-07).
     //
-    // Luật cũ: câu bỏ dở vẫn được chấm để lấy quan sát điểm yếu, nhưng không tính vào điểm
-    // phiên -- "chấm một câu dở dang theo rubric của câu đầy đủ thì chắc chắn thấp, phạt học
-    // sinh vì mất mạng là sai".
+    // Old rule: an abandoned question was still graded to collect weakness observations, but was not counted in the
+    // session score -- "grading an unfinished question by the rubric of a complete one is certain to be low, penalizing the student
+    // for losing connection is wrong".
     //
-    // Hai lý do bỏ:
-    //   1. Hồ sơ điểm yếu đã gỡ 2026-08-06, nên vế "vẫn chấm để lấy quan sát" không còn đích
-    //      nào. Giờ chấm xong rồi vứt.
-    //   2. Giả định "chắc chắn thấp" không đúng. Đo trên phiên thật 2026-08-07: câu bỏ dở
-    //      (2 lượt, 26 giây) được 80,07 -- CAO HƠN cả hai câu hoàn tất (72,56 và 73,97).
+    // Two reasons for dropping it:
+    //   1. The weakness profile was removed on 2026-08-06, so the "still grade to collect observations" side has no
+    //      destination any more. Now it is graded and then thrown away.
+    //   2. The "certain to be low" assumption is wrong. Measured on a real session on 2026-08-07: an abandoned
+    //      question (2 turns, 26 seconds) scored 80.07 -- HIGHER than both completed questions (72.56 and 73.97).
     //
-    // Và khi câu bỏ dở là câu DUY NHẤT, loại nó không bảo vệ được gì: AVG trên tập rỗng ra
-    // NULL, cả phiên hiện 0 điểm. Bảo vệ khỏi bị kéo xuống mà thành xoá trắng.
+    // And when the abandoned question is the ONLY one, excluding it protects nothing: AVG over an empty set gives
+    // NULL and the whole session shows 0 points. Protecting against being pulled down turns into wiping everything out.
     //
-    // marked_invalid mới là cờ đúng vai cho "có đáng tính không" -- ValidityNode đã hạ cờ đó
-    // cho câu quá ngắn hoặc lạc đề.
+    // marked_invalid is the flag with the right role for "is it worth counting" -- ValidityNode has already raised that flag
+    // for answers that are too short or off topic.
     @Modifying
     @Query(value = """
         UPDATE practice_sessions
@@ -205,21 +205,21 @@ public interface SpringDataPracticeSessionRepository
     void refreshOverallScore(@Param("sessionId") UUID sessionId);
 
     /**
-     * Khung chấm gửi xuống Python cho MỘT phiên luyện.
+     * The grading framework sent down to Python for ONE practice session.
      *
-     * <p>Từ V13 KHÔNG còn đi qua rubric. Ba khác biệt so với bản cũ:
+     * <p>Since V13 it no longer goes through a rubric. Three differences from the old version:
      * <ul>
-     *   <li>tiêu chí lấy thẳng từ {@code framework_criteria} thay vì {@code rubric_criterions};</li>
-     *   <li>thang chấm cố định 0-100 -- Azure trả HundredMark nên đây là thang gốc, không phải
-     *       một lựa chọn tuỳ tiện, và không có rubric nào để tra dải;</li>
-     *   <li>chỉ trả ĐÚNG MỘT bậc -- bậc học sinh chọn -- thay vì cả thang. Luyện tập chấm
-     *       "đáp ứng mô tả bậc này tới đâu", không xếp loại, nên các bậc khác không có việc gì
-     *       để làm trong prompt.</li>
+     *   <li>criteria come straight from {@code framework_criteria} instead of {@code rubric_criterions};</li>
+     *   <li>a fixed 0-100 grading scale -- Azure returns HundredMark so this is the original scale, not
+     *       an arbitrary choice, and there is no rubric to look up a range from;</li>
+     *   <li>returns EXACTLY ONE band -- the band the student chose -- instead of the whole scale. Practice grades
+     *       "how well it meets the description of this band", it does not classify, so the other bands have nothing
+     *       to do in the prompt.</li>
      * </ul>
      *
-     * <p>{@code framework_version_id} suy từ chính bậc đích chứ không tra lại khung đang hoạt
-     * động: bậc học sinh đã chọn thuộc một version cụ thể, dùng nó là nhất quán nhất kể cả khi
-     * quản trị đổi khung giữa chừng.
+     * <p>{@code framework_version_id} is derived from the target band itself rather than looking up the active framework
+     * again: the band the student chose belongs to one specific version, and using it is the most consistent
+     * even if an admin changes the framework midway.
      */
     @Query(value = """
         SELECT fc.id                     AS criterionId,

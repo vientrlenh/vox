@@ -44,9 +44,9 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
     public UUID execute(ArchiveSchoolRubricVersionCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
 
         RubricVersion version = loadVersionOwnedBySchool(command, currentUserId);
@@ -64,33 +64,33 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
 
     private RubricVersion loadVersionOwnedBySchool(ArchiveSchoolRubricVersionCommand command, UUID currentUserId) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Rubric version was not found."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào phiên bản của trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to interfere with a version of another school.");
         }
         return version;
     }
 
     private void requireActiveSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+            throw new ForbiddenException("Action denied: this school is disabled in the system.");
         }
     }
 
     private void requireArchivable(RubricVersion version) {
         if (version.getStatus() != RubricStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể lưu trữ (ARCHIVE) phiên bản đang ở trạng thái PUBLISHED.");
+            throw new IllegalArgumentException("Only a version in PUBLISHED status can be archived (ARCHIVE).");
         }
 
         // Block archiving while an Assessment Policy in DRAFT/PUBLISHED still uses this version: archiving
@@ -98,8 +98,8 @@ public class ArchiveSchoolRubricVersionUseCase implements IUseCase<ArchiveSchool
         // existsOtherActiveByRubricVersionId on the policy-archive side (ArchiveSchoolAssessmentPolicyUseCase).
         if (assessmentPolicyRepository.existsActiveByRubricVersionId(version.getId())) {
             throw new IllegalArgumentException(
-                    "Không thể lưu trữ phiên bản này vì còn Assessment Policy đang DRAFT/PUBLISHED sử dụng. "
-                            + "Hãy lưu trữ các Assessment Policy đó trước.");
+                    "Cannot archive this version because a DRAFT/PUBLISHED Assessment Policy still uses it. "
+                            + "Archive those Assessment Policies first.");
         }
     }
 }

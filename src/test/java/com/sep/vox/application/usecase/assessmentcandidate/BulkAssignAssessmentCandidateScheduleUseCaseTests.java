@@ -82,7 +82,7 @@ class BulkAssignAssessmentCandidateScheduleUseCaseTests {
             new AssessmentPaperAutoAssigner(mock(AssessmentPaperRepository.class), assessmentCandidateRepository),
             new AssessmentScheduleManageAccessService(
                 assessmentMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort),
-            // Validator thật trên repository đã mock: luật chống trùng lịch được test qua use case.
+            // The real validator on the mocked repository: the anti-overlap rule is tested through the use case.
             new AssessmentScheduleCandidateConflictValidator(assessmentCandidateRepository, userRepository));
 
         when(assessmentCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))

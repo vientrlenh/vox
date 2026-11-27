@@ -22,8 +22,8 @@ import com.sep.vox.domain.model.notification.Notification;
 import com.sep.vox.domain.repository.NotificationRepository;
 
 /**
- * Truy vấn phục vụ route chuyển hướng {@code /n/{id}}: client bấm vào thông báo đẩy chỉ
- * cầm mỗi id, phải hỏi lại payload mới biết mở màn hình nào.
+ * The query that serves the redirect route {@code /n/{id}}: a client tapping a push notification only holds the id,
+ * and has to ask for the payload to know which screen to open.
  */
 class ViewMyNotificationUseCaseTests {
 
@@ -68,9 +68,9 @@ class ViewMyNotificationUseCaseTests {
     }
 
     /**
-     * Lọc theo userId nằm TRONG truy vấn, không phải một phép kiểm sau khi lấy: nhờ vậy
-     * thông báo của người khác và id không tồn tại cho ra cùng một phản hồi, và người dò id
-     * không suy ra được thông báo nào có thật.
+     * Filtering by userId lives INSIDE the query, not as a check after fetching: so another user's notification and
+     * an id that does not exist give the same response, and whoever probes ids cannot infer which notifications are
+     * real.
      */
     @Test
     void should_scope_the_lookup_to_the_current_user() {

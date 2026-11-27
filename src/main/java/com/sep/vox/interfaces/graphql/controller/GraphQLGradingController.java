@@ -131,9 +131,9 @@ public class GraphQLGradingController {
     }
 
     /**
-     * Không cần chốt phạm vi ở đây: phạm vi CHÍNH LÀ tập phân công của người gọi, đọc
-     * từ token trong use case. Chỉ TEACHER — nhà trường đã có {@code gradingAssignments}
-     * và hỏi ở đây cũng chỉ nhận về danh sách rỗng.
+     * No need to pin the scope here: the scope IS the caller's own assignment set, read
+     * from the token in the use case. TEACHER only -- the school already has {@code gradingAssignments},
+     * and asking here would only return an empty list.
      */
     @QueryMapping(name = "myGradingAssessments")
     @PreAuthorize("hasRole('TEACHER')")
@@ -169,8 +169,8 @@ public class GraphQLGradingController {
     }
 
     /**
-     * Học sinh xem được dòng thời gian điểm của CHÍNH MÌNH; admin xem được của bài
-     * thuộc trường mình. Phân quyền nằm trong use case, không ở đây.
+     * A student can see the score timeline of their OWN results; an admin can see that of results
+     * belonging to their school. Authorization lives in the use case, not here.
      */
     @QueryMapping(name = "resultStatusHistory")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER', 'STUDENT')")

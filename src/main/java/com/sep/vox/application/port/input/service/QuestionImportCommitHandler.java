@@ -163,7 +163,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         }
         if (!run.bulkMode() && hasDifferentContext(normalized, importContext)) {
             return rejectRow(row, List.of(
-                error("questionTopicId", "dữ liệu row không thuộc cùng question bank và question topic với phiên import")
+                error("questionTopicId", "row data does not belong to the same question bank and question topic as the import session")
             ), ImportRowStatus.INVALID);
         }
         ImportRowStatus skipped = skipIfDuplicate(row, normalized, importContext);
@@ -185,7 +185,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         String questionText = normalized.get("questionText");
         if (isPresent(code) && questionRepository.existsByQuestionBankIdAndCode(importContext.questionBank().getId(), code)) {
             return rejectRow(row, List.of(
-                error("code", "Đã tồn tại câu hỏi cùng mã trong question bank này")
+                error("code", "A question with the same code already exists in this question bank")
             ), ImportRowStatus.SKIPPED);
         }
         if (!isPresent(code)
@@ -194,7 +194,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
                     importContext.questionTopic().getId(),
                     questionText)) {
             return rejectRow(row, List.of(
-                error("questionText", "Đã tồn tại câu hỏi cùng nội dung trong chủ đề này")
+                error("questionText", "A question with the same content already exists in this topic")
             ), ImportRowStatus.SKIPPED);
         }
         return null;
@@ -214,24 +214,24 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             return ImportRowStatus.IMPORTED;
         } catch (DataConflictException | IllegalArgumentException exception) {
             return rejectRow(row, List.of(
-                error("questionText", "Không thể tạo câu hỏi từ dữ liệu import")
+                error("questionText", "Cannot create a question from the import data")
             ), ImportRowStatus.FAILED);
         }
     }
 
     private ImportContext resolveContext(ImportRow row) {
         Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-        UUID questionBankId = parseUuid(rawData.get("questionBankId"), "Không tìm thấy question bank của phiên import");
-        UUID questionTopicId = parseUuid(rawData.get("questionTopicId"), "Không tìm thấy question topic của phiên import");
+        UUID questionBankId = parseUuid(rawData.get("questionBankId"), "Question bank of the import session not found");
+        UUID questionTopicId = parseUuid(rawData.get("questionTopicId"), "Question topic of the import session not found");
         QuestionBank questionBank = questionBankRepository.findById(questionBankId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         QuestionTopic questionTopic = questionTopicRepository.findById(questionTopicId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question topic not found"));
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalArgumentException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+            throw new IllegalArgumentException("The topic does not belong to the selected question bank");
         }
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được import câu hỏi vào chủ đề đã PUBLISHED");
+            throw new IllegalArgumentException("Questions can only be imported into a PUBLISHED topic");
         }
         return new ImportContext(questionBank, questionTopic);
     }
@@ -284,8 +284,8 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             errors.add(error(
                 "questionBankCode",
                 pinnedBankId != null
-                    ? "Không tìm thấy ngân hàng câu hỏi đã chọn ở màn nhập"
-                    : "Không tìm thấy ngân hàng câu hỏi có mã '" + bankCode + "'"));
+                    ? "The question bank selected on the import screen was not found"
+                    : "Question bank not found with code '" + bankCode + "'"));
         }
         return questionBank;
     }
@@ -296,10 +296,10 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             UUID pinnedTopicId,
             List<Map<String, String>> errors) {
         if (pinnedBankId == null && !isPresent(data.get("questionBankCode"))) {
-            errors.add(error("questionBankCode", "Thiếu mã ngân hàng câu hỏi"));
+            errors.add(error("questionBankCode", "Question bank code is missing"));
         }
         if (pinnedTopicId == null && !isPresent(data.get("questionTopicCode"))) {
-            errors.add(error("questionTopicCode", "Thiếu mã chủ đề câu hỏi"));
+            errors.add(error("questionTopicCode", "Question topic code is missing"));
         }
     }
 
@@ -307,8 +307,8 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         if (isPresent(schoolCode) && !schoolCode.equalsIgnoreCase(scope.schoolCode())) {
             errors.add(error(
                 "schoolCode",
-                "Mã trường '" + schoolCode + "' không khớp phạm vi của phiên import"
-                    + (scope.schoolCode() == null ? " (ngân hàng hệ thống)" : " ('" + scope.schoolCode() + "')")
+                "School code '" + schoolCode + "' does not match the scope of the import session"
+                    + (scope.schoolCode() == null ? " (system bank)" : " ('" + scope.schoolCode() + "')")
             ));
         }
     }
@@ -321,14 +321,14 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         if (pinnedTopic == null || !pinnedTopic.getQuestionBankId().equals(questionBank.getId())) {
             errors.add(error(
                 "questionTopicCode",
-                "Chủ đề đã chọn không thuộc ngân hàng '" + questionBank.getCode() + "'"));
+                "The selected topic does not belong to bank '" + questionBank.getCode() + "'"));
             return null;
         }
         if (pinnedTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
             errors.add(error(
                 "questionTopicCode",
-                "Chủ đề đã chọn đang ở trạng thái " + pinnedTopic.getStatus()
-                    + ". Chỉ import được vào chủ đề đã PUBLISHED."));
+                "The selected topic is in status " + pinnedTopic.getStatus()
+                    + ". Only a PUBLISHED topic can be imported into."));
             return null;
         }
         return new ImportContext(questionBank, pinnedTopic);
@@ -346,7 +346,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         if (questionTopic == null) {
             errors.add(error(
                 "questionTopicCode",
-                "Không tìm thấy chủ đề có mã '" + topicCode + "' trong ngân hàng '" + bankCode + "'"
+                "Question topic not found with code '" + topicCode + "' in bank '" + bankCode + "'"
             ));
             return null;
         }
@@ -361,8 +361,8 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
             errors.add(error(
                 "questionTopicCode",
-                "Chủ đề '" + topicCode + "' đang ở trạng thái " + questionTopic.getStatus()
-                    + ". Chỉ import được vào chủ đề đã PUBLISHED."
+                "Topic '" + topicCode + "' is in status " + questionTopic.getStatus()
+                    + ". Only a PUBLISHED topic can be imported into."
             ));
             return null;
         }
@@ -429,7 +429,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
      * adding a new field and forgetting this place makes data vanish without a word.
      *
      * <p>That has already happened twice: the three target-code columns (bulk mode always reported
-     * "Thiếu mã ngân hàng câu hỏi" even when the file had it) and the seven asset columns (the asset
+     * "Question bank code is missing" even when the file had it) and the seven asset columns (the asset
      * was never created, because {@code createAssetIfPresent} reads {@code assetType} from this very map).
      */
     private Map<String, String> normalize(Map<String, String> mappedData) {
@@ -502,7 +502,7 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
 
         String code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
-            errors.add(error("code", "Mã câu hỏi bị trùng trong file import"));
+            errors.add(error("code", "Question code is duplicated in the import file"));
         }
         if (importContext != null) {
             addContextIdErrors(errors, data, importContext);
@@ -511,35 +511,35 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     private void addRequiredFieldErrors(List<Map<String, String>> errors, Map<String, String> data) {
-        addMissingError(errors, data, "type", "Loại câu hỏi không được để trống");
-        addMissingError(errors, data, "questionText", "Nội dung câu hỏi không được để trống");
-        addMissingError(errors, data, "preparationTimeSeconds", "Thời gian chuẩn bị không được để trống");
-        addMissingError(errors, data, "minResponseSeconds", "Thời gian trả lời tối thiểu không được để trống");
-        addMissingError(errors, data, "maxResponseSeconds", "Thời gian trả lời tối đa không được để trống");
+        addMissingError(errors, data, "type", "Question type must not be blank");
+        addMissingError(errors, data, "questionText", "Question text must not be blank");
+        addMissingError(errors, data, "preparationTimeSeconds", "Preparation time must not be blank");
+        addMissingError(errors, data, "minResponseSeconds", "Minimum response time must not be blank");
+        addMissingError(errors, data, "maxResponseSeconds", "Maximum response time must not be blank");
     }
 
     private void addFieldFormatErrors(List<Map<String, String>> errors, Map<String, String> data) {
-        validateEnumField(errors, data.get("type"), "type", QuestionType.class, "Loại câu hỏi không hợp lệ");
-        validateEnumField(errors, data.get("sharing"), "sharing", QuestionSharing.class, "Chế độ chia sẻ không hợp lệ");
-        validateNumberField(errors, data.get("preparationTimeSeconds"), "preparationTimeSeconds", "Thời gian chuẩn bị phải là số nguyên >= 0");
-        validateNumberField(errors, data.get("minResponseSeconds"), "minResponseSeconds", "Thời gian trả lời tối thiểu phải là số nguyên >= 0");
-        validateNumberField(errors, data.get("maxResponseSeconds"), "maxResponseSeconds", "Thời gian trả lời tối đa phải là số nguyên >= 0");
+        validateEnumField(errors, data.get("type"), "type", QuestionType.class, "Question type is invalid");
+        validateEnumField(errors, data.get("sharing"), "sharing", QuestionSharing.class, "Sharing mode is invalid");
+        validateNumberField(errors, data.get("preparationTimeSeconds"), "preparationTimeSeconds", "Preparation time must be an integer >= 0");
+        validateNumberField(errors, data.get("minResponseSeconds"), "minResponseSeconds", "Minimum response time must be an integer >= 0");
+        validateNumberField(errors, data.get("maxResponseSeconds"), "maxResponseSeconds", "Maximum response time must be an integer >= 0");
     }
 
     private void addResponseRangeError(List<Map<String, String>> errors, Map<String, String> data) {
         Integer minResponse = parseInteger(data.get("minResponseSeconds"));
         Integer maxResponse = parseInteger(data.get("maxResponseSeconds"));
         if (minResponse != null && maxResponse != null && minResponse > maxResponse) {
-            errors.add(error("minResponseSeconds", "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa"));
+            errors.add(error("minResponseSeconds", "Minimum response time must not exceed maximum response time"));
         }
     }
 
     private void addContextIdErrors(List<Map<String, String>> errors, Map<String, String> data, ImportContext importContext) {
         if (!Objects.equals(data.get("questionBankId"), importContext.questionBank().getId().toString())) {
-            errors.add(error("questionBankId", "Question bank của row không hợp lệ"));
+            errors.add(error("questionBankId", "Question bank of the row is invalid"));
         }
         if (!Objects.equals(data.get("questionTopicId"), importContext.questionTopic().getId().toString())) {
-            errors.add(error("questionTopicId", "Question topic của row không hợp lệ"));
+            errors.add(error("questionTopicId", "Question topic of the row is invalid"));
         }
     }
 
@@ -666,8 +666,8 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         }
     }
 
-    /** Khác {@link #parseUuid}: thiếu hoặc sai định dạng thì trả null chứ không ném — ở chế độ hàng
-     *  loạt việc "không có id ghim" là bình thường, không phải hỏng dữ liệu. */
+    /** Unlike {@link #parseUuid}: a missing or malformed value returns null instead of throwing — in bulk
+     *  mode "no pinned id" is normal, not corrupt data. */
     private UUID parseUuidOrNull(String value) {
         if (!isPresent(value)) {
             return null;

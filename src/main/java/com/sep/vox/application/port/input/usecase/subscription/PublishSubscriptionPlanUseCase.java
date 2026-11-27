@@ -27,7 +27,7 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
     @Transactional
     public UUID execute(PublishSubscriptionPlanCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
         requireDraft(plan);
         requireAtLeastOneQuota(plan);
@@ -46,7 +46,7 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
     // To sell again, create a new plan.
     private void requireDraft(SubscriptionPlan plan) {
         if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xuất bản gói đang ở trạng thái nháp.");
+            throw new IllegalArgumentException("Only a plan in DRAFT status can be published.");
         }
     }
 
@@ -57,7 +57,7 @@ public class PublishSubscriptionPlanUseCase implements IUseCase<PublishSubscript
     // anything, and the error only shows up when grading.
     private void requireAtLeastOneQuota(SubscriptionPlan plan) {
         if (subscriptionPlanQuotaRepository.findBySubscriptionPlanId(plan.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Gói phải có ít nhất một hạn mức trước khi xuất bản.");
+            throw new IllegalArgumentException("A plan must have at least one quota before it is published.");
         }
     }
 

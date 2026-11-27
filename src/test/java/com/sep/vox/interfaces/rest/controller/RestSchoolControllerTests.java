@@ -200,7 +200,7 @@ class RestSchoolControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Xóa lớp học thành công");
+            .extractingPath("$.message").isEqualTo("Class deleted successfully");
         verify(deleteSchoolClassUseCase).execute(new DeleteSchoolClassCommand(schoolId, schoolClassId));
     }
 
@@ -228,7 +228,7 @@ class RestSchoolControllerTests {
                                   "Khối": "schoolGradeCode"}}""", schoolId, importSessionId).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý");
+            .extractingPath("$.message").isEqualTo("Class import request accepted, processing");
         verify(acceptSchoolClassImportUseCase)
             .execute(new AcceptSchoolClassImportCommand(schoolId, importSessionId, mapping));
     }
@@ -251,7 +251,7 @@ class RestSchoolControllerTests {
             {"email": "student@school.edu.vn", "phone": "0987654321", "fullName": "John Cena",
              "dateOfBirth": "2005-01-15", "address": "123 Street", "roleCode": "STUDENT"}""", schoolId).exchange();
 
-        assertThat(result).hasStatus(201).bodyJson().extractingPath("$.message").isEqualTo("Tạo người dùng thành công");
+        assertThat(result).hasStatus(201).bodyJson().extractingPath("$.message").isEqualTo("User created successfully");
         assertThat(result).bodyJson().extractingPath("$.data.id").isEqualTo(userId.toString());
     }
 
@@ -274,7 +274,7 @@ class RestSchoolControllerTests {
             .multipart().file(csvFile("students.csv", "email,fullName\n")).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Preview import người dùng thành công");
+            .extractingPath("$.message").isEqualTo("User import previewed successfully");
     }
 
     @Test
@@ -284,7 +284,7 @@ class RestSchoolControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý");
+            .extractingPath("$.message").isEqualTo("User import request accepted, processing");
         verify(acceptSchoolUserImportUseCase).execute(any(AcceptSchoolUserImportCommand.class));
     }
 
@@ -310,7 +310,7 @@ class RestSchoolControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson().extractingPath("$.message")
-            .isEqualTo("Yêu cầu import người dùng vào lớp học đã được tiếp nhận, đang xử lý");
+            .isEqualTo("Class user import request accepted, processing");
         verify(acceptSchoolClassUserImportUseCase).execute(any(AcceptSchoolClassUserImportCommand.class));
     }
 
@@ -321,7 +321,7 @@ class RestSchoolControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Xóa người dùng khỏi lớp học thành công");
+            .extractingPath("$.message").isEqualTo("User removed from the class successfully");
         assertThat(result).bodyJson().extractingPath("$.data").isNull();
         verify(deleteSchoolClassUserUseCase).execute(new DeleteSchoolClassUserCommand(schoolId, schoolClassId, userId));
     }
@@ -337,7 +337,7 @@ class RestSchoolControllerTests {
             .contentType(MediaType.APPLICATION_JSON).content("{\"isActive\": true}").exchange();
 
         assertThat(result).hasStatusOk().bodyJson().extractingPath("$.message")
-            .isEqualTo("Cập nhật trạng thái người dùng trong lớp học thành công");
+            .isEqualTo("User status in the class updated successfully");
     }
 
     @Test

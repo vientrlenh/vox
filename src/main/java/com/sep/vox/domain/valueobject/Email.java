@@ -8,7 +8,7 @@ public record Email(String value) {
     
     public Email {
         if (value != null && !EMAIL_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Định dạng email không hợp lệ");
+            throw new IllegalArgumentException("The email format is invalid");
         }
     }
 }

@@ -117,7 +117,7 @@ class RestAssessmentPolicyControllerTests {
     void createSystemPolicy_should_answer_400_with_required_message_when_effective_from_is_missing() {
         MvcTestResult result = postSystemPolicy(policyBody(""));
 
-        assertThat(result).hasStatus(400).bodyText().contains("Ngày bắt đầu hiệu lực không được để trống");
+        assertThat(result).hasStatus(400).bodyText().contains("Effective start date must not be blank");
         verifyNoInteractions(createSystemAssessmentPolicyUseCase);
     }
 

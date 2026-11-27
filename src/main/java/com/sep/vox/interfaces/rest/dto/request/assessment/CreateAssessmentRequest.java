@@ -19,31 +19,31 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateAssessmentRequest(
-    @NotBlank(message = "Mã bài kiểm tra là bắt buộc")
+    @NotBlank(message = "Class test code is required")
     String code,
 
-    @NotBlank(message = "Tên bài kiểm tra là bắt buộc")
+    @NotBlank(message = "Class test name is required")
     String name,
 
     String description,
 
-    @NotNull(message = "Ngôn ngữ là bắt buộc")
+    @NotNull(message = "Language is required")
     UUID languageId,
 
     UUID blueprintId,
 
-    @NotNull(message = "Thời gian mở bài là bắt buộc")
+    @NotNull(message = "Opening time is required")
     Instant openAt,
 
-    @NotNull(message = "Thời gian đóng bài là bắt buộc")
+    @NotNull(message = "Closing time is required")
     Instant closeAt,
 
     UUID assessmentPolicyId,
 
-    @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")
+    @Min(value = 1, message = "Maximum number of attempts must be greater than 0")
     Integer maxAttempt,
 
-    @Min(value = 1, message = "Thời lượng bài thi phải lớn hơn 0 giây")
+    @Min(value = 1, message = "Assessment duration must be greater than 0 seconds")
     Integer assessmentTimeDurationSecond,
 
     ResultDecisionMethod resultDecisionMethod,
@@ -63,9 +63,9 @@ public record CreateAssessmentRequest(
      * <p>Once set, any grading result whose overall_confidence is below the threshold goes to PENDING_REVIEW,
      * and the internal hard rules are ignored -- see RecordAssessmentAttemptEvaluationUseCase.
      */
-    @DecimalMin(value = "0.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
-    @DecimalMax(value = "100.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
-    @Digits(integer = 3, fraction = 2, message = "Ngưỡng tin cậy tối đa 2 chữ số thập phân")
+    @DecimalMin(value = "0.0", message = "Confidence threshold must be between 0 and 100")
+    @DecimalMax(value = "100.0", message = "Confidence threshold must be between 0 and 100")
+    @Digits(integer = 3, fraction = 2, message = "Confidence threshold must have at most 2 decimal places")
     BigDecimal aiConfidenceThresholdPercent
 ) {
 

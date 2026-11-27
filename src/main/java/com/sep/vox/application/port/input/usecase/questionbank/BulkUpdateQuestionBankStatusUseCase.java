@@ -30,16 +30,16 @@ import com.sep.vox.domain.service.question.QuestionScopeStatusTransition;
 import com.sep.vox.domain.service.question.QuestionScopeStatusTransition.RejectionCode;
 
 /**
- * Đổi trạng thái nhiều ngân hàng câu hỏi trong một request, theo ngữ nghĩa "thành công một phần":
- * mục nào hợp lệ thì đổi, mục nào không thì trả về trong {@code failed} kèm lý do.
+ * Changes the status of several question banks in one request with "partial success" semantics:
+ * every valid item is changed, every other one is returned in {@code failed} together with the reason.
  *
- * <p>Cố ý KHÔNG gọi lại {@link UpdateQuestionBankStatusUseCase}: use case kia ném exception khi từ
- * chối, mà nó cũng {@code @Transactional} nên sẽ tham gia chính transaction này -- mục đầu tiên bị
- * từ chối là Spring đánh dấu rollback-only, và lúc commit nổ {@code UnexpectedRollbackException},
- * cuốn theo cả những mục đã đổi thành công. Cả hai đường giờ dùng chung
- * {@link QuestionScopeStatusTransition}, một hàm thuần trả về lý do thay vì ném.
+ * <p>Deliberately does NOT call {@link UpdateQuestionBankStatusUseCase}: that use case throws when it
+ * rejects, and because it is also {@code @Transactional} it joins this very transaction -- the first
+ * rejected item makes Spring mark it rollback-only, and at commit {@code UnexpectedRollbackException} blows up,
+ * taking the items that were changed successfully with it. Both paths now share
+ * {@link QuestionScopeStatusTransition}, a pure function that returns the reason instead of throwing.
  *
- * <p>Nạp theo lô trước vòng lặp nên số query không phụ thuộc số mục được chọn.
+ * <p>Loaded in batches before the loop, so the number of queries does not depend on the number of selected items.
  */
 @Service
 @RequiredArgsConstructor
@@ -54,7 +54,7 @@ public class BulkUpdateQuestionBankStatusUseCase
     @Transactional
     public BulkUpdateQuestionBankStatusResponse execute(BulkUpdateQuestionScopeStatusCommand input) {
         if (input.ids() == null || input.ids().isEmpty()) {
-            throw new IllegalArgumentException("Danh sách ngân hàng câu hỏi không được để trống");
+            throw new IllegalArgumentException("The question bank list must not be empty");
         }
 
         String action = StringNormalization.normalizeCode(input.action());
@@ -113,7 +113,7 @@ public class BulkUpdateQuestionBankStatusUseCase
         }
 
         QuestionScopeStatusTransition.Rejection rejection = QuestionScopeStatusTransition.rejectionFor(
-            bank.getStatus().name(), action, "ngân hàng câu hỏi");
+            bank.getStatus().name(), action, "question bank");
         if (rejection != null) {
             return Optional.of(failure(bank, rejection.code().name(), rejection.reason()));
         }
@@ -132,7 +132,7 @@ public class BulkUpdateQuestionBankStatusUseCase
         return updated;
     }
 
-    /** Cùng luật với UpdateQuestionBankStatusUseCase.validateAccess, chỉ đổi ném thành trả boolean. */
+    /** Same rule as UpdateQuestionBankStatusUseCase.validateAccess, except it returns a boolean instead of throwing. */
     private boolean canManage(QuestionBank bank, UUID currentSchoolId) {
         if (bank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             return userContextPort.isSystemAdmin();

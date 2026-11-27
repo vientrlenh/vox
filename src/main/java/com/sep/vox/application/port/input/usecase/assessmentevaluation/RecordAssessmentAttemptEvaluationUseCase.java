@@ -87,8 +87,8 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
 
         if (allResponsesHaveEvaluations(persisted.sessionId())) {
             AssessmentCandidateResult result = upsertAssessmentCandidateResultUseCase.execute(persisted.sessionId());
-            // Bài trên lớp: mở luôn phân công cho giáo viên chủ bài, để họ chấm được
-            // ngay khi học sinh vừa nộp thay vì chờ đóng bài. No-op với kỳ thi tập trung.
+            // Class test: open the assignment for the teacher who owns the test right away, so they can grade
+            // as soon as the student submits instead of waiting for the test to close. No-op for a centralized assessment.
             classTestGradingAssignmentService.ensureAssignmentForResult(result);
             completeAssessmentSessionGradingUseCase.execute(
                 new CompleteAssessmentSessionGradingCommand(persisted.sessionId())
@@ -102,7 +102,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
             () -> persistEvaluationInNewTransaction(input));
 
         if (persisted == null) {
-            throw new IllegalArgumentException("Không thể lưu kết quả chấm cho câu trả lời");
+            throw new IllegalArgumentException("Cannot save the grading result for the answer");
         }
         return persisted;
     }
@@ -110,7 +110,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     private PersistedEvaluation persistEvaluationInNewTransaction(RecordAssessmentAttemptEvaluationCommand input) {
         UUID responseId = UUID.fromString(input.answerId());
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(responseId)
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy câu trả lời cho evaluation"));
+            .orElseThrow(() -> new ResourceNotFoundException("Could not find the answer for the evaluation"));
 
         // A score finalized by a person beats the AI. There is no optimistic lock on
         // assessment_item_evaluations, so a regrading run by the AI (re-run, Kafka replay)
@@ -555,9 +555,9 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     }
 
     /**
-     * Response đã có bản chấm tay đã chốt hay chưa. Dùng
-     * {@code findLatestByResponseId} (chỉ trả AUTO_GRADED/FINALIZED) nên bản HUMAN
-     * đã bị một vòng phúc khảo sau đó SUPERSEDED sẽ không chặn nhầm.
+     * Whether the response already has a finalized manual grading. Uses
+     * {@code findLatestByResponseId} (which only returns AUTO_GRADED/FINALIZED), so a HUMAN version
+     * that a later appeal round has SUPERSEDED will not block by mistake.
      */
     private boolean hasFinalizedHumanEvaluation(UUID responseId) {
         return assessmentItemEvaluationRepository.findLatestByResponseId(responseId)
@@ -567,12 +567,12 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     }
 
     /**
-     * Phân giải tiêu chí từ payload của AI rồi giao phép tính cho công thức DÙNG CHUNG với đường
-     * chấm tay ({@link RubricItemScoreFormula}) -- xem lý do gộp ở javadoc của lớp đó.
+     * Resolves the criteria from the AI payload, then hands the computation to the formula SHARED with the
+     * manual grading path ({@link RubricItemScoreFormula}) -- see the javadoc of that class for why they are merged.
      *
-     * <p>Phần riêng của đường này: tiêu chí trong payload không khớp mã nào của rubric thì BỎ QUA
-     * im lặng, không ném. Chấm tay thì ngược lại (ném lỗi) vì đó là người đang nhập; còn ở đây một
-     * mã lạ do Python gửi lên không được phép làm hỏng cả lượt chấm.
+     * <p>What is specific to this path: a criterion in the payload that matches no code of the rubric is silently
+     * SKIPPED, not thrown. Manual grading is the opposite (it throws) because a person is typing; here an unknown
+     * code sent by Python must not be allowed to ruin the whole grading run.
      */
     private BigDecimal computeItemScore(
             Map<String, CriterionScoreInput> criteriaMap,
@@ -616,9 +616,9 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     }
 
     /**
-     * Sàn của thang rubric -- điểm dành cho bài bị vô hiệu hoá (không hợp lệ, không hợp tác).
+     * The floor of the rubric scale -- the score for a submission that was invalidated (invalid, uncooperative).
      *
-     * <p>Chưa khai thang thì lùi về 0, giữ nguyên hành vi cũ cho dữ liệu thiếu cấu hình.
+     * <p>If the scale is not declared, fall back to 0, keeping the old behavior for data with missing configuration.
      */
     private BigDecimal scaleFloor(BigDecimal scoringScaleMin) {
         return (scoringScaleMin == null ? BigDecimal.ZERO : scoringScaleMin)
@@ -627,16 +627,16 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
 
     private EvaluationContext resolveEvaluationContext(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy phiên thi cho evaluation"));
+            .orElseThrow(() -> new ResourceNotFoundException("Could not find the assessment session for the evaluation"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra cho evaluation"));
+            .orElseThrow(() -> new ResourceNotFoundException("Could not find the assessment for the evaluation"));
         if (assessment.getAssessmentPolicyId() == null) {
-            throw new ResourceNotFoundException("bài kiểm tra chưa gắn assessment policy");
+            throw new ResourceNotFoundException("The assessment has no assessment policy attached");
         }
         AssessmentPolicy policy = assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy assessment policy cho bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Could not find the assessment policy for the assessment"));
         RubricVersion rubricVersion = rubricVersionRepository.findById(policy.getRubricVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy rubric version cho bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Could not find the rubric version for the assessment"));
         return new EvaluationContext(
             policy.getRubricVersionId(),
             assessment.getKind(),
@@ -653,7 +653,7 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
         RubricTotalScoreMethod totalScoreMethod,
         BigDecimal scoringScaleMin,
         BigDecimal scoringScaleMax,
-        /** Ngưỡng tin cậy nhà trường đặt cho bài này. NULL = không đặt, dùng luật cứng như cũ. */
+        /** The confidence threshold the school set for this assessment. NULL = not set, use the hard rule as before. */
         BigDecimal aiConfidenceThresholdPercent
     ) {
     }
@@ -768,16 +768,15 @@ public class RecordAssessmentAttemptEvaluationUseCase implements IUseCase<Record
     }
 
     /**
-     * Chuỗi RỖNG phải thành NULL trước khi xuống DB.
+     * An EMPTY string must become NULL before it goes to the DB.
      *
-     * findEstimatedResultBandOrder đã có sẵn chốt {@code matched_band_code IS NOT NULL} -- người
-     * viết truy vấn đã lường trước chuyện thiếu mã bậc. Nhưng chuỗi rỗng LỌT QUA chốt đó rồi mới
-     * chết ở phép nối {@code band.code = matched_band_code}: bản ghi biến mất khỏi phép ước
-     * lượng, không lỗi, không log, chỉ là mẫu nhỏ đi. Đo trên dữ liệu thật: 5 dòng có mã, chỉ 3
-     * dòng qua được phép nối, mà ngưỡng {@code total >= 5} lại đếm SAU khi nối -- nên phép ước
-     * lượng bậc chưa từng chạy một lần nào.
+     * findEstimatedResultBandOrder already has the guard {@code matched_band_code IS NOT NULL} -- whoever wrote the
+     * query foresaw a missing band code. But an empty string SLIPS PAST that guard and then dies at the join
+     * {@code band.code = matched_band_code}: the record vanishes from the estimate with no error and no log, the sample
+     * just gets smaller. Measured on real data: 5 rows have a code, only 3 get through the join, and the threshold
+     * {@code total >= 5} is counted AFTER the join -- so the band estimate has never run once.
      *
-     * NULL hoá ở đây để chốt đó làm đúng việc nó được viết ra để làm.
+     * Nulling it here lets that guard do the job it was written for.
      */
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();

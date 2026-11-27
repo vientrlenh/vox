@@ -13,12 +13,12 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeBandOption;
 
 /**
- * Thang bậc của khung đang áp, cho ô chọn độ khó trước mỗi phiên luyện.
+ * The band ladder of the framework in force, for the difficulty picker before every practice session.
  *
- * <p>Trước đây học sinh không chọn gì: hệ thống suy ra bậc từ bài chấm trên lớp cộng hiệu năng
- * luyện gần đây, rồi ra đề theo bậc đó. Suy như vậy là lấy độ khó của CÂU HỎI gán thành trình
- * độ của NGƯỜI HỌC -- một tuyên bố hệ thống không có cơ sở để đưa ra. Giờ chỉ còn liệt kê các
- * bậc kèm mô tả để học sinh tự chọn.
+ * <p>Previously the student chose nothing: the system inferred the band from class-test grading plus recent
+ * practice performance, then built the paper for that band. Inferring that way treats the difficulty of a QUESTION
+ * as the level of the LEARNER -- a claim the system has no basis to make. Now it only lists the bands with their
+ * descriptions and lets the student choose.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,10 +33,10 @@ public class ViewPracticeBandOptionsUseCase implements IUseCase<Void, List<Pract
     }
 
     /**
-     * Thang bậc của MỘT khung cụ thể, sau khi học sinh đã chọn khung ở ô phía trên.
+     * The band ladder of ONE specific framework, after the student has chosen the framework in the picker above.
      *
-     * <p>{@code null} = giữ hành vi cũ: lấy khung đang hiệu lực toàn hệ. Client cũ không gửi
-     * tham số vẫn chạy y như trước.
+     * <p>{@code null} = keep the old behaviour: take the framework in force system-wide. Old clients that do not send
+     * the parameter keep working exactly as before.
      */
     @Transactional(readOnly = true)
     public List<PracticeBandOption> execute(UUID frameworkVersionId) {

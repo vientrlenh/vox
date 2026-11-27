@@ -10,9 +10,9 @@ import com.sep.vox.domain.model.payment.PaymentRecord;
 import com.sep.vox.domain.model.payment.PaymentStatus;
 
 /**
- * Các lần thử thanh toán của Order. Việc chốt kết quả được tuần tự hóa bằng khóa trên ĐƠN
- * ({@link OrderRepository#findByIdForUpdate}) chứ không phải khóa ở đây -- Order mới là gốc tổng
- * hợp của một lượt mua, và cả webhook lẫn job đối soát đều đi qua nó.
+ * Payment attempts of an Order. Settling the result is serialized with a lock on the ORDER
+ * ({@link OrderRepository#findByIdForUpdate}) and not a lock here -- Order is the aggregate root
+ * of a purchase, and both the webhook and the reconciliation job go through it.
  */
 public interface PaymentRecordRepository {
     Optional<PaymentRecord> findById(UUID id);
@@ -21,34 +21,34 @@ public interface PaymentRecordRepository {
     List<PaymentRecord> findByOrderId(UUID orderId);
 
     /**
-     * Các lần thử của NHIỀU đơn cùng lúc, mới nhất trước. Sinh ra cho batch loader của GraphQL: một
-     * trang 20 đơn mà hỏi lần lượt từng đơn là 20 lượt truy vấn cho một màn hình lịch sử.
+     * Attempts of MULTIPLE orders at once, newest first. Made for the GraphQL batch loader: a
+     * page of 20 orders queried one by one is 20 queries for one history screen.
      */
     List<PaymentRecord> findByOrderIdIn(Collection<UUID> orderIds);
 
     /**
-     * Đường tra của WEBHOOK: cả hai cổng đều chỉ gửi về mã đơn của chính họ
-     * (PayOS {@code orderCode}, SePay {@code order_invoice_number}). Phải tra theo CẶP
-     * (provider, ref) chứ không riêng ref -- mã chỉ duy nhất trong phạm vi một cổng, hai cổng khác
-     * nhau hoàn toàn có thể sinh ra cùng một chuỗi.
+     * The WEBHOOK lookup path: both gateways only send back their own order code
+     * (PayOS {@code orderCode}, SePay {@code order_invoice_number}). Must look up by the PAIR
+     * (provider, ref) and not ref alone -- a code is only unique within one gateway, two different gateways
+     * may well generate the same string.
      */
     Optional<PaymentRecord> findByProviderAndProviderOrderRef(PaymentProvider provider, String providerOrderRef);
 
     /**
-     * Lần thử đang treo của đơn, nếu có. Trả {@code Optional} được vì
-     * uq_payment_records_one_pending_per_order đảm bảo tối đa một dòng.
+     * The pending attempt of an order, if any. Returning {@code Optional} is fine because
+     * uq_payment_records_one_pending_per_order guarantees at most one row.
      *
-     * <p>Phải gọi cái này TRƯỚC khi phát link mới: nếu còn một lần thử PENDING thì phải hỏi cổng xem
-     * nó đã ra tiền chưa rồi mới quyết định resume hay mở lần thử mới. Bỏ qua bước đó là mở đường
-     * cho trường trả tiền hai lần cho cùng một đơn.
+     * <p>Must be called BEFORE issuing a new link: if a PENDING attempt still exists, the gateway must be asked whether
+     * it already produced money before deciding to resume or open a new attempt. Skipping that step opens the way
+     * for a school to pay twice for the same order.
      */
     Optional<PaymentRecord> findPendingByOrderId(UUID orderId);
 
-    /** Các lần thử đang treo trên toàn hệ thống -- đầu vào của job đối soát. */
+    /** Pending attempts across the whole system -- the input of the reconciliation job. */
     List<PaymentRecord> findByStatus(PaymentStatus status);
 
     /**
-     * Số lần đã thử của đơn. Adapter dùng để sinh mã đơn mới không trùng mã cũ -- xem
+     * Number of attempts made for the order. Used by the adapter to generate a new order code that does not duplicate an old one -- see
      * {@code PaymentProcessPort.newOrderRef}.
      */
     long countByOrderId(UUID orderId);

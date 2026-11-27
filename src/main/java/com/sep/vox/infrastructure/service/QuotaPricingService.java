@@ -56,8 +56,8 @@ public class QuotaPricingService implements QuotaPricingPort, ServiceFeePort {
     }
 
     /**
-     * Phí dịch vụ đọc thẳng từ config, KHÔNG nhân sẵn vào tỷ giá -- đơn hàng tự cộng thành một dòng
-     * riêng. Xem ServiceFeePort#serviceFeeRatio.
+     * The service fee is read straight from config, NOT pre-multiplied into the exchange rate -- the order adds it as its own
+     * line. See ServiceFeePort#serviceFeeRatio.
      */
     @Override
     public BigDecimal serviceFeeRatio() {

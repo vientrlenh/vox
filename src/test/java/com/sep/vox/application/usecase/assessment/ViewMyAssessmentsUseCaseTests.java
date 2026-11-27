@@ -119,21 +119,21 @@ class ViewMyAssessmentsUseCaseTests {
             .build());
 
         assertThat(firstResponse().canEnter()).isFalse();
-        assertThat(firstResponse().entryMessage()).contains("buộc kết thúc");
+        assertThat(firstResponse().entryMessage()).contains("force-ended");
     }
 
     @Test
     void should_block_a_student_who_was_not_marked_present() {
         givenRows(row().candidateStatus(AssessmentCandidateStatus.ASSIGNED).assessmentStatus(AssessmentStatus.IN_PROGRESS).build());
 
-        assertThat(firstResponse().entryMessage()).contains("điểm danh");
+        assertThat(firstResponse().entryMessage()).contains("marked present");
     }
 
     @Test
     void should_block_when_the_assessment_is_not_running_yet() {
         givenRows(row().candidateStatus(AssessmentCandidateStatus.ATTENDED).assessmentStatus(AssessmentStatus.SCHEDULED).build());
 
-        assertThat(firstResponse().entryMessage()).contains("chưa được mở");
+        assertThat(firstResponse().entryMessage()).contains("not open for entry yet");
     }
 
     @Test
@@ -144,7 +144,7 @@ class ViewMyAssessmentsUseCaseTests {
             .assignedPaperId(null)
             .build());
 
-        assertThat(firstResponse().entryMessage()).contains("chưa được gán đề thi");
+        assertThat(firstResponse().entryMessage()).contains("have not been assigned an assessment paper");
     }
 
     /**
@@ -177,10 +177,10 @@ class ViewMyAssessmentsUseCaseTests {
         StudentAssessmentSummaryResponse response = firstResponse();
 
         assertThat(response.attemptsUsed()).isEqualTo(1);
-        assertThat(response.entryMessage()).contains("hết số lượt");
+        assertThat(response.entryMessage()).contains("used up your attempts");
     }
 
-    /** Không có đề thì thời lượng suy từ độ dài ca thi. */
+    /** Without a paper the duration is derived from the length of the assessment schedule. */
     @Test
     void should_derive_the_duration_from_the_schedule_window() {
         givenRows(row().scheduleStartDate(NOW).scheduleEndDate(NOW.plusSeconds(2700)).build());
@@ -221,7 +221,7 @@ class ViewMyAssessmentsUseCaseTests {
         return new RowBuilder();
     }
 
-    /** Dòng "bình thường": đã điểm danh, kỳ thi đang mở, ca thi đang diễn ra, đã có đề. */
+    /** The "normal" row: marked present, assessment open, assessment schedule in progress, paper assigned. */
     private static final class RowBuilder {
         private UUID candidateId = UUID.randomUUID();
         private AssessmentCandidateStatus candidateStatus = AssessmentCandidateStatus.ATTENDED;

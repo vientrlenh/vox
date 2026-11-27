@@ -25,9 +25,9 @@ import com.sep.vox.domain.model.school.SchoolDirectory;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 /**
- * Tạo trường không qua đơn đăng ký. Điểm cần khoá chặt: khi có danh mục thì mọi thông tin trường
- * phải lấy TRỌN từ danh mục (không trộn với phần tự khai), và danh mục chưa xác minh vẫn dùng được
- * -- đó là toàn bộ lý do API này tồn tại bên cạnh luồng RegisterForm.
+ * Creating a school without a register form. The point to pin down: when a directory entry is given, ALL school
+ * information must come ENTIRELY from the directory (not mixed with the self-declared part), and an unverified
+ * directory entry is still usable -- that is the whole reason this API exists next to the RegisterForm flow.
  */
 class CreateSchoolUseCaseTests {
 
@@ -142,7 +142,7 @@ class CreateSchoolUseCaseTests {
     void should_throw_when_neither_directory_nor_self_declared_info_given() {
         assertThatThrownBy(() -> useCase.execute(commandWith(null, null, "Trường THPT F", "12 Phố F", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("danh mục trường");
+            .hasMessageContaining("school directory entry");
 
         verify(provisionSchoolService, never()).provision(any());
     }

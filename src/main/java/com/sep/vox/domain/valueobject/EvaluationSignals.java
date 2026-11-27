@@ -38,17 +38,17 @@ public record EvaluationSignals(
             int durationSeconds, int wordCount, Integer sentenceCount, BigDecimal lengthRatio,
             Integer expectedMinWords) {
         if (durationSeconds < 0) {
-            throw new IllegalArgumentException("Thời gian không được dưới 0");
+            throw new IllegalArgumentException("The duration must not be below 0");
         }
         if (wordCount < 0) {
-            throw new IllegalArgumentException("Số từ không được dưới 0");
+            throw new IllegalArgumentException("The word count must not be below 0");
         }
         if (sentenceCount != null && sentenceCount < 0) {
-            throw new IllegalArgumentException("Số câu không được dưới 0");
+            throw new IllegalArgumentException("The sentence count must not be below 0");
         }
-        requireNotNegative(lengthRatio, "Length ratio không được dưới 0");
+        requireNotNegative(lengthRatio, "The length ratio must not be below 0");
         if (expectedMinWords != null && expectedMinWords < 0) {
-            throw new IllegalArgumentException("Số từ tối thiểu mong đợi không được dưới 0");
+            throw new IllegalArgumentException("The expected minimum word count must not be below 0");
         }
     }
 
@@ -60,13 +60,13 @@ public record EvaluationSignals(
     private static void requireValidMeasuredSignals(
             BigDecimal taskRelevance, BigDecimal offTopicRatio, BigDecimal codeSwitchingRatio,
             BigDecimal asrConfidence, BigDecimal audioQuality, BigDecimal silenceRatio, BigDecimal speechRate) {
-        requireWithinUnitRange(taskRelevance, "Relevance của task phải nằm trong khoảng 0 đến 1");
-        requireWithinUnitRange(offTopicRatio, "Ratio của off topic bắt buộc phải từ 0 đến 1");
-        requireWithinUnitRange(codeSwitchingRatio, "Ratio của code switching bắt buộc phải từ 0 đến 1");
-        requireWithinUnitRange(asrConfidence, "Confidence của asr bắt buộc phải từ 0 đến 1");
-        requireWithinUnitRange(audioQuality, "Audio Quality bắt buộc phải từ 0 đến 1");
-        requireWithinUnitRange(silenceRatio, "Ratio của silence bắt buộc phải từ 0 đến 1");
-        requireNotNegative(speechRate, "Speech rate không được dưới 0");
+        requireWithinUnitRange(taskRelevance, "The task relevance must be between 0 and 1");
+        requireWithinUnitRange(offTopicRatio, "The off-topic ratio must be between 0 and 1");
+        requireWithinUnitRange(codeSwitchingRatio, "The code-switching ratio must be between 0 and 1");
+        requireWithinUnitRange(asrConfidence, "The ASR confidence must be between 0 and 1");
+        requireWithinUnitRange(audioQuality, "The audio quality must be between 0 and 1");
+        requireWithinUnitRange(silenceRatio, "The silence ratio must be between 0 and 1");
+        requireNotNegative(speechRate, "The speech rate must not be below 0");
     }
 
     private static void requireNotNegative(BigDecimal value, String message) {

@@ -44,7 +44,7 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
     @Transactional
     public AcceptRubricCriterionImportResponse execute(AcceptRubricCriterionImportCommand command) {
         if (command.schoolId() == null) {
-            throw new IllegalArgumentException("Yêu cầu không hợp lệ: Thiếu mã trường học đối với luồng School Admin.");
+            throw new IllegalArgumentException("Invalid request: the school id is missing for the School Admin flow.");
         }
 
         requireActiveSchoolMember(command.schoolId());
@@ -77,49 +77,49 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
+                .orElseThrow(() -> new ForbiddenException("You do not belong to any school, so you cannot use this function."));
 
         // Security: the school id in the URL must match the caller's real school.
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bạn không có quyền thao tác trên dữ liệu của trường khác.");
+            throw new ForbiddenException("You are not allowed to operate on the data of another school.");
         }
     }
 
     private ImportSession loadPreviewedSessionOfSchool(AcceptRubricCriterionImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import tương ứng."));
+                .orElseThrow(() -> new ResourceNotFoundException("The matching import session was not found."));
 
         if (session.getType() != ImportType.RUBRIC_CRITERION || session.getImportedEntityId() == null) {
-            throw new IllegalArgumentException("Phiên làm việc import này không hợp lệ.");
+            throw new IllegalArgumentException("This import session is not valid.");
         }
 
         // Confirmation is only allowed after the preview step succeeded.
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để thực hiện Xác nhận.");
+            throw new IllegalArgumentException("The session status does not allow confirming.");
         }
 
         // Security: a session id of another school must not be accepted through this school's URL.
         if (!session.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Phiên làm việc này không thuộc về trường của bạn.");
+            throw new ForbiddenException("This session does not belong to your school.");
         }
         return session;
     }
 
     private void requireSchoolOwnedRubric(ImportSession session, UUID schoolId) {
         RubricVersion version = rubricVersionRepository.findById(session.getImportedEntityId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric đích."));
+                .orElseThrow(() -> new ResourceNotFoundException("The target Rubric version was not found."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc cần bổ sung tiêu chí."));
+                .orElseThrow(() -> new ResourceNotFoundException("The parent Rubric to add criteria to was not found."));
 
         // Security: a school admin must never change system rubrics or another school's rubrics.
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bảo mật: Bạn chỉ được quyền thao tác trên các bộ Rubric thuộc sở hữu của trường mình.");
+            throw new ForbiddenException("Security: you may only operate on Rubrics owned by your school.");
         }
     }
 }

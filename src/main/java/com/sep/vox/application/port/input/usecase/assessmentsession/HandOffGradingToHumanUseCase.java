@@ -67,11 +67,11 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
     @Transactional
     public UUID execute(HandOffGradingToHumanCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the assessment session not found"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of the session not found"));
 
         moderationAccessService.authorize(assessment, candidate);
         requireHandOffable(assessment, session);
@@ -85,18 +85,18 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
         AssessmentCandidateResult saved = assessmentCandidateResultRepository.save(
             buildPendingReviewResult(session, assessment));
         log.info(
-            "Phiên {} (AI chấm lỗi) chuyển sang chấm tay: tạo kết quả {} ở PENDING_REVIEW, "
-                + "chờ nhà trường phân công.",
+            "Session {} (AI grading failed) moved to manual grading: created result {} in PENDING_REVIEW, "
+                + "waiting for the school to assign a grader.",
             session.getId(), saved.getId());
         return saved.getId();
     }
 
     private void requireHandOffable(Assessment assessment, AssessmentSession session) {
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalArgumentException("Kỳ thi đã công bố điểm, không thể chuyển sang chấm tay");
+            throw new IllegalArgumentException("The assessment scores have been published, so it cannot be moved to manual grading");
         }
         if (session.getStatus() != AssessmentSessionStatus.GRADING_FAILED) {
-            throw new IllegalArgumentException("Chỉ chuyển sang chấm tay được khi AI chấm lỗi");
+            throw new IllegalArgumentException("It can only be moved to manual grading when AI grading failed");
         }
 
         // With no answers there is nothing for the grader to look at. Assigning a blank attempt only creates a task
@@ -104,7 +104,7 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
         // there is nothing to grade.
         if (assessmentItemResponseRepository.findBySessionId(session.getId()).isEmpty()) {
             throw new IllegalArgumentException(
-                "Phiên thi này không có câu trả lời nào, không có gì để người chấm xem");
+                "This session has no answer, so there is nothing for a grader to look at");
         }
     }
 
@@ -115,7 +115,7 @@ public class HandOffGradingToHumanUseCase implements IUseCase<HandOffGradingToHu
      */
     private void logAlreadyHasResult(AssessmentSession session, AssessmentCandidateResult existing) {
         log.info(
-            "Phiên {} đã có kết quả {} ({}), không tạo lại.",
+            "Session {} already has result {} ({}), not creating it again.",
             session.getId(), existing.getId(), existing.getStatus());
     }
 

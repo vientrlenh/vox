@@ -92,7 +92,7 @@ public class PracticeSessionCleanupService {
             // inside is useless: Spring still throws UnexpectedRollbackException at commit
             // because the transaction was already marked rollback-only. Really measured -- the whole job dies,
             // no session gets closed, and they stay IN_PROGRESS across many runs.
-            log.warn("Xử lý sau khi đóng phiên {} thất bại.", session.getId(), exception);
+            log.warn("Post-close handling of session {} failed.", session.getId(), exception);
         }
     }
 }

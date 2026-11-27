@@ -32,15 +32,15 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Tách kỳ thi TẬP TRUNG khỏi bài kiểm tra TRÊN LỚP ở mọi read model chấm bài.
+ * Separates CENTRALIZED assessments from IN-CLASS tests in every grading read model.
  *
- * <p>Hai loại bài đi hai màn khác nhau — nhà trường điều phối kỳ thi tập trung, giáo viên
- * tạo bài tự chấm bài trên lớp. Trước khi có bộ lọc này, bảng điều phối liệt kê cả bài
- * trên lớp rồi bấm gán là bị chặn ở tầng dưới, còn hàng đợi của giáo viên thì trộn hai
- * loại vào một danh sách.
+ * <p>The two kinds go through two different screens -- the school coordinates centralized assessments, a teacher
+ * creates in-class tests and grades them themselves. Before this filter existed, the coordination board listed in-class
+ * tests too and assigning one was blocked at a lower layer, while the teacher's queue mixed the two
+ * kinds into one list.
  *
- * <p>Phải chạy trên Postgres thật vì đây là JPQL dựng bằng {@code em.createQuery}: sai
- * tên trường chỉ nổ lúc GỌI chứ không lúc biên dịch.
+ * <p>Must run on a real Postgres because this is JPQL built with {@code em.createQuery}: a wrong
+ * field name only blows up at CALL time, not at compile time.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
@@ -98,7 +98,7 @@ class GradingAssessmentKindFilterQueryTests {
         assertThat(page.totalElements()).isEqualTo(1);
     }
 
-    /** Bộ lọc bỏ trống vẫn trả cả hai — mặc định nằm ở use case, không ẩn trong SQL. */
+    /** An empty filter still returns both -- the default lives in the use case, not hidden in the SQL. */
     @Test
     void should_list_both_kinds_when_no_kind_is_given() {
         assertThat(assessmentGradingQueryRepository.searchAssignments(filter(null), 1, 20).content())

@@ -11,7 +11,7 @@ public record DateOfBirth(
             final LocalDate now = LocalDate.now();
             final int age = now.getYear() - value.getYear();
             if (age < ageThresHold) {
-                throw new IllegalArgumentException("Bạn chưa đủ tuổi để thực hiện đăng ký");
+                throw new IllegalArgumentException("You are not old enough to register");
             }
         }
     }

@@ -10,16 +10,16 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.domain.repository.InterestDimensionRepository;
 
 /**
- * Chuẩn hoá điểm thô của quiz sở thích thành vector [0,1] theo từng chiều.
+ * Normalizes the raw interest-quiz score into a [0,1] vector per dimension.
  *
- * Danh sách chiều đọc từ {@link InterestDimensionRepository} chứ không còn là hằng số cứng:
- * SYSTEM_ADMIN thêm chiều mới là hệ thống nhận ngay, không phải deploy lại (xem
- * V15__personalize.sql, mục 19. interest_dimensions, để biết vì sao phải bỏ hằng số cứng).
+ * The dimension list is read from {@link InterestDimensionRepository} and is no longer a hard-coded constant:
+ * when SYSTEM_ADMIN adds a new dimension the system picks it up immediately, with no redeploy (see
+ * V15__personalize.sql, section 19. interest_dimensions, for why the hard-coded constant had to go).
  *
- * Chấm theo kiểu ipsative (so sánh nội bộ trong chính học sinh đó, đúng bản chất forced-choice):
- * min-max hoá nên LUÔN có một chiều = 0.0 và một chiều = 1.0. Nó trả lời "trong các chiều này em
- * nghiêng về đâu", không trả lời "em thích mạnh tới mức nào". Khi mọi chiều bằng nhau thì trả 0.5
- * hết thay vì chia cho 0.
+ * Scored ipsatively (compared within the student themselves, the true nature of forced-choice):
+ * min-max scaling so there is ALWAYS one dimension = 0.0 and one dimension = 1.0. It answers "among these dimensions where does the student
+ * lean", not "how strongly do they like it". When all dimensions are equal it returns 0.5
+ * for everything instead of dividing by 0.
  */
 @Service
 @RequiredArgsConstructor

@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotNull;
 
 
 public record AllocateQuotaRequest(
-    @NotNull(message = "Cách phân bổ không được để trống")
+    @NotNull(message = "Allocation method must not be blank")
     DistributionMode mode,
 
     // @NotEmpty is removed because auto mode does not need this list

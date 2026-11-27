@@ -16,15 +16,15 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.school.SchoolGradeJpaEntity;
 import org.springframework.data.jpa.repository.Modifying;
 
-// school_grades giờ mang school_id trực tiếp, nên các truy vấn theo trường không còn phải JOIN
-// sang bảng khối lớp để suy ra schoolId như bản cũ -- phần lớn rút về derived query.
+// school_grades now carries school_id directly, so queries by school no longer have to JOIN
+// to the grade table to derive the schoolId like the old version -- most reduce to derived queries.
 public interface SpringDataSchoolGradeRepository extends JpaRepository<SchoolGradeJpaEntity, UUID>{
 
     Optional<SchoolGradeJpaEntity> findBySchoolIdAndCode(UUID schoolId, String code);
 
     Optional<SchoolGradeJpaEntity> findBySchoolIdAndName(UUID schoolId, String name);
 
-    // Nhận codes đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    // Receives codes already uppercased by the Impl; the entity side still wraps UPPER() in case old data has inconsistent case.
     @Query("""
         SELECT sg
         FROM SchoolGradeJpaEntity sg

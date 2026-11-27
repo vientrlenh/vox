@@ -31,18 +31,18 @@ import com.sep.vox.domain.service.question.QuestionStatusTransition;
 import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionCode;
 
 /**
- * Cập nhật trạng thái nhiều câu hỏi trong một request, theo ngữ nghĩa "thành công một phần":
- * câu nào hợp lệ thì cập nhật, câu nào không thì trả về trong {@code failed} kèm lý do.
+ * Updates the status of several questions in one request with "partial success" semantics:
+ * every valid question is updated, every other one is returned in {@code failed} together with the reason.
  *
- * <p>Use case này cố ý KHÔNG gọi lại {@link UpdateQuestionStatusUseCase}. Trước đây nó gọi, và vì
- * use case kia cũng {@code @Transactional} (propagation REQUIRED) nên nó tham gia chính transaction
- * này; câu hỏi đầu tiên bị từ chối làm Spring đánh dấu transaction rollback-only, vòng lặp bắt
- * exception rồi trả về bình thường, và lúc commit thì nổ {@code UnexpectedRollbackException} →
- * HTTP 500, đồng thời mất luôn những câu đã cập nhật thành công. Cả hai đường đi giờ dùng chung
- * {@link QuestionStatusTransition} — một hàm thuần trả về lý do từ chối thay vì ném exception.
+ * <p>This use case deliberately does NOT call {@link UpdateQuestionStatusUseCase}. It used to, and because
+ * that use case is also {@code @Transactional} (propagation REQUIRED) it joined this very transaction;
+ * the first rejected question made Spring mark the transaction rollback-only, the loop caught the
+ * exception and returned normally, and at commit {@code UnexpectedRollbackException} blew up ->
+ * HTTP 500, and the questions that had been updated successfully were lost as well. Both paths now share
+ * {@link QuestionStatusTransition} -- a pure function that returns the rejection reason instead of throwing.
  *
- * <p>Toàn bộ dữ liệu cần thiết được nạp theo lô trước vòng lặp, nên số query không phụ thuộc vào
- * số câu hỏi trong danh sách.
+ * <p>All the data needed is loaded in batches before the loop, so the number of queries does not depend on
+ * the number of questions in the list.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,7 +58,7 @@ public class BulkUpdateQuestionStatusUseCase
     @Transactional
     public BulkUpdateQuestionStatusResponse execute(BulkUpdateQuestionStatusCommand input) {
         if (input.questionIds() == null || input.questionIds().isEmpty()) {
-            throw new IllegalArgumentException("Danh sách câu hỏi không được để trống");
+            throw new IllegalArgumentException("The question list must not be empty");
         }
 
         String action = StringNormalization.normalizeCode(input.action());
@@ -124,8 +124,8 @@ public class BulkUpdateQuestionStatusUseCase
     }
 
     /**
-     * Kèm mã và trạng thái hiện tại của câu hỏi vào lý do bị bỏ qua, để client hiển thị được danh
-     * sách "câu nào, đang ở đâu, vì sao" mà không phải tra ngược sang danh sách đang xem.
+     * Adds the question's code and current status to the skip reason, so the client can show a
+     * "which question, where it is, why" list without looking it up in the list it is displaying.
      */
     private BulkUpdateQuestionStatusFailure failure(Question question, String reasonCode, String reason) {
         return new BulkUpdateQuestionStatusFailure(

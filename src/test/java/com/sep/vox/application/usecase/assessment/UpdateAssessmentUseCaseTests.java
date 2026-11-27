@@ -121,7 +121,7 @@ class UpdateAssessmentUseCaseTests {
             .thenReturn(List.of());
     }
 
-    // --- CLASS_TEST: khung mở/đóng mới bị đồng bộ xuống ca thi, phải đủ dài ---
+    // --- CLASS_TEST: the new opening/closing window is synced down to the assessment schedule, so it must be long enough ---
 
     @Test
     void should_reject_class_test_window_shorter_than_assessment_time() {
@@ -131,7 +131,7 @@ class UpdateAssessmentUseCaseTests {
         // Shrinks the window to 1 hour while the assessment duration is 3 hours.
         assertThatThrownBy(() -> useCase.execute(command(open, open.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("thời gian đóng bài");
+            .hasMessageContaining("closing time");
         verify(assessmentScheduleRepository, never()).save(any());
         verify(assessmentRepository, never()).save(any());
     }
@@ -167,7 +167,7 @@ class UpdateAssessmentUseCaseTests {
         verify(assessmentScheduleRepository).save(schedule);
     }
 
-    // --- Sửa giờ bài trên lớp ghi thẳng xuống ca thi, nên phải soát cả ba luật chống trùng ---
+    // --- Editing the time of a class test writes straight to its assessment schedule, so all three anti-overlap rules must be checked ---
 
     @Test
     void should_reject_class_test_window_change_when_a_student_is_busy_in_the_new_window() {
@@ -182,7 +182,7 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("đã có ca thi khác");
+            .hasMessageContaining("already has another assessment schedule");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -203,7 +203,7 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("Giám thị");
+            .hasMessageContaining("The proctor");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -220,7 +220,7 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(open, close.plus(1, ChronoUnit.HOURS))))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("Phòng học");
+            .hasMessageContaining("The room");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -234,7 +234,7 @@ class UpdateAssessmentUseCaseTests {
         return candidate;
     }
 
-    // --- Khung mở/đóng phải nằm trong hạn gói dịch vụ của trường ---
+    // --- The opening/closing window must lie within the school's subscription plan term ---
 
     /**
      * Look at the school of the test ITSELF, not the caller's school: the test already exists, so
@@ -255,12 +255,12 @@ class UpdateAssessmentUseCaseTests {
     void should_reject_when_new_window_falls_outside_subscription_period() {
         Assessment assessment = classTest(3600);
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
-        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("The closing time must be within the school's subscription plan term"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(command(open, close)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("hạn gói dịch vụ");
+            .hasMessageContaining("subscription plan term");
         // Block BEFORE writing: the sessions of a class test are synchronized to this window, so
         // letting it through would push the sessions beyond the plan limit as well.
         verify(assessmentRepository, never()).save(any());
@@ -281,11 +281,11 @@ class UpdateAssessmentUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
+            .hasMessageContaining("An assessment must have an opening time and a closing time");
         verify(assessmentRepository, never()).save(any());
     }
 
-    // --- Bài trên lớp đã publish: sửa duration/maxAttempt phải soi lại token quota ---
+    // --- A published class test: editing duration/maxAttempt must re-check the token quota ---
 
     @Test
     void should_reject_editing_scheduled_class_test_when_token_quota_exceeded() {
@@ -294,13 +294,13 @@ class UpdateAssessmentUseCaseTests {
         assessment.setOpenAt(open);
         assessment.setCloseAt(close);
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
-        doThrow(new BusinessRuleViolationException("Đã vượt quá hạn mức"))
+        doThrow(new BusinessRuleViolationException("The quota has been exceeded"))
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(assessment);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, null, null, null, null, null, null, 2 * 3600, null, null, null, null, null)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("vượt quá hạn mức");
+            .hasMessageContaining("quota has been exceeded");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -335,7 +335,7 @@ class UpdateAssessmentUseCaseTests {
         verify(assessmentRepository).save(assessment);
     }
 
-    // --- Kỳ thi thường: ca thi độc lập, đổi khung kỳ thi phải kiểm lại ca thi đã có ---
+    // --- Regular assessment: schedules are independent, so changing the assessment window must re-check the existing schedules ---
 
     @Test
     void should_reject_when_new_assessment_window_leaves_schedules_outside() {
@@ -348,7 +348,7 @@ class UpdateAssessmentUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
                 command(open.plus(1, ChronoUnit.DAYS), close.plus(1, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("nằm ngoài");
+            .hasMessageContaining("outside");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -365,7 +365,7 @@ class UpdateAssessmentUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, null, null, null, null, null, null, 2 * 3600, null, null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("vượt quá thời lượng");
+            .hasMessageContaining("exceeds the duration");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -397,7 +397,7 @@ class UpdateAssessmentUseCaseTests {
         verify(assessmentRepository).save(any(Assessment.class));
     }
 
-    // --- Kỳ thi đã bắt đầu thì khoá chỉnh sửa thông tin ---
+    // --- Once the assessment has started, editing its information is locked ---
 
     @Test
     void should_reject_updating_centralized_assessment_after_it_started() {
@@ -408,7 +408,7 @@ class UpdateAssessmentUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
                 assessmentId, "Tên mới", null, null, null, null, null, null, null, null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã bắt đầu");
+            .hasMessageContaining("has started");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -436,7 +436,7 @@ class UpdateAssessmentUseCaseTests {
         verify(assessmentRepository).save(assessment);
     }
 
-    // --- Cấu hình giám sát (stream) ---
+    // --- Proctoring configuration (stream) ---
 
     @Test
     void should_update_stream_config_when_types_provided() {
@@ -495,11 +495,11 @@ class UpdateAssessmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(streamCommand(List.of("CAMERA"), null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã bắt đầu");
+            .hasMessageContaining("has started");
         verify(assessmentRepository, never()).save(any());
     }
 
-    // --- Chủ tịch hội đồng sửa được thông tin kỳ thi tập trung như quản trị trường ---
+    // --- A CHAIR can edit a centralized assessment like a school admin ---
 
     @Test
     void should_allow_the_chair_to_update_a_centralized_assessment() {
@@ -526,11 +526,11 @@ class UpdateAssessmentUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentCommand(
             assessmentId, "Mới", null, null, null, null, null, null, null, null, null, null, null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Quyền truy cập bị từ chối");
+            .hasMessageContaining("Access denied");
         verify(assessmentRepository, never()).save(any());
     }
 
-    /** Hạ người gọi từ quản trị trường xuống giáo viên chỉ giữ vai trò CHAIR của chính kỳ thi đó. */
+    /** Demotes the caller from school admin to a teacher who only holds the CHAIR role of that very assessment. */
     private void givenCallerIsChairInsteadOfSchoolAdmin() {
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
             new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "TEACHER", "Giáo viên")

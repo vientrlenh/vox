@@ -38,7 +38,7 @@ public final class OrderItemMapper {
         try {
             return OrderItemType.valueOf(type);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại dòng hàng khi chuyển đổi sang domain model không hợp lệ: " + type);
+            throw new IllegalArgumentException("Invalid order item type when converting to the domain model: " + type);
         }
     }
 

@@ -14,7 +14,7 @@ public final class KafkaEventHeaders {
     public static UUID readEventId(ConsumerRecord<String, String> record) {
         UUID eventId = readEventIdOrNull(record);
         if (eventId == null) {
-            throw new IllegalStateException("Thiếu hoặc sai header '" + HEADER_EVENT_ID + "'  tại offset " + record.offset());
+            throw new IllegalStateException("Missing or invalid header '" + HEADER_EVENT_ID + "'  at offset " + record.offset());
         }
         return eventId;
     }
@@ -27,12 +27,12 @@ public final class KafkaEventHeaders {
         Header header = record.headers().lastHeader(HEADER_EVENT_TYPE);
         if (header == null || header.value() == null) {
             throw new IllegalStateException(
-                "Thiếu header '" + HEADER_EVENT_TYPE + "' tại offset " + record.offset());
+                "Missing header '" + HEADER_EVENT_TYPE + "' at offset " + record.offset());
         }
         String eventType = new String(header.value(), StandardCharsets.UTF_8).trim();
         if (eventType.isEmpty()) {
             throw new IllegalStateException(
-                "Header '" + HEADER_EVENT_TYPE + "' rỗng tại offset " + record.offset());
+                "Header '" + HEADER_EVENT_TYPE + "' is empty at offset " + record.offset());
         }
         return eventType;
     }

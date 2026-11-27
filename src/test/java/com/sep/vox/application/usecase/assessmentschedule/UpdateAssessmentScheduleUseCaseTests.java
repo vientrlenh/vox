@@ -82,8 +82,8 @@ class UpdateAssessmentScheduleUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
-        // Validator thật chạy trên hai repository đã mock: luật kiểm tra phòng vẫn được test đúng
-        // như trước khi nó được tách ra khỏi use case.
+        // The real validator runs on the two mocked repositories: the room check rule is still tested exactly
+        // as it was before it was extracted from the use case.
         assessmentScheduleProctorRepository = mock(AssessmentScheduleProctorRepository.class);
         assessmentCandidateRepository = mock(AssessmentCandidateRepository.class);
         subscriptionPeriodGuardService = mock(SubscriptionPeriodGuardService.class);
@@ -196,7 +196,7 @@ class UpdateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("Giám thị");
+            .hasMessageContaining("The proctor");
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
@@ -216,7 +216,7 @@ class UpdateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("đã có ca thi khác");
+            .hasMessageContaining("already has another assessment schedule");
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
@@ -270,7 +270,7 @@ class UpdateAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("thời gian làm bài");
+            .hasMessageContaining("answering time");
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
@@ -285,7 +285,7 @@ class UpdateAssessmentScheduleUseCaseTests {
         // newStart/newEnd are the next day, outside the assessment's open/close window.
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("mở và đóng");
+            .hasMessageContaining("opening and closing");
         verify(assessmentScheduleRepository, never()).updateAtomic(any(), any(), anyBoolean(), any(), any());
     }
 
@@ -322,12 +322,12 @@ class UpdateAssessmentScheduleUseCaseTests {
         when(assessmentRepository.findById(assessmentId)).thenReturn(Optional.of(assessment));
         when(assessmentScheduleRepository.findByIdForUpdate(scheduleId)).thenReturn(Optional.of(schedule(AssessmentScheduleStatus.DRAFT)));
         when(assessmentScheduleRepository.existsOverlapping(roomId, newStart, newEnd, scheduleId)).thenReturn(false);
-        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("The closing time must be within the school's subscription plan term"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentScheduleCommand(scheduleId, null, false, newStart, newEnd)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("hạn gói dịch vụ");
+            .hasMessageContaining("subscription plan term");
         verify(assessmentScheduleRepository, never()).save(any());
         verify(assessmentRepository, never()).save(any());
     }
@@ -345,8 +345,8 @@ class UpdateAssessmentScheduleUseCaseTests {
     }
 
     /**
-     * Kỳ thi tập trung đi đường khác: ca thi đã bị ràng phải nằm TRONG khung mở/đóng của kỳ thi, mà
-     * khung đó đã được soi hạn gói lúc tạo/sửa kỳ thi — soi lại ở đây là thừa.
+     * A centralized assessment takes another path: its schedules are bound to lie WITHIN the assessment's opening/closing window, and
+     * that window was already checked against the plan term when the assessment was created/edited -- checking again here is redundant.
      */
     @Test
     void should_not_check_subscription_period_for_centralized_schedule() {

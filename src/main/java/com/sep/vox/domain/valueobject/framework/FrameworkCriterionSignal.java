@@ -8,16 +8,16 @@ public record FrameworkCriterionSignal(
 ) {
     public FrameworkCriterionSignal {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("Code của dấu hiệu không được để trống");
+            throw new IllegalArgumentException("The signal code must not be blank");
         }
         if (description == null || description.isBlank()) {
-            throw new IllegalArgumentException("Mô tả của dấu hiệu không được để trống");
+            throw new IllegalArgumentException("The signal description must not be blank");
         }
         if (importance == null) {
-            throw new IllegalArgumentException("Độ quan trọng của dấu hiệu không được để trống");
+            throw new IllegalArgumentException("The signal importance must not be blank");
         }
         if (evidenceHint != null && evidenceHint.isBlank()) {
-            throw new IllegalArgumentException("Dấu hiệu của chứng cứ nên bỏ trống hoặc không hoàn toàn chứa khoảng trắng (nếu có)");
+            throw new IllegalArgumentException("The evidence signal should be left empty or must not consist only of whitespace (if present)");
         }
     }
 }

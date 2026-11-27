@@ -41,7 +41,7 @@ public class ViewSchoolRubricCriterionDetailsUseCase implements IUseCase<ViewSch
         requireActiveSchoolMember(query.schoolId());
 
         RubricCriterion criterion = rubricCriterionRepository.findById(query.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Criterion not found."));
         requireSchoolOwnedCriterion(criterion, query.schoolId());
 
         return rubricCriterionDtoMapper.toDto(criterion);
@@ -50,28 +50,28 @@ public class ViewSchoolRubricCriterionDetailsUseCase implements IUseCase<ViewSch
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
+                .orElseThrow(() -> new ForbiddenException("The account is not linked to a school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to access data of another school.");
         }
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
+            throw new ForbiddenException("This school is disabled.");
         }
     }
 
     private void requireSchoolOwnedCriterion(RubricCriterion criterion, UUID schoolId) {
         RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
+                .orElseThrow(() -> new ResourceNotFoundException("The Rubric Version containing this criterion was not found."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này không thuộc về trường học của bạn.");
+            throw new ForbiddenException("Action denied: this criterion does not belong to your school.");
         }
     }
 }

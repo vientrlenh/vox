@@ -30,39 +30,39 @@ public class AssessmentBlueprintStructureValidator {
 
     public void validateSections(List<CreateAssessmentBlueprintSectionCommand> sections) {
         if (sections.isEmpty()) {
-            throw new IllegalArgumentException("Blueprint version phải có ít nhất một section");
+            throw new IllegalArgumentException("A blueprint version must have at least one section");
         }
         Set<Integer> sectionOrders = new HashSet<Integer>();
         BigDecimal sectionWeightSum = BigDecimal.ZERO;
         for (CreateAssessmentBlueprintSectionCommand section : sections) {
             if (!sectionOrders.add(section.order())) {
-                throw new IllegalArgumentException("Thứ tự section không được trùng lặp");
+                throw new IllegalArgumentException("Section order must not be duplicated");
             }
             validateSectionSlots(section);
             sectionWeightSum = sectionWeightSum.add(defaultWeight(section.sectionWeight()));
         }
         if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalArgumentException("Tổng trọng số section phải bằng 1.00");
+            throw new IllegalArgumentException("The total section weight must equal 1.00");
         }
     }
 
     private void validateSectionSlots(CreateAssessmentBlueprintSectionCommand section) {
         List<CreateAssessmentBlueprintSlotCommand> slots = section.slots() == null ? List.of() : section.slots();
         if (slots.isEmpty()) {
-            throw new IllegalArgumentException("Mỗi section phải có ít nhất một slot");
+            throw new IllegalArgumentException("Each section must have at least one slot");
         }
         Set<Integer> slotOrders = new HashSet<Integer>();
         BigDecimal slotWeightSum = BigDecimal.ZERO;
         for (CreateAssessmentBlueprintSlotCommand slot : slots) {
             if (!slotOrders.add(slot.order())) {
-                throw new IllegalArgumentException("Thứ tự slot trong section không được trùng lặp");
+                throw new IllegalArgumentException("Slot order within a section must not be duplicated");
             }
             validateSlot(slot);
             slotWeightSum = slotWeightSum.add(defaultWeight(slot.weight()));
         }
         if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
             throw new IllegalArgumentException(
-                "Tổng trọng số ô câu hỏi trong phần \"" + section.title() + "\" phải bằng 1.00");
+                "The total weight of the question slots in section \"" + section.title() + "\" must equal 1.00");
         }
     }
 
@@ -72,24 +72,24 @@ public class AssessmentBlueprintStructureValidator {
             return;
         }
         if (slot.fixedQuestionId() != null) {
-            throw new IllegalArgumentException("Slot SELECTION không được có fixedQuestionId");
+            throw new IllegalArgumentException("A SELECTION slot must not have fixedQuestionId");
         }
         if (slot.selectionSpec() == null) {
-            throw new IllegalArgumentException("Slot SELECTION bắt buộc phải có selectionSpec");
+            throw new IllegalArgumentException("A SELECTION slot must have selectionSpec");
         }
     }
 
     private void validateFixedSlot(CreateAssessmentBlueprintSlotCommand slot) {
         if (slot.fixedQuestionId() == null) {
-            throw new IllegalArgumentException("Slot FIXED bắt buộc phải có fixedQuestionId");
+            throw new IllegalArgumentException("A FIXED slot must have fixedQuestionId");
         }
         if (slot.selectionSpec() != null) {
-            throw new IllegalArgumentException("Slot FIXED không được có selectionSpec");
+            throw new IllegalArgumentException("A FIXED slot must not have selectionSpec");
         }
         Question question = questionRepository.findById(slot.fixedQuestionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
+            .orElseThrow(() -> new ResourceNotFoundException("Fixed question for the slot not found"));
         if (question.getStatus() != QuestionStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
+            throw new IllegalArgumentException("The fixed question for a slot must be in PUBLISHED status");
         }
     }
 

@@ -44,7 +44,7 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
 
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.ASSESSMENT_POLICY);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên trống hoặc không chứa dòng dữ liệu hợp lệ.");
+            throw new IllegalArgumentException("The uploaded file is empty or contains no valid data row.");
         }
 
         Instant now = Instant.now();
@@ -67,9 +67,9 @@ public class PreviewSystemAssessmentPolicyImportFromFileUseCase implements IUseC
     private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
     }
 

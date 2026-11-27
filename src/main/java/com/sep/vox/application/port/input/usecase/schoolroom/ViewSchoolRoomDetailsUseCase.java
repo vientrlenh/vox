@@ -21,6 +21,6 @@ public class ViewSchoolRoomDetailsUseCase implements IUseCase<ViewSchoolRoomDeta
     public SchoolRoomFromDto execute(ViewSchoolRoomDetailsQuery query) {
         return schoolRoomRepository.findById(query.id())
                 .map(SchoolRoomDtoMapper::toDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("No room found with the given ID."));
     }
 }

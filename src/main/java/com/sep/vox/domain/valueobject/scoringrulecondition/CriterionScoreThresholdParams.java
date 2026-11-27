@@ -8,10 +8,10 @@ public record CriterionScoreThresholdParams(
 ) implements ScoringRuleConditionParams {
     public CriterionScoreThresholdParams {
         if (criterionCode == null || criterionCode.isBlank()) {
-            throw new IllegalArgumentException("Criterion code không được để trống");
+            throw new IllegalArgumentException("The criterion code must not be blank");
         }
         if (score == null || score.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Điểm số không được để trống hoặc dưới 0");
+            throw new IllegalArgumentException("The score must not be blank or below 0");
         }
     }
 }

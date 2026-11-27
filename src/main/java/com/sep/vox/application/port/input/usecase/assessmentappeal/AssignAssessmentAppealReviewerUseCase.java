@@ -90,7 +90,7 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
         AssignAssessmentAppealReviewerCommand command, AssessmentResultAppeal appeal, Instant now) {
         Instant deadlineAt = command.deadlineAt() == null ? appeal.getDeadline() : command.deadlineAt();
         if (deadlineAt != null && deadlineAt.isBefore(now)) {
-            throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
+            throw new IllegalArgumentException("The grading deadline must be in the future.");
         }
         return deadlineAt;
     }
@@ -98,16 +98,16 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
     private void requireAssignableReviewer(
         AssignAssessmentAppealReviewerCommand command, AssessmentAppealAccessService.AppealContext context) {
         if (context.appeal().getStatus() != AssessmentAppealStatus.APPROVED) {
-            throw new IllegalArgumentException("Chỉ có thể phân công người chấm cho đơn phúc khảo đã được duyệt.");
+            throw new IllegalArgumentException("A grader can only be assigned to an approved appeal.");
         }
         if (command.reviewerId() == null) {
-            throw new IllegalArgumentException("Thiếu người chấm phúc khảo.");
+            throw new IllegalArgumentException("The appeal grader is missing.");
         }
         if (command.reviewerId().equals(context.studentId())) {
-            throw new IllegalArgumentException("Không thể phân công chính thí sinh làm người chấm.");
+            throw new IllegalArgumentException("The candidate cannot be assigned as the grader.");
         }
         if (!assessmentAppealAccessService.isTeacherOfSchool(command.reviewerId(), context.schoolId())) {
-            throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
+            throw new IllegalArgumentException("The grader must be a teacher of the same school as the assessment.");
         }
     }
 
@@ -117,7 +117,7 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
      */
     private void requireNoOpenAssignment(AssessmentCandidateResult candidateResult) {
         if (assessmentGradingAssignmentRepository.findOpenByCandidateResultId(candidateResult.getId()).isPresent()) {
-            throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm ở vòng khác.");
+            throw new ResourceDuplicatedException("This submission is being graded by a teacher in another round.");
         }
     }
 
@@ -137,8 +137,8 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
         }
         if (overrideReason == null) {
             throw new IllegalArgumentException(
-                "Giáo viên này đã từng chấm bài thi này. Chọn người khác, "
-                    + "hoặc nhập lý do nếu vẫn muốn phân công.");
+                "This teacher has graded this submission before. Choose someone else, "
+                    + "or enter a reason if you still want to assign them.");
         }
         appeal.setReviewerOverrideReason(overrideReason);
     }

@@ -3,19 +3,19 @@ package com.sep.vox.application.port.input.usecase.question;
 import com.sep.vox.domain.model.question.QuestionAssetType;
 
 /**
- * Kiểm tra một asset có đủ nội dung để AI làm việc được không.
+ * Checks whether an asset has enough content for the AI to work with.
  *
- * <p><b>Vì sao bắt buộc</b>: Python KHÔNG hề nhìn thấy tấm ảnh hay nghe đoạn audio --
- * {@code QuestionAssetContext} chỉ mang {@code {type, transcript, description, alt_text}}, toàn
- * chữ. Và nhánh AI tự phân tích asset đang tắt (auto-publish bị bỏ ở cả Create lẫn Update), nên
- * những dòng chữ này là <b>toàn bộ</b> hiểu biết của AI về tài nguyên.
+ * <p><b>Why it is required</b>: Python does NOT see the image or hear the audio at all --
+ * {@code QuestionAssetContext} only carries {@code {type, transcript, description, alt_text}}, all
+ * text. And the branch where the AI analyses the asset itself is switched off (auto-publish was dropped in both Create and
+ * Update), so this text is the AI's <b>entire</b> knowledge of the resource.
  *
- * <p>Để trống thì mỗi lượt hỏi, prompt nhận đúng chuỗi {@code "Asset details: unavailable"} --
- * follow-up ra câu chung chung không bám được chi tiết nào, và {@code ValidityNode} chấm on-topic
- * mà không biết đề nói về cái gì. Hỏng lặng lẽ: không lỗi, không log, chỉ là điểm sai.
+ * <p>If left blank, every question turn gets exactly the string {@code "Asset details: unavailable"} in the prompt --
+ * the follow-up is generic and cannot hold on to any detail, and {@code ValidityNode} grades on-topic
+ * without knowing what the question is about. A silent failure: no error, no log, just a wrong score.
  *
- * <p>Đặt ở một chỗ thay vì chép vào cả Create lẫn Update: hai bản chép sẽ lệch nhau, và lệch ở
- * đây nghĩa là sửa được asset thành trạng thái mà tạo mới thì bị chặn.
+ * <p>Kept in one place instead of copied into both Create and Update: two copies would drift apart, and drifting here
+ * means an asset can be edited into a state that creation would reject.
  */
 public final class QuestionAssetContentValidator {
 
@@ -34,7 +34,7 @@ public final class QuestionAssetContentValidator {
         }
 
         if (isBlank(url)) {
-            throw new IllegalArgumentException("URL tài nguyên không được để trống");
+            throw new IllegalArgumentException("The resource URL must not be empty");
         }
 
         if (type == QuestionAssetType.IMAGE) {
@@ -47,23 +47,23 @@ public final class QuestionAssetContentValidator {
 
     private static void requireTextPassageContent(String transcript) {
         if (isBlank(transcript)) {
-            throw new IllegalArgumentException("Nội dung đoạn văn không được để trống");
+            throw new IllegalArgumentException("The passage content must not be empty");
         }
     }
 
     private static void requireImageDescription(String description, String altText) {
         if (isBlank(description) && isBlank(altText)) {
             throw new IllegalArgumentException(
-                "Ảnh phải có mô tả nội dung (hoặc alt text). AI không nhìn thấy ảnh — "
-                    + "nó chỉ biết ảnh qua phần mô tả này, để trống thì AI sẽ hỏi và chấm chung chung.");
+                "An image needs a content description (or alt text). The AI cannot see the image — "
+                    + "it only knows the image through this description, and if it is left empty the AI will ask and grade in generic terms.");
         }
     }
 
     private static void requireMediaTranscript(String transcript) {
         if (isBlank(transcript)) {
             throw new IllegalArgumentException(
-                "Audio/video phải có transcript. AI không nghe được tệp — "
-                    + "nó chỉ biết nội dung qua transcript này, để trống thì AI sẽ hỏi và chấm chung chung.");
+                "Audio/video needs a transcript. The AI cannot listen to the file — "
+                    + "it only knows the content through this transcript, and if it is left empty the AI will ask and grade in generic terms.");
         }
     }
 

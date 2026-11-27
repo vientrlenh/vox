@@ -44,14 +44,14 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
     @Transactional
     public AssessmentCandidateDto execute(AddAssessmentCandidateCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentDirectoryAccessService.AssessmentDirectoryScope scope = assessmentDirectoryAccessService.resolve(assessment);
         UUID currentUserId = scope.callerId();
         AssessmentEditingGuard.requireScheduleEditable(assessment);
         requireAddableStudent(assessment, scope, input.studentId());
 
         if (assessmentCandidateRepository.existsByAssessmentIdAndStudentId(assessment.getId(), input.studentId())) {
-            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("The candidate already exists in this assessment");
         }
 
         AssessmentCandidate candidate = AssessmentCandidate.createFresh(assessment.getId(), input.studentId(), currentUserId,
@@ -65,17 +65,17 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
         Assessment assessment, AssessmentDirectoryAccessService.AssessmentDirectoryScope scope, UUID studentId) {
         // The candidate must be a school_user with the STUDENT role in the same school as the assessment.
         if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), studentId)) {
-            throw new IllegalArgumentException("Học sinh không thuộc trường của bài kiểm tra");
+            throw new IllegalArgumentException("The student does not belong to the school of the assessment");
         }
         // The chair of a class test can only add students of the class they are in charge of -- exactly matching
         // the scope that `ViewAssessmentDirectoryStudentsUseCase` lets them see.
         if (!scope.schoolWide() && !isInCallerClasses(scope, studentId)) {
-            throw new ForbiddenException("Học sinh không thuộc lớp bạn phụ trách");
+            throw new ForbiddenException("The student is not in a class you are in charge of");
         }
         boolean isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(studentId).stream()
             .anyMatch(role -> SchoolRoleCodes.STUDENT.equals(role.roleCode()));
         if (!isStudent) {
-            throw new IllegalArgumentException("Người dùng không phải là học sinh");
+            throw new IllegalArgumentException("The user is not a student");
         }
     }
 

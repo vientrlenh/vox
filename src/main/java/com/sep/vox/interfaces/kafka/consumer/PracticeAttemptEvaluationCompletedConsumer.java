@@ -88,7 +88,7 @@ public class PracticeAttemptEvaluationCompletedConsumer {
             UUID.fromString(failed.practiceResponseId())
         );
         log.warn(
-            "Chấm luyện tập hỏng practiceResponseId={} lỗi={}",
+            "Practice grading failed practiceResponseId={} error={}",
             failed.practiceResponseId(),
             failed.payload() == null ? null : failed.payload().error()
         );

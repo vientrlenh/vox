@@ -3,14 +3,14 @@ package com.sep.vox.application.response.output;
 import java.math.BigDecimal;
 
 /**
- * Thông tin để trường TỰ chuyển khoản khi app ngân hàng không quét được mã.
+ * The details for the school to transfer money ITSELF when the banking app cannot scan the code.
  *
- * <p>Đi kèm chứ không thay thế chuỗi QR: một mã không quét được là chuyện thường (camera kém, app
- * cũ, ảnh chụp màn hình), và lúc đó thứ duy nhất cứu được giao dịch là bộ số này.
+ * <p>Comes alongside the QR string and does not replace it: a code that cannot be scanned is common (poor camera, old
+ * app, a screenshot), and then this set of numbers is the only thing that can save the transaction.
  *
- * <p>{@code transferContent} là trường NGUY HIỂM nhất ở đây. Nó là thứ cổng dùng để khớp khoản tiền
- * với đơn; người dùng gõ sai thì tiền vẫn về tài khoản nhưng không đơn nào nhận, và hệ thống không
- * có luồng hoàn tiền nào — phải đối soát tay. Giao diện phải làm nổi bật và cho copy, đừng bắt gõ.
+ * <p>{@code transferContent} is the most DANGEROUS field here. It is what the gateway uses to match the money
+ * to the order; if the user mistypes it the money still lands in the account but no order receives it, and the system has
+ * no refund flow -- it must be reconciled by hand. The UI must highlight it and let people copy it, not make them type it.
  */
 public record BankTransferDetails(
     String bankBin,

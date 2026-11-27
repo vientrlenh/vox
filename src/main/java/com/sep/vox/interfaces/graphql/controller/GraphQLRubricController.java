@@ -591,7 +591,6 @@ public class GraphQLRubricController {
     }
 
 
-    // GraphQL: TÌM KIẾM TIÊU CHÍ (CRITERIA) CHO SYSTEM ADMIN
     @QueryMapping(name = "searchSystemRubricCriteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<RubricCriterionDto> searchSystemRubricCriteria(
@@ -610,7 +609,6 @@ public class GraphQLRubricController {
         return searchSystemRubricCriteriaUseCase.execute(query);
     }
 
-    // GraphQL: TÌM KIẾM TIÊU CHÍ (CRITERIA) CHO SCHOOL ADMIN
     @QueryMapping(name = "searchSchoolRubricCriteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<RubricCriterionDto> searchSchoolRubricCriteria(

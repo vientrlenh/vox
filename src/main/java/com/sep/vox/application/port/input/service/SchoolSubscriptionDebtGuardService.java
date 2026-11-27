@@ -10,22 +10,22 @@ import com.sep.vox.domain.model.school.SchoolBalance;
 import com.sep.vox.domain.repository.SchoolBalanceRepository;
 
 /**
- * Trường "bị khóa" khi số dư ví tự nạp âm, tức chi phí AI thật đã tiêu quá cả hạn mức kèm gói lẫn
- * số tiền trường đã nạp -- xem {@link SchoolBalance#isInDebt()}.
+ * A school is "locked" when its self-funded balance is negative, i.e. the real AI cost has exceeded both the plan quota and
+ * the money the school has topped up -- see {@link SchoolBalance#isInDebt()}.
  *
- * <p>Khóa theo TRƯỜNG chứ không theo gói đăng ký, và đó là lý do tham số ở đây là {@code schoolId}:
- * số dư thuộc về trường và sống xuyên qua mọi lần gia hạn/đổi gói (V2 mục 2), nên nhận
- * {@code subscriptionId} rồi tự tra ngược sẽ ngụ ý sai rằng nợ thuộc về một kỳ đăng ký nào đó.
+ * <p>Locked per SCHOOL, not per subscription, which is why the parameter here is {@code schoolId}:
+ * the balance belongs to the school and lives across every renewal/plan change (V2 section 2), so accepting
+ * {@code subscriptionId} and looking back up would wrongly imply that the debt belongs to some subscription period.
  *
- * <p>KHÔNG còn tách theo QuotaType. Trước đây nợ là {@code used_amount_vnd > total_allocated_amount_vnd}
- * của TỪNG ví nên hỏi được "ví thi có đang nợ không"; giờ nợ nằm ở số dư -- một túi duy nhất của
- * trường -- nên câu hỏi đó không còn dữ liệu để trả lời. Ví hạn mức chỉ còn diễn tả "gói cấp bao
- * nhiêu / đã tiêu bao nhiêu trong số đó", và used không bao giờ vượt total nữa (xem
+ * <p>NO LONGER split by QuotaType. Before, debt was {@code used_amount_vnd > total_allocated_amount_vnd}
+ * of EACH quota record so you could ask "is the assessment quota in debt"; now debt lives in the balance -- a single pocket of the
+ * school -- so that question no longer has data to answer it. The quota record only expresses "how much the plan grants /
+ * how much of it has been spent", and used never exceeds total any more (see
  * ConsumeQuotaService).
  *
- * <p>Không có cờ/bảng riêng lưu trạng thái khóa -- suy trực tiếp từ số dư mỗi lần gọi nên luôn chính
- * xác tức thời, và tự "mở khóa" ngay khi trường nạp thêm tiền đưa số dư về không âm, không cần bước
- * reconcile nào.
+ * <p>There is no separate flag/table storing the lock state -- it is derived directly from the balance on every call so it is always
+ * exact and immediate, and it "unlocks" itself as soon as the school tops up and brings the balance back to non-negative, with no
+ * reconcile step.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,8 +34,8 @@ public class SchoolSubscriptionDebtGuardService {
     private final SchoolBalanceRepository schoolBalanceRepository;
 
     /**
-     * Chưa có dòng số dư nào = trường chưa từng nạp và cũng chưa từng tiêu vượt hạn mức = KHÔNG nợ.
-     * Ví rỗng và ví số dư 0 là cùng một nghĩa -- xem {@link SchoolBalance#emptyFor}.
+     * No balance row = the school has never topped up and never overspent the quota = NOT in debt.
+     * An empty balance and a balance of 0 mean the same thing -- see {@link SchoolBalance#emptyFor}.
      */
     public boolean isSchoolLocked(UUID schoolId) {
         return schoolBalanceRepository.findBySchoolId(schoolId)
@@ -46,7 +46,7 @@ public class SchoolSubscriptionDebtGuardService {
     public void requireSchoolNotLocked(UUID schoolId) {
         if (isSchoolLocked(schoolId)) {
             throw new BusinessRuleViolationException(
-                "Trường đang bị khóa do chi phí AI thực tế vượt hạn mức, vui lòng thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục sử dụng"
+                "The school is locked because the actual AI cost exceeded the quota; please pay or renew/upgrade the plan to continue using the service"
             );
         }
     }

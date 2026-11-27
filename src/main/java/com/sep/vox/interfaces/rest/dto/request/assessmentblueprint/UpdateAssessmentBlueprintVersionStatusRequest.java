@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 public record UpdateAssessmentBlueprintVersionStatusRequest(
-    @NotBlank(message = "Action là bắt buộc")
-    @Pattern(regexp = "PUBLISH|ARCHIVE", message = "Action không hợp lệ")
+    @NotBlank(message = "Action is required")
+    @Pattern(regexp = "PUBLISH|ARCHIVE", message = "Action is invalid")
     String action,
     String note
 ) {

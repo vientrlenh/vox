@@ -18,27 +18,27 @@ public interface SpringDataSchoolBalanceRepository extends JpaRepository<SchoolB
 
     Optional<SchoolBalanceJpaEntity> findBySchoolId(UUID schoolId);
 
-    // PESSIMISTIC_WRITE: chặn mọi transaction khác đụng vào số dư của trường này cho tới khi
-    // transaction hiện tại commit. Cần thiết vì bút toán đi kèm phải ghi balance_after_vnd -- đọc
-    // không khóa thì hai lần nạp/trừ song song sẽ ghi ra hai entry có cùng balanceAfter.
+    // PESSIMISTIC_WRITE: blocks every other transaction touching this school's balance until the
+    // current transaction commits. Required because the accompanying entry must record balance_after_vnd -- reading
+    // without a lock lets two parallel top-ups/deductions write two entries with the same balanceAfter.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<SchoolBalanceJpaEntity> findWithLockBySchoolId(UUID schoolId);
 
     /**
-     * Bảo đảm trường đã CÓ dòng số dư, để {@link #findWithLockBySchoolId} có cái mà khóa.
+     * Ensures the school HAS a balance row, so {@link #findWithLockBySchoolId} has something to lock.
      *
-     * <p>SELECT ... FOR UPDATE không khóa được một dòng chưa tồn tại, nên "đọc, không thấy thì dựng
-     * mới" là một cửa sổ tranh chấp thật: hai lần chấm bài song song của một trường CHƯA TỪNG NẠP đều
-     * không thấy gì và cùng INSERT, rồi một trong hai chết vì uq_school_balances_school. Đó lại đúng
-     * là trường hợp phổ biến nhất -- phần lớn trường không nạp bao giờ, và lần đầu tiên chạm vào ví
-     * chính là lần đầu tiêu vượt hạn mức.
+     * <p>SELECT ... FOR UPDATE cannot lock a row that does not exist, so "read, and if not found create
+     * a new one" is a real race window: two parallel gradings for a school that has NEVER topped up both
+     * see nothing and both INSERT, then one dies on uq_school_balances_school. That is also exactly
+     * the most common case -- most schools never top up, and the first time they touch the balance
+     * is the first time spending exceeds the quota.
      *
-     * <p>ON CONFLICT DO NOTHING biến cửa sổ đó thành một phép chờ: transaction đến sau chặn tại đây
-     * cho tới khi transaction trước commit/rollback, rồi không làm gì và đi tiếp -- lần khóa ngay sau
-     * đó đọc được đúng dòng đã commit.
+     * <p>ON CONFLICT DO NOTHING turns that window into a wait: the later transaction blocks here
+     * until the earlier one commits/rolls back, then does nothing and moves on -- the lock right after
+     * reads exactly the committed row.
      *
-     * <p>id để Postgres tự sinh (DEFAULT uuidv7()) và version = 0 để @Version của entity bắt nhịp
-     * đúng ở lần save kế tiếp.
+     * <p>The id is left to Postgres (DEFAULT uuidv7()) and version = 0 so the entity's @Version is in step
+     * at the next save.
      */
     @Modifying
     @Query(value = """

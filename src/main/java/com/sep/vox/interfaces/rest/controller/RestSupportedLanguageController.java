@@ -37,7 +37,7 @@ public class RestSupportedLanguageController {
             @Valid @RequestBody CreateSupportedLanguageRequest request) {
         CreateSupportedLanguageCommand command = CreateSupportedLanguageRequest.toCommand(request);
         CreateSupportedLanguageResponse data = createSupportedLanguageUseCase.execute(command);
-        ApiResponse<CreateSupportedLanguageResponse> response = ApiResponse.success("Tạo ngôn ngữ thành công", data);
+        ApiResponse<CreateSupportedLanguageResponse> response = ApiResponse.success("Language created successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -45,7 +45,7 @@ public class RestSupportedLanguageController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteSupportedLanguageUseCase.execute(new DeleteSupportedLanguageCommand(id));
-        ApiResponse<Void> response = ApiResponse.<Void>success("Xóa ngôn ngữ thành công");
+        ApiResponse<Void> response = ApiResponse.<Void>success("Language deleted successfully");
         return ResponseEntity.ok(response);
     }
 }

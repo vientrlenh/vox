@@ -62,8 +62,8 @@ public class GraphQLProctorAttendanceController {
     }
 
     /**
-     * Lịch sử cảnh báo giám sát của cả ca thi, để màn giám sát dựng lại những gì đã xảy ra trước khi
-     * người đang xem kết nối tới.
+     * Proctoring alert history of the whole schedule, so the monitoring screen can rebuild what happened before
+     * the viewer connected.
      */
     @QueryMapping
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")

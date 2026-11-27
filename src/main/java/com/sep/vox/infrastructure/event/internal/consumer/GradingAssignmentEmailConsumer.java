@@ -45,8 +45,8 @@ public class GradingAssignmentEmailConsumer {
 
     private static final String CONSUMER_GROUP = "grading-assignment-email";
 
-    private static final String SUBJECT_DEADLINE_REMINDER = "Nhắc hạn chấm bài";
-    private static final String SUBJECT_DECLINED = "Có giáo viên trả lại phân công chấm bài";
+    private static final String SUBJECT_DEADLINE_REMINDER = "Grading deadline reminder";
+    private static final String SUBJECT_DECLINED = "A teacher returned a grading assignment";
 
     private static final String PLACEHOLDER = "-";
 
@@ -119,7 +119,7 @@ public class GradingAssignmentEmailConsumer {
             mailSendingPort.sendHtml(mail.to(), mail.subject(), mail.html());
         } catch (Exception e) {
             log.error("Send mail error: eventId={}, to={}", eventId, mail.to(), e);
-            throw new IllegalStateException("Gửi mail phân công chấm bài thất bại: eventId=" + eventId, e);
+            throw new IllegalStateException("Failed to send the grading assignment email: eventId=" + eventId, e);
         }
     }
 
@@ -144,7 +144,7 @@ public class GradingAssignmentEmailConsumer {
                         orPlaceholder(payload.reason())));
             }
             default -> throw new IllegalStateException(
-                "eventType không hợp lệ: " + eventType + ", eventId=" + eventId);
+                "Invalid eventType: " + eventType + ", eventId=" + eventId);
         };
     }
 
@@ -175,13 +175,13 @@ public class GradingAssignmentEmailConsumer {
         } catch (Exception e) {
             log.error("Invalid payload: eventId={}, eventType={}, value={}", eventId, eventType, value, e);
             throw new IllegalStateException(
-                "Payload " + eventType + " không hợp lệ, eventId=" + eventId, e);
+                "Payload " + eventType + " is invalid, eventId=" + eventId, e);
         }
     }
 
     /**
-     * Giá trị lạ trả về nhãn mặc định thay vì ném: message cũ còn nằm trong topic có thể
-     * mang tên vòng đã bị đổi hoặc xoá, không đáng để đẩy cả mail vào DLT.
+     * An unknown value returns a default label instead of throwing: an old message still in the topic may
+     * carry a round name that has since been renamed or deleted, not worth sending the whole email to the DLT.
      */
     private String roundLabel(String roundType) {
         if (roundType == null) {
@@ -195,10 +195,10 @@ public class GradingAssignmentEmailConsumer {
             return PLACEHOLDER;
         }
         return switch (round) {
-            case INITIAL -> "Chấm lần đầu";
-            case SPOT_CHECK -> "Hậu kiểm";
-            case REMEDIATION -> "Xem xét bài bị vô hiệu";
-            case APPEAL -> "Phúc khảo";
+            case INITIAL -> "Initial grading";
+            case SPOT_CHECK -> "Spot check";
+            case REMEDIATION -> "Review of invalidated submission";
+            case APPEAL -> "Appeal";
         };
     }
 

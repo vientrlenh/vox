@@ -8,18 +8,18 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateQuestionTopicRequest(
-    @NotNull(message = "ID ngân hàng câu hỏi không được để trống")
+    @NotNull(message = "Question bank ID must not be blank")
     UUID questionBankId,
 
-    @NotBlank(message = "Mã chủ đề không được để trống")
-    @Size(max = 100, message = "Mã chủ đề không được vượt quá 100 ký tự")
+    @NotBlank(message = "Topic code must not be blank")
+    @Size(max = 100, message = "Topic code must not exceed 100 characters")
     String code,
 
-    @NotBlank(message = "Tên chủ đề không được để trống")
-    @Size(max = 255, message = "Tên chủ đề không được vượt quá 255 ký tự")
+    @NotBlank(message = "Topic name must not be blank")
+    @Size(max = 255, message = "Topic name must not exceed 255 characters")
     String name,
 
-    @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Description must not exceed 2048 characters")
     String description
 ) {
 

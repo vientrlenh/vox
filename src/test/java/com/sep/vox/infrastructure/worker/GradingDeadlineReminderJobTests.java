@@ -15,9 +15,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Câu select có LIMIT, nên một lượt chạy phải đi hết tồn đọng bằng nhiều lô — nếu không
- * thì mail "nhắc TRƯỚC hạn" có thể tới sau khi đã quá hạn, đúng thứ job này sinh ra để
- * tránh.
+ * The select has a LIMIT, so one run must go through the backlog in several batches -- otherwise
+ * the "remind BEFORE the deadline" mail may arrive after the deadline has passed, exactly what this job exists to
+ * avoid.
  */
 class GradingDeadlineReminderJobTests {
 
@@ -63,11 +63,11 @@ class GradingDeadlineReminderJobTests {
 
     @Test
     void should_stop_the_run_instead_of_spinning_when_a_batch_blows_up() {
-        when(batch.remindOnce(any())).thenThrow(new IllegalStateException("DB sập"));
+        when(batch.remindOnce(any())).thenThrow(new IllegalStateException("DB down"));
 
         assertThatCode(() -> job.remind()).doesNotThrowAnyException();
 
-        // Lô sau hỏng vì cùng nguyên nhân — để lượt 15 phút sau thử lại.
+        // The next batch would fail for the same reason -- leave it for the run 15 minutes later to retry.
         verify(batch, times(1)).remindOnce(any());
     }
 
@@ -77,7 +77,7 @@ class GradingDeadlineReminderJobTests {
 
         job.remind();
 
-        // Dòng cứ quay lại (bug hoặc dữ liệu lạ) không được làm lượt chạy kéo dài vô hạn.
+        // A row that keeps coming back (a bug or odd data) must not make the run go on forever.
         verify(batch, times(20)).remindOnce(any());
     }
 }

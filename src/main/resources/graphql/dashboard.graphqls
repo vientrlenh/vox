@@ -4,17 +4,17 @@ type SystemAdminDashboardSummary {
     inactiveSchools: Int!
     pendingRegistrations: Int!
     """
-    Đơn chờ LÂU NHẤT đã nằm trong hàng đợi bao nhiêu ngày lịch (giờ Việt Nam).
+    How many calendar days (Vietnam time) the OLDEST application has been waiting in the queue.
 
-    null khi không còn đơn nào chờ — khác hẳn 0, vốn nghĩa là "có đơn, vừa nộp hôm nay". Ở đây 0
-    lại là trạng thái tốt nhất, nên nhập nhèm hai cái sẽ vẽ ra một hàng đợi rỗng trông y hệt một
-    hàng đợi vừa xử lý xong.
+    null when no application is waiting any more — very different from 0, which means "there is an application, just submitted today". Here 0
+    is the best state, so mixing the two up would draw an empty queue that looks exactly like a
+    queue that was just cleared.
     """
     oldestPendingRegistrationDays: Int
     registrationsLast30Days: Int!
     registrationsLast90Days: Int!
     totalRevenue: Float!
-    "Doanh thu 24 tháng gần nhất, xếp từ cũ đến mới"
+    "Revenue of the last 24 months, ordered oldest to newest"
     monthlyRevenue: [MonthlySpending!]!
     studentCount: Int!
     teacherCount: Int!
@@ -24,18 +24,18 @@ type SystemAdminDashboardSummary {
 }
 
 type MonthlySpending {
-    "Định dạng YYYY-MM"
+    "Format YYYY-MM"
     month: String!
     amount: Float!
 }
 
 type SchoolMonthlySpending {
-    "Định dạng YYYY-MM"
+    "Format YYYY-MM"
     month: String!
     amount: Float!
-    "Phần chi cho đăng ký/gia hạn gói"
+    "Spend on plan subscription/renewal"
     subscriptionAmount: Float!
-    "Phần chi mua thêm token"
+    "Spend on buying extra tokens"
     tokenTopUpAmount: Float!
 }
 
@@ -59,25 +59,25 @@ grading), while the self-topped-up wallet is ONE shared number and is only deduc
 A roomy speaking-practice pocket does not help next week's assessment.
 """
 type SchoolFunding {
-    "Hạn mức CHẤM THI còn lại. Không bao giờ âm — phần vượt đã thành nợ trên ví."
+    "REMAINING grading quota. Never negative — any excess has become debt on the wallet."
     assessmentQuotaRemainingVnd: String!
     assessmentQuotaTotalVnd: String!
-    "Số dư ví tự nạp. Âm CHÍNH LÀ khoản nợ."
+    "Self-top-up wallet balance. Negative IS the debt."
     balanceVnd: String!
     """
-    balanceVnd < 0 — trường không mở được ca thi mới.
+    balanceVnd < 0 — the school cannot open new exam sessions.
 
-    Cùng luật SchoolSubscriptionDebtGuardService dùng để chặn VerifyAssessmentScheduleOtpUseCase và
-    StartClassTestSessionUseCase, trả sẵn thay vì để client so với 0: một luật chỉ nên có một nơi
-    định nghĩa. Trùng nghĩa với SchoolBalance.locked, cố ý — đây là bản đọc kèm của trang tổng quan.
+    The same rule SchoolSubscriptionDebtGuardService uses to block VerifyAssessmentScheduleOtpUseCase and
+    StartClassTestSessionUseCase, returned ready-made instead of making the client compare with 0: a rule should be defined in only one place.
+    Deliberately has the same meaning as SchoolBalance.locked — this is the companion read for the overview page.
     """
     locked: Boolean!
     """
-    assessmentQuotaRemainingVnd + max(balanceVnd, 0). Ví ÂM không bị trừ vào đây: nợ là khoản phải trả.
+    assessmentQuotaRemainingVnd + max(balanceVnd, 0). A NEGATIVE wallet is not subtracted here: the debt is an amount owed.
 
-    KHÔNG trừ committedToUsersVnd. Đây là vị từ KHOÁ — khớp từng đồng với
-    ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd, cửa thật sự từ chối lên lịch kỳ thi.
-    Trừ phần đã hứa vào đây là báo hết tiền trong khi hệ thống vẫn cho chi.
+    Does NOT subtract committedToUsersVnd. This is the LOCK predicate — matches ClassTestTokenQuotaGuardService.spendableSchoolFundsVnd
+    to the last dong, the real gate that refuses to schedule an exam.
+    Subtracting the promised part here would report that money has run out while the system still allows spending.
     """
     spendableVnd: String!
     """
@@ -92,56 +92,56 @@ type SchoolFunding {
     """
     committedToUsersVnd: String!
     """
-    spendableVnd - committedToUsersVnd — trường còn tự do dùng bao nhiêu cho kỳ thi TẬP TRUNG mà chưa
-    ăn vào phần đã hứa cho giáo viên.
+    spendableVnd - committedToUsersVnd — how much the school can still spend freely on CENTRALIZED exams without
+    eating into the part promised to teachers.
 
-    ÂM là một câu trả lời, không phải lỗi: trường đã chia cho giáo viên nhiều hơn số tiền còn lại.
-    DistributeQuotaToUsersService chặn tổng phân bổ theo pool.totalAllocated × ratio, tức theo TỔNG
-    chứ không theo phần CÒN LẠI, nên trạng thái này đạt tới được mà không cần ai làm sai. Hệ quả:
-    người tiêu sau cùng bị ví trường từ chối dù trần cá nhân của họ vẫn còn chỗ — đúng tình huống mà
-    ClassTestTokenQuotaGuardService.computeSharedPoolInsight cảnh báo lúc lên lịch kỳ thi tập trung.
+    NEGATIVE is an answer, not an error: the school has allotted more to teachers than the money remaining.
+    DistributeQuotaToUsersService caps the total allocation by pool.totalAllocated × ratio, i.e. by the TOTAL
+    and not by the REMAINING part, so this state is reachable without anyone doing anything wrong. Consequence:
+    the last person to spend is refused by the school wallet even though their personal ceiling still has room — exactly the situation that
+    ClassTestTokenQuotaGuardService.computeSharedPoolInsight warns about when scheduling a centralized exam.
     """
     uncommittedVnd: String!
 }
 
 """
-Bài đã thi xong mà học sinh CHƯA có điểm, chia theo thứ đang chặn.
+Submissions whose exam is finished but the student has NO score yet, split by what is blocking them.
 
-Năm nhóm LOẠI TRỪ NHAU và phủ kín — cộng lại đúng bằng `total`.
+The five groups are MUTUALLY EXCLUSIVE and cover everything — they add up to exactly `total`.
 
-KHÔNG lấy từ gradingStats.unassigned dù nghe giống: bên đó đếm bài ĐỦ ĐIỀU KIỆN nhận thêm một vòng
-chấm, tập ấy gồm cả RELEASED / INVALID / APPEALED, tức gần như mọi bài của trường.
+NOT taken from gradingStats.unassigned even though it sounds similar: that counts submissions ELIGIBLE for one more grading
+round, a set that includes RELEASED / INVALID / APPEALED, i.e. almost every submission of the school.
 
-Phạm vi là kỳ thi TẬP TRUNG và kỳ CHƯA công bố điểm. Kỳ đã RESULTS_PUBLISHED bị loại vì cả chấm lại
-bằng AI lẫn chuyển người chấm đều bị từ chối ở đó — những bài ấy không còn là việc phải làm mà là
-thiệt hại đã xảy ra, và để chúng ở đây thì con số có một mức sàn không bao giờ về 0.
+The scope is CENTRALIZED exams whose scores are NOT yet published. Exams already RESULTS_PUBLISHED are excluded because both AI re-grading
+and reassigning the grader are refused there — those submissions are no longer work to do but
+damage already done, and leaving them here would give the number a floor that never returns to 0.
 """
 type UnscoredWorkload {
     total: Int!
-    "aiFailedRetryLeft + aiFailedNoRetryLeft — giao diện gộp thành một dòng, hai số con là nhãn phụ"
+    "aiFailedRetryLeft + aiFailedNoRetryLeft — the UI merges them into one row, the two sub-numbers are secondary labels"
     aiFailed: Int!
-    "AI chấm lỗi, chưa ai đụng tới, trường vẫn còn lượt nhờ AI chấm lại"
+    "AI grading failed, nobody has touched it, and the school still has AI re-grade attempts left"
     aiFailedRetryLeft: Int!
-    "AI chấm lỗi, đã dùng hết lượt AI — chỉ còn đường chấm tay"
+    "AI grading failed, AI attempts used up — only manual grading remains"
     aiFailedNoRetryLeft: Int!
-    "Đã vào hàng đợi người chấm nhưng chưa phân công cho ai"
+    "Already in the grader queue but not yet assigned to anyone"
     awaitingAssignment: Int!
     assignedOverdue: Int!
     assignedInProgress: Int!
-    "Bài chờ lâu nhất đã chờ bao nhiêu ngày lịch (giờ VN); null khi không còn bài nào — null KHÁC 0"
+    "How many calendar days (VN time) the longest-waiting submission has waited; null when no submission is left — null is DIFFERENT from 0"
     oldestWaitingDays: Int
     assessmentCount: Int!
 }
 
 """
-Kỳ thi ĐÃ ĐÓNG mà còn bài chưa có điểm.
+Exams that are CLOSED but still have submissions without a score.
 
-Công bố điểm là cánh cửa MỘT CHIỀU: RetryGradingAssessmentSessionUseCase và HandOffGradingToHumanUseCase
-đều từ chối khi kỳ thi ở RESULTS_PUBLISHED. Bấm công bố lúc còn bài trống là chốt sổ vĩnh viễn cho
-đúng những bài đó, và hiện không màn nào cảnh báo trước.
+Publishing scores is a ONE-WAY door: RetryGradingAssessmentSessionUseCase and HandOffGradingToHumanUseCase
+both refuse when the exam is in RESULTS_PUBLISHED. Clicking publish while blank submissions remain permanently closes the books on
+exactly those submissions, and no screen currently warns about it beforehand.
 
-Chỉ kỳ CLOSED — đúng tập kỳ mà nút Công bố điểm đang bấm được. Kỳ IN_PROGRESS vẫn đang có người thi
-nên bài trống là chuyện bình thường.
+Only CLOSED exams — exactly the set of exams where the Publish scores button can be clicked. IN_PROGRESS exams still have people sitting the exam,
+so blank submissions are normal there.
 """
 type AssessmentAwaitingPublish {
     assessmentId: ID!
@@ -150,11 +150,11 @@ type AssessmentAwaitingPublish {
     "null for an assessment with no close time"
     closeAt: DateTime
     unscoredCount: Int!
-    "Trong số đó, còn cứu được bằng AI"
+    "Of those, still recoverable with AI"
     aiFailedRetryLeft: Int!
-    "Trong số đó, hết lượt AI — bắt buộc xếp giáo viên chấm"
+    "Of those, AI attempts used up — a teacher must be assigned to grade"
     aiFailedNoRetryLeft: Int!
-    "Trong số đó, đã nằm ở hàng đợi người chấm"
+    "Of those, already sitting in the grader queue"
     awaitingHumanGrading: Int!
 }
 
@@ -170,20 +170,20 @@ type SchoolGradingFailure {
     assessmentCode: String!
     assessmentName: String!
     candidateName: String
-    "null khi học sinh chưa được xếp vào lớp đang hoạt động nào"
+    "null when the student has not been placed in any active class"
     className: String
     "Submission time"
     failedAt: DateTime
-    "Thông điệp lỗi thô, nguyên văn; null với phiên bị đánh dấu hỏng qua nhánh DLT"
+    "Raw error message, verbatim; null for a session marked failed through the DLT branch"
     error: String
     """
-    Dịch vụ chấm đã TỰ thử lại mấy lần bên trong một lượt; null khi không rõ.
+    How many times the grading service RETRIED by itself within one attempt; null when unknown.
 
-    KHÁC hẳn định mức của trường: con số này nói về độ dai của sự cố, không nói ai đã bấm gì. Đừng
-    dựng nút bấm từ nó — schoolRetryLeft mới là thứ quyết định.
+    Entirely DIFFERENT from the school's quota: this number is about how persistent the incident is, not about who pressed what. Do not
+    build buttons from it — schoolRetryLeft is what decides.
     """
     aiRetryCount: Int
-    "Trường còn lượt nhờ AI chấm lại cho phiên này hay không"
+    "Whether the school still has AI re-grade attempts for this session"
     schoolRetryLeft: Boolean!
 }
 
@@ -194,10 +194,10 @@ type SchoolGradingFailurePage {
     totalElements: Int!
     totalPages: Int!
     """
-    Số bài còn lượt AI, ĐÃ áp bộ lọc kỳ thi nhưng CHƯA áp bộ lọc định mức.
+    Number of submissions with AI attempts left, with the exam filter ALREADY applied but the quota filter NOT yet applied.
 
-    Hai số này đứng trên chính hai nút lọc nên phải dự đoán đúng kết quả của cú bấm. Không lọc kỳ nào
-    thì chúng khớp đúng unscored.aiFailedRetryLeft / aiFailedNoRetryLeft trên trang tổng quan.
+    These two numbers sit on the filter buttons themselves so they must predict the result of the click exactly. With no exam filter
+    they match unscored.aiFailedRetryLeft / aiFailedNoRetryLeft on the overview page exactly.
     """
     retryLeftCount: Int!
     noRetryLeftCount: Int!
@@ -207,7 +207,7 @@ type SchoolAdminDashboardSummary {
     assessmentStatusCounts: AssessmentStatusCounts!
     appealStats: AppealStats!
     revenue: Float!
-    "Chi tiêu 12 tháng gần nhất, xếp từ cũ đến mới"
+    "Spend of the last 12 months, ordered oldest to newest"
     monthlySpending: [SchoolMonthlySpending!]!
     """
     The ASSESSMENT GRADING quota of the running subscription period -- the ASSESSMENT wallet only, not including the speaking practice wallet.
@@ -217,17 +217,17 @@ type SchoolAdminDashboardSummary {
     """
     tokenAllocated: Float!
     tokenUsed: Float!
-    "null nếu trường chưa từng có gói đăng ký nào đang hoạt động"
+    "null if the school has never had an active subscription"
     subscriptionRenewal: SubscriptionRenewal
     funding: SchoolFunding!
     unscored: UnscoredWorkload!
-    "Nhiều bài trống nhất trước. Cắt ở 5 kỳ — đây là thẻ cảnh báo, không phải danh sách kỳ thi."
+    "Most blank submissions first. Cut at 5 exams — this is a warning card, not an exam list."
     assessmentsAwaitingPublish: [AssessmentAwaitingPublish!]!
     """
-    Đơn khiếu nại CHỜ XỬ LÝ lâu nhất đã chờ bao nhiêu ngày lịch (giờ VN).
+    How many calendar days (VN time) the longest-waiting PENDING complaint has waited.
 
-    null khi không còn đơn nào chờ — khác hẳn 0, vốn nghĩa là "có đơn, vừa nộp hôm nay". Cùng bài học
-    với oldestPendingRegistrationDays: số ĐƠN không cho biết có đơn nào đang trễ hay không.
+    null when no complaint is waiting any more — very different from 0, which means "there is a complaint, just submitted today". Same lesson
+    as oldestPendingRegistrationDays: the number of COMPLAINTS does not tell whether any complaint is late.
     """
     oldestPendingAppealDays: Int
 }
@@ -290,7 +290,7 @@ type QuestionBankStats {
     description: Int!
 }
 
-"Kết quả chấm AI của một ngày lịch theo giờ Việt Nam."
+"AI grading results of one calendar day in Vietnam time."
 type GradingOutcomeBucket {
     "Calendar day in Vietnam time"
     day: Date!
@@ -299,120 +299,120 @@ type GradingOutcomeBucket {
 }
 
 """
-Sức khỏe vận hành nền tảng. Trộn hai loại thời gian CÓ CHỦ Ý:
+Operational health of the platform. Mixes two kinds of time ON PURPOSE:
 
-sessionsInProgress / assessmentsInProgress / gradingQueueDepth là ảnh chụp NGAY LÚC GỌI và không đổi theo
-dateFrom/dateTo — "đang có 6 kỳ thi chạy" mà đổi khi bấm sang tháng trước thì vô nghĩa. Các trường
-còn lại thuộc cửa sổ đang xem.
+sessionsInProgress / assessmentsInProgress / gradingQueueDepth are a snapshot AT THE MOMENT OF THE CALL and do not change with
+dateFrom/dateTo — "6 exams running now" changing when you click to the previous month would be meaningless. The remaining
+fields belong to the window being viewed.
 """
 type PlatformOperationalHealth {
-    "Phiên thi đang diễn ra ngay lúc này"
+    "Sessions in progress right now"
     sessionsInProgress: Int!
-    "Số kỳ thi KHÁC NHAU đang có phiên chạy"
+    "Number of DISTINCT exams that have a running session"
     assessmentsInProgress: Int!
-    "Phiên đã nộp, đang xếp hàng hoặc đang chấm"
+    "Sessions that are submitted, queued or being graded"
     gradingQueueDepth: Int!
-    "Phiên chấm xong trong cửa sổ"
+    "Sessions finished grading within the window"
     graded: Int!
     "AI-failed sessions within the window (assessment_sessions.status = GRADING_FAILED)"
     gradingFailed: Int!
-    "null khi cửa sổ chưa có phiên nào chấm xong lẫn chấm lỗi — khác hẳn với 0%"
+    "null when the window has no session that finished grading or failed grading — very different from 0%"
     successRatePercent: Float
-    "Liên tục theo ngày, cũ -> mới, ngày không có phiên trả về 0"
+    "Continuous by day, old -> new, a day without sessions returns 0"
     daily: [GradingOutcomeBucket!]!
 }
 
 """
-Sức khỏe kinh doanh nền tảng.
+Business health of the platform.
 
-Mọi số đếm phân loại theo TRƯỜNG, không theo dòng thuê bao — một trường có nhiều kỳ trong lịch sử.
-"Còn hiệu lực" gồm cả CANCELLED vì trạng thái đó chỉ tắt gia hạn tự động, trường vẫn dùng được tới
-hết endDate; chỉ SUSPENDED mới mất quyền dùng ngay.
+Every count is classified by SCHOOL, not by subscription row — a school has many periods in its history.
+"In force" includes CANCELLED because that status only turns off auto-renewal, the school can still use the service until
+endDate; only SUSPENDED loses access immediately.
 
-ĐỪNG CỘNG CÁC SỐ ĐẾM LẠI — chúng không phải một phép chia nhóm:
+DO NOT ADD THE COUNTS UP — they are not a partition:
 
-* subscribedSchools / lapsedSchools / suspendedSchools loại trừ nhau: đó là ba trạng thái có thể
-  có của cùng một trường tại thời điểm gọi.
-* expiringSoonSchools là TẬP CON của subscribedSchools, không phải nhóm thứ tư.
-* schoolsInDebt cắt ngang cả ba: nó đọc từ school_balances chứ không từ school_subscriptions, nên
-  một trường đang còn gói mà ví âm sẽ được đếm ở CẢ subscribedSchools lẫn schoolsInDebt.
-* Trường CHƯA TỪNG có gói nào không nằm trong ba nhóm đầu: chúng không có dòng nào trong
-  school_subscriptions để gộp. Trường mới duyệt mà chưa mua gói vì thế vô hình ở đây.
+* subscribedSchools / lapsedSchools / suspendedSchools are mutually exclusive: they are the three states that the
+    same school can have at the time of the call.
+* expiringSoonSchools is a SUBSET of subscribedSchools, not a fourth group.
+* schoolsInDebt cuts across all three: it reads from school_balances and not from school_subscriptions, so
+    a school that still has a plan but a negative wallet is counted in BOTH subscribedSchools and schoolsInDebt.
+* Schools that have NEVER had any plan are not in the first three groups: they have no row in
+    school_subscriptions to group. A newly approved school that has not bought a plan is therefore invisible here.
 
-Số đếm trường là ảnh chụp NGAY LÚC GỌI, không đổi theo dateFrom/dateTo. Các con số tiền thì theo cửa
-sổ đang xem.
+School counts are a snapshot AT THE MOMENT OF THE CALL, not changing with dateFrom/dateTo. The money figures follow the window
+being viewed.
 """
 type PlatformBusinessHealth {
-    "Trường có kỳ thuê bao phủ hôm nay"
+    "Schools with a subscription period covering today"
     subscribedSchools: Int!
-    "Tập con của subscribedSchools: kỳ đang phủ sẽ hết trong 30 ngày tới"
+    "Subset of subscribedSchools: the covering period will end within the next 30 days"
     expiringSoonSchools: Int!
-    "Từng có gói nhưng hiện không kỳ nào phủ, và không bị đình chỉ"
+    "Once had a plan but no period covers now, and not suspended"
     lapsedSchools: Int!
-    "Bị đình chỉ và hiện không có kỳ nào phủ"
+    "Suspended and no period covers now"
     suspendedSchools: Int!
-    "Ví tự nạp âm — chính là trường đang bị chặn mở ca thi"
+    "Negative self-top-up wallet — exactly the schools blocked from opening exam sessions"
     schoolsInDebt: Int!
-    "Tiền thực thu trong cửa sổ (đơn SUCCESS), VND"
+    "Money actually received in the window (SUCCESS orders), VND"
     revenueVnd: Float!
-    "Cùng độ dài, ngay TRƯỚC cửa sổ — không phải tháng lịch trước"
+    "Same length, immediately BEFORE the window — not the previous calendar month"
     previousRevenueVnd: Float!
-    "Giá vốn AI phát sinh trong cửa sổ, VND (ai_usage_records.cost_vnd)"
+    "AI cost price incurred in the window, VND (ai_usage_records.cost_vnd)"
     aiCostVnd: Float!
-    "null khi cửa sổ chưa thu được đồng nào — biên của doanh thu 0 không tồn tại, không phải 0%"
+    "null when the window collected no money at all — a margin on 0 revenue does not exist, it is not 0%"
     grossMarginPercent: Float
     """
-    Cùng công thức, tính trên kỳ so sánh — để vẽ mức chênh theo ĐIỂM PHẦN TRĂM (không phải %).
+    Same formula, computed on the comparison period — to draw the difference in PERCENTAGE POINTS (not %).
 
-    Tính ở server chứ không để client lấy hiệu của hai tỷ lệ tự dựng: quy ước "doanh thu 0 thì biên
-    không tồn tại" chỉ đúng nếu áp một lần cho cả hai kỳ. null khi kỳ trước chưa thu được đồng nào,
-    và lúc đó KHÔNG có mức chênh nào để hiển thị.
+    Computed on the server instead of letting the client subtract two ratios itself: the convention "if revenue is 0 the margin
+    does not exist" is only correct if applied once to both periods. null when the previous period collected no money at all,
+    and then there is NO difference to display.
     """
     previousGrossMarginPercent: Float
 }
 
 """
-Một nhóm phiên chấm lỗi cùng nguyên nhân.
+A group of failed grading sessions with the same cause.
 
-`signature` là thông điệp lỗi đã chuẩn hóa (thay uuid và số bằng chỗ trống) — nó là ĐỊNH DANH của
-nhóm, truyền lại y nguyên vào `gradingFailureSessions` để mở nhóm. null là nhóm "không rõ nguyên
-nhân": phiên bị đánh dấu hỏng qua nhánh DLT không mang thông điệp nào, và mọi phiên hỏng từ trước
-khi hệ thống bắt đầu lưu lý do cũng nằm ở đây. Đó là một nhóm THẬT, không phải dữ liệu thiếu.
+`signature` is the normalized error message (uuids and numbers replaced with blanks) — it is the IDENTIFIER of the
+group, passed back unchanged into `gradingFailureSessions` to open the group. null is the "unknown
+cause" group: a session marked failed through the DLT branch carries no message, and every session that failed before
+the system started storing reasons is also here. It is a REAL group, not missing data.
 """
 type GradingFailureGroup {
     signature: String
-    "Một thông điệp lỗi thô đại diện, để đọc; null ở nhóm không rõ nguyên nhân"
+    "A representative raw error message, for reading; null in the unknown-cause group"
     sampleError: String
     sessionCount: Int!
-    "Kỳ thi cấp hệ thống không thuộc trường nào nên không được đếm"
+    "System-level exams belong to no school so they are not counted"
     schoolCount: Int!
     assessmentCount: Int!
     "Together with lastFailedAt this shows whether the failures were an incident contained in two hours or a slow-burning error lasting two weeks"
     firstFailedAt: DateTime
     lastFailedAt: DateTime
-    "Số phiên thuộc kỳ CHƯA công bố điểm, tức thật sự chấm lại được"
+    "Number of sessions in exams whose scores are NOT yet published, i.e. really re-gradable"
     retryableCount: Int!
 }
 
 """
-Trang phân loại phiên chấm lỗi.
+Page that classifies failed grading sessions.
 
-sessionCount phải khớp đúng `gradingFailed` của platformOperationalHealth khi hai bên cùng khoảng:
-cùng vị từ (status = GRADING_FAILED), cùng cửa sổ theo submitted_at, cùng mặc định khi bỏ trống mốc.
+sessionCount must match `gradingFailed` of platformOperationalHealth exactly when both use the same range:
+same predicate (status = GRADING_FAILED), same window on submitted_at, same default when the bounds are omitted.
 """
 type GradingFailureOverview {
     sessionCount: Int!
-    "Số nhóm nguyên nhân, tính cả nhóm không rõ nguyên nhân nếu có"
+    "Number of cause groups, including the unknown-cause group if present"
     causeCount: Int!
     schoolCount: Int!
     retryableCount: Int!
-    "Nhóm đông nhất trước"
+    "Largest group first"
     groups: [GradingFailureGroup!]!
     """
-    Số nhóm vượt trần và bị cắt khỏi `groups`.
+    Number of groups over the cap that were cut from `groups`.
 
-    Nói ra thay vì im lặng cắt, vì nó là DẤU HIỆU CHẨN ĐOÁN: chuẩn hóa thông điệp mà không gom được
-    thì số nhóm nở gần bằng số phiên, và lúc đó cần sửa cách chuẩn hóa chứ không phải nới trần.
+    Said out loud instead of cutting silently, because it is a DIAGNOSTIC SIGNAL: if message normalization fails to merge,
+    the number of groups grows close to the number of sessions, and then the normalization needs fixing, not the cap raising.
     """
     groupsTruncated: Int!
 }
@@ -424,7 +424,7 @@ take a score from. What replaces it are the fields that help triage.
 type GradingFailureSession {
     sessionId: ID!
     schoolId: ID
-    "null với kỳ thi cấp hệ thống"
+    "null for a system-level exam"
     schoolName: String
     schoolCode: String
     assessmentId: ID!
@@ -432,18 +432,18 @@ type GradingFailureSession {
     candidateName: String
     "Submission time"
     failedAt: DateTime
-    "Dịch vụ chấm đã thử mấy lần trước khi bỏ cuộc; null khi không rõ"
+    "How many times the grading service tried before giving up; null when unknown"
     retryCount: Int
-    "Thông điệp lỗi thô, nguyên văn; null ở nhóm không rõ nguyên nhân"
+    "Raw error message, verbatim; null in the unknown-cause group"
     error: String
-    "Kỳ thi chưa công bố điểm, tức chấm lại được"
+    "Exam whose scores are not published, i.e. re-gradable"
     retryable: Boolean!
     """
-    Bài ĐÃ được đẩy sang hàng đợi người chấm.
+    Submission HAS been pushed to the grader queue.
 
-    Phiên vẫn ở GRADING_FAILED vì hand-off cố ý không đổi trạng thái phiên (xem
-    HandOffGradingToHumanUseCase), nên cờ này là thứ DUY NHẤT phân biệt phiên đã có người nhận với
-    phiên chưa ai đụng tới.
+    The session stays in GRADING_FAILED because the hand-off deliberately does not change the session status (see
+    HandOffGradingToHumanUseCase), so this flag is the ONLY thing that tells a session that has someone assigned apart from a
+    session nobody has touched.
     """
     handedOff: Boolean!
 }
@@ -457,15 +457,15 @@ type GradingFailureSessionPage {
 }
 
 """
-Bốn nhóm "trường cần chú ý". KHÔNG phải một phép chia nhóm — đừng cộng bốn số lại:
+Four groups of "schools needing attention". NOT a partition — do not add the four numbers up:
 
-* EXPIRING_SOON là TẬP CON của nhóm trường còn gói.
-* LAPSED và SUSPENDED loại trừ nhau và loại trừ nhóm còn gói.
-* IN_DEBT CẮT NGANG cả ba: nó đọc từ số dư ví chứ không từ trạng thái thuê bao.
+* EXPIRING_SOON is a SUBSET of the group of schools that still have a plan.
+* LAPSED and SUSPENDED are mutually exclusive and exclusive of the group that still has a plan.
+* IN_DEBT CUTS ACROSS all three: it reads from the wallet balance and not from the subscription status.
 
-Trường CHƯA TỪNG mua gói nào không thuộc ba nhóm đầu — chúng không có dòng nào trong
-school_subscriptions để gộp. Đây là hành vi giống hệt phép đếm trên trang tổng quan, giữ nguyên có
-chủ đích để hai màn hình nói cùng một con số.
+Schools that have NEVER bought any plan do not belong to the first three groups — they have no row in
+school_subscriptions to group. This is exactly the same behavior as the count on the overview page, kept on
+purpose so that the two screens say the same number.
 """
 enum SchoolRiskBucket {
     EXPIRING_SOON
@@ -478,13 +478,13 @@ type SchoolAtRisk {
     schoolId: ID!
     schoolName: String!
     schoolCode: String!
-    "Tên gói của kỳ LIÊN QUAN tới nhóm: kỳ đang phủ nếu còn gói, kỳ gần nhất nếu không"
+    "Name of the plan of the period RELATED to the group: the covering period if a plan remains, otherwise the most recent period"
     planName: String
     "End of that same period"
     relevantEndDate: DateTime
-    "Lý do đình chỉ gần nhất; chỉ có nghĩa ở nhóm SUSPENDED"
+    "Most recent suspension reason; only meaningful in the SUSPENDED group"
     suspendedReason: String
-    "Số dư ví tự nạp, VND. Âm nghĩa là trường đang bị chặn mở ca thi. Không bao giờ null"
+    "Self-top-up wallet balance, VND. Negative means the school is blocked from opening exam sessions. Never null"
     balanceVnd: Float!
 }
 
@@ -497,10 +497,10 @@ type SchoolAtRiskPage {
 }
 
 """
-Số đếm của cả bốn nhóm.
+Counts of all four groups.
 
-Lấy từ CHÍNH phép đếm mà platformBusinessHealth dùng, không đếm lại bằng câu khác — nếu không thì
-thẻ trên trang tổng quan ghi 5, người dùng bấm vào, và màn hình này hiện 9.
+Taken from the SAME count that platformBusinessHealth uses, not recounted with another query — otherwise the
+card on the overview page says 5, the user clicks it, and this screen shows 9.
 """
 type SchoolRiskBucketCounts {
     expiringSoon: Int!
@@ -515,7 +515,7 @@ type SchoolsAtRisk {
     schools: SchoolAtRiskPage!
 }
 
-"Đơn vị gom nhóm của biểu đồ chi phí AI."
+"Grouping unit of the AI cost chart."
 enum AiCostGranularity {
     DAY
     WEEK
@@ -523,30 +523,30 @@ enum AiCostGranularity {
 }
 
 """
-Chi phí AI của trường theo thời gian.
+AI cost of a school over time.
 
-TIỀN LÀ String, không phải Float — nguồn là numeric(18,6), cùng lý do đã ghi ở đầu
+MONEY is a String, not a Float — the source is numeric(18,6), same reason as stated at the top of
 school-balance.graphqls.
 
-Đọc từ school_ai_spend_entries: số TRƯỜNG BỊ TRỪ, không phải giá vốn nền tảng. Hai con số đó cố ý
-lệch nhau từ V9 (chi phí của lượt chấm hỏng được miễn), nên vẽ biểu đồ này từ ai_usage_records là
-tính cho trường cả những đồng ta đã quyết định không thu.
+Read from school_ai_spend_entries: the amount the SCHOOL IS CHARGED, not the platform's cost price. Those two numbers deliberately
+differ since V9 (the cost of failed grading attempts is waived), so drawing this chart from ai_usage_records would
+charge the school even the money we decided not to collect.
 
-Thay hẳn cho `schoolTokenUsageTimeseries` — trường đó chưa bao giờ tồn tại trong schema dù client vẫn
-gọi, và repository duy nhất phục vụ nó cộng `tokens_consumed` trên một bảng không mã nào còn ghi vào
-kể từ V2.
+Fully replaces `schoolTokenUsageTimeseries` — that field never existed in the schema even though clients still
+called it, and the only repository serving it summed `tokens_consumed` on a table no code has written to
+since V2.
 """
 type SchoolAiCostTimeseries {
     granularity: AiCostGranularity!
-    "Tổng của đúng các điểm bên dưới — cộng từ cùng một tập, không phải một câu SUM thứ hai"
+    "Total of exactly the points below — summed from the same set, not a second SUM query"
     totalCostVnd: String!
     points: [AiCostPoint!]!
     """
-    Mốc sổ bắt đầu có dữ liệu; null khi trường chưa từng tiêu đồng nào.
+    The point at which the ledger starts having data; null when the school has never spent any money.
 
-    V10 cố ý KHÔNG backfill (số dựng lại từ ai_usage_records sẽ khác số đã thu thật), nên mọi khoảng
-    trước mốc này vẽ ra đường phẳng ở 0 dù trường có tiêu tiền. Giao diện phải nói được sự khác biệt
-    giữa "không tiêu gì" và "chưa ghi sổ".
+    V10 deliberately does NOT backfill (numbers rebuilt from ai_usage_records would differ from what was really charged), so every range
+    before this point draws a flat line at 0 even if the school did spend money. The UI must be able to tell the difference
+    between "spent nothing" and "not yet recorded".
     """
     recordedFrom: DateTime
 }
@@ -563,14 +563,14 @@ type UserAiSpend {
     fullName: String
     quotaType: QuotaType!
     spentVnd: String!
-    "Trần chi cá nhân; null khi nhà trường chưa chia trần cho người này — vẫn tiêu được, chỉ không có mức để so"
+    "Personal spending ceiling; null when the school has not set a ceiling for this person — they can still spend, there is just no level to compare against"
     allocatedAmountVnd: String
 }
 
 """
-Ai đã tiêu bao nhiêu hạn mức AI của trường trong cửa sổ đang xem.
+Who has spent how much of the school's AI quota in the window being viewed.
 
-Một người tiêu ở cả hai loại ví thì có HAI hàng — mỗi hàng một loại, vì trần chi cũng chia theo loại.
+A person who spends from both wallet types gets TWO rows — one per type, because the spending ceiling is also divided by type.
 """
 type SchoolAiSpendByUserPage {
     content: [UserAiSpend!]!
@@ -579,14 +579,14 @@ type SchoolAiSpendByUserPage {
     totalElements: Int!
     totalPages: Int!
     """
-    Phần chi KHÔNG thuộc trần chi của ai — khoản của kỳ thi tập trung.
+    Spend that does NOT belong to anyone's ceiling — the part of centralized exams.
 
-    Kỳ thi tập trung do nhà trường tổ chức nên cố ý không tính vào túi riêng của người nào
-    (CompleteAssessmentSessionGradingUseCase chỉ truyền người ra đề với bài kiểm tra trên lớp). Trả riêng
-    thay vì thành một hàng "không rõ": ở gần như mọi trường đây là khoản LỚN NHẤT và sẽ chiếm đỉnh
-    bảng, che mất đúng thứ bảng này sinh ra để cho thấy.
+    Centralized exams are organized by the school, so they are deliberately not counted against any individual's pocket
+    (CompleteAssessmentSessionGradingUseCase only passes the author for class tests). Returned separately
+    instead of as an "unknown" row: in almost every school this is the LARGEST item and would take the top of
+    the table, hiding exactly what this table exists to show.
 
-    Cộng bảng người dùng rồi so với biểu đồ sẽ luôn thiếu đúng con số này.
+    Summing the user rows and comparing against the chart will always be short by exactly this number.
     """
     schoolWideCostVnd: String!
 }
@@ -624,11 +624,11 @@ extend type Query {
     ): SchoolAiSpendByUserPage!
 
     """
-    Danh sách trường trong MỘT nhóm cần chú ý, kèm số đếm của cả bốn nhóm.
+    List of schools in ONE attention group, with the counts of all four groups.
 
-    KHÔNG dùng `schoolSubscriptions` cho việc này dù nó cũng lọc theo trạng thái: màn đó lọc theo
-    DÒNG thuê bao còn ở đây đếm theo TRƯỜNG. Một trường có kỳ 2024 đã hết và kỳ 2025 đang chạy sẽ
-    nằm trong danh sách status=EXPIRED của màn kia nhưng KHÔNG thuộc nhóm LAPSED.
+    Do NOT use `schoolSubscriptions` for this even though it also filters by status: that screen filters by
+    subscription ROW while here we count by SCHOOL. A school whose 2024 period has ended and whose 2025 period is running would
+    be in the status=EXPIRED list of that screen but does NOT belong to the LAPSED group.
     """
     schoolsAtRisk(
         bucket: SchoolRiskBucket!
@@ -670,19 +670,19 @@ extend type Query {
     platformBusinessHealth(dateFrom: DateTime, dateTo: DateTime): PlatformBusinessHealth!
 
     """
-    Bài AI chấm lỗi mà CHƯA ai xử lý, của trường đang đăng nhập — chỗ đáp của dòng cùng tên trên
-    trang tổng quan.
+    AI-failed submissions that NOBODY has handled yet, for the logged-in school — the landing place of the row of the same name on
+    the overview page.
 
-    Chạy trên đúng tập mà `schoolAdminDashboard.unscored.aiFailed` đếm: cùng một CTE sinh ra cả hai,
-    nên bấm vào con số 14 sẽ ra đúng 14 dòng.
+    Runs on exactly the set that `schoolAdminDashboard.unscored.aiFailed` counts: the same CTE produces both,
+    so clicking the number 14 gives exactly 14 rows.
 
-    KHÔNG nhận schoolId — phạm vi lấy từ người đang đăng nhập.
+    Takes NO schoolId — the scope comes from the logged-in user.
 
-    Bỏ trống `retryLeft` là KHÔNG lọc; true chỉ lấy bài còn lượt nhờ AI chấm lại, false chỉ lấy bài
-    đã hết lượt. Hai nhóm dẫn tới hai hành động khác hẳn nhau nên tách được là đáng.
+    Omitting `retryLeft` means NO filter; true only takes submissions with AI re-grade attempts left, false only takes submissions
+    with attempts used up. The two groups lead to entirely different actions so being able to separate them is worthwhile.
 
-    Xếp CŨ NHẤT TRƯỚC, ngược với gradingFailureSessions của quản trị hệ thống: bên đó hỏi "vừa hỏng
-    chuyện gì", ở đây hỏi "em nào đã chờ lâu nhất mà vẫn chưa có điểm".
+    Ordered OLDEST FIRST, the opposite of gradingFailureSessions for the system admin: that one asks "what just broke",
+    this one asks "which student has waited longest and still has no score".
     """
     schoolGradingFailures(
         assessmentId: ID
@@ -693,7 +693,7 @@ extend type Query {
 
     schoolAdminDashboard: SchoolAdminDashboardSummary!
     teacherDashboard: TeacherDashboardSummary!
-    "Kỳ thi tập trung gần thời điểm hiện tại nhất của trường — null nếu chưa có kỳ thi tập trung nào"
+    "The centralized exam closest to the present time for the school — null if the school has no centralized exam yet"
     nearestCentralizedAssessment: NearestCentralizedAssessment
     questionBankStats: QuestionBankStats!
 }

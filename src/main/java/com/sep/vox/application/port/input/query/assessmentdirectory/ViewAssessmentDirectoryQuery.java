@@ -4,16 +4,16 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Input chung của bốn query danh bạ kỳ thi (lớp / niên khóa / học sinh / giám thị) —
- * cả bốn nhận đúng bộ tham số này nên dùng chung một record thay vì bốn bản sao.
+ * The common input of the four assessment directory queries (classes / school years / students / proctors) --
+ * all four take exactly this set of parameters so they share one record instead of four copies.
  *
- * <p>`page` là 1-based.
+ * <p>`page` is 1-based.
  *
- * <p>{@code excludeUserIds}: những người GỌI ĐÃ CÓ rồi (thí sinh của kỳ thi, giám thị của ca) và
- * không muốn thấy nữa. Phải lọc ngay trong SQL chứ không để client bỏ đi sau khi nhận trang: lọc ở
- * client thì `content` ngắn đi trong khi `totalElements`/`totalPages` vẫn đếm cả người bị bỏ — nhập
- * xong một lớp là picker hiện trang trống kèm số đếm khác 0. Hai query lớp/niên khóa bỏ qua trường
- * này.
+ * <p>{@code excludeUserIds}: the people the CALLER ALREADY HAS (the assessment's candidates, the schedule's proctors) and
+ * does not want to see again. It must be filtered inside the SQL and not left for the client to drop after receiving the page: filtering on the
+ * client makes `content` shorter while `totalElements`/`totalPages` still count the dropped people -- after
+ * importing one class the picker shows an empty page with a non-zero count. The classes / school years queries ignore this
+ * field.
  */
 public record ViewAssessmentDirectoryQuery(
     UUID assessmentId,

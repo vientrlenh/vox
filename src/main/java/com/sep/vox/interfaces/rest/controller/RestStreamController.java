@@ -32,7 +32,7 @@ public class RestStreamController {
     public ResponseEntity<ApiResponse<IssueStudentStreamTokenResponse>> getStreamToken(@Valid @RequestBody IssueStudentStreamTokenRequest request) {
         IssueStudentStreamTokenCommand command = IssueStudentStreamTokenRequest.toCommand(request);
         IssueStudentStreamTokenResponse data = issueStudentStreamTokenUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Token stream được lấy thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Stream token retrieved successfully", data));
     }
 
 
@@ -41,6 +41,6 @@ public class RestStreamController {
     public ResponseEntity<ApiResponse<String>> getMonitorToken(@Valid @RequestBody IssueMonitorTokenRequest request) {
         IssueMonitorTokenCommand command = IssueMonitorTokenRequest.toCommand(request);
         String token = issueMonitorTokenUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Token giám sát được lấy thành công", token));
+        return ResponseEntity.ok(ApiResponse.success("Monitoring token retrieved successfully", token));
     }
 }

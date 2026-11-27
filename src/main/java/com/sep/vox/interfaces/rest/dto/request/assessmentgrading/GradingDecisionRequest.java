@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
  * that rule lives in {@code GradingRoundPolicy} and is not duplicated down into the DTO.
  */
 public record GradingDecisionRequest(
-    @Size(max = 1024, message = "Lý do tối đa 1024 ký tự")
+    @Size(max = 1024, message = "Reason must not exceed 1024 characters")
     String reason
 ) {
 

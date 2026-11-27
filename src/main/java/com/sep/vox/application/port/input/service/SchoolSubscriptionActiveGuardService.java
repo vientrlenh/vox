@@ -23,12 +23,12 @@ public class SchoolSubscriptionActiveGuardService {
     public void requireActiveForSchool(UUID schoolId, String actionLabel) {
         schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new BusinessRuleViolationException(
-                "Trường chưa có gói subscription đang hoạt động, không thể " + actionLabel + "."));
+                "The school has no active subscription, so it cannot " + actionLabel + "."));
     }
 
     public void requireActiveForStudent(UUID studentId, String actionLabel) {
         schoolSubscriptionRepository.findActiveSubscriptionIdForUser(studentId)
             .orElseThrow(() -> new BusinessRuleViolationException(
-                "Trường chưa có gói subscription đang hoạt động, không thể " + actionLabel + "."));
+                "The school has no active subscription, so it cannot " + actionLabel + "."));
     }
 }

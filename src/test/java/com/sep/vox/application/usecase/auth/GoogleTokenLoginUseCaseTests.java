@@ -93,7 +93,7 @@ class GoogleTokenLoginUseCaseTests {
     @Test
     void should_not_open_a_session_when_the_token_fails_verification() {
         when(googleIdTokenVerifierPort.verify(any()))
-            .thenThrow(new UnauthorizedException("Đăng nhập Google thất bại"));
+            .thenThrow(new UnauthorizedException("Google login failed"));
 
         assertThatThrownBy(() -> useCase.execute(command("token-hong")))
             .isInstanceOf(UnauthorizedException.class);

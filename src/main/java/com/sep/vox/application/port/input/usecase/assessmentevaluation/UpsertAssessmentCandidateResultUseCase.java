@@ -37,12 +37,12 @@ public class UpsertAssessmentCandidateResultUseCase {
 
     private AssessmentCandidateResultStatus resolveDefaultStatus(UUID sessionId, UUID candidateId, boolean anyRequiresHumanReview) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(candidateId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         if (candidate.getBlockedAt() != null) {
             return AssessmentCandidateResultStatus.INVALID;
         }
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         if (session.isFlagged() || anyRequiresHumanReview) {
             return AssessmentCandidateResultStatus.PENDING_REVIEW;
         }

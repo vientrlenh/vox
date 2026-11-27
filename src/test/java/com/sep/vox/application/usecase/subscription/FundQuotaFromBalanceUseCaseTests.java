@@ -36,19 +36,20 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Nạp tiền từ ví tự nạp sang ví hạn mức -- phép chuyển giữa hai túi của cùng nhà trường.
+ * Funding from the self-funded balance into the quota pool -- a transfer between two pockets of the same school.
  *
- * <p>Bộ test này canh ba thứ, và cả ba đều là lý do phương án "trừ ví khi chia cho từng người" bị bỏ:
+ * <p>This suite watches three things, and all three are reasons the "deduct the balance when dividing among
+ * individuals" option was dropped:
  *
  * <ul>
- *   <li><b>Tiền rời ví đúng MỘT lần.</b> Ví giảm, ví hạn mức tăng đúng bằng đó, và không có lần trừ
- *       thứ hai -- vì {@code tryConsume} sau đó sẽ thấy ví hạn mức còn chỗ nên
- *       {@code ConsumeQuotaService.chargeOverage} không bao giờ chạy.</li>
- *   <li><b>Khóa dòng trước khi trừ.</b> Đường ghi số dư DUY NHẤT đi qua
- *       {@code findBySchoolIdForUpdateOrCreate}; đọc bằng {@code findBySchoolId} rồi trừ sẽ để hai
- *       quản trị viên bấm cùng lúc cùng thấy một số dư và cùng tiêu nó.</li>
- *   <li><b>balanceAfter của bút toán lấy từ chính lần trừ đó</b>, không tính lại -- nếu không thì sao
- *       kê và số dư tổng hợp trôi khỏi nhau và bất biến SUM(entries) = balance_vnd vỡ.</li>
+ *   <li><b>The money leaves the balance exactly ONCE.</b> The balance goes down, the quota pool goes up by exactly
+ *       that amount, and there is no second deduction -- because {@code tryConsume} afterwards sees room in the
+ *       quota pool, so {@code ConsumeQuotaService.chargeOverage} never runs.</li>
+ *   <li><b>The row is locked before deducting.</b> The ONLY balance write path goes through
+ *       {@code findBySchoolIdForUpdateOrCreate}; reading with {@code findBySchoolId} and then subtracting would
+ *       let two administrators who click at the same time see the same balance and both spend it.</li>
+ *   <li><b>balanceAfter of the entry comes from that very deduction</b>, not recomputed -- otherwise the statement
+ *       and the aggregate balance drift apart and the invariant SUM(entries) = balance_vnd breaks.</li>
  * </ul>
  */
 class FundQuotaFromBalanceUseCaseTests {
@@ -165,7 +166,7 @@ class FundQuotaFromBalanceUseCaseTests {
     void funding_is_refused_when_the_wallet_holds_less_than_requested() {
         assertThatThrownBy(() -> useCase.execute(fund(2_500_000)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không đủ");
+            .hasMessageContaining("Insufficient");
 
         verify(schoolBalanceEntryRepository, never()).save(any());
         verify(quotaRecordRepository, never()).addFundingFromBalance(any(), any());
@@ -173,13 +174,13 @@ class FundQuotaFromBalanceUseCaseTests {
 
     @Test
     void funding_is_refused_with_the_debt_message_when_the_school_is_locked() {
-        // Số dư âm cũng sẽ trượt phép so "đủ tiền không" bên dưới, nhưng với câu "không đủ số dư" --
-        // đúng hiện tượng, sai nguyên nhân, nên chỉ sai luôn cách khắc phục.
+        // A negative balance would also fail the "is there enough money" comparison below, but with the message
+        // "insufficient balance" -- right symptom, wrong cause, and so the wrong remedy as well.
         givenWallet(-1_000_000);
 
         assertThatThrownBy(() -> useCase.execute(fund(500_000)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("bị khóa");
+            .hasMessageContaining("locked");
 
         verify(schoolBalanceRepository, never()).save(any());
         verify(quotaRecordRepository, never()).addFundingFromBalance(any(), any());
@@ -189,11 +190,11 @@ class FundQuotaFromBalanceUseCaseTests {
     void funding_is_refused_for_a_non_positive_amount() {
         assertThatThrownBy(() -> useCase.execute(fund(0)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("lớn hơn 0");
+            .hasMessageContaining("greater than 0");
 
         assertThatThrownBy(() -> useCase.execute(fund(-500_000)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("lớn hơn 0");
+            .hasMessageContaining("greater than 0");
 
         verify(schoolBalanceRepository, never()).save(any());
     }

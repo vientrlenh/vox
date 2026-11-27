@@ -74,15 +74,15 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
 
     private void requireAppealable(CreateAssessmentAppealCommand command, AssessmentCandidateResult candidateResult) {
         if (candidateResult.getStatus() != AssessmentCandidateResultStatus.RELEASED) {
-            throw new IllegalArgumentException("Chỉ có thể phúc khảo kết quả đã được công bố.");
+            throw new IllegalArgumentException("Only a published result can be appealed.");
         }
         if (assessmentResultAppealRepository.existsOpenByCandidateResultId(command.candidateResultId())) {
-            throw new ResourceDuplicatedException("Đã có đơn phúc khảo đang được xử lý cho kết quả này.");
+            throw new ResourceDuplicatedException("An appeal is already being processed for this result.");
         }
         if (assessmentResultAppealRepository.countPublishedByCandidateResultId(command.candidateResultId())
                 >= MAX_APPEAL_ROUNDS) {
             throw new IllegalArgumentException(
-                "Mỗi kết quả chỉ được phúc khảo tối đa " + MAX_APPEAL_ROUNDS + " lần.");
+                "Each result can be appealed at most " + MAX_APPEAL_ROUNDS + " times.");
         }
     }
 
@@ -93,7 +93,7 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
         }
         LinkedHashSet<UUID> selected = new LinkedHashSet<>(requested);
         if (selected.size() != requested.size()) {
-            throw new IllegalArgumentException("Không được chọn trùng phần thi.");
+            throw new IllegalArgumentException("The same assessment part must not be selected twice.");
         }
         return selected;
     }
@@ -118,12 +118,12 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
             // each question: the comparison screen of the school administrator takes baselineScores + turns from exactly
             // those rows, and dropping them would lose the comparison data.
             if (responsesByPaperItem.isEmpty()) {
-                throw new ResourceNotFoundException("Bài thi này không có câu trả lời nào để phúc khảo.");
+                throw new ResourceNotFoundException("This submission has no answer to appeal.");
             }
             return new LinkedHashSet<>(responsesByPaperItem.keySet());
         }
         if (!responsesByPaperItem.keySet().containsAll(selected)) {
-            throw new ResourceNotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
+            throw new ResourceNotFoundException("The answer of the assessment part to appeal was not found.");
         }
         return selected;
     }
@@ -151,7 +151,7 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
         assessmentGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId)
             .ifPresent(open -> {
                 open.complete(GradingOutcome.DECLINED,
-                    "Bài chuyển sang phúc khảo theo đơn của học sinh.", now);
+                    "The submission moved to appeal at the student's request.", now);
                 assessmentGradingAssignmentRepository.save(open);
             });
     }
@@ -161,6 +161,6 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
         candidateResult.setStatus(AssessmentCandidateResultStatus.APPEALED);
         assessmentCandidateResultRepository.save(candidateResult);
         resultStatusHistoryRecorder.record(before, candidateResult,
-            ResultStatusChangeSource.SYSTEM, currentUserId, "Học sinh nộp đơn phúc khảo.");
+            ResultStatusChangeSource.SYSTEM, currentUserId, "The student filed an appeal.");
     }
 }

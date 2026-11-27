@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record RejectRegisterFormRequest(
-    @NotBlank(message = "Lý do từ chối không được để trống")
-    @Size(max = 255, message = "Lý do từ chối không được vượt quá 255 ký tự")
+    @NotBlank(message = "Rejection reason must not be blank")
+    @Size(max = 255, message = "Rejection reason must not exceed 255 characters")
     String reason
 ) {
 

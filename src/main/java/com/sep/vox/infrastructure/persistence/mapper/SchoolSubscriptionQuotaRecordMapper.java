@@ -39,7 +39,7 @@ public final class SchoolSubscriptionQuotaRecordMapper {
         try {
             return QuotaType.valueOf(type);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại quota khi chuyển đổi sang model không hợp lệ: " + type);
+            throw new IllegalArgumentException("Invalid quota type when converting to the model: " + type);
         }
     }
 

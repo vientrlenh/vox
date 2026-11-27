@@ -169,7 +169,7 @@ public class RestSchoolController {
         UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         PreviewSchoolDirectoryImportResponse data = previewSchoolDirectoryImportFromFileUseCase.execute(
                 new PreviewSchoolDirectoryImportFromFileCommand(uploadedFile));
-        ApiResponse<PreviewSchoolDirectoryImportResponse> response = ApiResponse.success("Preview import danh mục trường thành công", data);
+        ApiResponse<PreviewSchoolDirectoryImportResponse> response = ApiResponse.success("School directory import previewed successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -180,7 +180,7 @@ public class RestSchoolController {
             @Valid @RequestBody AcceptSchoolDirectoryImportRequest request) {
         AcceptSchoolDirectoryImportCommand command = AcceptSchoolDirectoryImportRequest.toCommand(sessionId, request);
         acceptSchoolDirectoryImportUseCase.execute(command);
-        ApiResponse<Object> response = ApiResponse.success("Import danh mục trường thành công");
+        ApiResponse<Object> response = ApiResponse.success("School directory imported successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -189,7 +189,7 @@ public class RestSchoolController {
     public ResponseEntity<ApiResponse<CreateSchoolDirectoryResponse>> createSchoolDirectory(@Valid @RequestBody CreateSchoolDirectoryRequest request) {
         CreateSchoolDirectoryCommand command = CreateSchoolDirectoryRequest.toCommand(request);
         CreateSchoolDirectoryResponse data = createSchoolDirectoryUseCase.execute(command);
-        ApiResponse<CreateSchoolDirectoryResponse> response = ApiResponse.success("Danh mục trường được tạo thành công", data);
+        ApiResponse<CreateSchoolDirectoryResponse> response = ApiResponse.success("School directory created successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -200,7 +200,7 @@ public class RestSchoolController {
             @Valid @RequestBody CreateSchoolClassRequest request) {
         CreateSchoolClassCommand command = CreateSchoolClassRequest.toCommand(schoolId, request);
         CreateSchoolClassResponse data = createSchoolClassUseCase.execute(command);
-        ApiResponse<CreateSchoolClassResponse> response = ApiResponse.success("Tạo lớp học thành công", data);
+        ApiResponse<CreateSchoolClassResponse> response = ApiResponse.success("Class created successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -212,7 +212,7 @@ public class RestSchoolController {
             @Valid @RequestBody CreateSchoolClassUserRequest request) {
         CreateSchoolClassUserCommand command = CreateSchoolClassUserRequest.toCommand(schoolId, classId, request);
         CreateSchoolClassUserResponse data = createSchoolClassUserUseCase.execute(command);
-        ApiResponse<CreateSchoolClassUserResponse> response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
+        ApiResponse<CreateSchoolClassUserResponse> response = ApiResponse.success("User added to the class successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -224,7 +224,7 @@ public class RestSchoolController {
             @Valid @RequestBody BulkCreateSchoolClassUsersRequest request) {
         BulkCreateSchoolClassUsersCommand command = BulkCreateSchoolClassUsersRequest.toCommand(schoolId, classId, request);
         BulkCreateSchoolClassUsersResponse data = bulkCreateSchoolClassUsersUseCase.execute(command);
-        ApiResponse<BulkCreateSchoolClassUsersResponse> response = ApiResponse.success("Thêm người dùng vào lớp học thành công", data);
+        ApiResponse<BulkCreateSchoolClassUsersResponse> response = ApiResponse.success("Users added to the class successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -236,7 +236,7 @@ public class RestSchoolController {
             @PathVariable("userId") UUID userId) {
         DeleteSchoolClassUserCommand command = new DeleteSchoolClassUserCommand(schoolId, classId, userId);
         deleteSchoolClassUserUseCase.execute(command);
-        ApiResponse<Void> response = ApiResponse.<Void>success("Xóa người dùng khỏi lớp học thành công");
+        ApiResponse<Void> response = ApiResponse.<Void>success("User removed from the class successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -249,7 +249,7 @@ public class RestSchoolController {
             @Valid @RequestBody UpdateSchoolClassUserStatusRequest request) {
         UpdateSchoolClassUserStatusCommand command = UpdateSchoolClassUserStatusRequest.toCommand(schoolId, classId, userId, request);
         UpdateSchoolClassUserStatusResponse data = updateSchoolClassUserStatusUseCase.execute(command);
-        ApiResponse<UpdateSchoolClassUserStatusResponse> response = ApiResponse.success("Cập nhật trạng thái người dùng trong lớp học thành công", data);
+        ApiResponse<UpdateSchoolClassUserStatusResponse> response = ApiResponse.success("User status in the class updated successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -263,7 +263,7 @@ public class RestSchoolController {
             @RequestParam("file") MultipartFile file) throws IOException {
         UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         PreviewSchoolClassImportResponse data = previewSchoolClassImportFromFileUseCase.execute(new PreviewSchoolClassImportFromFileCommand(schoolId, uploadedFile));
-        ApiResponse<PreviewSchoolClassImportResponse> response = ApiResponse.success("Preview import lớp học thành công", data);
+        ApiResponse<PreviewSchoolClassImportResponse> response = ApiResponse.success("Class import previewed successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -275,11 +275,11 @@ public class RestSchoolController {
             @Valid @RequestBody AcceptSchoolClassImportRequest request) {
         AcceptSchoolClassImportCommand command = AcceptSchoolClassImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolClassImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import lớp học đã được tiếp nhận, đang xử lý"));
+        return ResponseEntity.ok(ApiResponse.success("Class import request accepted, processing"));
     }
 
-    // Import khối lớp từ Excel đã bị bỏ: catalog dùng chung chỉ có vài dòng, seed bằng migration
-    // (V41) rồi quản trị hệ thống sửa qua POST/DELETE /schools/grade-levels.
+    // Importing grades from Excel was dropped: the shared catalog has only a few rows, seeded by a migration
+    // (V41) and then edited by the system admin through POST/DELETE /schools/grade-levels.
 
     @PostMapping(
             value = "/{schoolId}/grades/import/preview",
@@ -291,7 +291,7 @@ public class RestSchoolController {
             @RequestParam("file") MultipartFile file) throws IOException {
         UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         PreviewSchoolGradeImportResponse data = previewSchoolGradeImportFromFileUseCase.execute(new PreviewSchoolGradeImportFromFileCommand(schoolId, uploadedFile));
-        ApiResponse<PreviewSchoolGradeImportResponse> response = ApiResponse.success("Preview import năm học thành công", data);
+        ApiResponse<PreviewSchoolGradeImportResponse> response = ApiResponse.success("School year import previewed successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -303,7 +303,7 @@ public class RestSchoolController {
             @Valid @RequestBody AcceptSchoolGradeImportRequest request) {
         AcceptSchoolGradeImportCommand command = AcceptSchoolGradeImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolGradeImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import năm học đã được tiếp nhận, đang xử lý"));
+        return ResponseEntity.ok(ApiResponse.success("School year import request accepted, processing"));
     }
 
     @PostMapping(
@@ -316,7 +316,7 @@ public class RestSchoolController {
             @RequestParam("file") MultipartFile file) throws IOException {
         UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         PreviewSchoolClassUserImportResponse data = previewSchoolClassUserImportFromFileUseCase.execute(new PreviewSchoolClassUserImportFromFileCommand(schoolId, uploadedFile));
-        ApiResponse<PreviewSchoolClassUserImportResponse> response = ApiResponse.success("Preview import người dùng vào lớp học thành công", data);
+        ApiResponse<PreviewSchoolClassUserImportResponse> response = ApiResponse.success("Class user import previewed successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -328,7 +328,7 @@ public class RestSchoolController {
             @Valid @RequestBody AcceptSchoolClassUserImportRequest request) {
         AcceptSchoolClassUserImportCommand command = AcceptSchoolClassUserImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolClassUserImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import người dùng vào lớp học đã được tiếp nhận, đang xử lý"));
+        return ResponseEntity.ok(ApiResponse.success("Class user import request accepted, processing"));
     }
 
     @DeleteMapping("/{schoolId}/classes/{classId}")
@@ -337,7 +337,7 @@ public class RestSchoolController {
             @PathVariable("schoolId") UUID schoolId,
             @PathVariable("classId") UUID classId) {
         deleteSchoolClassUseCase.execute(new DeleteSchoolClassCommand(schoolId, classId));
-        ApiResponse<Void> response = ApiResponse.<Void>success("Xóa lớp học thành công");
+        ApiResponse<Void> response = ApiResponse.<Void>success("Class deleted successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -348,7 +348,7 @@ public class RestSchoolController {
             @Valid @RequestBody CreateSchoolUserRequest request) {
         CreateSchoolUserCommand command = CreateSchoolUserRequest.toCommand(schoolId, request);
         CreateSchoolUserResponse data = createSchoolUserUseCase.execute(command);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo người dùng thành công", data));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("User created successfully", data));
     }
 
     @DeleteMapping("/{schoolId}/users/{userId}")
@@ -368,7 +368,7 @@ public class RestSchoolController {
             @RequestParam("file") MultipartFile file) throws IOException {
         UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         PreviewSchoolUserImportResponse data = previewSchoolUserImportFromFileUseCase.execute(new PreviewSchoolUserImportFromFileCommand(schoolId, uploadedFile));
-        return ResponseEntity.ok(ApiResponse.success("Preview import người dùng thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("User import previewed successfully", data));
     }
 
     @PostMapping("/{schoolId}/users/import/{sessionId}/accept")
@@ -379,11 +379,11 @@ public class RestSchoolController {
             @Valid @RequestBody AcceptSchoolUserImportRequest request) {
         AcceptSchoolUserImportCommand command = AcceptSchoolUserImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolUserImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import người dùng đã được tiếp nhận, đang xử lý"));
+        return ResponseEntity.ok(ApiResponse.success("User import request accepted, processing"));
     }
 
     //Delete School
-    @Operation(summary = "Xóa trường học")
+    @Operation(summary = "Deletes a school")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> deleteSchool(@PathVariable("id") UUID id) {
@@ -392,11 +392,11 @@ public class RestSchoolController {
 
         UUID response = deleteSchoolUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Xóa trường học thành công", response));
+        return ResponseEntity.ok(ApiResponse.success("School deleted successfully", response));
     }
 
 
-    @Operation(summary = "Thay đổi trạng thái hoạt động của trường học")
+    @Operation(summary = "Changes the active status of a school")
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> updateSchoolStatus(
@@ -409,8 +409,8 @@ public class RestSchoolController {
         UUID response = updateSchoolStatusUseCase.execute(command);
 
         String message = isActive
-                ? "Đã kích hoạt lại trường học thành công"
-                : "Đã vô hiệu hóa trường học thành công";
+                ? "School reactivated successfully"
+                : "School deactivated successfully";
 
         return ResponseEntity.ok(
                 ApiResponse.success(message, response)
@@ -419,7 +419,7 @@ public class RestSchoolController {
 
 
     //=======================SCHOOL ROOM=========================================
-    @Operation(summary = "Thêm phòng học")
+    @Operation(summary = "Adds a room")
     @PostMapping("/{schoolId}/rooms")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> addSchoolRoom(
@@ -432,11 +432,11 @@ public class RestSchoolController {
         UUID roomId = addSchoolRoomUseCase.execute(command);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Thêm phòng học thành công", roomId)
+                ApiResponse.success("Room added successfully", roomId)
         );
     }
 
-    @Operation(summary = "Preview import phòng học từ file Excel")
+    @Operation(summary = "Previews a room import from an Excel file")
     @PostMapping(
             value = "/{schoolId}/rooms/import/preview",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
@@ -447,10 +447,10 @@ public class RestSchoolController {
             @RequestParam("file") MultipartFile file) throws IOException {
         UploadedFile uploadedFile = UploadedFile.upload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         PreviewSchoolRoomImportResponse data = previewSchoolRoomImportFromFileUseCase.execute(new PreviewSchoolRoomImportFromFileCommand(schoolId, uploadedFile));
-        return ResponseEntity.ok(ApiResponse.success("Preview import phòng học thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Room import previewed successfully", data));
     }
 
-    @Operation(summary = "Xác nhận import phòng học")
+    @Operation(summary = "Confirms the room import")
     @PostMapping("/{schoolId}/rooms/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Object>> acceptRoomImportSession(
@@ -459,10 +459,10 @@ public class RestSchoolController {
             @Valid @RequestBody AcceptSchoolRoomImportRequest request) {
         AcceptSchoolRoomImportCommand command = AcceptSchoolRoomImportRequest.toCommand(schoolId, sessionId, request);
         acceptSchoolRoomImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yêu cầu import phòng học đã được tiếp nhận, đang xử lý"));
+        return ResponseEntity.ok(ApiResponse.success("Room import request accepted, processing"));
     }
 
-    @Operation(summary = "Xóa phòng học theo id ")
+    @Operation(summary = "Deletes a room by id")
     @DeleteMapping("/{schoolId}/rooms/{roomId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRoom(
@@ -475,12 +475,12 @@ public class RestSchoolController {
 
          deleteSchoolRoomUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Xóa thành công school room"));
+        return ResponseEntity.ok(ApiResponse.success("School room deleted successfully"));
     }
 
     //====================================SCHOOL GRADE ==============================================
 
-    @Operation(summary = "Thêm khối học sinh vd: khối 10,11,12")
+    @Operation(summary = "Adds a student grade, e.g. grades 10, 11, 12")
     @PostMapping("/{schoolId}/grade-levels/{gradeLevelId}/grades")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchoolGrade(
@@ -492,12 +492,12 @@ public class RestSchoolController {
 
         UUID newGradeId = createSchoolGradeUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Thêm thành công khối của trường", newGradeId));
+        return ResponseEntity.ok(ApiResponse.success("School grade added successfully", newGradeId));
     }
 
 
 
-    @Operation(summary = "Xóa khối theo id của trường ")
+    @Operation(summary = "Deletes a school grade by id")
     @DeleteMapping("/{schoolId}/grades/{gradeId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolGrade(
@@ -509,13 +509,13 @@ public class RestSchoolController {
 
         Void result = deleteSchoolGradeUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Xóa thành công school grade", result));
+        return ResponseEntity.ok(ApiResponse.success("School grade deleted successfully", result));
     }
 
-    //=================== GRADE LEVEL (catalog toàn cục) ================================
-    // Không còn nằm dưới /{schoolId}: khối lớp dùng chung cho mọi trường nên chỉ SYSTEM_ADMIN
-    // được tạo/xóa. Xem GradeLevelController để biết các endpoint đọc.
-    @Operation(summary = "Thêm Khối học sinh vào catalog dùng chung (VD: Khối 10, Khối 11)")
+    //=================== GRADE LEVEL (global catalog) ================================
+    // No longer under /{schoolId}: grade levels are shared by every school, so only SYSTEM_ADMIN
+    // may create/delete them. See GradeLevelController for the read endpoints.
+    @Operation(summary = "Adds a student Grade to the shared catalog (e.g. Grade 10, Grade 11)")
     @PostMapping("/grade-levels")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createGradeLevel(
@@ -524,10 +524,10 @@ public class RestSchoolController {
         CreateGradeLevelCommand command = CreateGradeLevelRequest.toCommand(request);
         UUID newGradeLevelId = createGradeLevelUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Thêm khối học sinh thành công", newGradeLevelId));
+        return ResponseEntity.ok(ApiResponse.success("Student grade added successfully", newGradeLevelId));
     }
 
-    @Operation(summary = "Xóa Khối học sinh khỏi catalog dùng chung")
+    @Operation(summary = "Removes a student Grade from the shared catalog")
     @DeleteMapping("/grade-levels/{gradeLevelId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteGradeLevel(
@@ -535,28 +535,28 @@ public class RestSchoolController {
 
         deleteGradeLevelUseCase.execute(new DeleteGradeLevelCommand(gradeLevelId));
 
-        return ResponseEntity.ok(ApiResponse.success("Xóa Khối học sinh thành công", null));
+        return ResponseEntity.ok(ApiResponse.success("Student grade deleted successfully", null));
     }
 
 
-    @Operation(summary = "Xác minh trường theo nhu cầu của hệ thống (hỗ trợ nguời đăng ký không cần nộp tài liệu chứng thực)")
+    @Operation(summary = "Verifies a school on the system's own initiative (lets registrants skip submitting supporting documents)")
     @PatchMapping("/directories/{id}/verify")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> verifySchoolDirectory(@PathVariable("id") UUID id) {
         VerifySchoolDirectoryCommand command = new VerifySchoolDirectoryCommand(id);
         UUID data = verifySchoolDirectoryUseCase.execute(command);
-        ApiResponse<UUID> response = ApiResponse.success("Danh mục trường đã được xác minh", data);
+        ApiResponse<UUID> response = ApiResponse.success("School directory entry verified", data);
         return ResponseEntity.ok(response);
     }
 
 
-    @Operation(summary = "Tạo trường học trực tiếp, không qua đơn đăng ký (có danh mục thì ưu tiên lấy thông tin từ danh mục)")
+    @Operation(summary = "Creates a school directly, without a registration form (when a directory entry exists its information takes priority)")
     @PostMapping
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchool(@Valid @RequestBody CreateSchoolRequest request) {
         CreateSchoolCommand command = CreateSchoolRequest.toCommand(request);
         UUID schoolId = createSchoolUseCase.execute(command);
-        ApiResponse<UUID> response = ApiResponse.success("Trường học đã được tạo thành công", schoolId);
+        ApiResponse<UUID> response = ApiResponse.success("School created successfully", schoolId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

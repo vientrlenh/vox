@@ -48,8 +48,8 @@ public class AssessmentPaperAutoAssigner {
     private final AssessmentCandidateRepository assessmentCandidateRepository;
 
     /**
-     * Gán đề cho những thí sinh chưa có đề trong danh sách. Chỉ sửa đối tượng trong bộ nhớ -- người
-     * gọi tự lưu, vì các use case xếp ca đều đã có sẵn một lượt {@code saveAll} ở cuối.
+     * Assigns papers to the candidates in the list who have none. Only modifies in-memory objects -- the
+     * caller saves, because the scheduling use cases already have a {@code saveAll} at the end.
      */
     public void assignPapersIfNeeded(Assessment assessment, Collection<AssessmentCandidate> candidates, Instant now, UUID updatedBy) {
         List<AssessmentCandidate> pending = pendingOf(candidates);
@@ -60,16 +60,16 @@ public class AssessmentPaperAutoAssigner {
         if (paperIds.isEmpty()) {
             return;
         }
-        // Phân bố hiện có phải tính cả thí sinh đã có đề, nếu không mỗi lượt gán lại dồn hết vào mã
-        // đề đầu tiên.
+        // The existing distribution must count candidates who already have a paper, otherwise every assignment piles up on the first
+        // paper.
         assign(pending, paperIds, assessmentCandidateRepository.findByAssessmentId(assessment.getId()), now, updatedBy);
     }
 
     /**
-     * Gán đề cho MỌI thí sinh của kỳ thi còn thiếu đề và lưu lại. Đây là điểm móc chính: gọi ngay sau
-     * khi mã đề cuối cùng được khoá, lúc điều kiện "mọi mã đề LOCKED" vừa đủ.
+     * Assigns papers to EVERY candidate of the assessment still missing one and saves. This is the main hook: call it right after
+     * the last paper is locked, the moment the condition "every paper LOCKED" is just satisfied.
      *
-     * @return số thí sinh vừa được gán đề
+     * @return the number of candidates just assigned a paper
      */
     public int backfillAssessment(Assessment assessment, Instant now, UUID updatedBy) {
         List<UUID> paperIds = resolveAssignablePaperIds(assessment);
@@ -87,8 +87,8 @@ public class AssessmentPaperAutoAssigner {
     }
 
     /**
-     * Id các mã đề dùng được, sắp theo variant tăng dần cho ổn định; rỗng nếu kỳ thi chưa có mã đề
-     * nào hoặc còn mã đề chưa khoá.
+     * Ids of the usable papers, sorted by ascending variant for stability; empty if the assessment has no paper
+     * yet or still has an unlocked paper.
      */
     public List<UUID> resolveAssignablePaperIds(Assessment assessment) {
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
@@ -121,7 +121,7 @@ public class AssessmentPaperAutoAssigner {
         return usage;
     }
 
-    /** Số lần một mã đề đã được dùng; mã đề chưa có mặt trong bảng đếm coi như 0. */
+    /** How many times a paper has been used; a paper absent from the count table counts as 0. */
     private static long countOf(Map<UUID, Long> usage, UUID paperId) {
         Long count = usage.get(paperId);
         return count == null ? 0L : count;
@@ -157,7 +157,7 @@ public class AssessmentPaperAutoAssigner {
         });
     }
 
-    /** Thí sinh chưa xếp ca gom chung một nhóm (khoá {@code null}) -- rải đều giữa họ với nhau. */
+    /** Candidates not yet scheduled share one group (key {@code null}) -- spread evenly among themselves. */
     private Map<UUID, List<AssessmentCandidate>> groupBySchedule(Collection<AssessmentCandidate> candidates) {
         Map<UUID, List<AssessmentCandidate>> grouped = new LinkedHashMap<UUID, List<AssessmentCandidate>>();
         for (AssessmentCandidate candidate : candidates) {
@@ -166,7 +166,7 @@ public class AssessmentPaperAutoAssigner {
         return grouped;
     }
 
-    /** Mã đề đang được dùng ít nhất; hoà thì lấy mã đề đứng trước trong thứ tự ổn định. */
+    /** The paper used the least; on a tie take the paper that comes first in the stable order. */
     private UUID leastUsed(List<UUID> paperIds, Map<UUID, Long> usage) {
         UUID chosen = paperIds.get(0);
         long chosenCount = countOf(usage, chosen);

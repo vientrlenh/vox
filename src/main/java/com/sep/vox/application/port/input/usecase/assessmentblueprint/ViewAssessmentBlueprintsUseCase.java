@@ -38,7 +38,7 @@ public class ViewAssessmentBlueprintsUseCase implements IUseCase<ViewAssessmentB
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         PageResult<AssessmentBlueprint> result = findAccessible(input, currentUserId, currentSchoolId, systemAdmin, schoolAdmin);

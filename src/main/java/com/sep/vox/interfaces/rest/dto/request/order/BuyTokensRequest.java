@@ -14,7 +14,7 @@ public record BuyTokensRequest(
     @NotNull UUID subscriptionId,
     @NotEmpty List<TokenPurchaseItemRequestItem> items, 
 
-    @NotBlank(message = "Phương thức thanh toán không được để trống")
+    @NotBlank(message = "Payment method must not be blank")
     String paymentMethod
 ) {
     private static final List<String> VALID_METHODS = List.of(
@@ -23,7 +23,7 @@ public record BuyTokensRequest(
         "SEPAY"
     );
 
-    @AssertTrue(message = "Phương thức thanh toán không hợp lệ")
+    @AssertTrue(message = "Payment method is invalid")
     public boolean isPaymentMethodValid() {
         return VALID_METHODS.contains(paymentMethod);
     }

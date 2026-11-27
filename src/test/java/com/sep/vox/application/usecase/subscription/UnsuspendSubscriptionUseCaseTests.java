@@ -32,10 +32,10 @@ import com.sep.vox.domain.repository.SchoolSubscriptionEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Gỡ đình chỉ trả gói về ACTIVE và xóa trắng ba cột suspended_*.
+ * Lifting a suspension returns the plan to ACTIVE and wipes the three suspended_* columns.
  *
- * <p>Vì xóa trắng nên THỨ TỰ là một phần của hành vi: sổ audit phải được ghi TRƯỚC lệnh save, nếu
- * không thì lý do đình chỉ đã biến mất trước khi có chỗ chép lại nó.
+ * <p>Because they are wiped, ORDER is part of the behaviour: the audit ledger must be written BEFORE the save,
+ * otherwise the suspension reason is gone before there is anywhere to copy it to.
  */
 class UnsuspendSubscriptionUseCaseTests {
 
@@ -97,7 +97,7 @@ class UnsuspendSubscriptionUseCaseTests {
         order.verify(schoolSubscriptionRepository).save(any());
     }
 
-    /** Ghi chú không bắt buộc: gỡ đình chỉ là trả lại quyền, không phải tước đi. */
+    /** The note is optional: lifting a suspension gives access back, it does not take anything away. */
     @Test
     void should_accept_a_missing_note() {
         givenSubscription(SchoolSubscriptionStatus.SUSPENDED);

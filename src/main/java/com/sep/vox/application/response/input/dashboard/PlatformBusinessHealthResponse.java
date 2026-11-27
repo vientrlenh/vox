@@ -19,22 +19,22 @@ public record PlatformBusinessHealthResponse(
     long lapsedSchools,
     long suspendedSchools,
     long schoolsInDebt,
-    /** Tiền thực thu trong cửa sổ (đơn hàng SUCCESS), VND. */
+    /** Money actually collected within the window (SUCCESS orders), VND. */
     BigDecimal revenueVnd,
-    /** Cùng độ dài, ngay TRƯỚC cửa sổ đang xem — xem javadoc use case về lý do không dùng tháng lịch. */
+    /** The same length, immediately BEFORE the window being viewed -- see the use case javadoc for why calendar months are not used. */
     BigDecimal previousRevenueVnd,
-    /** Giá vốn AI phát sinh trong cửa sổ, VND. */
+    /** The AI cost price incurred within the window, VND. */
     BigDecimal aiCostVnd,
-    /** (doanh thu - giá vốn AI) / doanh thu * 100. {@code null} khi cửa sổ chưa thu được đồng nào. */
+    /** (revenue - AI cost price) / revenue * 100. {@code null} when the window has collected no money. */
     Double grossMarginPercent,
     /**
-     * Cùng công thức, tính trên kỳ so sánh — để màn hình vẽ được mức chênh theo ĐIỂM PHẦN TRĂM.
+     * The same formula, computed on the comparison period -- so the screen can draw the change in PERCENTAGE POINTS.
      *
-     * <p>Tính ở đây chứ không để client lấy hiệu của hai tỷ lệ tự dựng: quy ước "doanh thu 0 thì biên
-     * không tồn tại, không phải 0%" chỉ đúng nếu áp một lần cho cả hai kỳ. Client tự chia sẽ dựng ra
-     * một biên -∞ cho kỳ trước trống rồi vẽ thành cú sụt khổng lồ.
+     * <p>Computed here rather than letting the client subtract two ratios it builds itself: the convention "with 0 revenue the margin
+     * does not exist, it is not 0%" is only correct if applied once for both periods. A client doing its own division would build
+     * a margin of -∞ for an empty previous period and then draw it as a huge drop.
      *
-     * <p>{@code null} khi kỳ trước chưa thu được đồng nào — lúc đó KHÔNG có mức chênh để hiển thị.
+     * <p>{@code null} when the previous period collected no money -- then there is NO change to show.
      */
     Double previousGrossMarginPercent
 ) {

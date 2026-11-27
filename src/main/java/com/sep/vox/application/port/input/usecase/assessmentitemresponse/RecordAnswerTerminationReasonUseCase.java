@@ -21,7 +21,7 @@ public class RecordAnswerTerminationReasonUseCase implements IUseCase<RecordAnsw
     @Transactional
     public Void execute(Command input) {
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(input.answerId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu trả lời để lưu lý do kết thúc"));
+            .orElseThrow(() -> new ResourceNotFoundException("Answer not found, so the termination reason cannot be saved"));
         response.setTerminationReason(input.reason());
         assessmentItemResponseRepository.save(response);
         return null;

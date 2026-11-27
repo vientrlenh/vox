@@ -68,14 +68,14 @@ class BuildPracticePaperUseCaseTests {
     @Test
     void should_reject_beforeSelectingAnyQuestion_when_studentSchoolHasNoActiveSubscription() {
         doThrow(new BusinessRuleViolationException(
-                "Trường chưa có gói subscription đang hoạt động, không thể bắt đầu buổi luyện tập cá nhân hóa AI."))
+                "The school has no active subscription, so it cannot start a personalized AI practice session."))
             .when(schoolSubscriptionActiveGuardService).requireActiveForStudent(eq(STUDENT_ID), any());
 
         BuildPracticePaperCommand command = new BuildPracticePaperCommand(TOPIC_ID, UUID.randomUUID(), "SELECTED", null, List.of(), List.of());
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("chưa có gói subscription đang hoạt động");
+            .hasMessageContaining("has no active subscription");
         // Fail-fast: the guard runs even before the topic lookup step, so no extra query/AI call is
         // spent.
         verify(topicRepository, never()).findTopicById(any());

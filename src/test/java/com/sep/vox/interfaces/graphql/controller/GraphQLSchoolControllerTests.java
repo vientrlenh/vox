@@ -372,7 +372,7 @@ class GraphQLSchoolControllerTests {
     void school_students_by_school_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.schoolStudentsBySchool(schoolId, 0, 20, null, null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Số trang yêu cầu không hợp lệ");
+            .hasMessage("Requested page number is invalid");
     }
 
     @Test
@@ -391,7 +391,7 @@ class GraphQLSchoolControllerTests {
     void school_teachers_by_school_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.schoolTeachersBySchool(schoolId, 0, 20, null, null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Số trang yêu cầu không hợp lệ");
+            .hasMessage("Requested page number is invalid");
     }
 
     @Test
@@ -425,7 +425,7 @@ class GraphQLSchoolControllerTests {
     void school_users_by_school_field_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.schoolUsersBySchool(schoolId, 0, 20, null, null, null, null, null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Số trang yêu cầu không hợp lệ");
+            .hasMessage("Requested page number is invalid");
     }
 
     private SchoolUserDto schoolUserDto(UUID id, UUID schoolId, UUID userId) {

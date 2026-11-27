@@ -14,9 +14,9 @@ public interface SchoolRepository {
     Optional<School> findByCode(String code);
 
     /**
-     * Trả về DANH SÁCH chứ không phải Optional: tên miền KHÔNG còn là danh tính của trường, một
-     * trường nhiều cơ sở dùng chung 1 tên miền và mỗi cơ sở là một School riêng. Đổi lại Optional
-     * là ngày nào đó nổ NonUniqueResultException ở chỗ không liên quan.
+     * Returns a LIST rather than an Optional: the domain name is NO LONGER the identity of a school, a
+     * school with several campuses shares 1 domain name and each campus is its own School. Going back to Optional
+     * means one day NonUniqueResultException blows up somewhere unrelated.
      */
     List<School> findByDomain(String domain);
     PageResult<School> findAll(int pageNumber, int size, String search, Boolean isActive);

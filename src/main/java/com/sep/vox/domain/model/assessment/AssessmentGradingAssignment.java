@@ -42,8 +42,8 @@ public class AssessmentGradingAssignment {
     public AssessmentGradingAssignment() {}
 
     /**
-     * Mở một vòng chấm mới. {@code activeResultId} được set bằng chính bài — đây là
-     * chỗ duy nhất dựng bất biến "một phân công mở / bài", nên đừng tự new rồi set tay.
+     * Opens a new grading round. {@code activeResultId} is set to the result itself — this is the only place that
+     * builds the invariant "one open assignment per result", so do not call new and set it by hand.
      */
     public static AssessmentGradingAssignment open(UUID candidateResultId, UUID teacherId, GradingRoundType roundType,
             UUID appealId, BigDecimal scoreBefore, Instant assignedAt, UUID assignedBy,
@@ -62,14 +62,14 @@ public class AssessmentGradingAssignment {
         return assignment;
     }
 
-    /** Đã chốt thì không được gỡ, đổi giáo viên hay chấm lại. */
+    /** Once finalized it cannot be removed, have its teacher changed, or be re-graded. */
     public boolean isCompleted() {
         return status == GradingAssignmentStatus.COMPLETED;
     }
 
     /**
-     * Đóng phân công kèm kết luận. Nhả {@code activeResultId} về null để bài nhận
-     * được vòng tiếp theo mà unique index vẫn giữ nguyên ý nghĩa.
+     * Closes the assignment with an outcome. Releases {@code activeResultId} back to null so the result can receive
+     * the next round while the unique index keeps its meaning.
      */
     public void complete(GradingOutcome outcome, String reason, Instant at) {
         this.status = GradingAssignmentStatus.COMPLETED;

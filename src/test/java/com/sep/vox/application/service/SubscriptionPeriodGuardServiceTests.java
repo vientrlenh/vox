@@ -22,15 +22,15 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Khung mở/đóng bài phải nằm trong phiên thuê bao của trường. Điểm dễ sai nhất là biên trên:
- * {@code school_subscriptions.end_date} là {@code timestamptz} và EXCLUSIVE -- nó là ĐÚNG THỜI ĐIỂM
- * kỳ kết thúc, không phải "ngày cuối còn dùng được".
+ * The open/close window of an assessment must fall inside the school's subscription period. The easiest mistake is the upper bound:
+ * {@code school_subscriptions.end_date} is a {@code timestamptz} and EXCLUSIVE -- it is the EXACT MOMENT
+ * the period ends, not "the last day it can be used".
  *
- * <p>Trước V2 cột này là {@code date} và được soi bằng {@code CURRENT_DATE BETWEEN start_date AND
- * end_date}, tức INCLUSIVE theo NGÀY, nên guard phải cộng thêm một ngày để lấy cận trên. Cộng thêm
- * đó giờ là sai: nó cho lịch thi tràn ra ngoài hạn gói đúng 24 tiếng, và bài chỉ chết lúc chạy thật.
- * Các native query trong {@code SpringDataSchoolSubscriptionRepository} cũng đã đổi sang
- * {@code end_date > CURRENT_TIMESTAMP} cho khớp.
+ * <p>Before V2 this column was a {@code date} and was checked with {@code CURRENT_DATE BETWEEN start_date AND
+ * end_date}, i.e. INCLUSIVE by DAY, so the guard had to add one day to get the upper bound. That addition
+ * is wrong now: it lets an assessment schedule spill 24 hours past the plan period, and the assessment only dies at real run time.
+ * The native queries in {@code SpringDataSchoolSubscriptionRepository} were also changed to
+ * {@code end_date > CURRENT_TIMESTAMP} to match.
  */
 class SubscriptionPeriodGuardServiceTests {
 
@@ -43,11 +43,11 @@ class SubscriptionPeriodGuardServiceTests {
     void setUp() {
         schoolSubscriptionRepository = mock(SchoolSubscriptionRepository.class);
         guard = new SubscriptionPeriodGuardService(schoolSubscriptionRepository);
-        // end_date là mốc KẾT THÚC THẬT và EXCLUSIVE, không phải "ngày cuối còn dùng được": gói một
-        // năm mua lúc 01/01/2026 00:00 có endDate = 01/01/2027 00:00, vì SubscriptionPlan.endDateFrom
-        // cộng thẳng chu kỳ vào mốc bắt đầu và GIỮ NGUYÊN giờ. Fixture cũ đặt endDate = 31/12 00:00,
-        // tức là mô phỏng thời LocalDate khi cột này còn là mốc theo NGÀY -- hình dạng đó không còn
-        // sinh ra được từ luồng mua thật nữa.
+        // end_date is the REAL and EXCLUSIVE END moment, not "the last day it can be used": a one-year plan
+        // bought on 01/01/2026 00:00 has endDate = 01/01/2027 00:00, because SubscriptionPlan.endDateFrom
+        // adds the period straight onto the start moment and KEEPS the time. The old fixture set endDate = 31/12 00:00,
+        // simulating the LocalDate era when this column was a DAY value -- that shape can no longer
+        // be produced by the real purchase flow.
         givenSubscription(LocalDate.of(2026, 1, 1), LocalDate.of(2027, 1, 1));
     }
 
@@ -58,7 +58,7 @@ class SubscriptionPeriodGuardServiceTests {
             .doesNotThrowAnyException();
     }
 
-    /** Biên dưới INCLUSIVE: 00:00 đúng ngày start_date vẫn phải qua. */
+    /** INCLUSIVE lower bound: 00:00 exactly on start_date must still pass. */
     @Test
     void should_pass_when_open_at_is_first_moment_of_start_date() {
         assertThatCode(() -> guard.requireWithinSubscriptionPeriod(
@@ -66,7 +66,7 @@ class SubscriptionPeriodGuardServiceTests {
             .doesNotThrowAnyException();
     }
 
-    /** Biên trên EXCLUSIVE: sát ngay trước mốc kết thúc vẫn phải qua. */
+    /** EXCLUSIVE upper bound: right before the end moment must still pass. */
     @Test
     void should_pass_when_close_at_is_last_moment_before_end() {
         assertThatCode(() -> guard.requireWithinSubscriptionPeriod(
@@ -79,7 +79,7 @@ class SubscriptionPeriodGuardServiceTests {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2025-12-31T23:00"), at("2026-01-02T09:00")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Thời gian mở bài")
+            .hasMessageContaining("Opening time")
             .hasMessageContaining("01/01/2026")
             .hasMessageContaining("01/01/2027");
     }
@@ -89,17 +89,17 @@ class SubscriptionPeriodGuardServiceTests {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-06-01T07:00"), at("2027-01-05T09:00")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Thời gian đóng bài")
+            .hasMessageContaining("Closing time")
             .hasMessageContaining("01/01/2027");
     }
 
-    /** Đúng mốc kết thúc đã là ra ngoài hạn -- biên trên EXCLUSIVE. */
+    /** Exactly the end moment is already outside the period -- the EXCLUSIVE upper bound. */
     @Test
     void should_reject_when_close_at_is_exactly_end_instant() {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-12-31T07:00"), at("2027-01-01T00:00")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Thời gian đóng bài");
+            .hasMessageContaining("Closing time");
     }
 
     /**
@@ -113,12 +113,12 @@ class SubscriptionPeriodGuardServiceTests {
         assertThatThrownBy(() -> guard.requireWithinSubscriptionPeriod(
             schoolId, at("2026-06-01T07:00"), at("2026-06-01T09:00")))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("gói dịch vụ");
+            .hasMessageContaining("active subscription");
     }
 
     /**
-     * Kỳ thi tập trung cũ có thể còn null một vế; guard không được biến thành nơi bắt buộc nhập
-     * (việc đó thuộc về use case), chỉ soi những giá trị thật sự có.
+     * An older centralized assessment may still have one side null; the guard must not become the place that forces input
+     * (that belongs to the use case), it only inspects the values that really exist.
      */
     @Test
     void should_ignore_null_dates() {
@@ -136,9 +136,9 @@ class SubscriptionPeriodGuardServiceTests {
     }
 
     /**
-     * Gói có start_date/end_date null là dữ liệu hỏng chứ không phải "không giới hạn" -- nhưng chặn
-     * ở đây thì mọi thao tác của trường đó đứng hình vì một lỗi dữ liệu không liên quan tới người
-     * dùng cuối, nên bỏ qua ràng buộc thay vì ném.
+     * A plan with null start_date/end_date is corrupt data, not "unlimited" -- but blocking
+     * here would freeze every operation of that school over a data error unrelated to the end
+     * user, so the constraint is skipped instead of throwing.
      */
     @Test
     void should_skip_when_subscription_has_no_period() {
@@ -149,7 +149,7 @@ class SubscriptionPeriodGuardServiceTests {
             .doesNotThrowAnyException();
     }
 
-    /** null = gói chưa có hạn -- guard phải bỏ qua chứ không nổ. */
+    /** null = the plan has no period yet -- the guard must skip, not blow up. */
     private static Instant atStartOfDayVn(LocalDate date) {
         return date == null ? null : date.atStartOfDay(ZoneConstant.BUSINESS_ZONE).toInstant();
     }
@@ -165,7 +165,7 @@ class SubscriptionPeriodGuardServiceTests {
         when(schoolSubscriptionRepository.findActiveBySchoolId(schoolId)).thenReturn(Optional.of(subscription));
     }
 
-    /** Giờ địa phương VN -- cùng zone mà guard dùng để quy đổi start_date/end_date. */
+    /** Vietnam local time -- the same zone the guard uses to convert start_date/end_date. */
     private Instant at(String localDateTime) {
         return LocalDateTime.parse(localDateTime).atZone(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
     }

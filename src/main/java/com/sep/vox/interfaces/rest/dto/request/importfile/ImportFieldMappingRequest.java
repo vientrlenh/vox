@@ -5,18 +5,18 @@ import java.util.List;
 import jakarta.validation.constraints.Size;
 
 public record ImportFieldMappingRequest(
-    @Size(max = 255, message = "Tên cột không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Column name must not exceed 255 characters")
     String column,
 
     Integer index,
 
-    @Size(max = 50, message = "Danh sách tên thay thế không được vượt quá 50 phần tử")
-    List<@Size(max = 255, message = "Tên cột thay thế không được vượt quá 255 ký tự") String> aliases,
+    @Size(max = 50, message = "Alias list must not exceed 50 elements")
+    List<@Size(max = 255, message = "Alias column name must not exceed 255 characters") String> aliases,
 
-    @Size(max = 255, message = "Path không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Path must not exceed 255 characters")
     String path,
 
-    @Size(max = 50, message = "Định dạng ngày không được vượt quá 50 ký tự")
+    @Size(max = 50, message = "Date format must not exceed 50 characters")
     String dateFormat
 ) {
 }

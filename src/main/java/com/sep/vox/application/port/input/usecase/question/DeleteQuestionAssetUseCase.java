@@ -31,7 +31,7 @@ public class DeleteQuestionAssetUseCase implements IUseCase<DeleteQuestionAssetC
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionAsset sourceAsset = questionEditAccessService.requireAssetOf(question, input.assetId());
         boolean immutable = questionEditAccessService.authorizeEditing(question, currentUserId);
 

@@ -36,14 +36,14 @@ public class DeleteQuestionTopicUseCase implements IUseCase<DeleteQuestionTopicC
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         QuestionTopic topic = questionTopicRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question topic not found"));
         QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         questionBankManageAccessService.requireManageAccess(bank, currentUserId);
 
         if (questionRepository.existsPublishedAndUsedByQuestionTopicId(topic.getId())) {
-            throw new ResourceDuplicatedException("Chủ đề vẫn còn câu hỏi đã PUBLISHED và đang được dùng trong đề thi");
+            throw new ResourceDuplicatedException("The topic still has PUBLISHED questions that are used in an assessment paper");
         }
 
         questionTopicContentDeletionService.deleteQuestionsOfTopic(topic.getId());

@@ -20,24 +20,24 @@ public interface PracticeResponseTurnRepository {
     }
 
     /**
-     * Kết quả ghi một lượt nói.
+     * Result of writing a spoken turn.
      *
-     * @param turnId  id của dòng lượt -- dù mới ghi hay đã có sẵn
-     * @param created false = Python gửi LẠI đúng lượt cũ (mất response HTTP rồi retry), không phải
-     *                học sinh nói thêm một lượt
+     * @param turnId  id of the turn row -- whether newly written or already existing
+     * @param created false = Python sent EXACTLY the same turn AGAIN (lost the HTTP response and retried), not
+     *                a student speaking one more turn
      */
     record TurnWrite(UUID turnId, boolean created) {
     }
 
     /**
-     * Ghi một lượt nói, hoặc trả về lượt đã có nếu {@code (practiceResponseId, turnOrder)} đã được ghi
+     * Writes a spoken turn, or returns the existing turn if {@code (practiceResponseId, turnOrder)} was already written
      * -- xem uq_practice_response_turn_order.
      *
-     * <p>Trả về {@link TurnWrite} chứ KHÔNG chỉ trả id: bản thân bảng này idempotent, nhưng mọi việc
-     * chạy sau nó trong SubmitPracticeTurnUseCase thì không -- trừ tiền vào ví, ghi dòng sửa lỗi, cộng
-     * giây đã nói. Nuốt lặng thông tin "lượt này là bản gửi lại" nghĩa là ba thứ đó chạy thêm một lần
-     * nữa mà không có dấu hiệu nào, vì thứ DUY NHẤT được bảo vệ lại đúng là thứ trông có vẻ đã chứng
-     * minh rằng retry vô hại.
+     * <p>Returns {@link TurnWrite} and NOT just the id: this table itself is idempotent, but everything that
+     * runs after it in SubmitPracticeTurnUseCase is not -- charging the balance, writing the correction row, adding
+     * the spoken seconds. Silently swallowing the information "this turn is a resend" means those three things run once
+     * more with no sign, because the ONLY thing protected is exactly the thing that looks like it has already proven
+     * that a retry is harmless.
      */
     TurnWrite save(
         UUID practiceResponseId,

@@ -5,9 +5,9 @@ import java.util.UUID;
 import com.sep.vox.domain.model.assessment.AssessmentSessionStatus;
 
 /**
- * @param gradingFailure chi tiết lần chấm hỏng; chỉ có nghĩa khi {@code status = GRADING_FAILED}, và
- *                       {@code null} ở đó nghĩa là "hỏng nhưng không biết vì sao" (nhánh DLT), chứ
- *                       không phải "chưa điền".
+ * @param gradingFailure details of the failed grading; only meaningful when {@code status = GRADING_FAILED}, and
+ *                       {@code null} there means "failed but we do not know why" (the DLT branch), and
+ *                       not "not filled in yet".
  */
 public record UpdateAssessmentSessionStatusCommand(
     UUID sessionId,
@@ -16,17 +16,17 @@ public record UpdateAssessmentSessionStatusCommand(
 ) {
 
     /**
-     * @param error      thông điệp thô của dịch vụ chấm, nguyên văn — nó là thứ duy nhất phân biệt
-     *                   được một sự cố dịch vụ với hàng nghìn lỗi lẻ
-     * @param retryCount số lần dịch vụ đã thử trước khi bỏ cuộc
+     * @param error      the raw message of the grading service, verbatim -- it is the only thing that can tell
+     *                   one service incident apart from thousands of scattered errors
+     * @param retryCount the number of times the service retried before giving up
      */
     public record GradingFailure(String error, Integer retryCount) {
     }
 
     /**
-     * Dạng gọn cho mọi chuyển trạng thái KHÔNG phải chấm lỗi — phần lớn nơi gọi (vào lại phòng thi,
-     * hết giờ, nộp bài) không có gì để nói về việc chấm, và bắt chúng truyền {@code null} chỉ làm
-     * nhiễu chỗ gọi.
+     * The compact form for every status transition that is NOT a grading failure -- most callers (re-entering the exam room,
+     * time up, submitting) have nothing to say about grading, and making them pass {@code null} only
+     * adds noise at the call site.
      */
     public UpdateAssessmentSessionStatusCommand(UUID sessionId, AssessmentSessionStatus status) {
         this(sessionId, status, null);
@@ -40,7 +40,7 @@ public record UpdateAssessmentSessionStatusCommand(
         );
     }
 
-    /** Chấm hỏng mà không có lý do nào để lưu — bản tin đã hết đường retry và rơi xuống DLT. */
+    /** Failed grading with no reason to store -- the message has run out of retries and fallen to the DLT. */
     public static UpdateAssessmentSessionStatusCommand gradingFailedWithoutReason(UUID sessionId) {
         return new UpdateAssessmentSessionStatusCommand(sessionId, AssessmentSessionStatus.GRADING_FAILED, null);
     }

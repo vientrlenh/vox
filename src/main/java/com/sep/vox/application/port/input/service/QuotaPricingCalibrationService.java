@@ -67,7 +67,7 @@ public class QuotaPricingCalibrationService {
         );
     }
 
-    /** Calibrate estimatedCostPerPracticeSecondUsd -- giây trả lời thật lấy từ practice_response_turns. */
+    /** Calibrates estimatedCostPerPracticeSecondUsd -- real response seconds are taken from practice_response_turns. */
     @Transactional
     public void recalibratePractice() {
         recalibrate(
@@ -103,16 +103,16 @@ public class QuotaPricingCalibrationService {
     private void logTooFewCostSessions(QuotaPricingSource source, int costSessionCount, Integer windowDays,
             Integer minSampleSessions) {
         log.info(
-            "[quota-pricing-calibration] {} bỏ qua: chỉ có {} session phát sinh usage trong {} ngày gần nhất, "
-                + "cần tối thiểu {}",
+            "[quota-pricing-calibration] {} skipped: only {} sessions generated usage in the last {} days, "
+                + "need at least {}",
             source, costSessionCount, windowDays, minSampleSessions
         );
     }
 
     private void logTooFewMatchedSessions(QuotaPricingSource source, int matchedCount, Integer minSampleSessions) {
         log.info(
-            "[quota-pricing-calibration] {} bỏ qua: chỉ khớp được {} session có cả cost lẫn giây trả lời thật, "
-                + "cần tối thiểu {}",
+            "[quota-pricing-calibration] {} skipped: only {} sessions matched that have both cost and real response seconds, "
+                + "need at least {}",
             source, matchedCount, minSampleSessions
         );
     }
@@ -163,7 +163,7 @@ public class QuotaPricingCalibrationService {
         quotaPricingCalibrationRepository.save(calibration);
 
         log.info(
-            "[quota-pricing-calibration] {} đã tính lại: sessionCount={} rawRate={} appliedRate={} (trước đó {})",
+            "[quota-pricing-calibration] {} recalculated: sessionCount={} rawRate={} appliedRate={} (previously {})",
             source, sample.matchedCount(), rawRate, applied, previousApplied
         );
     }
@@ -180,7 +180,7 @@ public class QuotaPricingCalibrationService {
             BigDecimal previousApplied) {
         return applied.compareTo(rawRate) == 0
             ? null
-            : "raw=%s bị điều chỉnh còn applied=%s (làm mượt tối đa %s%% so với lần trước %s, hoặc chặn biên an toàn)"
+            : "raw=%s adjusted to applied=%s (smoothed by at most %s%% versus the previous value %s, or clamped to a safety bound)"
                 .formatted(rawRate, applied, maxChangeRatio.multiply(BigDecimal.valueOf(100)), previousApplied);
     }
 

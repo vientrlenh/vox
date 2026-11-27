@@ -58,10 +58,10 @@ public class AssessmentHumanGradingNoticeBatch {
             } catch (Exception e) {
                 // One failing attempt (lost recipient, inconsistent data) must not cut off the rest
                 // of the sweep. The marker is not closed so this attempt will be retried on the next tick.
-                log.error("Không nhắc được chấm tay cho bài thi {}", assessment.getId(), e);
+                log.error("Could not send the manual grading notice for assessment {}", assessment.getId(), e);
             }
         }
 
-        log.info("Quét nhắc chấm tay: {}/{} bài thi đã được báo", notified, due.size());
+        log.info("Manual grading notice sweep: {}/{} assessments notified", notified, due.size());
     }
 }

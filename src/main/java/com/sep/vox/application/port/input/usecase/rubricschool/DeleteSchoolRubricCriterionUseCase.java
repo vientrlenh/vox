@@ -39,16 +39,16 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
     @Transactional
     public Void execute(DeleteSchoolRubricCriterionCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
 
         RubricVersion version = loadDraftVersionOwnedBySchool(command, currentUserId);
         requireActiveSchool(command.schoolId());
 
         RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This criterion was not found."));
         if (!criterion.getRubricVersionId().equals(version.getId())) {
-            throw new IllegalArgumentException("Tiêu chí này không thuộc về phiên bản Rubric đang chọn.");
+            throw new IllegalArgumentException("This criterion does not belong to the selected Rubric version.");
         }
 
         rubricCriterionRepository.deleteById(criterion.getId());
@@ -57,28 +57,28 @@ public class DeleteSchoolRubricCriterionUseCase implements IUseCase<DeleteSchool
 
     private RubricVersion loadDraftVersionOwnedBySchool(DeleteSchoolRubricCriterionCommand command, UUID currentUserId) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Version."));
+                .orElseThrow(() -> new ResourceNotFoundException("Version not found."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được xóa Tiêu chí khi phiên bản đang là bản Nháp (DRAFT).");
+            throw new IllegalArgumentException("Criteria can only be deleted while the version is in DRAFT status.");
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric not found."));
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xóa dữ liệu của trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to delete data of another school.");
         }
         return version;
     }
 
     private void requireActiveSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+            throw new ForbiddenException("Action denied: this school is disabled in the system.");
         }
     }
 }

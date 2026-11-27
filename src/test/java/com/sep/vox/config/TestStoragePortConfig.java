@@ -48,8 +48,8 @@ public class TestStoragePortConfig {
 
             @Override
             public String presignRead(String bucket, String key, Duration ttl) {
-                // Bucket đi vào URL và key giữ nguyên văn -- giống hợp đồng thật, để test nào
-                // assert trên link phát lại vẫn thấy đúng bucket/key đã truyền vào.
+                // The bucket goes into the URL and the key is kept verbatim, like the real contract, so a test
+                // that asserts on the replay link still sees the exact bucket/key it passed in.
                 return "https://storage.test/" + bucket + "/" + key + "?read=1";
             }
         };

@@ -16,7 +16,7 @@ public interface SchoolClassRepository {
     PageResult<SchoolClass> findBySchoolId(UUID schoolId, String search, SchoolClassStatus status,
             UUID languageId, UUID schoolGradeId, int pageNumber, int size);
     PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, SchoolClassStatus status, int pageNumber, int size);
-    /** Như trên nhưng lọc thêm theo mã/tên lớp. `pageNumber` là 1-based. */
+    /** Same as above but also filters by class code/name. `pageNumber` is 1-based. */
     PageResult<SchoolClass> findByUserId(UUID schoolId, UUID userId, String search, SchoolClassStatus status,
             int pageNumber, int size);
     Optional<SchoolClass> findBySchoolIdAndCode(UUID schoolId, String code);
@@ -35,6 +35,6 @@ public interface SchoolClassRepository {
 
     boolean existsBySchoolIdAndStatus(UUID schoolId, String status);
 
-    /** Xóa mềm (ARCHIVED) tất cả lớp thuộc một năm học, bỏ qua lớp đã ARCHIVED. Trả về số dòng bị ảnh hưởng. */
+    /** Soft-deletes (ARCHIVED) all classes of a school year, skipping classes already ARCHIVED. Returns the number of affected rows. */
     int archiveByGradeId(UUID schoolGradeId);
 }

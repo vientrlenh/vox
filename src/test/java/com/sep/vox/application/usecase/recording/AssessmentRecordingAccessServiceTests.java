@@ -30,9 +30,10 @@ import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * Bốn tầng quyền xem bản ghi, trong đó tầng "người được phân công chấm" là tầng dễ quên nhất:
- * vòng hậu kiểm và phúc khảo cố tình giao bài cho giáo viên KHÔNG dính tới ca thi, nên nếu quyền
- * chỉ đi theo vai coi thi thì người chấm mở màn chấm ra là mất luôn video để nghe.
+ * The four layers of permission to view a recording, of which the "assigned grader" layer is the easiest to forget:
+ * the post-review round and the appeal deliberately hand the submission to a teacher who has NOTHING to do with the
+ * schedule, so if permission only followed the proctor role, the grader opening the grading screen would lose the
+ * video to listen to.
  */
 class AssessmentRecordingAccessServiceTests {
 
@@ -69,7 +70,7 @@ class AssessmentRecordingAccessServiceTests {
             assessmentScheduleProctorRepository, assessmentCandidateResultRepository,
             assessmentGradingAssignmentRepository, userContextPort);
 
-        // Mặc định: giáo viên cùng trường, KHÔNG chủ tịch, KHÔNG giám thị, KHÔNG được phân công.
+        // Default: a teacher of the same school, NOT the chair, NOT a proctor, NOT assigned.
         when(userContextPort.getCurrentAuthenticatedUserId()).thenReturn(userId);
         when(userContextPort.getCurrentSchoolId()).thenReturn(schoolId);
         when(userContextPort.isSchoolAdmin()).thenReturn(false);
@@ -98,8 +99,9 @@ class AssessmentRecordingAccessServiceTests {
     }
 
     /**
-     * Không hỏi tới bảng giám thị khi đã có dòng phân công: người chấm là ca phổ biến nhất của
-     * màn này, để nó rơi xuống tận nhánh cuối là mỗi lần mở bài thêm hai query thừa.
+     * The proctor table is not queried once an assignment row exists: the grader is the most common case on this
+     * screen, and letting it fall all the way to the last branch costs two extra queries every time a submission is
+     * opened.
      */
     @Test
     void should_not_query_proctor_table_when_caller_is_assigned_grader() {
@@ -112,8 +114,8 @@ class AssessmentRecordingAccessServiceTests {
     }
 
     /**
-     * Chấm xong vẫn phải xem lại được: bài bị phúc khảo thì chính người chấm vòng trước là người
-     * bị hỏi lại "vì sao chấm thế", mà lúc đó dòng phân công của họ đã COMPLETED.
+     * After grading is done the recording must still be viewable: a submission under appeal is where the grader of the
+     * previous round is asked "why did you grade it like that", and by then their assignment row is COMPLETED.
      */
     @Test
     void should_allow_grader_of_a_completed_assignment() {
@@ -183,7 +185,7 @@ class AssessmentRecordingAccessServiceTests {
             .isInstanceOf(ForbiddenException.class);
     }
 
-    /** Học sinh không xem lại được video buổi thi của chính mình qua đường này. */
+    /** A student cannot review the video of their own session through this path. */
     @Test
     void should_reject_non_teacher_non_admin_role() {
         when(userContextPort.isTeacher()).thenReturn(false);

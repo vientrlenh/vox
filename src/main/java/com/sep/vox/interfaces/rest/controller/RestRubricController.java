@@ -145,8 +145,7 @@ public class RestRubricController {
 
     //==========================RUBRIC  & RUBRIC VERSION===================================
 
-    //Tạo mới 1 rubric cho 1 hệ thống đã tối ưu / => đã check đợt 2
-    @Operation(summary = "Tạo mới một (Rubric) cho hệ thống")
+    @Operation(summary = "Creates one Rubric for the system")
     @PostMapping("/system/rubrics")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSystemRubric(
@@ -154,12 +153,11 @@ public class RestRubricController {
     ) {
         CreateSystemRubricCommand command = CreateSystemRubricRequest.toCommand(request);
         UUID response = createSystemRubricUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Khởi tạo Rubric hệ thống thành công", response));
+        return ResponseEntity.ok(ApiResponse.success("System Rubric created successfully", response));
     }
 
 
-    // Review File Import Rubric Version của hệ thống
-    @Operation(summary = "Upload file Excel/CSV danh sách Rubric Version cho hệ thống (Bước 1: Preview)")
+    @Operation(summary = "Uploads an Excel/CSV file of Rubric Versions for the system (Step 1: Preview)")
     @PostMapping(value = "/system/rubrics/{rubricId}/versions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricVersionImportResponse>> previewSystemRubricVersionImport(
@@ -168,11 +166,10 @@ public class RestRubricController {
 
         PreviewRubricVersionImportFromFileCommand command = PreviewRubricVersionImportFromFileCommandMapper.fromSystemRequest(rubricId, file);
         PreviewRubricVersionImportResponse sessionId = previewSystemRubricVersionImportFromFileUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách phiên bản thành công. Tạo phiên làm việc (Session) hoàn tất.", sessionId));
+        return ResponseEntity.ok(ApiResponse.success("Version list file loaded successfully. Session created.", sessionId));
     }
 
-    //Xác nhận import Rubric Version của hệ thống
-    @Operation(summary = "Xác nhận và nhập dữ liệu Rubric Version vào DB (Bước 2: Accept)")
+    @Operation(summary = "Confirms and imports Rubric Version data into the DB (Step 2: Accept)")
     @PostMapping(value = "/system/rubrics/versions/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricVersionImportResponse>> acceptSystemRubricVersionImport(
@@ -181,12 +178,11 @@ public class RestRubricController {
 
         AcceptSystemRubricVersionImportCommand command = AcceptImportRequest.toAcceptSystemRubricVersionImportCommand(sessionId, request);
         AcceptRubricVersionImportResponse response = acceptSystemRubricVersionImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Phiên bản hệ thống vào hàng đợi ngầm xử lý.", response));
+        return ResponseEntity.ok(ApiResponse.success("System Version import request has been queued for background processing.", response));
     }
 
 
-    // KHi người dùng ko muốn dùng import mà chỉ muốn thêm version từ màn hình
-    @Operation(summary = "Thêm mới danh sách Rubric Version bằng tay (Form UI)")
+    @Operation(summary = "Adds a list of Rubric Versions by hand (Form UI)")
     @PostMapping("/system/rubrics/{rubricId}/versions")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> addSystemRubricVersions(
@@ -195,11 +191,10 @@ public class RestRubricController {
     ) {
         AddSystemRubricVersionsCommand command = AddRubricVersionsRequest.toAddSystemRubricVersionsCommand(rubricId, request);
         List<UUID> newVersionIds = addSystemRubricVersionsUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công " + newVersionIds.size() + " phiên bản mới vào Rubric.", newVersionIds));
+        return ResponseEntity.ok(ApiResponse.success("Successfully added " + newVersionIds.size() + " new versions to the Rubric.", newVersionIds));
     }
 
-    // Tạo Rubric của trường
-    @Operation(summary = "Tạo mới một bộ tiêu chí (Rubric) cho trường học UI")
+    @Operation(summary = "Creates one Rubric (criteria set) for a school from the UI")
     @PostMapping("/schools/{schoolId}/rubrics")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchoolRubric(
@@ -208,19 +203,19 @@ public class RestRubricController {
     ) {
         CreateSchoolRubricCommand command = CreateSchoolRubricRequest.toCommand(schoolId, request);
         UUID response = createSchoolRubricUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Khởi tạo bộ tiêu chí nháp thành công", response));
+        return ResponseEntity.ok(ApiResponse.success("Draft criteria set created successfully", response));
     }
 
     /**
-     * Sao một bộ tiêu chí mẫu ĐÃ BAN HÀNH của hệ thống về làm của trường.
+     * Copies a PUBLISHED system sample criteria set to become a school's own.
      *
-     * <p>Trả về id của PHIÊN BẢN vừa tạo, không phải id rubric: đó là thứ giao diện cần để đi thẳng
-     * tới trang phiên bản, và cũng là thứ trường gắn chính sách đánh giá vào ở bước ngay sau.
+     * <p>Returns the id of the VERSION just created, not the rubric id: that is what the UI needs to go straight
+     * to the version page, and also what the school attaches the assessment policy to in the very next step.
      *
-     * <p>Bản sao luôn ở trạng thái DRAFT, nên luồng tiếp theo giống hệt lúc trường tự soạn: gắn
-     * chính sách -> ban hành chính sách -> ban hành phiên bản.
+     * <p>The copy is always in DRAFT status, so the following flow is identical to when the school writes its own:
+     * attach policy -> publish policy -> publish version.
      */
-    @Operation(summary = "Sao bộ tiêu chí mẫu của hệ thống về cho Trường học")
+    @Operation(summary = "Copies the system sample criteria set to a school")
     @PostMapping("/schools/{schoolId}/rubrics/clone-from-system")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> cloneSystemRubricToSchool(
@@ -230,12 +225,11 @@ public class RestRubricController {
         CloneSystemRubricToSchoolCommand command = CloneSystemRubricRequest.toCommand(schoolId, request);
         UUID versionId = cloneSystemRubricToSchoolUseCase.execute(command);
         return ResponseEntity.ok(ApiResponse.success(
-                "Sao chép bộ tiêu chí mẫu thành công. Phiên bản mới đang ở trạng thái nháp.", versionId));
+                "Sample criteria set copied successfully. The new version is in draft status.", versionId));
     }
 
 
-    // Preview Rubric Version của trường học
-    @Operation(summary = "Upload file Excel/CSV danh sách Rubric Version cho Trường học (Bước 1: Preview)")
+    @Operation(summary = "Uploads an Excel/CSV file of Rubric Versions for a school (Step 1: Preview)")
     @PostMapping(value = "/schools/{schoolId}/rubrics/{rubricId}/versions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricVersionImportResponse>> previewSchoolRubricVersionImport(
@@ -245,11 +239,10 @@ public class RestRubricController {
 
         PreviewSchoolRubricVersionImportCommand command = PreviewRubricVersionImportFromFileCommandMapper.fromSchoolRequest(schoolId, rubricId, file);
         PreviewRubricVersionImportResponse sessionId = previewSchoolRubricVersionImportFromFileUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách phiên bản thành công. Tạo phiên làm việc (Session) hoàn tất.", sessionId));
+        return ResponseEntity.ok(ApiResponse.success("Version list file loaded successfully. Session created.", sessionId));
     }
 
-    // Chấp nhận import rubric version của trường
-    @Operation(summary = "Xác nhận và nhập dữ liệu Rubric Version cho Trường học từ Session nháp (Bước 2: Accept)")
+    @Operation(summary = "Confirms and imports Rubric Version data for a school from the draft Session (Step 2: Accept)")
     @PostMapping(value = "/schools/{schoolId}/rubrics/versions/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricVersionImportResponse>> acceptSchoolRubricVersionImport(
@@ -258,11 +251,10 @@ public class RestRubricController {
             @Valid @RequestBody AcceptImportRequest request) {
         AcceptSchoolRubricVersionImportCommand command = AcceptImportRequest.toAcceptSchoolRubricVersionImportCommand(schoolId, sessionId, request);
         AcceptRubricVersionImportResponse response = acceptSchoolRubricVersionImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Phiên bản của trường vào hàng đợi ngầm xử lý.", response));
+        return ResponseEntity.ok(ApiResponse.success("School Version import request has been queued for background processing.", response));
     }
 
-    // Thêm 1 rubic version của trường học (FROM-UI)
-    @Operation(summary = "Thêm mới danh sách Rubric Version bằng tay (Form UI) cho Trường học")
+    @Operation(summary = "Adds a list of Rubric Versions by hand (Form UI) for a school")
     @PostMapping("/schools/{schoolId}/rubrics/{rubricId}/versions")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> addSchoolRubricVersions(
@@ -272,12 +264,11 @@ public class RestRubricController {
     ) {
         AddSchoolRubricVersionsCommand command = AddRubricVersionsRequest.toAddSchoolRubricVersionsCommand(schoolId, rubricId, request);
         List<UUID> newVersionIds = addSchoolRubricVersionsUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã thêm thành công " + newVersionIds.size() + " phiên bản mới vào Rubric của trường học.", newVersionIds));
+        return ResponseEntity.ok(ApiResponse.success("Successfully added " + newVersionIds.size() + " new versions to the school Rubric.", newVersionIds));
     }
 
 
-    //Xóa rubric version của trường (xóa rubric gốc dùng endpoint deleteSchoolRubric bên dưới)
-    @Operation(summary = "Xử lý phiên bản Rubric (Xóa nếu DRAFT, Lưu trữ nếu PUBLISHED)")
+    @Operation(summary = "Handles a Rubric version (deleted if DRAFT, archived if PUBLISHED)")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricVersion(
@@ -286,12 +277,11 @@ public class RestRubricController {
     ) {
         DeleteSchoolRubricVersionCommand command = new DeleteSchoolRubricVersionCommand(schoolId, versionId);
         deleteSchoolRubricVersionUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa phiên bản Rubric thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Rubric version deleted successfully"));
     }
 
 
-    // Xóa Rubric gốc của trường (chỉ cho phép khi chưa có version nào bên trong)
-    @Operation(summary = "Xóa toàn bộ Rubric của trường học (Chỉ cho phép khi chưa có version nào bên trong)")
+    @Operation(summary = "Deletes a whole school Rubric (only allowed when it has no version inside)")
     @DeleteMapping("/schools/{schoolId}/rubrics/{rubricId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubric(
@@ -300,12 +290,11 @@ public class RestRubricController {
     ) {
         DeleteSchoolRubricCommand command = new DeleteSchoolRubricCommand(schoolId, rubricId);
         deleteSchoolRubricUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa bộ Rubric của trường thành công"));
+        return ResponseEntity.ok(ApiResponse.success("School Rubric deleted successfully"));
     }
 
 
-    //  dc xoa rubric gốc => Check đợt 2
-    @Operation(summary = "Xóa toàn bộ Rubric của hệ thống (Chỉ cho phép khi chưa có bản nào được PUBLISHED/ARCHIVED)")
+    @Operation(summary = "Deletes a whole system Rubric (only allowed when no version is PUBLISHED/ARCHIVED)")
     @DeleteMapping("/system/rubrics/{rubricId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubric(
@@ -313,12 +302,11 @@ public class RestRubricController {
     ) {
         DeleteSystemRubricCommand command = new DeleteSystemRubricCommand(rubricId);
         deleteSystemRubricUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa bộ Rubric hệ thống thành công"));
+        return ResponseEntity.ok(ApiResponse.success("System Rubric deleted successfully"));
     }
 
 
-    // Xóa rubric version hệ thồng => Đã check 2
-    @Operation(summary = "Xóa rubric version của hệ thống")
+    @Operation(summary = "Deletes a system rubric version")
     @DeleteMapping("/system/rubric-versions/{versionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> manageSystemRubricVersion(
@@ -326,11 +314,10 @@ public class RestRubricController {
     ) {
         DeleteSystemRubricVersionCommand command = new DeleteSystemRubricVersionCommand(versionId);
         deleteSystemRubricVersionUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xử lý phiên bản hệ thống thành công"));
+        return ResponseEntity.ok(ApiResponse.success("System version handled successfully"));
     }
 
-    // Update Status RubricVersion của system admin => đã check 2
-    @Operation(summary = "Đổi trạng thái Phiên bản Rubric Hệ thống (Ví dụ: DRAFT -> PUBLISHED, ARCHIVED)")
+    @Operation(summary = "Changes the status of a System Rubric Version (e.g. DRAFT -> PUBLISHED, ARCHIVED)")
     @PatchMapping("/system/rubric-versions/{versionId}/status")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> changeSystemRubricVersionStatus(
@@ -339,11 +326,10 @@ public class RestRubricController {
     ) {
         ChangeSystemRubricVersionStatusCommand command = new ChangeSystemRubricVersionStatusCommand(versionId, status);
         UUID responseId = changeSystemRubricVersionStatusUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Chuyển trạng thái phiên bản thành công!", responseId));
+        return ResponseEntity.ok(ApiResponse.success("Version status changed successfully!", responseId));
     }
 
-    // API: CẬP NHẬT TRẠNG THÁI PHIÊN BẢN RUBRIC TRƯỜNG HỌC => đã check 2
-    @Operation(summary = "Đổi trạng thái Phiên bản Rubric Trường học (Ví dụ: DRAFT -> PUBLISHED, ARCHIVED)")
+    @Operation(summary = "Changes the status of a School Rubric Version (e.g. DRAFT -> PUBLISHED, ARCHIVED)")
     @PatchMapping("/schools/{schoolId}/rubric-versions/{versionId}/status")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> changeSchoolRubricVersionStatus(
@@ -353,22 +339,20 @@ public class RestRubricController {
     ) {
         ChangeSchoolRubricVersionStatusCommand command = new ChangeSchoolRubricVersionStatusCommand(schoolId, versionId, status);
         UUID responseId = changeSchoolRubricVersionStatusUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Chuyển trạng thái phiên bản thành công!", responseId));
+        return ResponseEntity.ok(ApiResponse.success("Version status changed successfully!", responseId));
     }
 
-    // Lưu trữ (ARCHIVE) Rubric Version hệ thống đang PUBLISHED
-    @Operation(summary = "Lưu trữ (ARCHIVE) Phiên bản Rubric Hệ thống đang PUBLISHED")
+    @Operation(summary = "Archives a PUBLISHED System Rubric Version")
     @PatchMapping("/system/rubric-versions/{versionId}/archive")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSystemRubricVersion(
             @PathVariable("versionId") UUID versionId
     ) {
         UUID responseId = archiveSystemRubricVersionUseCase.execute(new ArchiveSystemRubricVersionCommand(versionId));
-        return ResponseEntity.ok(ApiResponse.success("Lưu trữ phiên bản Rubric hệ thống thành công", responseId));
+        return ResponseEntity.ok(ApiResponse.success("System Rubric version archived successfully", responseId));
     }
 
-    // Lưu trữ (ARCHIVE) Rubric Version của trường học đang PUBLISHED
-    @Operation(summary = "Lưu trữ (ARCHIVE) Phiên bản Rubric Trường học đang PUBLISHED")
+    @Operation(summary = "Archives a PUBLISHED School Rubric Version")
     @PatchMapping("/schools/{schoolId}/rubric-versions/{versionId}/archive")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSchoolRubricVersion(
@@ -376,13 +360,12 @@ public class RestRubricController {
             @PathVariable("versionId") UUID versionId
     ) {
         UUID responseId = archiveSchoolRubricVersionUseCase.execute(new ArchiveSchoolRubricVersionCommand(schoolId, versionId));
-        return ResponseEntity.ok(ApiResponse.success("Lưu trữ phiên bản Rubric của trường học thành công", responseId));
+        return ResponseEntity.ok(ApiResponse.success("School Rubric version archived successfully", responseId));
     }
 
 
     //=====================RUBRIC CRITERION===============================
-    //Thêm Rubric Creitrion vào Rubric Version đã tối ưu/ chưa chạy lại =>check 2
-    @Operation(summary = "Thêm một Tiêu chí (Criterion) vào Phiên bản Rubric (RubricVersion) cho trường học")
+    @Operation(summary = "Adds a Criterion to a Rubric Version (RubricVersion) for a school")
     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricCriterion(
@@ -393,13 +376,12 @@ public class RestRubricController {
         CreateSchoolRubricCriteriaCommand command = CreateSchoolRubricCriteriaRequest.toCommand(schoolId, versionId, request);
         List<UUID> newCriterionId = createSchoolRubricCriterionUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Thêm tiêu chí thành công", newCriterionId));
+        return ResponseEntity.ok(ApiResponse.success("Criterion added successfully", newCriterionId));
     }
 
 
-    // Phục vụ cho việc tạo bài kiểm tra đầu vào (cá nhân hóa đánh giá năng lực)
-    // đã check 2
-    @Operation(summary = "Thêm tiêu chí Rubric Criterion cho Rubric version hệ thống")
+    // Used when creating the entry assessment (personalised proficiency evaluation)
+    @Operation(summary = "Adds a Rubric Criterion to a system Rubric version")
     @PostMapping("/system/rubric-versions/{versionId}/criteria")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricCriterion(
@@ -408,12 +390,11 @@ public class RestRubricController {
     ) {
         CreateSystemRubricCriteriaCommand command = CreateSystemRubricCriteriaRequest.toCommand(versionId, request);
         List<UUID> result = createSystemRubricCriteriaUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Thêm tiêu chí hệ thống thành công", result));
+        return ResponseEntity.ok(ApiResponse.success("System criterion added successfully", result));
     }
 
 
-    // Preview Rubric Rubrics Creitia của rubric version
-    @Operation(summary = "Upload/Preview file Excel/CSV danh sách Tiêu chí Rubric cho hệ thống (Bước 1: Preview)")
+    @Operation(summary = "Upload/Preview an Excel/CSV file of Rubric Criteria for the system (Step 1: Preview)")
     @PostMapping(value = "/system/rubrics/versions/{versionId}/criterions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricCriterionImportResponse>> previewSystemRubricCriterionImport(
@@ -422,12 +403,11 @@ public class RestRubricController {
 
         PreviewRubricCriterionImportCommand command = PreviewRubricCriterionImportCommandMapper.fromSystemRequest(versionId, file);
         PreviewRubricCriterionImportResponse response = previewSystemRubricCriterionImportFromFileUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách Tiêu chí thành công. Vui lòng kiểm tra màn hình Preview.", response));
+        return ResponseEntity.ok(ApiResponse.success("Criteria file loaded successfully. Please check the Preview screen.", response));
     }
 
 
-    // Chập nhận và add dữ liệu rubric rubri criteria từ rubric version
-    @Operation(summary = "Xác nhận và nhập dữ liệu Tiêu chí (Rubric Criterion) vào DB (Bước 2: Accept)")
+    @Operation(summary = "Confirms and imports Criteria (Rubric Criterion) into the DB (Step 2: Accept)")
     @PostMapping(value = "/system/rubrics/criterions/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricCriterionImportResponse>> acceptSystemRubricCriterionImport(
@@ -438,11 +418,10 @@ public class RestRubricController {
 
         AcceptRubricCriterionImportResponse response = acceptSystemRubricCriterionImportUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Tiêu chí hệ thống vào hàng đợi ngầm xử lý.", response));
+        return ResponseEntity.ok(ApiResponse.success("System Criteria import request has been queued for background processing.", response));
     }
 
-    // Review Rubric Criteria version của trường
-    @Operation(summary = "Upload/Preview file Excel/CSV danh sách Tiêu chí Rubric cho trường (Bước 1: Preview)")
+    @Operation(summary = "Upload/Preview an Excel/CSV file of Rubric Criteria for a school (Step 1: Preview)")
     @PostMapping(value = "/schools/{schoolId}/rubric-versions/{versionId}/criterions/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<PreviewRubricCriterionImportResponse> previewSchoolRubricCriterionImport(
@@ -455,8 +434,7 @@ public class RestRubricController {
         return ResponseEntity.ok(response);
     }
 
-    // Xác nhận tiêu chí và add rubric criteria và rubric version
-    @Operation(summary = "Xác nhận và nhập dữ liệu Tiêu chí (Rubric Criterion) vào DB (Bước 2: Accept)")
+    @Operation(summary = "Confirms and imports Criteria (Rubric Criterion) into the DB (Step 2: Accept)")
     @PostMapping("/schools/{schoolId}/rubric-versions/import-sessions/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<AcceptRubricCriterionImportResponse> acceptSchoolRubricCriterionImport(
@@ -471,10 +449,7 @@ public class RestRubricController {
     }
 
 
-    // Xóa 1 version Rubric khỏi rubric của trường
-    // đã tối ưu / chưa chạy lại
-    //Check 2
-    @Operation(summary = "Xóa một Tiêu chí khỏi phiên bản Rubric của trường")
+    @Operation(summary = "Deletes a Criterion from a school Rubric version")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricCriterion(
@@ -484,14 +459,11 @@ public class RestRubricController {
     ) {
         DeleteSchoolRubricCriterionCommand command = new DeleteSchoolRubricCriterionCommand(schoolId, versionId, criterionId);
         deleteSchoolRubricCriterionUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa tiêu chí thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Criterion deleted successfully"));
     }
 
 
-    // Xóa tiêu chí rubric trong hệ thống
-    // Đã tối ưu / chưa chạy lại
-    // check 2
-    @Operation(summary = "Xóa một Tiêu chí(Rubric Version) khỏi phiên bản Rubric Hệ thống")
+    @Operation(summary = "Deletes a Criterion (Rubric Version) from a System Rubric version")
     @DeleteMapping("/system/rubric-versions/{versionId}/criteria/{criterionId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubricCriterion(
@@ -500,16 +472,13 @@ public class RestRubricController {
     ) {
         DeleteSystemRubricCriterionCommand command = new DeleteSystemRubricCriterionCommand(versionId, criterionId);
         deleteSystemRubricCriterionUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa tiêu chí hệ thống thành công"));
+        return ResponseEntity.ok(ApiResponse.success("System criterion deleted successfully"));
     }
 
     //=====================RUBRIC RESULT BAND===============================
 
 
-    //Phục vụ: Đánh giá sinh viên của system (Giỏi, Khá, Trung Bình) : UI
-    //Đã tối ưu/ chưa chạy lại
-    // Check 2
-    @Operation(summary = "Thêm một Thang điểm kết quả/đánh giá vào Rubric Hệ thống")
+    @Operation(summary = "Adds a result/rating Score band to a System Rubric")
     @PostMapping("/system/rubric-versions/{versionId}/result-bands")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemRubricResultBand(
@@ -518,14 +487,11 @@ public class RestRubricController {
     ) {
         CreateSystemRubricResultBandsCommand command = CreateSystemRubricResultBandsRequest.toCommand(versionId, request);
         List<UUID> resultId = createSystemRubricResultBandsUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Thêm thang điểm hệ thống thành công", resultId));
+        return ResponseEntity.ok(ApiResponse.success("System score band added successfully", resultId));
     }
 
 
-    // Phục vụ : Đánh giá sinh viên của trường (Giỏi, Khá, Trung Bình) UI
-    //Đã tối ưu/ chưa chạy lại
-    // Check 2 UI
-    @Operation(summary = "Thêm một Thang điểm kết quả/đánh giá (Result Band) vào Phiên bản Rubric của Trường")
+    @Operation(summary = "Adds a result/rating Score band (Result Band) to a School Rubric version")
     @PostMapping("/schools/{schoolId}/rubric-versions/{versionId}/result-bands")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolRubricResultBand(
@@ -536,13 +502,11 @@ public class RestRubricController {
         CreateSchoolRubricResultBandsCommand command = CreateSchoolRubricResultBandsRequest.toCommand(schoolId, versionId, request);
         List<UUID> newResultBandId = createSchoolRubricResultBandsUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Thêm thang điểm kết quả thành công", newResultBandId));
+        return ResponseEntity.ok(ApiResponse.success("Result band added successfully", newResultBandId));
     }
 
 
-    // API: XÓA LẺ 1 THANG ĐIỂM KẾT QUẢ (RESULT BAND)
-    //Check 2
-    @Operation(summary = "Xóa một Thang điểm kết quả khỏi phiên bản Rubric")
+    @Operation(summary = "Deletes one Result Band from a Rubric version")
     @DeleteMapping("/schools/{schoolId}/rubric-versions/{versionId}/result-bands/{resultBandId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolRubricResultBand(
@@ -552,12 +516,11 @@ public class RestRubricController {
     ) {
         DeleteSchoolRubricResultBandCommand command = new DeleteSchoolRubricResultBandCommand(schoolId, versionId, resultBandId);
         deleteSchoolRubricResultBandUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Score band deleted successfully"));
     }
 
 
-    // Xóa 1 Rubric Result band khổi rubric version
-    @Operation(summary = "Xóa một Thang điểm khỏi phiên bản Rubric Hệ thống")
+    @Operation(summary = "Deletes a Score band from a System Rubric version")
     @DeleteMapping("/system/rubric-versions/{versionId}/result-bands/{resultBandId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemRubricResultBand(
@@ -566,11 +529,10 @@ public class RestRubricController {
     ) {
         DeleteSystemRubricResultBandCommand command = new DeleteSystemRubricResultBandCommand(versionId, resultBandId);
         deleteSystemRubricResultBandUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Xóa thang điểm hệ thống thành công"));
+        return ResponseEntity.ok(ApiResponse.success("System score band deleted successfully"));
     }
 
-    // 1. Preview Result Band (Dành riêng cho System Admin)
-    @Operation(summary = "Preview file import Mức độ/Xếp loại kết quả (Result Band) cho Hệ thống")
+    @Operation(summary = "Preview of the Result Band (rating) import file for the System")
     @PostMapping(value = "/system/versions/{versionId}/result-bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewRubricResultBandImportResponse>> previewSystemRubricResultBandImport(
@@ -580,11 +542,10 @@ public class RestRubricController {
         PreviewRubricResultBandImportCommand command = PreviewRubricResultBandImportCommandMapper.fromSystemRequest(versionId, file);
         PreviewRubricResultBandImportResponse response = previewSystemRubricResultBandImportFromFileUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Nạp cấu trúc file xếp loại hệ thống thành công.", response));
+        return ResponseEntity.ok(ApiResponse.success("System rating file structure loaded successfully.", response));
     }
 
-    // 2. Accept Result Band (Dành riêng cho System Admin)
-    @Operation(summary = "Xác nhận và đẩy yêu cầu Import Xếp loại của hệ thống ")
+    @Operation(summary = "Confirms and queues the System rating import request ")
     @PostMapping(value = "/system/versions/result-bands/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptRubricResultBandImportResponse>> acceptSystemRubricResultBandImport(
@@ -594,14 +555,13 @@ public class RestRubricController {
         AcceptRubricResultBandImportCommand command = AcceptImportRequest.toAcceptRubricResultBandImportCommand(sessionId, request);
         AcceptRubricResultBandImportResponse response = acceptSystemRubricResultBandImportUseCase.execute(command);
 
-        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu import xếp loại hệ thống vào hàng đợi ngầm xử lý.", response));
+        return ResponseEntity.ok(ApiResponse.success("System rating import request has been queued for background processing.", response));
     }
 
 
-    // 1. Preview Result Band (Dành cho School Admin)
     @Operation(
-            summary = "Bước 1: Nạp file và Xem trước dữ liệu Import Xếp loại (Preview)",
-            description = "Nhận file Excel/CSV, bóc tách cấu trúc cột và trả về dữ liệu mẫu để School Admin kiểm tra trước khi xác nhận nhập vào DB."
+            summary = "Step 1: Load the file and preview the rating import data (Preview)",
+            description = "Receives an Excel/CSV file, extracts the column structure and returns sample data so the School Admin can check before confirming the import into the DB."
     )
     @PostMapping(value = "/school/{schoolId}/rubric-versions/{versionId}/result-bands/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -616,10 +576,9 @@ public class RestRubricController {
         return ResponseEntity.ok(response);
     }
 
-    // 2. Accept Result Band (Dành cho School Admin)
     @Operation(
-            summary = "Bước 2: Xác nhận Import Xếp loại và đưa vào hàng đợi ngầm (Accept)",
-            description = "School Admin xác nhận dữ liệu hợp lệ. Hệ thống sẽ chuyển trạng thái Session sang QUEUED để tiến hành import ngầm (Async) vào Database."
+            summary = "Step 2: Confirm the rating import and queue it in the background (Accept)",
+            description = "The School Admin confirms the data is valid. The system moves the Session status to QUEUED to run the import in the background (Async) into the Database."
     )
     @PostMapping(value = "/school/{schoolId}/rubric-versions/result-bands/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

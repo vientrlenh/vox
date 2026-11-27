@@ -6,10 +6,10 @@ import jakarta.validation.constraints.Size;
 
 
 public record UpdateQuestionTopicRequest(
-    @Size(max = 255, message = "Tên chủ đề không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Topic name must not exceed 255 characters")
     String name,
 
-    @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Description must not exceed 2048 characters")
     String description
 ) {
 

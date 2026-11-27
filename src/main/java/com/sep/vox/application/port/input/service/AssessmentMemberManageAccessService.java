@@ -15,18 +15,18 @@ import com.sep.vox.domain.repository.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Ai được lập hội đồng đề của một kỳ thi tập trung, và lập tới đâu.
+ * Who may form the paper council of a centralized assessment, and how far.
  *
- * <p>Quản trị trường của chính trường đó, hoặc chủ tịch hội đồng của chính kỳ thi đó — chủ tịch cần
- * quyền này vì họ là người chạy trọn quy trình trên trang chi tiết kỳ thi, mà bước đầu tiên chính là
- * gọi người ra đề và người duyệt đề vào hội đồng.
+ * <p>The school admin of that very school, or the chair of that very assessment — the chair needs
+ * this permission because they run the whole process on the assessment detail page, and the first step is
+ * calling the paper authors and the paper reviewers into the council.
  *
- * <p>Ranh giới duy nhất giữa hai vai: <b>chỉ quản trị trường mới đụng được vào hàng CHAIR</b>. Chủ
- * tịch tự thu hồi vai trò của mình (hoặc của chủ tịch khác) là kỳ thi mất người quyết định mà không
- * ai trong luồng giáo viên dựng lại được — bổ nhiệm chủ tịch phải là việc của quản trị trường.
+ * <p>The only boundary between the two roles: <b>only the school admin may touch the CHAIR row</b>. A chair
+ * revoking their own role (or another chair's) leaves the assessment without a decision-maker that
+ * nobody in the teacher flow can rebuild — appointing a chair must be the school admin's job.
  *
- * <p>Hội đồng chỉ tồn tại ở kỳ thi tập trung; bài trên lớp có đúng một CHAIR do
- * {@code CreateClassTestUseCase} tự gán nên không đi qua đây.
+ * <p>The council only exists on centralized assessments; a class test has exactly one CHAIR that
+ * {@code CreateClassTestUseCase} assigns itself, so it does not go through here.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,17 +40,17 @@ public class AssessmentMemberManageAccessService {
     private final UserContextPort userContextPort;
 
     /**
-     * @param schoolAdmin true khi người gọi là quản trị trường của chính trường kỳ thi; false nghĩa là
-     *                    họ vào đây với tư cách chủ tịch hội đồng.
+     * @param schoolAdmin true when the caller is the school admin of the assessment's own school; false means
+     *                    they come in here as the council chair.
      */
     public record AssessmentMemberActor(UUID userId, boolean schoolAdmin) {
     }
 
-    /** Ném {@link ForbiddenException} nếu người gọi không được lập hội đồng cho kỳ thi này. */
+    /** Throws {@link ForbiddenException} if the caller may not form the council for this assessment. */
     public AssessmentMemberActor requireCanManage(Assessment assessment) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (assessment.getKind() != AssessmentKind.CENTRALIZED) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
@@ -63,16 +63,16 @@ public class AssessmentMemberManageAccessService {
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return new AssessmentMemberActor(currentUserId, false);
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 
     /**
-     * Gọi cho <b>mọi</b> vai trò mà thao tác chạm tới. Đổi vai trò của một thành viên chạm tới hai vai:
-     * vai cũ (bị gỡ) và vai mới (được gán) — bỏ sót vai cũ là chủ tịch hạ cấp được chủ tịch khác.
+     * Call for <b>every</b> role the operation touches. Changing a member's role touches two roles:
+     * the old role (removed) and the new role (assigned) — missing the old role lets a chair demote another chair.
      */
     public void requireCanTouchRole(AssessmentMemberActor actor, AssessmentMemberRole targetRole) {
         if (targetRole == AssessmentMemberRole.CHAIR && !actor.schoolAdmin()) {
-            throw new ForbiddenException("Chỉ quản trị trường mới bổ nhiệm hoặc thu hồi chủ tịch hội đồng");
+            throw new ForbiddenException("Only the school admin may appoint or revoke the council chair");
         }
     }
 }

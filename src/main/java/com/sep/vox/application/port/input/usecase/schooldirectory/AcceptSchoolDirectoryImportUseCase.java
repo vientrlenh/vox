@@ -52,36 +52,36 @@ public class AcceptSchoolDirectoryImportUseCase
         int queued = importSessionRepository.markQueued(
                 input.importSessionId(), SCHOOL_DIRECTORY_TYPE, confirmedMappingJson, now);
         if (queued == 0) {
-            throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
+            throw new IllegalArgumentException("The import session is not in a state that allows accepting, or it has expired");
         }
         return null;
     }
 
     private void validateCommand(AcceptSchoolDirectoryImportCommand input) {
         if (input == null || input.importSessionId() == null) {
-            throw new IllegalArgumentException("Phiên import không được để trống");
+            throw new IllegalArgumentException("The import session must not be empty");
         }
         if (input.confirmedMapping() == null || input.confirmedMapping().isEmpty()) {
-            throw new IllegalArgumentException("Mapping import không được để trống");
+            throw new IllegalArgumentException("The import mapping must not be empty");
         }
     }
 
     private ImportSession findSession(UUID importSessionId) {
         return importSessionRepository.findById(importSessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên import"));
+                .orElseThrow(() -> new ResourceNotFoundException("Import session not found"));
     }
 
     private void validateSession(ImportSession session, Instant now) {
         if (session.getType() != ImportType.SCHOOL_DIRECTORY) {
-            throw new IllegalArgumentException("Phiên import không phải là import danh mục trường");
+            throw new IllegalArgumentException("The import session is not a school directory import");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept");
+            throw new IllegalArgumentException("The import session is not in a state that allows accepting");
         }
         if (session.getExpiresAt() != null && session.getExpiresAt().isBefore(now)) {
             session.setStatus(ImportSessionStatus.EXPIRED);
             importSessionRepository.save(session);
-            throw new IllegalArgumentException("Phiên import đã hết hạn");
+            throw new IllegalArgumentException("The import session has expired");
         }
     }
 
@@ -96,7 +96,7 @@ public class AcceptSchoolDirectoryImportUseCase
                 .toList();
         if (!missingFields.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Mapping import thiếu trường bắt buộc: " + String.join(", ", missingFields));
+                    "The import mapping is missing required fields: " + String.join(", ", missingFields));
         }
     }
 }

@@ -9,18 +9,18 @@ import jakarta.validation.constraints.Size;
 
 public record CreateSystemQuestionBankRequest(
 
-    @NotNull(message = "ID ngôn ngữ không được để trống")
+    @NotNull(message = "Language ID must not be blank")
     UUID languageId,
 
-    @NotBlank(message = "Mã ngân hàng câu hỏi không được để trống")
-    @Size(max = 100, message = "Mã ngân hàng câu hỏi không được vượt quá 100 ký tự")
+    @NotBlank(message = "Question bank code must not be blank")
+    @Size(max = 100, message = "Question bank code must not exceed 100 characters")
     String code, 
 
-    @NotBlank(message = "Tên ngân hàng câu hỏi không được để trống")
-    @Size(max = 255, message = "Tên ngân hàng câu hỏi không được vượt quá 255 ký tự")
+    @NotBlank(message = "Question bank name must not be blank")
+    @Size(max = 255, message = "Question bank name must not exceed 255 characters")
     String name, 
 
-    @Size(max = 2048, message = "Mô tả ngân hàng câu hỏi không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Question bank description must not exceed 2048 characters")
     String description
 ) {
 

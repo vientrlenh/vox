@@ -29,27 +29,27 @@ public final class GradingRoundPolicy {
 
     private GradingRoundPolicy() {}
 
-    /** Trạng thái bài được phép nhận một phân công của vòng này. */
+    /** Statuses in which a result may receive an assignment of this round. */
     public static Set<AssessmentCandidateResultStatus> assignableStatuses(GradingRoundType roundType) {
         return switch (roundType) {
             case INITIAL -> EnumSet.of(AssessmentCandidateResultStatus.PENDING_REVIEW);
             case SPOT_CHECK -> EnumSet.of(AssessmentCandidateResultStatus.RELEASED);
             case REMEDIATION -> EnumSet.of(AssessmentCandidateResultStatus.INVALID);
-            // Đơn phúc khảo đưa bài sang APPEALED lúc tạo, rồi RE_GRADING khi đã giao
-            // người chấm — chấp nhận cả hai để giao lại được sau khi đổi giáo viên.
+            // An appeal moves the result to APPEALED when created, then RE_GRADING once a grader is
+            // assigned — both are accepted so it can be reassigned after changing the teacher.
             case APPEAL -> EnumSet.of(
                 AssessmentCandidateResultStatus.APPEALED, AssessmentCandidateResultStatus.RE_GRADING);
         };
     }
 
     /**
-     * Hợp của {@link #assignableStatuses} bốn vòng — "bài còn có thể nhận một vòng
-     * chấm nào đó". Đây là mẫu số đúng cho con số <em>chưa phân công</em>: bài đã kết
-     * thúc vòng đời ({@code FINAL}, {@code PASSED}, {@code FAILED},
-     * {@code RETAKE_REQUIRED}…) không nằm trong tập này.
+     * The union of {@link #assignableStatuses} over the four rounds — "results that can still receive some
+     * grading round". This is the correct denominator for the <em>unassigned</em> figure: results that have
+     * finished their lifecycle ({@code FINAL}, {@code PASSED}, {@code FAILED},
+     * {@code RETAKE_REQUIRED}…) are not in this set.
      *
-     * <p>Sinh từ chính ma trận ở trên chứ không chép cứng, để thêm vòng mới là con số
-     * tự đúng theo.
+     * <p>Derived from the matrix above instead of copied by hand, so that adding a new round makes the figure
+     * correct automatically.
      */
     public static Set<AssessmentCandidateResultStatus> allAssignableStatuses() {
         Set<AssessmentCandidateResultStatus> all = EnumSet.noneOf(AssessmentCandidateResultStatus.class);
@@ -59,7 +59,7 @@ public final class GradingRoundPolicy {
         return all;
     }
 
-    /** Hành động hợp lệ của vòng. {@code DECLINED} hợp lệ ở mọi vòng nên không nằm đây. */
+    /** Valid actions of the round. {@code DECLINED} is valid in every round so it is not listed here. */
     public static Set<GradingOutcome> allowedOutcomes(GradingRoundType roundType) {
         return switch (roundType) {
             case INITIAL, SPOT_CHECK -> EnumSet.of(
@@ -91,14 +91,14 @@ public final class GradingRoundPolicy {
         }
         if (!isAllowed(roundType, outcome)) {
             throw new IllegalArgumentException(
-                "Hành động " + outcome + " không hợp lệ với vòng chấm " + roundType + ".");
+                "Action " + outcome + " is not valid for grading round " + roundType + ".");
         }
         return switch (roundType) {
             case INITIAL -> outcome == GradingOutcome.INVALIDATED
                 ? AssessmentCandidateResultStatus.INVALID
                 : AssessmentCandidateResultStatus.RELEASED;
-            // Hậu kiểm: bài đã RELEASED thì giữ RELEASED (null = không đụng), trừ khi
-            // kết luận vi phạm.
+            // Spot check: a result already RELEASED stays RELEASED (null = do not touch), unless
+            // the conclusion is a violation.
             case SPOT_CHECK -> outcome == GradingOutcome.INVALIDATED
                 ? AssessmentCandidateResultStatus.INVALID
                 : null;
@@ -109,14 +109,14 @@ public final class GradingRoundPolicy {
         };
     }
 
-    /** Hành động bắt buộc phải kèm lý do — thiếu là không giải trình được về sau. */
+    /** Actions that must come with a reason — without one they cannot be justified later. */
     public static boolean requiresReason(GradingOutcome outcome) {
         return outcome == GradingOutcome.INVALIDATED
             || outcome == GradingOutcome.CLEARED_INVALID
             || outcome == GradingOutcome.DECLINED;
     }
 
-    /** Hành động bắt buộc phải kèm điểm mới. */
+    /** Actions that must come with a new score. */
     public static boolean requiresScores(GradingOutcome outcome) {
         return outcome == GradingOutcome.REGRADED;
     }

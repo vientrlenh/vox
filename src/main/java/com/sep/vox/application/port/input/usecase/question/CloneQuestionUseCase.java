@@ -36,9 +36,9 @@ public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, Ques
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         boolean owner = question.isCreatedBy(currentUserId);
         boolean usableCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
@@ -49,7 +49,7 @@ public class CloneQuestionUseCase implements IUseCase<CloneQuestionCommand, Ques
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
 
         if (!systemAdminOnSystemBank && !usableCollaborator && !owner) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         Question cloned = questionCloneService.cloneAsDraftWithDetails(question, currentUserId);

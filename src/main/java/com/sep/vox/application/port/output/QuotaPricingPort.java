@@ -3,24 +3,24 @@ package com.sep.vox.application.port.output;
 import java.math.BigDecimal;
 
 /**
- * Cổng ĐỌC pricing config cho tầng application/interfaces -- nguồn số thật (properties trong .env +
- * snapshot trong DB) nằm ở infrastructure, nên các use case chỉ phụ thuộc vào interface này thay vì
- * import ngược lên implementation (xem QuotaPricingService).
+ * A READ port for pricing config for the application/interfaces layers -- the real source of the
+ * numbers (properties in .env + a snapshot in the DB) lives in infrastructure, so use cases depend
+ * only on this interface instead of importing back up into the implementation (see QuotaPricingService).
  *
- * <p>Mọi method đều đã tự xử lý fallback bên trong implementation (giá calibrate -> hằng số .env,
- * snapshot tỷ giá -> hằng số .env) nên luôn trả về giá trị dùng được, không bao giờ null.
+ * <p>Every method already handles the fallback inside the implementation (calibrated price -> .env
+ * constant, exchange-rate snapshot -> .env constant), so it always returns a usable value, never null.
  */
 public interface QuotaPricingPort {
 
-    /** Giá ước tính mỗi giây thi (USD) -- dùng cho ClassTestTokenQuotaGuardService. */
+    /** Estimated price per assessment second (USD) -- used by ClassTestTokenQuotaGuardService. */
     BigDecimal currentEstimatedCostPerAssessmentSecondUsd();
 
-    /** Giá ước tính mỗi giây luyện tập (USD) -- dùng cho BuildPracticePaperUseCase. */
+    /** Estimated price per practice second (USD) -- used by BuildPracticePaperUseCase. */
     BigDecimal currentEstimatedCostPerPracticeSecondUsd();
 
-    /** Tỷ giá USD->VND thị trường đang áp dụng, dùng chung cho mọi gói. */
+    /** The market USD->VND exchange rate currently in effect, shared by every plan. */
     BigDecimal usdToVndRate();
 
-    // serviceFeeRatio() đã chuyển sang ServiceFeePort: mọi method còn lại ở đây là GIÁ VỐN và được
-    // phơi nguyên vẹn ra query GraphQL quotaPricing, còn phí dịch vụ là biên lãi của mình.
+    // serviceFeeRatio() moved to ServiceFeePort: every remaining method here is COST PRICE and is
+    // exposed as is through the GraphQL query quotaPricing, while the service fee is our own margin.
 }

@@ -8,9 +8,9 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Nợ hạn mức AI của 1 trường vừa vượt trần cảnh báo (xem QuotaDebtProperties/ConsumeQuotaService).
- * Người nhận là mọi SYSTEM_ADMIN -- CHỐT NGAY lúc phát sự kiện, không truy vấn lại ở consumer, cùng lý
- * do với InvoicePaidPayloadV1.systemAdminIds.
+ * A school's AI quota debt has just exceeded the warning cap (see QuotaDebtProperties/ConsumeQuotaService).
+ * Every SYSTEM_ADMIN is a recipient -- FIXED when the event is published and not queried again in
+ * the consumer, for the same reason as InvoicePaidPayloadV1.systemAdminIds.
  */
 public record SchoolDebtCapExceededPayloadV1(
     List<UUID> systemAdminIds,

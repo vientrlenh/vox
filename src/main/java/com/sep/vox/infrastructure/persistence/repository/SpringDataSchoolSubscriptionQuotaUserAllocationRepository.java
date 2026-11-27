@@ -25,19 +25,19 @@ public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository exten
     int tryConsume(@Param("id") UUID id, @Param("amount") BigDecimal amount);
 
     /**
-     * Tổng phần hạn mức đã hứa cho từng người mà họ CHƯA tiêu.
+     * Total of the quota promised to each person that they have NOT yet spent.
      *
-     * <p>Kẹp âm bằng WHERE chứ không bằng CASE: dòng đã tiêu quá trần (addUsage là UPDATE vô điều
-     * kiện nên chuyện đó xảy ra được) bị loại khỏi tập cộng thay vì đóng góp một số âm. Một giáo viên
-     * lỡ vượt trần KHÔNG phải là khoản tín dụng trả ngược lại cho trường -- tiền đó đã tiêu thật rồi,
-     * và cộng phần âm vào sẽ làm phần đã hứa cho những người khác trông nhỏ đi.
+     * <p>Clamping negatives is done with WHERE rather than CASE: a row that spent over its ceiling (addUsage is an unconditional
+     * UPDATE so that can happen) is excluded from the sum instead of contributing a negative number. A teacher
+     * who exceeded the ceiling is NOT a credit handed back to the school -- that money was really spent,
+     * and adding the negative part would make the amount promised to others look smaller.
      *
-     * <p>Cộng phần CHƯA TIÊU chứ không phải toàn bộ allocated, vì đây là con số sẽ đem trừ khỏi ví
-     * trường: phần giáo viên đã tiêu thì ConsumeQuotaService đã trừ vào used_amount_vnd của ví rồi
-     * (consumeUserAllocation cộng dồn CÙNG khoản tiền vào cả hai bộ đếm), nên trừ cả allocated là trừ
-     * hai lần đúng những đồng đã tiêu.
+     * <p>Sums the UNSPENT part and not the whole allocated amount, because this is the number that will be subtracted from the school
+     * wallet: what the teacher already spent was already deducted by ConsumeQuotaService from the wallet's used_amount_vnd
+     * (consumeUserAllocation adds the SAME amount to both counters), so subtracting the whole allocated amount
+     * would deduct the same spent money twice.
      */
-    // COALESCE về 0: SUM trên tập rỗng trả NULL -- trường chưa chia cho ai là ca THƯỜNG GẶP nhất.
+    // COALESCE to 0: SUM over an empty set returns NULL -- a school that has distributed to nobody is the MOST COMMON case.
     @Query("""
         SELECT COALESCE(SUM(a.allocatedAmountVnd - a.usedAmountVnd), 0)
         FROM SchoolSubscriptionQuotaUserAllocationJpaEntity a
@@ -50,20 +50,20 @@ public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository exten
         @Param("quotaType") String quotaType);
 
     /**
-     * Tổng đã chia cho những người CÒN đủ điều kiện nhận -- cùng phép lọc mà màn chia hạn mức dùng để
-     * dựng danh sách ({@code SchoolUserRepository.findBySchoolId} với status ACTIVE + roleId).
+     * Total distributed to the people who are STILL eligible to receive -- the same filter the quota distribution screen uses to
+     * build its list ({@code SchoolUserRepository.findBySchoolId} with status ACTIVE + roleId).
      *
-     * <p>Phải lọc chứ không cộng tất: dòng phân bổ KHÔNG bị xoá khi giáo viên nghỉ việc hay học sinh
-     * ra trường, nên cộng tất là đếm cả phần đứng tên những người không còn xuất hiện ở bất kỳ trang
-     * nào của bảng. Trường nhìn thấy "đã chia" lớn hơn tổng các dòng đang hiện, và tới lúc phần vô
-     * hình đó chạm trần thì mọi lần chia tiếp đều bị từ chối mà không màn hình nào giải thích nổi.
+     * <p>It must filter rather than sum everything: allocation rows are NOT deleted when a teacher leaves or a student
+     * graduates, so summing everything counts the part held by people who no longer appear on any page of the table. The school sees
+     * "distributed" larger than the sum of the visible rows, and by the time that invisible part hits the ceiling every further
+     * distribution is rejected without any screen being able to explain why.
      *
-     * <p>Bỏ họ khỏi tổng KHÔNG tạo ra tiền từ hư không: phần họ đã TIÊU vẫn nằm nguyên ở
-     * {@code used_amount_vnd} của ví trường (ConsumeQuotaService.consumeUserAllocation cộng dồn cùng
-     * khoản vào cả hai bộ đếm). Thứ thôi chiếm chỗ trong trần chỉ là phần CHƯA ai tiêu được nữa.
+     * <p>Dropping them from the total does NOT create money out of thin air: what they already SPENT stays intact in the
+     * school wallet's {@code used_amount_vnd} (ConsumeQuotaService.consumeUserAllocation adds the same
+     * amount to both counters). What stops occupying room under the ceiling is only the part that nobody can spend any more.
      *
-     * <p>Dòng của họ cũng KHÔNG bị xoá: nếu tài khoản được kích hoạt lại thì trần cũ trở lại nguyên
-     * vẹn, và giữ lại thì sổ sách vẫn tra ngược được ai từng được cấp bao nhiêu.
+     * <p>Their rows are also NOT deleted: if the account is reactivated the old ceiling comes back
+     * intact, and keeping them lets the books still trace who was ever granted how much.
      */
     @Query("""
         SELECT COALESCE(SUM(a.allocatedAmountVnd), 0)
@@ -86,11 +86,11 @@ public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository exten
         @Param("status") String status);
 
     /**
-     * Tổng đã chia trên MỌI dòng, kể cả người không còn đủ điều kiện.
+     * Total distributed over EVERY row, including people who are no longer eligible.
      *
-     * <p>Chỉ dùng để hiện phần chênh so với {@link #sumAllocatedForEligibleUsers} -- con số đó mới là
-     * con số đem so với trần. Có mặt ở đây để phần "vô hình" được nói thành lời trên giao diện thay vì
-     * bị lặng lẽ loại khỏi phép tính.
+     * <p>Only used to show the difference from {@link #sumAllocatedForEligibleUsers} -- that number is the
+     * one compared against the ceiling. It is here so the "invisible" part can be put into words in the UI instead of
+     * being silently left out of the calculation.
      */
     @Query("""
         SELECT COALESCE(SUM(a.allocatedAmountVnd), 0)
@@ -102,15 +102,15 @@ public interface SpringDataSchoolSubscriptionQuotaUserAllocationRepository exten
         @Param("schoolSubscriptionId") UUID schoolSubscriptionId,
         @Param("quotaType") String quotaType);
 
-    // clearAutomatically=true -- cùng lý do với SpringDataSchoolSubscriptionQuotaRecordRepository.addUsage:
-    // tránh Hibernate trả về entity cache cũ nếu có chỗ nào sau này đọc lại trong cùng transaction.
+    // clearAutomatically=true -- same reason as SpringDataSchoolSubscriptionQuotaRecordRepository.addUsage:
+    // prevents Hibernate from returning an old cached entity if anything later re-reads in the same transaction.
     //
-    // flushAutomatically=true BẮT BUỘC đi kèm, không phải cho gọn đôi: ConsumeQuotaService gọi
-    // consumeUserAllocation SAU chargeOverage, mà chargeOverage vừa merge SchoolBalance đã bị trừ và
-    // persist bút toán OVERAGE_CHARGE -- cả hai còn nằm chờ trong persistence context. Hibernate chỉ
-    // tự flush cho những query space mà câu UPDATE này chạm tới (bảng allocation), KHÔNG gồm
-    // school_balances / school_balance_entries, nên em.clear() sau đó vứt thẳng khoản ghi nợ: chi phí
-    // AI biến mất khỏi ví trường mà không lỗi nào nổi lên, và bất biến SUM(entries) = balance_vnd vỡ.
+    // flushAutomatically=true is REQUIRED with it, not just for tidiness: ConsumeQuotaService calls
+    // consumeUserAllocation AFTER chargeOverage, and chargeOverage has just merged a SchoolBalance that was already deducted and
+    // persisted the OVERAGE_CHARGE entry -- both are still waiting in the persistence context. Hibernate only
+    // auto-flushes the query spaces this UPDATE touches (the allocation table), NOT
+    // school_balances / school_balance_entries, so the em.clear() afterwards throws the debit away: the AI
+    // cost vanishes from the school wallet without any error surfacing, and the invariant SUM(entries) = balance_vnd breaks.
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE SchoolSubscriptionQuotaUserAllocationJpaEntity a SET a.usedAmountVnd = a.usedAmountVnd + :amount WHERE a.id = :id")
     void addUsage(@Param("id") UUID id, @Param("amount") BigDecimal amount);

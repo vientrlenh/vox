@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateAssessmentAppealRequest(
-    @NotNull(message = "Phải chọn kết quả bài thi cần phúc khảo")
+    @NotNull(message = "The result to appeal must be selected")
     UUID candidateResultId,
 
     /**
@@ -19,11 +19,11 @@ public record CreateAssessmentAppealRequest(
      */
     List<UUID> paperItemIds,
 
-    @NotBlank(message = "Phải nêu lý do phúc khảo")
-    @Size(max = 512, message = "Lý do phúc khảo tối đa 512 ký tự")
+    @NotBlank(message = "The appeal reason must be stated")
+    @Size(max = 512, message = "Appeal reason must not exceed 512 characters")
     String reason,
 
-    @Size(max = 512, message = "Ghi chú tối đa 512 ký tự")
+    @Size(max = 512, message = "Note must not exceed 512 characters")
     String notes
 ) {
 

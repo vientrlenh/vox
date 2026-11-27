@@ -3,14 +3,14 @@ package com.sep.vox.application.port.input.query.dashboard;
 import java.util.UUID;
 
 /**
- * Lọc danh sách bài AI chấm lỗi chưa ai xử lý của trường đang đăng nhập.
+ * Filters the list of failed-AI-grading submissions that nobody has handled, for the logged-in school.
  *
- * <p>Không có {@code schoolId}: phạm vi lấy từ người đang đăng nhập. Nhận nó từ client là mở một
- * đường cho quản trị trường này đọc bài của trường khác.
+ * <p>No {@code schoolId}: the scope comes from the logged-in user. Accepting it from the client would open a
+ * way for one school's admin to read another school's submissions.
  *
- * @param retryLeft true = chỉ bài còn lượt nhờ AI chấm lại, false = chỉ bài đã hết lượt, null =
- *                  không lọc. Ba trạng thái chứ không phải cờ bật/tắt, vì "không lọc" là mặc định
- *                  và khác hẳn "chỉ lấy bài hết lượt".
+ * @param retryLeft true = only submissions with AI re-grade attempts left, false = only submissions with none left, null =
+ *                  no filter. Three states and not an on/off flag, because "no filter" is the default
+ *                  and very different from "only submissions with no attempts left".
  */
 public record SearchSchoolGradingFailuresQuery(
     UUID assessmentId,

@@ -3,13 +3,13 @@ package com.sep.vox.application.port.input.command.order;
 import java.util.UUID;
 
 /**
- * Không mang schoolId: trường LẤY TỪ TOKEN của school admin đang đăng nhập. Nhận từ payload thì
- * @PreAuthorize("hasRole('SCHOOL_ADMIN')") không đủ để bảo vệ -- nó chỉ trả lời "có phải school admin
- * không", không trả lời "có phải school admin CỦA TRƯỜNG NÀY không", nên admin trường A vẫn đặt được
- * đơn cho trường B. Suy từ token thì không có gì để kiểm vì không có gì để khai sai.
+ * Carries no schoolId: the school is TAKEN FROM THE TOKEN of the logged-in school admin. If it came from the payload,
+ * @PreAuthorize("hasRole('SCHOOL_ADMIN')") would not be enough protection -- it only answers "is this a school admin",
+ * not "is this a school admin OF THIS SCHOOL", so an admin of school A could still place an order
+ * for school B. Derived from the token there is nothing to check because there is nothing to declare falsely.
  *
- * <p>Cũng không mang requestType/currentPlanId như SubmitRequestCommand cũ: cả hai đều suy ra được từ
- * gói đang ACTIVE của trường, mà suy ra thì không bao giờ lệch với sự thật.
+ * <p>It also does not carry requestType/currentPlanId like the old SubmitRequestCommand: both can be derived from the school's
+ * ACTIVE plan, and a derived value never disagrees with the truth.
  */
 public record CreateSubscriptionOrderCommand(
     UUID subscriptionPlanId

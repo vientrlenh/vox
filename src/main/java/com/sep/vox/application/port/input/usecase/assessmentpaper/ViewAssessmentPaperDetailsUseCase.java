@@ -25,7 +25,7 @@ public class ViewAssessmentPaperDetailsUseCase implements IUseCase<ViewAssessmen
     @Transactional(readOnly = true)
     public AssessmentPaperDto execute(ViewAssessmentPaperDetailsQuery input) {
         AssessmentPaper paper = assessmentPaperRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
 
         // Reuses exactly the existing permission rule for viewing an assessment -- throws ForbiddenException/ResourceNotFoundException
         // if the user has no right to view the parent assessment, without rewriting separate permission logic.

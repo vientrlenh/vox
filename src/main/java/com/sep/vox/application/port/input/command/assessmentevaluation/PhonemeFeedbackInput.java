@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.input.command.assessmentevaluation;
 
 /**
- * Nhận xét phát âm ở mức ÂM VỊ. Xem {@link WordFeedbackInput} để biết vì sao màu phải do Python
- * quyết chứ không suy lại ở client.
+ * Pronunciation feedback at the PHONEME level. See {@link WordFeedbackInput} for why the color must be decided
+ * by Python and not recomputed on the client.
  */
 public record PhonemeFeedbackInput(
     String phoneme,
@@ -10,7 +10,7 @@ public record PhonemeFeedbackInput(
     /** red | yellow | green | gray. */
     String color,
     String level,
-    /** Câu giải thích ngắn cho học sinh, ví dụ "The sound /z/ is good." */
+    /** A short explanation for the student, for example "The sound /z/ is good." */
     String note
 ) {
 }

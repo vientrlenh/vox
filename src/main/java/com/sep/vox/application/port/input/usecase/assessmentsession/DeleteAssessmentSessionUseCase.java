@@ -74,14 +74,14 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
     public Void execute(DeleteAssessmentSessionCommand input) {
         UUID sessionId = input.sessionId();
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra của phiên thi này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of this session not found"));
 
         authorizeDelete(assessment.getId(), assessment.getSchoolId());
         // Once an assessment has closed the books, the score has reached (or is about to reach) the student -- see Assessment#isResultsFinalized.
         if (assessment.isResultsFinalized()) {
-            throw new IllegalArgumentException("Không thể xóa bài thi khi kỳ thi đã đóng hoặc đã công bố kết quả");
+            throw new IllegalArgumentException("A submission cannot be deleted after the assessment has closed or its results have been published");
         }
         requireNoOpenAppeal(sessionId);
 
@@ -92,7 +92,7 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
     private String requireReason(String rawReason) {
         String reason = rawReason == null ? "" : rawReason.strip();
         if (reason.isEmpty()) {
-            throw new IllegalArgumentException("Phải nhập lý do xóa bài thi");
+            throw new IllegalArgumentException("A reason for deleting the submission is required");
         }
         return reason;
     }
@@ -122,7 +122,7 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
         if (candidateResult != null
                 && assessmentResultAppealRepository.existsOpenByCandidateResultId(candidateResult.getId())) {
             throw new IllegalArgumentException(
-                "Bài thi này đang có đơn phúc khảo chưa xử lý xong. Hãy xử lý hoặc từ chối đơn trước khi xoá.");
+                "This submission has an appeal that is not yet resolved. Resolve or reject the appeal before deleting.");
         }
     }
 
@@ -140,6 +140,6 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, currentUserId, AssessmentMemberRole.CHAIR)) {
             return;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

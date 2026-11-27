@@ -18,31 +18,31 @@ import jakarta.validation.constraints.Size;
  * The min/max range of each criterion comes from {@code gradingTaskDetail}, and the backend validates it again.
  */
 public record SubmitGradingRequest(
-    @NotEmpty(message = "Phải chấm điểm cho ít nhất một phần thi")
+    @NotEmpty(message = "At least one section must be scored")
     @Valid
     List<ItemGradeRequest> items
 ) {
     public record ItemGradeRequest(
-        @NotNull(message = "Thiếu phần thi cần chấm")
+        @NotNull(message = "The section to grade is missing")
         UUID paperItemId,
 
-        @NotEmpty(message = "Phải chấm điểm cho các tiêu chí")
+        @NotEmpty(message = "The criteria must be scored")
         @Valid
         List<CriterionScoreRequest> criterionScores,
 
-        @Size(max = 2048, message = "Nhận xét tối đa 2048 ký tự")
+        @Size(max = 2048, message = "Comment must not exceed 2048 characters")
         String feedbackSummary
     ) {
     }
 
     public record CriterionScoreRequest(
-        @NotNull(message = "Thiếu tiêu chí chấm điểm")
+        @NotNull(message = "The scoring criterion is missing")
         UUID rubricCriterionId,
 
-        @NotNull(message = "Phải chấm điểm cho tiêu chí")
+        @NotNull(message = "The criterion must be scored")
         BigDecimal score,
 
-        @Size(max = 512, message = "Diễn giải tối đa 512 ký tự")
+        @Size(max = 512, message = "Explanation must not exceed 512 characters")
         String rationale
     ) {
     }

@@ -1,9 +1,9 @@
 package com.sep.vox.domain.common;
 
-/** Cách nhà trường chia hạn mức cá nhân cho giáo viên/học sinh -- xem DistributeQuotaToUsersService. */
+/** How a school divides personal quota among teachers/students -- see DistributeQuotaToUsersService. */
 public enum DistributionMode {
-    /** Chia đều ví của trường cho mọi người đủ điều kiện, phần dư rải cho những người đầu danh sách. */
+    /** Splits the school balance equally among every eligible person, spreading the remainder over the first people in the list. */
     AUTO,
-    /** Nhà trường tự nhập số cho từng người. */
+    /** The school enters the amount for each person by hand. */
     MANUAL
 }

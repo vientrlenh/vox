@@ -14,10 +14,10 @@ import org.springframework.web.client.RestClient;
 import com.sep.vox.infrastructure.properties.ExchangeRateApiProperties;
 
 /**
- * Gọi API tỷ giá USD->VND thật (miễn phí, không cần key -- xem ExchangeRateApiProperties) cho
- * ExchangeRateRefreshJob. Không bao giờ throw ra ngoài: job chạy nền, không ai xử lý exception,
- * nên mọi lỗi (mạng, response dị dạng, giá trị bất thường) đều quy về Optional.empty() kèm log --
- * phía gọi giữ nguyên snapshot mới nhất / fallback tĩnh hiện có.
+ * Calls the real USD->VND exchange rate API (free, no key needed -- see ExchangeRateApiProperties) for
+ * ExchangeRateRefreshJob. Never throws outward: the job runs in the background, nobody handles an exception,
+ * so every failure (network, malformed response, abnormal value) is turned into Optional.empty() with a log --
+ * the caller keeps the latest existing snapshot / static fallback.
  */
 @Component
 @Slf4j
@@ -50,18 +50,18 @@ public class ExchangeRateApiClient {
         try {
             response = restClient.get().retrieve().body(Map.class);
         } catch (RuntimeException ex) {
-            log.warn("[exchange-rate] Gọi API tỷ giá thất bại, giữ nguyên snapshot/fallback hiện có: {}",
+            log.warn("[exchange-rate] Exchange rate API call failed, keeping the existing snapshot/fallback: {}",
                 ex.getMessage());
             return Optional.empty();
         }
 
         BigDecimal rate = extractRate(response);
         if (rate == null) {
-            log.warn("[exchange-rate] Response API tỷ giá thiếu rates.VND hợp lệ: {}", response);
+            log.warn("[exchange-rate] Exchange rate API response lacks a valid rates.VND: {}", response);
             return Optional.empty();
         }
         if (rate.compareTo(properties.minRateBound()) < 0 || rate.compareTo(properties.maxRateBound()) > 0) {
-            log.warn("[exchange-rate] Tỷ giá {} nằm ngoài khoảng an toàn [{}, {}], bỏ qua lần fetch này",
+            log.warn("[exchange-rate] Rate {} is outside the safe range [{}, {}], skipping this fetch",
                 rate, properties.minRateBound(), properties.maxRateBound());
             return Optional.empty();
         }

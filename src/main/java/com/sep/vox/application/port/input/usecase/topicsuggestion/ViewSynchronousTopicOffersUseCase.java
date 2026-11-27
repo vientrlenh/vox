@@ -20,21 +20,21 @@ public class ViewSynchronousTopicOffersUseCase implements IUseCase<ViewSynchrono
     private final UserContextPort userContextPort;
 
     /**
-     * KHÔNG @Transactional -- và đây là điểm mấu chốt, không phải chuyện bỏ sót.
+     * NOT @Transactional -- and this is the crux, not an oversight.
      *
-     * {@code TopicSuggestionService.synchronousOffers} đã cố ý bỏ @Transactional với chú thích
-     * "this one is the hottest path... the most load-bearing fix of the three", vì nó gọi LLM
-     * đề xuất chủ đề rồi index sang vector store -- hàng chục giây. Nhưng use case này lại bọc
-     * @Transactional ra ngoài, nên transaction vẫn mở suốt cuộc gọi đó: công sức bỏ nó ở tầng
-     * dưới bị vô hiệu hoàn toàn.
+     * {@code TopicSuggestionService.synchronousOffers} deliberately dropped @Transactional with the note
+     * "this one is the hottest path... the most load-bearing fix of the three", because it calls the LLM
+     * to propose topics and then indexes into the vector store -- tens of seconds. But this use case wraps
+     * @Transactional around it, so the transaction stays open during that call: dropping it in the
+     * lower layer is completely undone.
      *
-     * Triệu chứng đo được: HikariCP báo "Apparent connection leak detected" trên thread
-     * practice-gen-2 với đúng stack ViewSynchronousTopicOffersUseCase.execute, khi kho chủ đề
-     * còn trống nên mọi lượt mở màn đều phải sinh mới.
+     * Symptom measured: HikariCP reported "Apparent connection leak detected" on thread
+     * practice-gen-2 with exactly the stack ViewSynchronousTopicOffersUseCase.execute, when the topic store
+     * was empty so every opening turn had to generate fresh topics.
      *
-     * Không mất tính nguyên tử: mỗi lệnh gọi repository bên dưới tự transact riêng qua Spring
-     * Data proxy. Chỗ này vốn là đọc + tạo từng chủ đề độc lập, không có bất biến nào cần
-     * chúng cùng sống cùng chết.
+     * Atomicity is not lost: each repository call below transacts on its own through the Spring
+     * Data proxy. This is a read plus an independent creation of each topic, with no invariant that
+     * needs them to live or die together.
      */
     @Override
     public List<PracticeTopicOffer> execute(ViewSynchronousTopicOffersQuery input) {

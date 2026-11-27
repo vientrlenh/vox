@@ -26,12 +26,12 @@ import com.sep.vox.domain.repository.RubricCriterionRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
- * Validate + quy đổi điểm tiêu chí thành điểm phần thi.
+ * Validates + converts criterion scores into assessment-item scores.
  *
- * <p>Tách riêng vì {@code RegradeResultUseCase} và {@code PreviewGradingUseCase}
- * BẮT BUỘC đi qua đúng một đường: nếu preview và submit tính khác nhau dù chỉ ở
- * chỗ làm tròn, con số giáo viên thấy trước khi bấm Nộp sẽ không phải con số học
- * sinh nhận — đó chính là lý do endpoint preview tồn tại.
+ * <p>Split out because {@code RegradeResultUseCase} and {@code PreviewGradingUseCase}
+ * MUST go through exactly one path: if preview and submit compute differently even only in
+ * rounding, the number the teacher sees before clicking Submit would not be the number the
+ * student receives — which is exactly why the preview endpoint exists.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,15 +41,15 @@ public class GradingItemScoreResolver {
     private final RubricCriterionRepository rubricCriterionRepository;
     private final RubricVersionRepository rubricVersionRepository;
 
-    /** Một phần thi đã chấm xong, sẵn sàng ghi xuống hoặc đem đi tính thử. */
+    /** One graded assessment item, ready to be written down or taken for a trial computation. */
     public record ResolvedItem(
         UUID paperItemId,
         UUID responseId,
         BigDecimal itemScore,
         String feedbackSummary,
         List<SubmitGradingCommand.CriterionScoreItem> criterionScores,
-        // RubricCriterion tuong ung criterionScores -- dung de bao HumanGradingSubmittedEvent
-        // (suy nhan diem yeu tu feedbackSummary), khong tham gia tinh diem.
+        // The RubricCriterion corresponding to criterionScores -- used to report HumanGradingSubmittedEvent
+        // (infer weak points from feedbackSummary), not part of the score computation.
         List<RubricCriterion> criteria
     ) {
     }
@@ -65,18 +65,18 @@ public class GradingItemScoreResolver {
             GradingContext context, SubmitGradingCommand command, boolean enforceFullCoverage) {
         List<SubmitGradingCommand.ItemGrade> items = command.items() == null ? List.<SubmitGradingCommand.ItemGrade>of() : command.items();
         if (items.isEmpty()) {
-            throw new IllegalArgumentException("Phải chấm điểm cho ít nhất một phần thi.");
+            throw new IllegalArgumentException("At least one assessment item must be scored.");
         }
         List<UUID> paperItemIds = requireDistinctPaperItemIds(items);
 
         Map<UUID, AssessmentItemResponse> responsesByPaperItemId = loadResponsesByPaperItemId(context);
         if (enforceFullCoverage && !new HashSet<>(paperItemIds).containsAll(responsesByPaperItemId.keySet())) {
             throw new IllegalArgumentException(
-                "Phải chấm đủ tất cả " + responsesByPaperItemId.size() + " phần thi của bài.");
+                "All " + responsesByPaperItemId.size() + " items of the assessment must be scored.");
         }
         Map<UUID, RubricCriterion> criteria = loadCriteriaById(context);
         RubricVersion rubricVersion = rubricVersionRepository.findById(context.candidateResult().getRubricVersionId())
-            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy rubric version của bài thi."));
+            .orElseThrow(() -> new IllegalArgumentException("Rubric version of the assessment not found."));
 
         // Grade everything before returning -- one failing item must not leave the earlier items
         // with a half-finished score.
@@ -103,10 +103,10 @@ public class GradingItemScoreResolver {
     private List<UUID> requireDistinctPaperItemIds(List<SubmitGradingCommand.ItemGrade> items) {
         List<UUID> paperItemIds = items.stream().map(itemGrade -> itemGrade.paperItemId()).toList();
         if (paperItemIds.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("Thiếu phần thi cần chấm.");
+            throw new IllegalArgumentException("The item to be scored is missing.");
         }
         if (new HashSet<>(paperItemIds).size() != paperItemIds.size()) {
-            throw new IllegalArgumentException("Không được chấm trùng phần thi.");
+            throw new IllegalArgumentException("The same item must not be scored twice.");
         }
         return paperItemIds;
     }
@@ -118,7 +118,7 @@ public class GradingItemScoreResolver {
             RubricVersion rubricVersion) {
         AssessmentItemResponse response = responsesByPaperItemId.get(item.paperItemId());
         if (response == null) {
-            throw new IllegalArgumentException("Phần thi không thuộc bài thi này.");
+            throw new IllegalArgumentException("The item does not belong to this assessment.");
         }
         return new ResolvedItem(
             item.paperItemId(),
@@ -167,15 +167,15 @@ public class GradingItemScoreResolver {
     private void requireSubmittedCriteria(
             List<SubmitGradingCommand.CriterionScoreItem> scores, Map<UUID, RubricCriterion> criteria) {
         if (scores == null || scores.isEmpty()) {
-            throw new IllegalArgumentException("Phải chấm điểm cho các tiêu chí.");
+            throw new IllegalArgumentException("The criteria must be scored.");
         }
         List<UUID> submittedIds = scores.stream()
             .map(item -> item.rubricCriterionId()).toList();
         if (submittedIds.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("Thiếu tiêu chí chấm điểm.");
+            throw new IllegalArgumentException("The scoring criterion is missing.");
         }
         if (new HashSet<>(submittedIds).size() != submittedIds.size()) {
-            throw new IllegalArgumentException("Không được chấm trùng tiêu chí.");
+            throw new IllegalArgumentException("The same criterion must not be scored twice.");
         }
         List<String> missingRequired = criteria.values().stream()
             .filter(criterion -> criterion.isRequired())
@@ -184,7 +184,7 @@ public class GradingItemScoreResolver {
             .toList();
         if (!missingRequired.isEmpty()) {
             throw new IllegalArgumentException(
-                "Phải chấm đủ các tiêu chí bắt buộc: " + String.join(", ", missingRequired) + ".");
+                "All required criteria must be scored: " + String.join(", ", missingRequired) + ".");
         }
     }
 
@@ -192,15 +192,15 @@ public class GradingItemScoreResolver {
             SubmitGradingCommand.CriterionScoreItem item, Map<UUID, RubricCriterion> criteria) {
         RubricCriterion criterion = criteria.get(item.rubricCriterionId());
         if (criterion == null) {
-            throw new IllegalArgumentException("Tiêu chí không thuộc rubric của bài thi này.");
+            throw new IllegalArgumentException("The criterion does not belong to the rubric of this assessment.");
         }
         if (item.score() == null) {
-            throw new IllegalArgumentException("Phải chấm điểm cho tiêu chí " + criterion.getName() + ".");
+            throw new IllegalArgumentException("A score must be given for criterion " + criterion.getName() + ".");
         }
         if (item.score().compareTo(criterion.getMinScore()) < 0
                 || item.score().compareTo(criterion.getMaxScore()) > 0) {
-            throw new IllegalArgumentException("Điểm tiêu chí " + criterion.getName()
-                + " phải nằm trong khoảng " + criterion.getMinScore() + " - " + criterion.getMaxScore() + ".");
+            throw new IllegalArgumentException("The score of criterion " + criterion.getName()
+                + " must be within the range " + criterion.getMinScore() + " - " + criterion.getMaxScore() + ".");
         }
         return new RubricItemScoreFormula.ScoredCriterion(item.score(), criterion.getWeight());
     }

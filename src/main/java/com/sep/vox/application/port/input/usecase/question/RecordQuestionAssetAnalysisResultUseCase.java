@@ -27,7 +27,7 @@ public class RecordQuestionAssetAnalysisResultUseCase
             // Legitimate race: the asset may have been deleted or the question replaced (cloned to another draft)
             // between publishing the request and the Python service returning the result -- not an error worth
             // a retry or the dead-letter topic.
-            log.warn("Bỏ qua kết quả phân tích asset -- không còn tìm thấy assetId={}", input.assetId());
+            log.warn("Skipping the asset analysis result -- assetId={} no longer found", input.assetId());
             return null;
         }
 
@@ -39,7 +39,7 @@ public class RecordQuestionAssetAnalysisResultUseCase
 
     /**
      * Fills only the fields that are CURRENTLY blank -- content a person typed or AI wrote earlier always wins
-     * and is never overwritten here. "Tạo lại bằng AI" (RegenerateQuestionAssetAnalysisUseCase.resetForAnalysis())
+     * and is never overwritten here. "Regenerate with AI" (RegenerateQuestionAssetAnalysisUseCase.resetForAnalysis())
      * blanks the field before publishing precisely so that this rule lets it be written again.
      *
      * @return whether any field was filled

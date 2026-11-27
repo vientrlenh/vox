@@ -22,8 +22,8 @@ public final class LearnerProfileResponses {
     }
 
     /**
-     * Một bậc để học sinh chọn làm độ khó phiên luyện. Cố tình KHÔNG có cờ "bậc của em":
-     * hệ thống không xếp bậc năng lực, nó chỉ ghi lại độ khó em chọn từng phiên.
+     * A band the student can choose as the difficulty of a practice session. DELIBERATELY has no "your band" flag:
+     * the system does not rank proficiency levels, it only records the difficulty the student chose in each session.
      */
     public record PracticeBandOption(
         UUID id,
@@ -35,12 +35,12 @@ public final class LearnerProfileResponses {
     }
 
     /**
-     * Một khung đánh giá để học sinh chọn TRƯỚC khi chọn bậc.
+     * An assessment framework for the student to choose BEFORE choosing a band.
      *
-     * <p>{@code versionId} là bản đã ban hành mới nhất của khung, do server tự chọn -- học sinh
-     * chỉ thấy tên khung, không phải hiểu khái niệm "phiên bản". Bậc chọn sau đó thuộc đúng bản
-     * này, và vì chấm bài luyện suy framework từ chính bậc đích
-     * ({@code SpringDataPracticeSessionRepository.findCriteriaFrameworks}), cả chuỗi tự nhất quán.
+     * <p>{@code versionId} is the latest published version of the framework, chosen by the server itself -- the student
+     * only sees the framework name and does not have to understand the concept of a "version". The band chosen afterwards belongs to exactly this
+     * version, and because practice grading derives the framework from the target band itself
+     * ({@code SpringDataPracticeSessionRepository.findCriteriaFrameworks}), the whole chain is self-consistent.
      */
     public record PracticeFrameworkOption(
         UUID versionId,

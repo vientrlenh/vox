@@ -3,8 +3,8 @@ package com.sep.vox.application.port.input.command.subscription;
 import java.util.UUID;
 
 /**
- * KHÔNG có schoolId: gói đã biết nó thuộc trường nào, nên nhận thêm từ ngoài chỉ tạo ra một tham số
- * phải đối chiếu -- và một chỗ để đối chiếu sai.
+ * NO schoolId: the plan already knows which school it belongs to, so taking it from outside only creates a parameter
+ * that has to be cross-checked -- and a place to cross-check wrongly.
  */
 public record ForceSuspendSubscriptionCommand(
     UUID subscriptionId,

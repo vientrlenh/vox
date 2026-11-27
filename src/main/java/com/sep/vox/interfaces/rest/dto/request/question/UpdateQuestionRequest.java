@@ -13,11 +13,11 @@ public record UpdateQuestionRequest(
     String promptText,
     String preparationText,
     QuestionType type,
-    @Min(value = 0, message = "Thời gian chuẩn bị không được nhỏ hơn 0")
+    @Min(value = 0, message = "Preparation time must not be less than 0")
     Integer preparationTimeSeconds,
-    @Min(value = 0, message = "Thời gian trả lời tối thiểu không được nhỏ hơn 0")
+    @Min(value = 0, message = "Minimum answer time must not be less than 0")
     Integer minResponseSeconds,
-    @Min(value = 0, message = "Thời gian trả lời tối đa không được nhỏ hơn 0")
+    @Min(value = 0, message = "Maximum answer time must not be less than 0")
     Integer maxResponseSeconds,
     QuestionSharing sharing
 ) {

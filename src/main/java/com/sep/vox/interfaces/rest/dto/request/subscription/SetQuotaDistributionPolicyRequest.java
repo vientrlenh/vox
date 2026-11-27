@@ -8,9 +8,9 @@ import jakarta.validation.constraints.NotNull;
 
 /** @param distributableRatio 0..1. The UI sends a ratio, not a percentage -- 0.8, not 80. */
 public record SetQuotaDistributionPolicyRequest(
-    @NotNull(message = "Trần phân phối không được để trống")
-    @DecimalMin(value = "0", message = "Trần phân phối không được nhỏ hơn 0%")
-    @DecimalMax(value = "1", message = "Trần phân phối không được lớn hơn 100%")
+    @NotNull(message = "Distribution cap must not be blank")
+    @DecimalMin(value = "0", message = "Distribution cap must not be less than 0%")
+    @DecimalMax(value = "1", message = "Distribution cap must not exceed 100%")
     BigDecimal distributableRatio
 ) {
 }

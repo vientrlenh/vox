@@ -37,7 +37,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionAsset sourceAsset = questionEditAccessService.requireAssetOf(question, command.assetId());
         boolean immutable = questionEditAccessService.authorizeEditing(question, currentUserId);
 
@@ -63,7 +63,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
     private QuestionAssetDto saveAsDto(QuestionAsset targetAsset) {
         // File/type replace no longer auto-clears transcript/description -- per the simplified
         // rule, existing content (whether AI-written or manually typed) always sticks unless the
-        // teacher explicitly blanks the field or uses "Tạo lại bằng AI" to force regeneration.
+        // teacher explicitly blanks the field or uses "Regenerate with AI" to force regeneration.
         QuestionAsset saved = questionAssetRepository.save(targetAsset);
         // Auto-publishing the AI asset-analysis request is switched off for now so that saving an asset
         // stays independent and stable. It will be turned back on in a separate task about AI asset updates.
@@ -115,7 +115,7 @@ public class UpdateQuestionAssetUseCase implements IUseCase<UpdateQuestionAssetC
         boolean duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
             .anyMatch(asset -> asset.getOrder() == order && !asset.getId().equals(currentAssetId));
         if (duplicated) {
-            throw new IllegalArgumentException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
+            throw new IllegalArgumentException("Question asset order must not be duplicated");
         }
     }
 

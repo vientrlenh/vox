@@ -48,13 +48,13 @@ public class RestCallbackController {
         return respond(PaymentProvider.SEPAY, rawBody, headers);
     }
 
-    // Mọi kết quả đã xác thực đều trả 200: cổng dùng mã HTTP để quyết định có gọi lại hay không, mà
-    // gọi lại cùng một payload cũng ra đúng kết quả đó. Chỉ callback KHÔNG xác thực được mới thoát
-    // ra thành 401 qua UnauthorizedException.
+    // Every authenticated outcome returns 200: the gateway uses the HTTP status to decide whether to call back, and
+    // calling back with the same payload yields the same outcome anyway. Only a callback that CANNOT be authenticated
+    // escapes as 401 through UnauthorizedException.
     //
-    // Phải đúng 200, không phải một mã 2xx bất kỳ: tài liệu IPN của SePay Payment Gateway ghi rõ
-    // "endpoint must return HTTP status code 200". PayOS cũng nhận 200 (SDK mẫu trả 200 "OK").
-    // Đây là lý do dùng ResponseEntity.ok chứ không phải 202/204 cho các nhánh "chưa chốt gì".
+    // It must be exactly 200, not just any 2xx: the SePay Payment Gateway IPN documentation states
+    // "endpoint must return HTTP status code 200". PayOS also accepts 200 (the sample SDK returns 200 "OK").
+    // That is why ResponseEntity.ok is used rather than 202/204 for the "nothing settled" branches.
     private ResponseEntity<ApiResponse<Void>> respond(
             PaymentProvider provider, byte[] rawBody, HttpHeaders headers) {
         PaymentCallbackResponse result = processPaymentCallbackUseCase.execute(
@@ -65,19 +65,19 @@ public class RestCallbackController {
     private String messageOf(CallbackOutcome outcome) {
         return switch (outcome) {
             case SETTLED -> "OK";
-            case ALREADY_SETTLED -> "Lần thanh toán đã được chốt trước đó";
-            // Vẫn là 200 như mọi nhánh đã xác thực khác: gọi lại cũng ra đúng kết quả này, và bắt cổng
-            // retry một ca cần người xử lý tay chỉ tạo thêm nhiễu. Cảnh báo nằm ở log ERROR của
-            // ProcessPaymentCallbackUseCase, không phải ở mã HTTP.
-            case PAID_AFTER_WRITE_OFF -> "Đã ghi nhận báo có cho lần thanh toán đã đóng, cần đối soát";
-            case UNKNOWN_PAYMENT -> "Không tìm thấy lần thanh toán tương ứng";
-            case AMOUNT_MISMATCH -> "Số tiền không khớp lần thanh toán";
-            case NOT_FINAL -> "Giao dịch chưa ở trạng thái cuối";
+            case ALREADY_SETTLED -> "The payment attempt was already settled earlier";
+            // Still 200 like every other authenticated branch: calling back yields the same outcome, and making the gateway
+            // retry a case that needs manual handling only adds noise. The warning is in the ERROR log of
+            // ProcessPaymentCallbackUseCase, not in the HTTP status.
+            case PAID_AFTER_WRITE_OFF -> "Credit recorded for an already closed payment attempt, reconciliation needed";
+            case UNKNOWN_PAYMENT -> "No matching payment attempt found";
+            case AMOUNT_MISMATCH -> "Amount does not match the payment attempt";
+            case NOT_FINAL -> "Transaction is not in a final status";
         };
     }
 
-    // Tên header HTTP không phân biệt hoa thường, nên adapter phải tra được "X-Secret-Key" kể cả
-    // khi client gửi "x-secret-key".
+    // HTTP header names are case-insensitive, so the adapter must be able to look up "X-Secret-Key" even
+    // when the client sends "x-secret-key".
     private Map<String, String> toSingleValueMap(HttpHeaders headers) {
         Map<String, String> singleValue = new LinkedCaseInsensitiveMap<>();
         singleValue.putAll(headers.toSingleValueMap());

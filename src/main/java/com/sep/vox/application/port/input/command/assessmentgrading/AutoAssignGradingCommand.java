@@ -8,14 +8,14 @@ import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
 
 /**
- * Giao tự động trong phạm vi một kỳ thi hoặc một ca thi, cho một vòng chấm.
+ * Automatic assignment within one assessment or one schedule, for one grading round.
  *
- * @param roundType     vòng cần giao; quyết định bài nào đủ điều kiện
- * @param selectionMode cách chọn bài trong tập đủ điều kiện (xem
+ * @param roundType     the round to assign; decides which submissions are eligible
+ * @param selectionMode how to choose submissions from the eligible set (see
  *                      {@code GradingSampleSelectionMode})
- * @param percent       chỉ dùng cho {@code RANDOM_PERCENT} và (tuỳ chọn)
+ * @param percent       only used for {@code RANDOM_PERCENT} and (optionally)
  *                      {@code RISK_BASED}
- * @param candidateResultIds chỉ dùng cho {@code MANUAL_LIST}
+ * @param candidateResultIds only used for {@code MANUAL_LIST}
  */
 public record AutoAssignGradingCommand(
     UUID assessmentId,

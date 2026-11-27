@@ -45,7 +45,7 @@ public class AssessmentSessionModerationAccessService {
             return;
         }
 
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 
     private boolean isSchoolAdminOfAssessmentSchool(UUID currentUserId, Assessment assessment) {

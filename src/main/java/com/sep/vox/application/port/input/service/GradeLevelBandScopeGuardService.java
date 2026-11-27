@@ -19,28 +19,28 @@ import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 
 /**
- * Canh trần bậc mục tiêu theo khối lớp khi tạo/sửa Assessment Policy.
+ * Guards the target-band ceiling per grade when creating/editing an Assessment Policy.
  *
- * <p><b>Vì sao cần đi vòng để tìm khối:</b> Assessment Policy bắt buộc chọn ĐÚNG MỘT phạm vi
- * trong ba (Lớp | Khối năm học | Khối) -- xem CreateSchoolAssessmentPolicyUseCase. Nghĩa là hai
- * phần ba số policy KHÔNG mang gradeLevelId, trong khi bảng trần lại khóa theo
- * (gradeLevelId, frameworkVersionId). Nếu chỉ canh khi policy chọn thẳng phạm vi Khối thì trần
- * bị vô hiệu chỉ bằng cách chọn phạm vi hẹp hơn -- mà chọn phạm vi Lớp lại là thao tác tự nhiên
- * hơn, nên trần sẽ trượt vì vô ý chứ không cần ai cố tình lách. Vì vậy ở đây luôn lần ngược
- * Lớp -> Khối năm học -> Khối trước khi so trần.
+ * <p><b>Why a detour is needed to find the grade:</b> an Assessment Policy must choose EXACTLY ONE of three scopes
+ * (Class | School-year grade | Grade) -- see CreateSchoolAssessmentPolicyUseCase. That means two
+ * thirds of policies do NOT carry a gradeLevelId, while the ceiling table is keyed by
+ * (gradeLevelId, frameworkVersionId). If we only guard when the policy picks the Grade scope directly then the ceiling
+ * can be disabled just by picking a narrower scope -- and picking the Class scope is the more natural
+ * action, so the ceiling would slip by accident without anyone trying to bypass it. So here we always trace back
+ * Class -> School-year grade -> Grade before comparing the ceiling.
  *
- * <p><b>Hai loại bài kiểm tra, hai trần khác nhau:</b> cột {@code default_target_band_id} mang
- * nghĩa trần CENTRALIZE (kiểm tra tập trung -- policy áp cho cả Khối hoặc cả Niên khóa, tức
- * {@code schoolClassId} KHÔNG được chọn); cột {@code hard_max_band_id} mang nghĩa trần CLASS_TEST
- * (lớp chuyên có bài kiểm tra riêng -- policy neo đúng vào 1 {@code schoolClassId} cụ thể). Tên
- * cột giữ nguyên như lúc thiết kế ban đầu (không đổi schema), nhưng ngữ nghĩa THỰC TẾ là theo loại
- * bài kiểm tra, không phải "gợi ý mặc định" với "trần cứng". Chỉ đúng phạm vi Lớp mới được nới tới
- * trần CLASS_TEST; Khối và Niên khóa (gộp nhiều lớp, không tách được lớp nào chuyên) đều bị ép về
- * trần CENTRALIZE thấp hơn -- xem {@link Batch#effectiveCeilingBand}.
+ * <p><b>Two kinds of assessment, two different ceilings:</b> the column {@code default_target_band_id} carries the
+ * meaning of the CENTRALIZE ceiling (centralized assessment -- the policy applies to a whole Grade or a whole School year, i.e.
+ * {@code schoolClassId} must NOT be chosen); the column {@code hard_max_band_id} carries the meaning of the CLASS_TEST ceiling
+ * (a specialized class with its own tests -- the policy is anchored to exactly 1 specific {@code schoolClassId}). The column
+ * names stay as in the original design (no schema change), but the ACTUAL semantics follow the kind of
+ * assessment, not "default suggestion" versus "hard ceiling". Only the exact Class scope may be loosened up to the
+ * CLASS_TEST ceiling; Grade and School year (which merge many classes, cannot single out a specialized class) are both forced to the
+ * lower CENTRALIZE ceiling -- see {@link Batch#effectiveCeilingBand}.
  *
- * <p><b>Không áp dụng cho policy hệ thống:</b> CreateSystemAssessmentPolicyUseCase tạo policy với
- * cả bốn cột phạm vi là null (toàn hệ, chỉ theo ngôn ngữ + khung) -- không có khối nào để suy ra,
- * nên bảng trần theo khối về bản chất không phủ được luồng đó.
+ * <p><b>Does not apply to system policies:</b> CreateSystemAssessmentPolicyUseCase creates a policy with
+ * all four scope columns null (system-wide, by language + framework only) -- there is no grade to infer,
+ * so by nature the per-grade ceiling table cannot cover that flow.
  */
 @Service
 @RequiredArgsConstructor
@@ -64,8 +64,8 @@ public class GradeLevelBandScopeGuardService {
     }
 
     /**
-     * Trần CENTRALIZE (kiểm tra tập trung, không neo vào 1 Lớp cụ thể) của khối. Rỗng khi khối
-     * chưa cấu hình trần cho phiên bản khung này.
+     * The CENTRALIZE ceiling (centralized assessment, not anchored to 1 specific Class) of the grade. Empty when the grade
+     * has no ceiling configured for this framework version.
      */
     public Optional<FrameworkResultBand> defaultTargetBand(UUID gradeLevelId, UUID frameworkVersionId) {
         return bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(gradeLevelId, frameworkVersionId)
@@ -73,11 +73,11 @@ public class GradeLevelBandScopeGuardService {
     }
 
     /**
-     * Bản dùng cho import: cùng logic nhưng nhớ lại kết quả tra cứu trong một lần chạy.
+     * The import variant: same logic but remembers lookup results within one run.
      *
-     * <p>Import Assessment Policy chạy hàng trăm dòng Excel dùng đi dùng lại vài khối và vài
-     * khung -- gọi thẳng {@link #assertWithinScope} từng dòng sẽ thành N+1. Batch thu về
-     * O(số giá trị khác nhau) truy vấn. KHÔNG dùng lại giữa các lần import (cache không có hạn).
+     * <p>Importing Assessment Policies runs hundreds of Excel rows that reuse a few grades and a few
+     * frameworks -- calling {@link #assertWithinScope} directly per row would become N+1. Batch reduces this to
+     * O(number of distinct values) queries. Do NOT reuse across imports (the cache has no expiry).
      */
     public Batch newBatch() {
         return new Batch();
@@ -118,8 +118,8 @@ public class GradeLevelBandScopeGuardService {
             // chain is abnormal data (a class pointing to a school year that has disappeared), so shout.
             if (schoolClassId != null || schoolGradeId != null) {
                 log.warn(
-                    "Không suy được Khối từ phạm vi (schoolClassId={}, schoolGradeId={}) -- bỏ qua"
-                        + " kiểm trần bậc mục tiêu. Dữ liệu phân cấp lớp/năm học đang không nhất quán.",
+                    "Cannot infer the Grade from the scope (schoolClassId={}, schoolGradeId={}) -- skipping"
+                        + " the target-band ceiling check. The class/school-year hierarchy data is inconsistent.",
                     schoolClassId, schoolGradeId
                 );
             }
@@ -133,7 +133,7 @@ public class GradeLevelBandScopeGuardService {
                 // Blocking everything would stall every policy-creation flow on day one, because V42 seeds no
                 // ceiling row. Switching to block-by-default only needs a change in exactly this branch.
                 log.debug(
-                    "Khối {} chưa cấu hình trần bậc cho phiên bản khung {} -- không áp trần.",
+                    "Grade {} has no band ceiling configured for framework version {} -- no ceiling applied.",
                     resolvedGradeLevelId, frameworkVersionId
                 );
                 return Optional.empty();
@@ -149,7 +149,7 @@ public class GradeLevelBandScopeGuardService {
                 // The FK in V42 should make this impossible; if it still happens the configuration is broken and
                 // the user is not at fault -- do not block them, but leave a trace.
                 log.error(
-                    "Trần bậc của khối {} (phiên bản khung {}) trỏ tới bậc không tồn tại"
+                    "The band ceiling of grade {} (framework version {}) points to a band that does not exist"
                         + " (centralize={}, classTest={}).",
                     resolvedGradeLevelId, frameworkVersionId,
                     scope.getDefaultTargetBandId(), scope.getHardMaxBandId()
@@ -160,10 +160,10 @@ public class GradeLevelBandScopeGuardService {
         }
 
         /**
-         * Chỉ policy neo đúng vào 1 Lớp cụ thể ({@code schoolClassId} khác null) mới là bài
-         * CLASS_TEST, được nới tới trần {@code classTestCapBand}. Policy áp cho cả Khối hoặc cả
-         * Niên khóa (gộp nhiều lớp cùng lúc, không tách được lớp nào chuyên) là bài CENTRALIZE,
-         * chỉ được trần {@code centralizeCapBand} thấp hơn.
+         * Only a policy anchored to exactly 1 specific Class ({@code schoolClassId} non-null) is a
+         * CLASS_TEST, loosened up to the ceiling {@code classTestCapBand}. A policy applying to a whole Grade or a whole
+         * School year (merging many classes at once, cannot single out a specialized class) is a CENTRALIZE assessment,
+         * only allowed the lower ceiling {@code centralizeCapBand}.
          */
         private static FrameworkResultBand effectiveCeilingBand(UUID schoolClassId,
                 FrameworkResultBand centralizeCapBand, FrameworkResultBand classTestCapBand) {
@@ -171,9 +171,9 @@ public class GradeLevelBandScopeGuardService {
         }
 
         /**
-         * Lần ngược từ phạm vi hẹp về Khối: Lớp -> Khối năm học -> Khối.
+         * Traces back from the narrow scope to the Grade: Class -> School-year grade -> Grade.
          *
-         * @return id Khối, hoặc null khi phạm vi không dẫn tới khối nào.
+         * @return the Grade id, or null when the scope leads to no grade.
          */
         public UUID resolveGradeLevelId(UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {
             if (gradeLevelId != null) {
@@ -210,9 +210,9 @@ public class GradeLevelBandScopeGuardService {
             String gradeLevelName = gradeLevelById
                     .computeIfAbsent(gradeLevelId, gradeLevelRepository::findById)
                     .map(level -> level.getName())
-                    .orElse("khối đã chọn");
-            return "Bậc mục tiêu '" + targetBand.getLabel() + "' vượt quá trần của " + gradeLevelName
-                    + ". Bậc cao nhất được phép là '" + hardMaxBand.getLabel() + "'.";
+                    .orElse("the selected grade");
+            return "Target band '" + targetBand.getLabel() + "' exceeds the ceiling of " + gradeLevelName
+                    + ". The highest allowed band is '" + hardMaxBand.getLabel() + "'.";
         }
     }
 

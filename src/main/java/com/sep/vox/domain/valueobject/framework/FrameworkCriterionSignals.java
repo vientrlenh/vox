@@ -9,7 +9,7 @@ public record FrameworkCriterionSignals(
     public FrameworkCriterionSignals {
         if (values == null) values = List.of();
         if (values.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("Các dấu hiệu không được chứa phần tử trống");
+            throw new IllegalArgumentException("The signals must not contain blank elements");
         }
         values = List.copyOf(values);
     }

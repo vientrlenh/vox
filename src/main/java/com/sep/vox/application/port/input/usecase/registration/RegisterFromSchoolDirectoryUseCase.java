@@ -54,7 +54,7 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         RegisterFormStatus.PENDING
     );
 
-    /** Phải >= TTL bên RegisterVerificationOtpEmailConsumer, nếu không hồ sơ hết hạn trước khi consumer kịp chèn mã. */
+    /** Must be >= the TTL in RegisterVerificationOtpEmailConsumer, otherwise the record expires before the consumer can insert the code. */
     private static final Duration TTL = Duration.ofMinutes(10);
 
     @Override
@@ -63,7 +63,7 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         RegisterFromSchoolDirectoryCommand command = normalize(input);
 
         SchoolDirectory schoolDirectory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested school directory entry was not found"));
 
         rejectAlreadyRegisteredSchool(schoolDirectory, command);
         registrationContactDuplicateGuardService.requireContactNotInUse(command.contactEmail(), command.contactPhone());
@@ -71,23 +71,23 @@ public class RegisterFromSchoolDirectoryUseCase implements IUseCase<RegisterFrom
         RegisterFormVerificationMethod method = getVerificationMethod(schoolDirectory, command);
         if (method == RegisterFormVerificationMethod.DOMAIN_OTP) {
             saveAndSendRegisterVerificationOtp(schoolDirectory, command);
-            return new RegisterFromSchoolDirectoryResponse("Mã OTP xác thực đã được gửi");
+            return new RegisterFromSchoolDirectoryResponse("The verification OTP has been sent");
         }
 
         if (command.documentUrls() == null || command.documentUrls().isEmpty()) {
-            throw new IllegalArgumentException("Cần gửi tài liệu để xác thực");
+            throw new IllegalArgumentException("A verification document is required");
         }
         saveRegisterFormWithDocuments(command, method);
-        return new RegisterFromSchoolDirectoryResponse("Vui lòng đợi quản trị viên xác thực");
+        return new RegisterFromSchoolDirectoryResponse("Please wait for an administrator to verify");
     }
     
     private void rejectAlreadyRegisteredSchool(SchoolDirectory schoolDirectory, RegisterFromSchoolDirectoryCommand command) {
         if (schoolRepository.existsByCode(schoolDirectory.getCode())) {
-            throw new ResourceDuplicatedException("Trường này đã được đăng ký");
+            throw new ResourceDuplicatedException("This school has already been registered");
         }
 
         if (registerFormRepository.existsBySchoolDirectoryIdAndStatusIn(command.schoolDirectoryId(), blockingFormStatuses)) {
-            throw new ResourceDuplicatedException("Hiện đang có đơn đăng ký đang chờ phê duyệt cho danh mục trường này");
+            throw new ResourceDuplicatedException("A register form is already awaiting approval for this school directory entry");
         }
     }
 

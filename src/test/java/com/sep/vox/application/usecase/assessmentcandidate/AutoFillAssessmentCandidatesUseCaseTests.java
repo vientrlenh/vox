@@ -75,8 +75,8 @@ class AutoFillAssessmentCandidatesUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
-        // Access service thật trên các repository đã mock: luật phân quyền vẫn được test đúng như
-        // trước khi nó được tách ra khỏi use case.
+        // The real access service on mocked repositories: the authorization rule is still tested exactly as it was
+        // before it was extracted from the use case.
         useCase = new AutoFillAssessmentCandidatesUseCase(
             assessmentRepository, assessmentCandidateRepository, assessmentScheduleRepository,
             new AssessmentPaperAutoAssigner(mock(AssessmentPaperRepository.class), assessmentCandidateRepository),
@@ -214,8 +214,8 @@ class AutoFillAssessmentCandidatesUseCaseTests {
     }
 
     /**
-     * Mỗi ca một khung giờ khác nhau, nên phải soát từng nhóm theo ĐÚNG khung của ca nhận nhóm đó —
-     * soát cả lượt bằng một khung giờ là sai.
+     * Every assessment schedule has a different time window, so each group must be checked against the EXACT window
+     * of the schedule that receives that group -- checking the whole batch against one window is wrong.
      */
     @Test
     void should_check_conflicts_per_target_schedule_window() {

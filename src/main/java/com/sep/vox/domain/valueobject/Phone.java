@@ -8,7 +8,7 @@ public record Phone(String value) {
     
     public Phone {
         if (value != null && !VIETNAM_PHONE_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Định dạng số điện thoại không hợp lệ");
+            throw new IllegalArgumentException("The phone number format is invalid");
         }
     }
 }

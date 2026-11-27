@@ -12,7 +12,7 @@ import com.sep.vox.interfaces.kafka.dto.AlertRaisedEventDto;
 
 public final class ProctoringAlertCommandMapper {
 
-    /** Khớp cột {@code detail varchar(1024)}. Cắt bớt còn hơn để cả cảnh báo rơi vào DLT. */
+    /** Matches the column {@code detail varchar(1024)}. Truncating beats letting the whole alert fall into the DLT. */
     private static final int MAX_DETAIL_LENGTH = 1024;
 
     private ProctoringAlertCommandMapper() {
@@ -40,11 +40,11 @@ public final class ProctoringAlertCommandMapper {
     }
 
     /**
-     * eventId là khoá chống ghi trùng, nên thiếu nó thì không có gì chống trùng được.
+     * eventId is the key that prevents duplicate writes, so without it nothing can prevent duplicates.
      *
-     * <p>Không tự sinh thay: một id mới mỗi lần gửi lại sẽ biến mọi lần Kafka redeliver thành một
-     * dòng mới, và sổ đếm số lần vi phạm sẽ phồng lên theo sự cố hạ tầng chứ không theo hành vi của
-     * thí sinh. Thà từ chối message còn hơn ghi vào một con số không ai tin được.
+     * <p>It is not generated here instead: a new id on every redelivery would turn each Kafka redelivery into a
+     * new row, and the violation counter would swell with infrastructure incidents rather than with the
+     * candidate's behaviour. Better to reject the message than to write a number nobody can trust.
      */
     private static String requireEventId(String raw) {
         return requireText(raw, "eventId").trim();
@@ -52,18 +52,18 @@ public final class ProctoringAlertCommandMapper {
 
     private static String requireText(String raw, String field) {
         if (raw == null || raw.isBlank()) {
-            throw new IllegalArgumentException("Cảnh báo giám sát thiếu trường bắt buộc: " + field);
+            throw new IllegalArgumentException("Proctoring alert is missing a required field: " + field);
         }
         return raw;
     }
 
     /**
-     * candidateId, nếu nguồn phát biết. Rỗng hoặc không phải UUID thì trả null.
+     * candidateId, if the sender knows it. Empty or not a UUID returns null.
      *
-     * <p>Trường này từng bị phía AI gán bằng chính id phiên thi, nên trên topic vẫn còn dữ liệu cũ
-     * như vậy. Ở đây không cố sửa: một giá trị sai vẫn là UUID hợp lệ nên không phân biệt được từ
-     * đây, và việc tra bù đã được làm đúng chỗ hơn -- ngay tại vox-streaming, nơi duy nhất biết ánh
-     * xạ phiên thi -> thí sinh.
+     * <p>The AI side once set this field to the assessment session id itself, so old data like that is still on the topic.
+     * No attempt is made to fix it here: a wrong value is still a valid UUID so it cannot be told apart from
+     * here, and the back-fill is already done in a better place -- right in vox-streaming, the only place that knows
+     * the mapping from assessment session -> candidate.
      */
     private static UUID toOptionalUuid(String raw) {
         if (raw == null || raw.isBlank()) {
@@ -77,10 +77,10 @@ public final class ProctoringAlertCommandMapper {
     }
 
     /**
-     * Độ tin cậy về thang [0, 1] với 4 chữ số thập phân, khớp {@code numeric(5,4)}.
+     * Confidence on a [0, 1] scale with 4 decimal places, matching {@code numeric(5,4)}.
      *
-     * <p>Ngoài khoảng thì trả null chứ không kẹp về biên: một giá trị vô lý nghĩa là ta không biết độ
-     * tin cậy, và "không biết" phải trông khác với "chắc chắn 100%".
+     * <p>Out of range returns null rather than clamping to the edge: an absurd value means we do not know the
+     * confidence, and "unknown" must look different from "100% sure".
      */
     private static BigDecimal toConfidence(Double raw) {
         if (raw == null || raw.isNaN() || raw.isInfinite()) {

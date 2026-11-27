@@ -53,33 +53,34 @@ import jakarta.persistence.TypedQuery;
 public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQueryRepository {
 
     /**
-     * Đơn phúc khảo còn "mở" — bài đang có đơn như vậy không được giao vòng chấm
-     * khác, nếu không hai luồng cùng ghi điểm một bài (review BE-4).
+     * Appeals that are still "open" -- a result with such an appeal must not be given to another
+     * grading round, otherwise two flows write the score of the same result (review BE-4).
      */
     private static final String OPEN_APPEAL_STATUSES = "'PENDING', 'APPROVED', 'GRADING'";
 
-    /** Số bài chặn gửi kèm preview chốt sổ — đủ để admin nhận ra vấn đề, không dựng cả danh sách. */
+    /** Number of blocking results sent with the finalization preview -- enough for an admin to spot the problem
+     * without building the whole list. */
     private static final int BLOCKING_SAMPLE_SIZE = 20;
 
     /**
-     * "Bài này còn đơn phúc khảo mở" — fragment JPQL tương quan với alias {@code cr},
-     * đã cân bằng ngoặc, dùng lại được ở nhiều câu.
+     * "This result still has an open appeal" -- a JPQL fragment correlated with the alias {@code cr},
+     * with balanced parentheses, reusable in several queries.
      */
     private static final String OPEN_APPEAL_EXISTS = " EXISTS ("
         + " SELECT 1 FROM AssessmentResultAppealJpaEntity ap"
         + " WHERE ap.candidateResultId = cr.id AND ap.status IN (" + OPEN_APPEAL_STATUSES + "))";
 
     /**
-     * Bài chặn chốt sổ: còn chờ chấm, hoặc còn đơn phúc khảo mở. Một định nghĩa dùng
-     * chung cho cả câu đếm lẫn câu lấy danh sách mẫu, để hai con số không nói khác nhau.
+     * Results that block finalization: still waiting to be graded, or still having an open appeal. One definition
+     * shared by the count query and the sample-list query, so the two numbers never disagree.
      */
     private static final String BLOCKING_CONDITION =
         " (cr.status = :pendingReview OR " + OPEN_APPEAL_EXISTS + ")";
 
     /**
-     * Trần số kỳ thi trả về cho dropdown lọc của giáo viên. Cùng tinh thần với
-     * {@link com.sep.vox.interfaces.shared.PageArguments#MAX_PAGE_SIZE}: danh sách này không phân
-     * trang nên phải có chặn trên ở đâu đó, dù một người bình thường không bao giờ chạm tới.
+     * Cap on the number of assessments returned for the teacher's filter dropdown. Same spirit as
+     * {@code PageArguments.MAX_PAGE_SIZE}: this list is not paginated, so it needs an upper bound somewhere
+     * even though a normal person never reaches it.
      */
     private static final int MAX_ASSESSMENT_OPTIONS = 200;
 
@@ -89,7 +90,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
     /** Matches {@code AssessmentKind.CENTRALIZED}. The same reason for using String as above. */
     private static final String CENTRALIZED_KIND = "CENTRALIZED";
 
-    /** Trạng thái bài còn có thể nhận một vòng chấm — luật lấy từ domain, không chép cứng. */
+    /** Statuses of a result that can still receive a grading round -- the rule comes from the domain, not copied. */
     private static final List<String> ASSIGNABLE_STATUS_NAMES = GradingRoundPolicy.allAssignableStatuses()
         .stream()
         .map(status -> status.name())
@@ -119,7 +120,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
     @PersistenceContext
     private EntityManager em;
 
-    // ---- bảng điều phối (school admin) --------------------------------------
+    // ---- coordination board (school admin) --------------------------------------
 
     /**
      * Three steps, a fixed number of queries (5) no matter how many rows the page has: (1) the main pagination
@@ -218,9 +219,9 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
     }
 
     /**
-     * Mọi bộ lọc "theo phân công" đều là EXISTS chứ không phải JOIN — câu hỏi của
-     * admin là "bài nào có một phân công thoả điều kiện", và EXISTS trả lời đúng câu
-     * đó mà không nhân bản dòng.
+     * Every "by assignment" filter is an EXISTS rather than a JOIN -- the admin's question is
+     * "which result has an assignment satisfying the condition", and EXISTS answers exactly
+     * that without multiplying rows.
      */
     private static final String WHERE_CLAUSE = """
         WHERE e.schoolId = :schoolId
@@ -265,8 +266,8 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .setParameter("teacherId", filter.teacherId())
             .setParameter("roundType", filter.roundType())
             .setParameter("assignmentStatus", filter.assignmentStatus())
-            // null = không lọc; TRUE = bật. Dùng Boolean nullable thay vì so `= FALSE`
-            // để một câu JPQL phục vụ được cả hai trường hợp.
+            // null = no filter; TRUE = enabled. A nullable Boolean instead of comparing `= FALSE`
+            // so that one JPQL statement serves both cases.
             .setParameter("unassignedOnly", filter.unassignedOnly() ? Boolean.TRUE : null)
             .setParameter("overdueOnly", filter.overdueOnly() ? Boolean.TRUE : null)
             .setParameter("hasOpenAppeal", filter.hasOpenAppeal())
@@ -345,7 +346,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .getResultList());
     }
 
-    /** Tên lớp của nhiều bài trong 1 query; giữ giá trị đầu tiên mỗi bài (tránh N+1). */
+    /** Class names of many results in 1 query; keeps the first value per result (avoids N+1). */
     /**
      * Student names in bulk. Only called for CLASS tests — centralized assessments keep
      * anonymous grading, and that is a fairness guarantee, not a superfluous detail.
@@ -391,10 +392,10 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         return map;
     }
 
-    /** Lượt thi thứ mấy trên tổng mấy lượt, kèm phiên thi tương ứng. */
+    /** Which attempt out of how many, with the matching session. */
     record AttemptInfo(UUID sessionId, int attemptNo, int attemptCount) {
 
-        /** Bài không tra được lượt (phiên đã xoá) vẫn phải hiện, coi như lượt duy nhất. */
+        /** A result whose attempt cannot be looked up (session deleted) must still be shown, as the only attempt. */
         static AttemptInfo single(UUID sessionId) {
             return new AttemptInfo(sessionId, 1, 1);
         }
@@ -462,7 +463,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         return attempt == null ? AttemptInfo.single(sessionId) : attempt;
     }
 
-    // ---- thẻ số đầu màn ----------------------------------------------------
+    // ---- cards at the top of the screen ----------------------------------------------------
 
     @Override
     public GradingStatsInfo stats(UUID schoolId, UUID assessmentId, UUID scheduleId, String assessmentKind) {
@@ -610,11 +611,11 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         return value == null ? 0 : value.intValue();
     }
 
-    // ---- hàng đợi của giáo viên --------------------------------------------
+    // ---- teacher queue --------------------------------------------
 
     /**
-     * MỘT danh sách cho cả bốn vòng. Đây chính là thứ bản mở rộng cũ phải viết một
-     * read layer union 528 dòng để mô phỏng; với một bảng thì nó là một câu query.
+     * ONE list for all four rounds. This is what the old expansion had to simulate with a
+     * 528-line union read layer; with one table it is a single query.
      */
     @Override
     public PageResult<GradingTaskInfo> findTasksByTeacherId(
@@ -802,7 +803,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .getResultList();
     }
 
-    /** {@code SUM(CASE …)} trả null cho nhóm rỗng — cùng lý do với {@code intOf}. */
+    /** {@code SUM(CASE …)} returns null for an empty group -- same reason as {@code intOf}. */
     private long longOf(Long value) {
         return value == null ? 0L : value;
     }
@@ -833,7 +834,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         return map;
     }
 
-    // ---- màn chấm ----------------------------------------------------------
+    // ---- grading screen ----------------------------------------------------------
 
     @Override
     public Optional<GradingTaskDetailInfo> findTaskDetail(UUID assignmentId, UUID teacherId) {
@@ -1319,7 +1320,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
         );
     }
 
-    /** Tiêu chí kèm min/max/weight — FE dựng ô nhập theo dải điểm thật của rubric. */
+    /** Criteria with min/max/weight -- the frontend builds the input boxes from the real score range of the rubric. */
     private List<GradingCriterionMetaInfo> criteria(UUID rubricVersionId) {
         return em.createQuery("""
             SELECT new com.sep.vox.application.query.dto.GradingCriterionMetaInfo(
@@ -1332,7 +1333,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .getResultList();
     }
 
-    // ---- picker phân công --------------------------------------------------
+    // ---- assignment picker --------------------------------------------------
 
     @Override
     public List<AssignableTeacherInfo> findAssignableTeachers(UUID schoolId, String keyword) {
@@ -1369,8 +1370,8 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
     }
 
     /**
-     * Lọc tập userId xuống những giáo viên ACTIVE thuộc trường, trong 1 query.
-     * Thay cho {@code isTeacherOfSchool} gọi lặp từng người khi gán tay / auto-assign.
+     * Filters a set of userIds down to the ACTIVE teachers of the school, in 1 query.
+     * Replaces calling {@code isTeacherOfSchool} once per person on manual assignment / auto-assign.
      */
     @Override
     public Set<UUID> findTeacherIdsInSchool(UUID schoolId, Collection<UUID> userIds) {
@@ -1485,12 +1486,12 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
     }
 
     /**
-     * Ai đã từng GHI ĐIỂM tay cho bài này. Người chấm tay được lưu ở
-     * {@code reviewerId} của evaluation engine HUMAN (cột {@code gradedByModel} dành
-     * cho tên model AI, luồng chấm tay ghi hằng "HUMAN" vào đó).
+     * Who has ever GRADED this result by hand. A manual grader is stored in
+     * {@code reviewerId} of the HUMAN evaluation engine (the {@code gradedByModel} column is for
+     * AI model names; the manual grading flow writes the constant "HUMAN" into it).
      *
-     * <p>Người chỉ xác nhận điểm cũ (UPHOLD) không sinh evaluation nào nên không nằm
-     * trong tập này — họ vẫn được chấm phúc khảo.
+     * <p>A person who only confirmed the old score (UPHOLD) produces no evaluation and so is not in
+     * this set -- they can still grade the appeal.
      */
     @Override
     public Set<UUID> findTeacherIdsWithHumanEvaluation(UUID candidateResultId) {
@@ -1507,7 +1508,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
             .getResultList());
     }
 
-    // ---- chốt sổ & xuất bảng điểm ------------------------------------------
+    // ---- finalization & grade export ------------------------------------------
 
     /**
      * The numbers that block finalization: attempts waiting for grading that nobody has taken, attempts waiting for grading that

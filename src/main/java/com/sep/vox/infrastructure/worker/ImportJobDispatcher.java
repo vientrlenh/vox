@@ -44,7 +44,7 @@ public class ImportJobDispatcher {
                 workers.execute(() -> safeCommit(id));
             } catch (Exception e) {
                 // pool full/rejected: leave the job in IMPORTING -> the sweeper will requeue it when the lease expires
-                log.warn("Không submit được job import {}: {}", id, e.getMessage());
+                log.warn("Could not submit import job {}: {}", id, e.getMessage());
             }
         }
     }
@@ -53,8 +53,8 @@ public class ImportJobDispatcher {
         try {
             commitService.commit(id);
         } catch (Exception e) {
-            // commit() đã tự set FAILED cho lỗi trong handler; đây là lỗi ngoài dự kiến
-            log.error("Lỗi khi commit phiên import {}", id, e);
+            // commit() already sets FAILED for errors in the handler; this is an unexpected error
+            log.error("Error while committing import session {}", id, e);
         }
     }
 
@@ -63,10 +63,10 @@ public class ImportJobDispatcher {
         try {
             int requeued = queueService.requeueExpired(MAX_ATTEMPTS);
             if (requeued > 0) {
-                log.info("Sweeper requeue {} phiên import quá hạn lease", requeued);
+                log.info("Sweeper requeued {} import sessions past their lease", requeued);
             }
         } catch (Exception e) {
-            log.error("Lỗi khi sweep phiên import quá hạn", e);
+            log.error("Error while sweeping expired import sessions", e);
         }
     }
 }

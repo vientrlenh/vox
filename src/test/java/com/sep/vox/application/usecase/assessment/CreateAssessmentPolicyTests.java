@@ -38,9 +38,9 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Kỳ thi tập trung trước đây nhận thẳng {@code assessmentPolicyId} không kiểm gì — bài chạy xong mới
- * lộ ra là không sinh được kết quả nào để chấm, và policy của trường khác cũng gắn được. Bỏ trống vẫn
- * hợp lệ ở bước tạo (chọn sau ở bước sửa), nhưng đã gửi lên thì phải đúng.
+ * A centralized assessment used to take {@code assessmentPolicyId} without any check -- only after the assessment ran
+ * did it turn out that no gradable result could be produced, and a policy of another school could be attached too.
+ * Leaving it empty is still valid at creation (chosen later when editing), but whatever is sent must be correct.
  */
 class CreateAssessmentPolicyTests {
 
@@ -95,7 +95,7 @@ class CreateAssessmentPolicyTests {
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Không tìm thấy bộ tiêu chí đánh giá");
+            .hasMessageContaining("Assessment criteria set not found");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -106,7 +106,7 @@ class CreateAssessmentPolicyTests {
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Chỉ được dùng bộ tiêu chí đã xuất bản");
+            .hasMessageContaining("Only a published criteria set may be used");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -117,7 +117,7 @@ class CreateAssessmentPolicyTests {
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Bộ tiêu chí không thuộc trường của bạn");
+            .hasMessageContaining("The criteria set does not belong to your school");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -146,18 +146,18 @@ class CreateAssessmentPolicyTests {
     void should_reject_missing_open_at_and_close_at() {
         assertThatThrownBy(() -> useCase.execute(command(null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
+            .hasMessageContaining("An assessment must have an opening time and a closing time");
         verify(assessmentRepository, never()).save(any());
     }
 
     @Test
     void should_reject_when_window_falls_outside_subscription_period() {
-        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("The closing time must be within the school's subscription plan term"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(command(null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("hạn gói dịch vụ");
+            .hasMessageContaining("subscription plan term");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -175,7 +175,7 @@ class CreateAssessmentPolicyTests {
     void should_reject_when_only_open_at_is_provided() {
         assertThatThrownBy(() -> useCase.execute(command(null, Instant.parse("2026-08-10T08:00:00Z"), null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Kỳ thi phải có thời gian mở bài và đóng bài");
+            .hasMessageContaining("An assessment must have an opening time and a closing time");
         verify(assessmentRepository, never()).save(any());
     }
 

@@ -105,7 +105,7 @@ public class CreateSystemRubricResultBandsUseCaseTests {
         return new ResultBandItemCommand(code, name, null, BigDecimal.valueOf(min), BigDecimal.valueOf(max), order);
     }
 
-    // 4 mức: Yếu / Trung bình / Khá / Giỏi, khớp thang điểm tổng 0-10 của version
+    // 4 bands: Weak / Average / Good / Excellent, matching the 0-10 total score scale of the version
     private List<ResultBandItemCommand> fourLevels() {
         return List.of(
                 band("YEU", "Yếu", 0, 3.99, 1),
@@ -201,6 +201,6 @@ public class CreateSystemRubricResultBandsUseCaseTests {
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            .hasMessage("Data save error: the result band code (Code) or order already exists in this system Rubric version.");
     }
 }

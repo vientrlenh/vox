@@ -22,9 +22,9 @@ public class ViewSupportedLanguageDetailsUseCase implements IUseCase<ViewSupport
     @Override
     public SupportedLanguageDto execute(ViewSupportedLanguageDetailsQuery input) {
         SupportedLanguage language = supportedLanguageRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngôn ngữ"));
+            .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
         if (!userContextPort.isSystemAdmin() && !language.isActive()) {
-            throw new ResourceNotFoundException("Không tìm thấy ngôn ngữ");
+            throw new ResourceNotFoundException("Language not found");
         }
         return SupportedLanguageDtoMapper.toDto(language);
     }

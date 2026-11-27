@@ -1,6 +1,6 @@
 package com.sep.vox.application.query.dto;
 
-/** Thống kê câu hỏi & ngân hàng câu hỏi của một trường — dùng cho panel tổng quan trên dashboard. */
+/** Question and question-bank statistics of a school -- used for the overview panel on the dashboard. */
 public record QuestionBankStatsDto(
     long totalQuestions,
     long totalQuestionBanks,

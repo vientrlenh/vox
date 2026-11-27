@@ -3,8 +3,8 @@ package com.sep.vox.application.port.input.query.dashboard;
 import com.sep.vox.application.query.dto.SchoolRiskBucket;
 
 /**
- * @param bucket  nhóm đang mở; bắt buộc — trang này luôn đứng trong đúng một nhóm
- * @param keyword tìm theo tên hoặc mã trường; bỏ trống = không lọc
+ * @param bucket  the open bucket; required -- this page always sits inside exactly one bucket
+ * @param keyword search by school name or code; empty = no filter
  */
 public record ViewSchoolsAtRiskQuery(
     SchoolRiskBucket bucket,

@@ -1,36 +1,36 @@
 package com.sep.vox.application.response.output;
 
 /**
- * Cách FE phải mở trang thanh toán của cổng. Đây là thứ trước đây không diễn đạt được: trường
- * {@code method} cũ mang tên cổng ("PAYOS"/"SEPAY"), nên FE buộc phải hardcode "nếu là SEPAY thì
- * submit form" — tức là mỗi lần thêm cổng mới lại phải sửa FE.
+ * How the FE must open the gateway's payment page. This could not be expressed before: the old field
+ * {@code method} carried the gateway name ("PAYOS"/"SEPAY"), so the FE had to hardcode "if SEPAY then
+ * submit a form" -- meaning every new gateway required changing the FE.
  */
 public enum CheckoutAction {
 
-    /** Điều hướng trình duyệt sang {@code actionUrl} (PayOS trả về link checkout riêng cho từng đơn). */
+    /** Redirects the browser to {@code actionUrl} (PayOS returns its own checkout link for each order). */
     REDIRECT,
 
     /**
-     * Hiện mã VietQR NGAY TRONG ứng dụng, không rời trang. Người dùng quét bằng app ngân hàng, hoặc
-     * chuyển khoản tay theo {@code transfer}.
+     * Shows the VietQR code RIGHT INSIDE the app, without leaving the page. The user scans it with a banking app, or
+     * transfers by hand using {@code transfer}.
      *
-     * <p>Khác REDIRECT ở một điểm quyết định cách FE phải viết: quét xong KHÔNG có sự kiện nào đưa
-     * người dùng quay lại, nên trang phải tự hỏi lại trạng thái đơn ngay từ lúc hiện mã. {@code
-     * actionUrl} vẫn có (trang checkout của cổng) và nên để làm lối thoát cho ai muốn dùng trang đó.
+     * <p>Differs from REDIRECT in one point that decides how the FE must be written: after scanning, NO event brings the
+     * user back, so the page must poll the order status itself from the moment the code is shown. {@code
+     * actionUrl} is still there (the gateway's checkout page) and should be kept as an escape hatch for whoever wants that page.
      *
-     * <p>Chỉ cổng nào TRẢ VỀ chuỗi QR mới dùng được. SePay PG không có — nó vẫn là FORM_POST.
+     * <p>Only a gateway that RETURNS a QR string can use it. SePay PG has none -- it remains FORM_POST.
      */
     QR,
 
     /**
-     * Dựng form ẩn với toàn bộ {@code fields} rồi POST sang {@code actionUrl}. SePay PG dùng cách
-     * này: URL checkout là cố định, đơn hàng được mô tả bằng các field kèm chữ ký HMAC.
+     * Builds a hidden form with all the {@code fields} and POSTs it to {@code actionUrl}. SePay PG works
+     * this way: the checkout URL is fixed, and the order is described by fields with an HMAC signature.
      */
     FORM_POST,
 
     /**
-     * Không cần thanh toán gì thêm — hóa đơn đã được chốt PAID ngay (amountDue = 0 sau khi bù trừ
-     * ngày chưa dùng, xem SubscriptionUpgradePolicyService), FE không cần điều hướng sang cổng nào.
+     * Nothing more to pay -- the invoice was settled PAID immediately (amountDue = 0 after offsetting the
+     * unused days, see SubscriptionUpgradePolicyService), the FE does not need to go to any gateway.
      */
     NONE
 }

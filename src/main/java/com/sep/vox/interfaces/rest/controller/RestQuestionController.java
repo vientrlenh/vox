@@ -113,7 +113,7 @@ public class RestQuestionController {
             @Valid @RequestBody CreateQuestionRequest request) {
         CreateSystemQuestionBankQuestionCommand command = CreateQuestionRequest.toCommand(request);
         CreateQuestionResponse data = createQuestionUseCase.execute(command);
-        ApiResponse<CreateQuestionResponse> response = ApiResponse.success("Tao cau hoi thanh cong", data);
+        ApiResponse<CreateQuestionResponse> response = ApiResponse.success("Question created successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -134,7 +134,7 @@ public class RestQuestionController {
         PreviewQuestionImportResponse data = previewQuestionImportFromFileUseCase.execute(
             new PreviewQuestionImportFromFileCommand(questionBankId, questionTopicId, uploadedFile)
         );
-        return ResponseEntity.ok(ApiResponse.success("Preview import cau hoi thanh cong", data));
+        return ResponseEntity.ok(ApiResponse.success("Question import previewed successfully", data));
     }
 
     @PostMapping("/import/{sessionId}/accept")
@@ -144,7 +144,7 @@ public class RestQuestionController {
             @Valid @RequestBody AcceptQuestionImportRequest request) {
         AcceptQuestionImportCommand command = AcceptQuestionImportRequest.toCommand(sessionId, request);
         acceptQuestionImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Yeu cau import cau hoi da duoc tiep nhan, dang xu ly"));
+        return ResponseEntity.ok(ApiResponse.success("Question import request accepted, processing"));
     }
 
     @GetMapping("/export")
@@ -192,7 +192,7 @@ public class RestQuestionController {
             @Valid @RequestBody UpdateQuestionRequest request) {
         UpdateQuestionCommand command = UpdateQuestionRequest.toCommand(id, request);
         UpdateQuestionResponse data = updateQuestionUseCase.execute(command);
-        ApiResponse<UpdateQuestionResponse> response = ApiResponse.success("Cap nhat cau hoi thanh cong", data);
+        ApiResponse<UpdateQuestionResponse> response = ApiResponse.success("Question updated successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -200,7 +200,7 @@ public class RestQuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<QuestionDto>> clone(@PathVariable(name = "id") UUID id) {
         QuestionDto data = cloneQuestionUseCase.execute(new CloneQuestionCommand(id));
-        ApiResponse<QuestionDto> response = ApiResponse.success("Nhan ban cau hoi thanh cong", data);
+        ApiResponse<QuestionDto> response = ApiResponse.success("Question duplicated successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -211,7 +211,7 @@ public class RestQuestionController {
             @Valid @RequestBody UpdateQuestionStatusRequest request) {
         UpdateQuestionStatusCommand command = UpdateQuestionStatusRequest.toCommand(id, request);
         QuestionDto data = updateQuestionStatusUseCase.execute(command);
-        ApiResponse<QuestionDto> response = ApiResponse.success("Cap nhat trang thai cau hoi thanh cong", data);
+        ApiResponse<QuestionDto> response = ApiResponse.success("Question status updated successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -221,7 +221,7 @@ public class RestQuestionController {
             @Valid @RequestBody BulkUpdateQuestionStatusRequest request) {
         BulkUpdateQuestionStatusCommand command = BulkUpdateQuestionStatusRequest.toCommand(request);
         BulkUpdateQuestionStatusResponse data = bulkUpdateQuestionStatusUseCase.execute(command);
-        ApiResponse<BulkUpdateQuestionStatusResponse> response = ApiResponse.success("Cap nhat trang thai hang loat thanh cong", data);
+        ApiResponse<BulkUpdateQuestionStatusResponse> response = ApiResponse.success("Question statuses updated in bulk successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -229,7 +229,7 @@ public class RestQuestionController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<DeleteQuestionResponse>> delete(@PathVariable(name = "id") UUID id) {
         DeleteQuestionResponse data = deleteQuestionUseCase.execute(new DeleteQuestionCommand(id));
-        ApiResponse<DeleteQuestionResponse> response = ApiResponse.success("Xoa cau hoi thanh cong", data);
+        ApiResponse<DeleteQuestionResponse> response = ApiResponse.success("Question deleted successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -240,7 +240,7 @@ public class RestQuestionController {
             @Valid @RequestBody CreateQuestionCollaboratorRequest request) {
         CreateQuestionCollaboratorCommand command = CreateQuestionCollaboratorRequest.toCommand(id, request);
         QuestionCollaboratorDto data = createQuestionCollaboratorUseCase.execute(command);
-        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Them collaborator thanh cong", data);
+        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Collaborator added successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -252,7 +252,7 @@ public class RestQuestionController {
             @Valid @RequestBody UpdateQuestionCollaboratorRequest request) {
         UpdateQuestionCollaboratorCommand command = UpdateQuestionCollaboratorRequest.toCommand(id, collaboratorId, request);
         QuestionCollaboratorDto data = updateQuestionCollaboratorUseCase.execute(command);
-        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Cap nhat quyen collaborator thanh cong", data);
+        ApiResponse<QuestionCollaboratorDto> response = ApiResponse.success("Collaborator permission updated successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -262,7 +262,7 @@ public class RestQuestionController {
             @PathVariable(name = "id") UUID id,
             @PathVariable(name = "collaboratorId") UUID collaboratorId) {
         deleteQuestionCollaboratorUseCase.execute(new DeleteQuestionCollaboratorCommand(id, collaboratorId));
-        ApiResponse<Void> response = ApiResponse.success("Xoa collaborator thanh cong");
+        ApiResponse<Void> response = ApiResponse.success("Collaborator deleted successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -273,7 +273,7 @@ public class RestQuestionController {
             @Valid @RequestBody CreateQuestionAssetRequest request) {
         CreateQuestionAssetMutationCommand command = CreateQuestionAssetRequest.toCommand(id, request);
         QuestionAssetDto data = createQuestionAssetUseCase.execute(command);
-        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Them tai nguyen cau hoi thanh cong", data);
+        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Question asset added successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -283,7 +283,7 @@ public class RestQuestionController {
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "contentType") String contentType) {
         QuestionAssetUploadUrlResponse data = getQuestionAssetUploadUrlUseCase.execute(new GetQuestionAssetUploadUrlQuery(id, contentType));
-        return ResponseEntity.ok(ApiResponse.success("Lấy upload URL tài nguyên câu hỏi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Question asset upload URL retrieved successfully", data));
     }
 
     @PutMapping("/{id}/assets/{assetId}")
@@ -294,7 +294,7 @@ public class RestQuestionController {
             @Valid @RequestBody UpdateQuestionAssetRequest request) {
         UpdateQuestionAssetCommand command = UpdateQuestionAssetRequest.toCommand(id, assetId, request);
         QuestionAssetDto data = updateQuestionAssetUseCase.execute(command);
-        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Cap nhat tai nguyen cau hoi thanh cong", data);
+        ApiResponse<QuestionAssetDto> response = ApiResponse.success("Question asset updated successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -304,7 +304,7 @@ public class RestQuestionController {
             @PathVariable(name = "id") UUID id,
             @PathVariable(name = "assetId") UUID assetId) {
         deleteQuestionAssetUseCase.execute(new DeleteQuestionAssetCommand(id, assetId));
-        ApiResponse<Void> response = ApiResponse.success("Xoa tai nguyen cau hoi thanh cong");
+        ApiResponse<Void> response = ApiResponse.success("Question asset deleted successfully");
         return ResponseEntity.ok(response);
     }
 
@@ -316,7 +316,7 @@ public class RestQuestionController {
         QuestionAssetDto data = regenerateQuestionAssetAnalysisUseCase.execute(
             new RegenerateQuestionAssetAnalysisUseCase.Command(id, assetId)
         );
-        return ResponseEntity.ok(ApiResponse.success("Yeu cau tao lai phan tich asset da duoc tiep nhan", data));
+        return ResponseEntity.ok(ApiResponse.success("Asset analysis regeneration request accepted", data));
     }
 
     @PutMapping("/{id}/evaluation-guide")
@@ -326,7 +326,7 @@ public class RestQuestionController {
             @Valid @RequestBody QuestionEvaluationGuideRequest request) {
         UpsertQuestionEvaluationGuideCommand command = QuestionEvaluationGuideRequest.toCommand(id, request);
         QuestionEvaluationGuideDto data = upsertQuestionEvaluationGuideUseCase.execute(command);
-        ApiResponse<QuestionEvaluationGuideDto> response = ApiResponse.success("Cap nhat huong dan cham thanh cong", data);
+        ApiResponse<QuestionEvaluationGuideDto> response = ApiResponse.success("Grading guide updated successfully", data);
         return ResponseEntity.ok(response);
     }
 }

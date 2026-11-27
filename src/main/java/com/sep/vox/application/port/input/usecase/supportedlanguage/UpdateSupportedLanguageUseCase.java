@@ -45,11 +45,11 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
                 command.isActiveProvided()
             );
             if (updatedRows == 0) {
-                throw new ResourceNotFoundException("Không tìm thấy ngôn ngữ");
+                throw new ResourceNotFoundException("Language not found");
             }
             return new UpdateSupportedLanguageResponse(command.id());
         } catch (DataConflictException e) {
-            throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+            throw new ResourceDuplicatedException("Language already exists with code: " + command.code());
         }
     }
 
@@ -71,7 +71,7 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
 
     private void validateCommand(UpdateSupportedLanguageCommand command) {
         if (!command.codeProvided() && !command.nameProvided() && !command.descriptionProvided() && !command.isActiveProvided()) {
-            throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
+            throw new IllegalArgumentException("At least one field must be provided to update");
         }
         if (command.codeProvided()) {
             validateCode(command.code());
@@ -83,32 +83,32 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
             validateDescription(command.description());
         }
         if (command.isActiveProvided() && command.isActive() == null) {
-            throw new IllegalArgumentException("Trạng thái ngôn ngữ không hợp lệ");
+            throw new IllegalArgumentException("Invalid language status");
         }
     }
 
     private void validateCode(String code) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("Mã ngôn ngữ không được để trống");
+            throw new IllegalArgumentException("Language code must not be empty");
         }
         if (code.length() > MAX_CODE_LENGTH) {
-            throw new IllegalArgumentException("Mã ngôn ngữ không được vượt quá 10 ký tự");
+            throw new IllegalArgumentException("Language code must not exceed 10 characters");
         }
         new LanguageCode(code);
     }
 
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Tên ngôn ngữ không được để trống");
+            throw new IllegalArgumentException("Language name must not be empty");
         }
         if (name.length() > MAX_NAME_LENGTH) {
-            throw new IllegalArgumentException("Tên ngôn ngữ không được vượt quá 100 ký tự");
+            throw new IllegalArgumentException("Language name must not exceed 100 characters");
         }
     }
 
     private void validateDescription(String description) {
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new IllegalArgumentException("Mô tả ngôn ngữ không được vượt quá 2048 ký tự");
+            throw new IllegalArgumentException("Language description must not exceed 2048 characters");
         }
     }
 
@@ -119,7 +119,7 @@ public class UpdateSupportedLanguageUseCase implements IUseCase<UpdateSupportedL
         supportedLanguageRepository.findByCode(command.code())
             .filter(existing -> !existing.getId().equals(command.id()))
             .ifPresent(existing -> {
-                throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+                throw new ResourceDuplicatedException("Language already exists with code: " + command.code());
             });
     }
 }

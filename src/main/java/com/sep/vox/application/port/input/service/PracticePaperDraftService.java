@@ -22,30 +22,30 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 import com.sep.vox.application.response.input.practiceplanning.PracticePlanningResponses.PracticePaperDraft;
 
 /**
- * Điều phối dựng đề 2 pha.
+ * Orchestrates two-phase paper building.
  *
- * Vì sao cần: dựng đề rơi xuống bậc 4 (nhờ AI sinh câu mới) khi kho chưa có câu phù hợp,
- * mất 10-20s -- quá lâu để giữ một request HTTP (client timeout, thread Tomcat + connection
- * DB bị giữ theo). Nên tách: pha 1 khởi động rồi trả về ngay, pha 2 client hỏi lại.
+ * Why needed: building a paper falls to tier 4 (asking AI to generate new questions) when the bank has no suitable questions,
+ * taking 10-20s -- too long to hold an HTTP request (client timeout, a Tomcat thread + a DB connection
+ * held along with it). So it is split: phase 1 starts and returns immediately, phase 2 the client asks again.
  *
- * Vẫn CHỜ NGẮN ({@link #FAST_PATH_WAIT}) trước khi trả PREPARING: khi kho đã có câu (bậc 1,
- * vài chục ms -- đường đi thường gặp sau khi kho đầy) thì trả thẳng READY, học sinh không
- * phải chịu thêm một vòng hỏi lại chỉ để nhận thứ vốn đã sẵn sàng.
+ * It still WAITS BRIEFLY ({@link #FAST_PATH_WAIT}) before returning PREPARING: when the bank already has questions (tier 1,
+ * a few dozen ms -- the common path once the bank is full) it returns READY directly, so the student does not
+ * suffer an extra round of asking again just to receive what was already ready.
  *
- * Nhận {@code Supplier} thay vì tự gọi use case để không phụ thuộc ngược từ tầng service lên
- * tầng use case -- service này chỉ lo vòng đời draft + chạy nền, việc dựng đề do caller đưa vào.
+ * Takes a {@code Supplier} instead of calling the use case itself so there is no reverse dependency from the service layer up to
+ * the use-case layer -- this service only handles the draft lifecycle + background execution, the paper building is passed in by the caller.
  *
- * Lưu draft ở REDIS, không xuống DB: mất khi Redis mất là chấp nhận được (học sinh bấm lại là
- * xong, bản thân practice_papers đã nằm trong DB với hạn giữ chỗ 10 phút), đổi lại không phải thêm
- * bảng + migration cho một thứ sống vài chục giây.
+ * The draft is stored in REDIS, not the DB: losing it when Redis is lost is acceptable (the student clicks again and
+ * it is done, practice_papers itself is already in the DB with a 10-minute reservation), in exchange for not having to add a
+ * table + migration for something that lives a few dozen seconds.
  *
- * <p>SỬA 2026-08-11 -- trước đây là {@code ConcurrentHashMap} trong RAM. Với 3 replica sau ALB
- * chia tải luân phiên thì draft chỉ tồn tại trên pod đã tạo ra nó: client tạo draft ở pod A rồi
- * hỏi lại, ALB đẩy sang pod B, map ở đó rỗng -> 404 "Không tìm thấy phiên dựng đề". Trúng lại
- * đúng pod cũ chỉ 1/3 nên lỗi trông chập chờn chứ không hỏng hẳn.
+ * <p>FIXED 2026-08-11 -- it used to be a {@code ConcurrentHashMap} in RAM. With 3 replicas behind an ALB
+ * balancing round-robin, the draft only existed on the pod that created it: a client creating a draft on pod A and then
+ * asking again got routed to pod B, whose map was empty -> 404 "Paper-building session not found". Hitting the original
+ * pod again is only 1/3 likely so the error looked intermittent rather than fully broken.
  *
- * <p>Phần chạy nền KHÔNG phải đổi: pod nào khởi động thì pod đó dựng xong rồi ghi kết quả vào
- * Redis, pod nào đọc cũng thấy.
+ * <p>The background part does NOT need to change: whichever pod starts it builds it and then writes the result into
+ * Redis, and whichever pod reads it sees it.
  */
 @Service
 @RequiredArgsConstructor
@@ -86,7 +86,7 @@ public class PracticePaperDraftService {
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             return store(draftId, studentId,
-                PracticePaperDraft.failed(draftId, "Dựng đề bị gián đoạn, vui lòng thử lại.", null));
+                PracticePaperDraft.failed(draftId, "Paper building was interrupted, please try again.", null));
         } catch (ExecutionException failed) {
             return store(draftId, studentId, failure(draftId, failed));
         }
@@ -108,28 +108,28 @@ public class PracticePaperDraftService {
     public PracticePaperDraft get(UUID studentId, UUID draftId) {
         Entry entry = cacheManagerPort.get(DRAFT_KEY_PREFIX + draftId, Entry.class);
         if (entry == null) {
-            throw new ResourceNotFoundException("Không tìm thấy phiên dựng đề, vui lòng chọn lại chủ đề.");
+            throw new ResourceNotFoundException("Paper-building session not found, please choose the topic again.");
         }
         if (!entry.studentId().equals(studentId)) {
-            throw new ForbiddenException("Bạn không có quyền xem phiên dựng đề này.");
+            throw new ForbiddenException("You do not have permission to view this paper-building session.");
         }
         return entry.draft();
     }
 
     private PracticePaperDraft store(UUID draftId, UUID studentId, PracticePaperDraft draft) {
-        // TTL đặt lại mỗi lần ghi. Đúng ý: hạn được tính từ lần cập nhật cuối, mà trạng thái cuối
-        // (READY/FAILED) mới là thứ client cần kịp đọc.
+        // The TTL is reset on every write. Intended: the expiry is counted from the last update, and the final state
+        // (READY/FAILED) is what the client needs to be able to read in time.
         cacheManagerPort.save(DRAFT_KEY_PREFIX + draftId, new Entry(studentId, draft), DRAFT_TTL);
         return draft;
     }
 
     private static PracticePaperDraft failure(UUID draftId, Throwable error) {
-        log.warn("Dựng đề thất bại cho draft {}", draftId, error);
+        log.warn("Paper building failed for draft {}", draftId, error);
         FailureReason reason = readableReason(error);
         return PracticePaperDraft.failed(draftId, reason.message(), reason.errorCode());
     }
 
-    /** Cặp (thông báo, mã lỗi) suy ra từ nguyên nhân thất bại. */
+    /** A (message, error code) pair derived from the cause of the failure. */
     private record FailureReason(String message, String errorCode) {
     }
 
@@ -147,7 +147,7 @@ public class PracticePaperDraftService {
         if (cause instanceof ResourceNotFoundException || cause instanceof IllegalArgumentException) {
             return new FailureReason(cause.getMessage(), null);
         }
-        return new FailureReason("Không dựng được đề luyện lúc này, vui lòng thử lại.", null);
+        return new FailureReason("Cannot build a practice paper right now, please try again.", null);
     }
 
 }

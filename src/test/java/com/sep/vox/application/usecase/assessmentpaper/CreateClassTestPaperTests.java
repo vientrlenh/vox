@@ -58,8 +58,8 @@ import com.sep.vox.domain.repository.QuestionAssetRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 /**
- * Giáo viên soạn nhiều mã đề cho một bài kiểm tra trên lớp ngay ở trang chi tiết — cách "soạn câu
- * hỏi trực tiếp" ({@code source = questions}) trước đây chỉ tồn tại trong lúc tạo bài.
+ * A teacher authors several papers for a class test right on the detail page -- the "author questions
+ * directly" way ({@code source = questions}) used to exist only while the test was being created.
  */
 class CreateClassTestPaperTests {
 
@@ -164,7 +164,7 @@ class CreateClassTestPaperTests {
         assertThat(captor.getValue().getCode()).endsWith("-P2");
     }
 
-    /** Câu hỏi của bài trên lớp tự mở khoá khi đóng bài, không chờ người quản lý mở tay. */
+    /** Questions of a class test unlock themselves when the test closes, without waiting for the manager to unlock them by hand. */
     @Test
     void should_lock_questions_with_auto_release_after_close() {
         useCase.execute(questionsCommand());
@@ -191,17 +191,17 @@ class CreateClassTestPaperTests {
 
         assertThatThrownBy(() -> useCase.execute(questionsCommand()))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Chỉ bài kiểm tra trên lớp mới được soạn câu hỏi trực tiếp");
+            .hasMessageContaining("Only a class test may have its questions authored directly");
     }
 
-    /** Bài đã gắn blueprint dùng chung thì mọi mã đề phải khớp blueprint. */
+    /** An assessment attached to a shared blueprint requires every paper to match the blueprint. */
     @Test
     void should_reject_direct_questions_when_blueprint_is_attached() {
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(classTest(UUID.randomUUID())));
 
         assertThatThrownBy(() -> useCase.execute(questionsCommand()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không thể soạn câu hỏi trực tiếp");
+            .hasMessageContaining("questions cannot be authored directly");
     }
 
     @Test
@@ -213,7 +213,7 @@ class CreateClassTestPaperTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không thể xuất hiện nhiều lần");
+            .hasMessageContaining("cannot appear more than once");
     }
 
     @Test
@@ -222,7 +222,7 @@ class CreateClassTestPaperTests {
 
         assertThatThrownBy(() -> useCase.execute(questionsCommand()))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Quyền truy cập bị từ chối");
+            .hasMessageContaining("Access denied");
     }
 
     @Test
@@ -231,7 +231,7 @@ class CreateClassTestPaperTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Phải có ít nhất một phần trong đề");
+            .hasMessageContaining("A paper must have at least one section");
     }
 
     /**

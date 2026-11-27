@@ -10,21 +10,21 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 
 public record CreateFrameworkVersionRequest(
-    @NotBlank(message = "Mã phiên bản không được để trống")
-    @Size(max = 100, message = "Mã phiên bản không được vượt quá 100 ký tự")
+    @NotBlank(message = "Version code must not be blank")
+    @Size(max = 100, message = "Version code must not exceed 100 characters")
     String code,
 
-    @NotBlank(message = "Tên phiên bản không được để trống")
-    @Size(max = 255, message = "Tên phiên bản không được vượt quá 255 ký tự")
+    @NotBlank(message = "Version name must not be blank")
+    @Size(max = 255, message = "Version name must not exceed 255 characters")
     String name,
 
-    @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Description must not exceed 2048 characters")
     String description,
 
-    @Min(value = 1, message = "Số phiên bản phải lớn hơn 0")
+    @Min(value = 1, message = "Version number must be greater than 0")
     int version,
 
-    @NotNull(message = "Ngày hiệu lực không được để trống")
+    @NotNull(message = "Effective date must not be blank")
     Instant effectiveFrom,
 
     Instant effectiveTo

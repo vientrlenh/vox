@@ -21,12 +21,12 @@ import com.sep.vox.domain.repository.AssessmentScheduleProctorRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * "Ai được xem bản ghi của phiên thi này" -- một nguồn sự thật cho mọi đường đọc bản ghi.
+ * "Who may view the recordings of this assessment session" — one source of truth for every recording read path.
  *
- * <p>Tách ra vì có hai người dùng với nhu cầu khác hẳn nhau: app giám thị trên desktop chỉ cần
- * danh sách bản ghi, còn màn chấm bài cần thêm link phát. Nếu mỗi bên tự chép lại khối kiểm
- * quyền này thì sớm muộn hai bản sẽ lệch -- và lệch về quyền xem video buổi thi là loại lỗi
- * không ai nhìn thấy cho tới lúc đã muộn.
+ * <p>Split out because there are two users with very different needs: the desktop proctor app only needs
+ * the list of recordings, while the grading screen also needs the playback link. If each side copied this
+ * permission block, sooner or later the two copies would drift apart -- and drifting on who may view the video of an assessment is the kind of
+ * bug nobody sees until it is too late.
  */
 @Service
 @RequiredArgsConstructor
@@ -61,13 +61,13 @@ public class AssessmentRecordingAccessService {
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         AssessmentSession session = assessmentSessionRepository.findById(assessmentSessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
 
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         if (schoolId == null || !assessment.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bạn không có quyền xem bản ghi");
+            throw new ForbiddenException("You do not have permission to view the recording");
         }
 
         if (userContextPort.isSchoolAdmin()) {
@@ -75,7 +75,7 @@ public class AssessmentRecordingAccessService {
         }
 
         if (!userContextPort.isTeacher()) {
-            throw new ForbiddenException("Vai trò hiện tại của bạn không được phép xem bản ghi thi");
+            throw new ForbiddenException("Your current role is not allowed to view assessment recordings");
         }
 
         requireChairGraderOrProctor(session, assessment, userId);
@@ -109,12 +109,12 @@ public class AssessmentRecordingAccessService {
 
     private void requireProctorOfSession(AssessmentSession session, UUID userId) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thi sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         UUID scheduleId = candidate.getScheduleId();
         boolean isProctor = scheduleId != null
             && assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, userId);
         if (!isProctor) {
-            throw new ForbiddenException("Bạn không được phân công để giám sát ca thi này");
+            throw new ForbiddenException("You are not assigned to proctor this assessment schedule");
         }
     }
 }

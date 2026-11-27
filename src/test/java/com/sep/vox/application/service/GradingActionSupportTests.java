@@ -48,9 +48,9 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.support.OutboxTestSupport;
 
 /**
- * Phần dùng chung của bốn hành động: kiểm luật ở đầu, và đổi trạng thái + audit +
- * thông báo ở cuối. Đây là chỗ duy nhất ghi nhật ký, nên nếu nó bỏ sót thì cả tính
- * năng audit coi như không tồn tại.
+ * The shared part of the four actions: the rule check at the start, and the status change + audit +
+ * notification at the end. This is the only place that writes the log, so if it misses anything the whole
+ * audit feature is as good as nonexistent.
  */
 class GradingActionSupportTests {
 
@@ -146,7 +146,7 @@ class GradingActionSupportTests {
         return captor.getValue();
     }
 
-    // ---- prepare: kiểm luật trước khi động vào dữ liệu ----------------------
+    // ---- prepare: check the rules before touching data ----------------------
 
     @Test
     void should_reject_an_action_that_does_not_belong_to_the_round() {
@@ -155,17 +155,17 @@ class GradingActionSupportTests {
         assertThatThrownBy(() ->
             support.prepare(assignmentId, GradingOutcome.CLEARED_INVALID, "lý do"))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không hợp lệ với vòng chấm");
+            .hasMessageContaining("is not valid for the current grading round");
     }
 
     @Test
     void should_reject_when_the_result_has_left_the_rounds_status() {
-        // Bài bị luồng khác kéo đi (phúc khảo, chốt sổ) trong lúc giáo viên mở màn chấm.
+        // The assessment was moved by another flow (appeal, closing out) while the teacher had the grading screen open.
         given(GradingRoundType.INITIAL, result(AssessmentCandidateResultStatus.RELEASED, "6.00"));
 
         assertThatThrownBy(() -> support.prepare(assignmentId, GradingOutcome.UPHELD, null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không còn ở trạng thái");
+            .hasMessageContaining("no longer in a state");
     }
 
     @Test
@@ -177,7 +177,7 @@ class GradingActionSupportTests {
 
         assertThatThrownBy(() -> support.prepare(assignmentId, GradingOutcome.UPHELD, null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã chốt");
+            .hasMessageContaining("already finalized");
     }
 
     @Test
@@ -186,10 +186,10 @@ class GradingActionSupportTests {
 
         assertThatThrownBy(() -> support.prepare(assignmentId, GradingOutcome.INVALIDATED, "   "))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("lý do");
+            .hasMessageContaining("reason");
     }
 
-    // ---- finish: trạng thái, audit, sự kiện --------------------------------
+    // ---- finish: status, audit, event --------------------------------
 
     @Test
     void should_release_the_result_and_close_the_assignment() {
@@ -295,7 +295,7 @@ class GradingActionSupportTests {
         assertThat(captureHistory().getReason()).isEqualTo("Gian lận: đọc bài mẫu");
     }
 
-    // ---- vòng phúc khảo: số phận của đơn ------------------------------------
+    // ---- appeal round: the fate of the appeal ------------------------------------
 
     @Test
     void should_move_the_appeal_back_to_approved_when_the_reviewer_declines() {
@@ -339,7 +339,7 @@ class GradingActionSupportTests {
         verify(assessmentResultAppealRepository, never()).findById(any());
     }
 
-    // ---- dấu vết trạng thái không được để lại rác ---------------------------
+    // ---- the status trail must not leave junk behind ---------------------------
 
     @Test
     void should_clear_the_finalized_mark_when_a_result_returns_to_pending_review() {

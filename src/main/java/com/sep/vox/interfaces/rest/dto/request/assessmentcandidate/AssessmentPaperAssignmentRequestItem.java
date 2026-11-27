@@ -5,9 +5,9 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record AssessmentPaperAssignmentRequestItem(
-    @NotNull(message = "Thí sinh là bắt buộc")
+    @NotNull(message = "Candidate is required")
     UUID candidateId,
-    @NotNull(message = "Mã đề là bắt buộc")
+    @NotNull(message = "Paper code is required")
     UUID paperId
 ) {
 }

@@ -8,7 +8,7 @@ import java.util.List;
 import jakarta.validation.constraints.NotNull;
 
 public record AssignAssessmentPapersRequest(
-    @NotNull(message = "Danh sách phân đề là bắt buộc")
+    @NotNull(message = "Paper assignment list is required")
     List<AssessmentPaperAssignmentRequestItem> assignments
 ) {
 

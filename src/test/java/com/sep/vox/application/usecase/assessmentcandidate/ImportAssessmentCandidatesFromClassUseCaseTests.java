@@ -93,7 +93,7 @@ class ImportAssessmentCandidatesFromClassUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new ImportAssessmentCandidatesFromClassCommand(assessmentId, classId)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessage("Bạn không phụ trách lớp học này");
+            .hasMessage("You are not in charge of this class");
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 
@@ -153,12 +153,12 @@ class ImportAssessmentCandidatesFromClassUseCaseTests {
             Collection<AssessmentCandidate> arg = inv.getArgument(0);
             return arg.stream().peek(c -> c.setId(UUID.randomUUID())).toList();
         });
-        doThrow(new BusinessRuleViolationException("Đã vượt quá hạn mức"))
+        doThrow(new BusinessRuleViolationException("The quota has been exceeded"))
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(assessment);
 
         assertThatThrownBy(() -> useCase.execute(new ImportAssessmentCandidatesFromClassCommand(assessmentId, classId)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("vượt quá hạn mức");
+            .hasMessageContaining("quota has been exceeded");
     }
 
     @Test

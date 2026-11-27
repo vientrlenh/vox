@@ -14,14 +14,14 @@ import jakarta.validation.constraints.Size;
 public record FundQuotaFromBalanceRequest(
     // inclusive = false: 0 VND is not a top-up, and a 0 VND ledger entry directly violates
     // chk_school_balance_entries_quota_funding_traceable (which requires amount_vnd < 0 after the sign flip).
-    @NotNull(message = "Số tiền nạp không được để trống")
-    @DecimalMin(value = "0", inclusive = false, message = "Số tiền nạp phải lớn hơn 0")
+    @NotNull(message = "Top-up amount must not be blank")
+    @DecimalMin(value = "0", inclusive = false, message = "Top-up amount must be greater than 0")
     BigDecimal amountVnd,
 
     // Optional: the administrator's note, stored directly in the ledger entry. Matches the column length of
     // school_balance_entries.reason varchar(2048) -- truncated here so the error is a readable message instead of
     // a string truncation error from the driver.
-    @Size(max = 2048, message = "Ghi chú không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Note must not exceed 2048 characters")
     String reason
 ) {
 }

@@ -75,8 +75,8 @@ class GradingAssignmentEmailConsumerTests {
 
         // 03:00 UTC is 10:00 Vietnam time.
         verify(mailTemplatePort)
-            .renderGradingDeadlineReminderEmail("Kỳ thi giữa kỳ", "Chấm lần đầu", "10:00 01/08/2026");
-        verify(mailSendingPort).sendHtml("teacher@example.com", "Nhắc hạn chấm bài", "<html></html>");
+            .renderGradingDeadlineReminderEmail("Kỳ thi giữa kỳ", "Initial grading", "10:00 01/08/2026");
+        verify(mailSendingPort).sendHtml("teacher@example.com", "Grading deadline reminder", "<html></html>");
         verify(processedEventRepository).save(any(ProcessedEvent.class));
         verify(ack).acknowledge();
     }
@@ -131,7 +131,7 @@ class GradingAssignmentEmailConsumerTests {
 
         verify(mailTemplatePort).renderGradingDeclinedEmail("Kỳ thi giữa kỳ", "Nguyễn Văn B", "Bận công tác");
         verify(mailSendingPort).sendHtml(
-            "admin@example.com", "Có giáo viên trả lại phân công chấm bài", "<html></html>");
+            "admin@example.com", "A teacher returned a grading assignment", "<html></html>");
         verify(ack).acknowledge();
     }
 

@@ -50,9 +50,9 @@ public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScor
 
     private ScoringRule requireRuleForPolicy(UUID ruleId, UUID policyId) {
         ScoringRule rule = scoringRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
+                .orElseThrow(() -> new ResourceNotFoundException("Scoring Rule not found."));
         if (!rule.getPolicyId().equals(policyId)) {
-            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
+            throw new ForbiddenException("SECURITY: This Scoring Rule does not belong to the specified Assessment Policy.");
         }
         return rule;
     }
@@ -61,36 +61,36 @@ public class DeleteSchoolScoringRuleUseCase implements IUseCase<DeleteSchoolScor
     // scoring rules of a PUBLISHED Policy that is grading real exams). Call it after the ownership/scope checks.
     private void requireDraftStatus(AssessmentPolicy policy) {
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được xóa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("A Scoring Rule can only be deleted while the Assessment Policy is in DRAFT status.");
         }
     }
 
     private void requireActiveSchoolAdminOf(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not assigned to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to interfere with the Assessment Policy of another school.");
         }
 
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+            throw new ForbiddenException("Action denied: this school is disabled in the system.");
         }
     }
 
     private AssessmentPolicy requirePolicyOfSchool(UUID policyId, UUID schoolId) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to interfere with the Assessment Policy of another school.");
         }
         return policy;
     }

@@ -13,23 +13,23 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
 
 /**
- * Minutes và trần thời lượng cho topic offer -- gộp 1 chỗ vì có nhiều caller
+ * Minutes and the duration cap for topic offers -- gathered in 1 place because there are many callers
  * (BuildPracticePaperUseCase, ViewPracticeTopicOffersUseCase, SearchPracticeTopicsUseCase,
  * PickRandomTopicUseCase, TopicSuggestionService).
  *
- * <p>KHÔNG còn tính bậc cho học sinh. Trước đây lớp này suy ra bậc từ ba nguồn (bậc đo được
- * từ bài chấm, EMA hiệu năng, lần bỏ dở gần nhất theo chủ đề) -- tức lấy độ khó của CÂU HỎI
- * gán thành trình độ của NGƯỜI HỌC, một tuyên bố hệ thống không chứng minh được. Giờ học
- * sinh tự chọn bậc muốn luyện mỗi phiên, và bậc đó chỉ còn nghĩa "độ khó tôi muốn hôm nay".
+ * <p>NO LONGER computes the band for the student. This class used to infer the band from three sources (the band measured
+ * from grading, the performance EMA, the most recent abandoned attempt per topic) -- i.e. it took the difficulty of the QUESTIONS
+ * assigned and turned it into the proficiency of the LEARNER, a claim the system cannot prove. Now the student
+ * chooses the band to practise each session, and that band only means "the difficulty I want today".
  */
 @Service
 public class PracticeTopicOfferEnrichmentService {
 
-    /** Dùng khi học sinh chưa gắn với chính sách chấm nào -- giữ nguyên hành vi cũ cho dữ
-     * liệu chưa cấu hình, không phải vì hệ thống mặc định là VSTEP. */
+    /** Used when the student is not tied to any grading policy -- keeps the old behaviour for data
+     * that is not configured, not because the system defaults to VSTEP. */
     private static final int DEFAULT_BAND_COUNT = 6;
 
-    /** Chỉ dùng khi bậc của phiên đã bị xoá khỏi khung -- xem {@link #bandOrder}. */
+    /** Only used when the session's band has been removed from the framework -- see {@link #bandOrder}. */
     private static final int DEFAULT_BAND_ORDER = 3;
 
     private final LearnerProfileRepository learnerProfileRepository;
@@ -37,7 +37,7 @@ public class PracticeTopicOfferEnrichmentService {
     private final FrameworkResultBandRepository frameworkResultBandRepository;
     private final FrameworkVersionRepository frameworkVersionRepository;
 
-    /** Rỗng = tự chọn khung đang hoạt động. Điền mã để ghim một khung cụ thể. */
+    /** Empty = automatically pick the active framework. Fill in a code to pin a specific framework. */
     private final String practiceFrameworkVersionCode;
 
     public PracticeTopicOfferEnrichmentService(
@@ -58,8 +58,8 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
-     * Thứ tự của một bậc trên thang. Bậc đã bị xoá khỏi khung thì lùi về giữa thang -- thà
-     * hỏi hơi lệch còn hơn làm chết một phiên đang chạy vì dữ liệu cấu hình đổi sau lưng.
+     * The order of a band on the scale. A band that has been removed from the framework falls back to the middle of the scale -- better
+     * to ask slightly off than to kill a running session because the configuration data changed behind its back.
      */
     public int bandOrder(UUID bandId) {
         if (bandId == null) {
@@ -71,12 +71,12 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
-     * Số bậc của khung mà BẬC NÀY thuộc về -- đi cặp với {@link #bandOrder(UUID)}.
+     * The number of bands of the framework THIS BAND belongs to -- paired with {@link #bandOrder(UUID)}.
      *
-     * <p>Suy từ chính bậc chứ không tra khung đang hiệu lực, cùng cách
-     * {@code SpringDataPracticeSessionRepository.findCriteriaFrameworks} suy framework lúc chấm.
-     * Nhờ vậy một phiên đã mở theo khung nào thì giữ nguyên khung đó tới cuối, kể cả khi quản
-     * trị ban hành khung khác giữa chừng.
+     * <p>Derived from the band itself rather than looking up the framework in force, the same way
+     * {@code SpringDataPracticeSessionRepository.findCriteriaFrameworks} derives the framework at grading time.
+     * So a session opened under one framework keeps that framework to the end, even if the admin
+     * publishes another framework midway.
      */
     public int frameworkBandCountOfBand(UUID bandId) {
         if (bandId == null) {
@@ -88,8 +88,8 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
-     * Khung mà bậc này thuộc về. {@code null} khi không tra được -- nơi gọi lùi về khung đang
-     * hiệu lực, giữ nguyên hành vi cũ thay vì chặn cả phiên luyện.
+     * The framework this band belongs to. {@code null} when it cannot be looked up -- the caller falls back to the
+     * framework in force, keeping the old behaviour instead of blocking the whole practice session.
      */
     public UUID frameworkVersionIdOfBand(UUID bandId) {
         if (bandId == null) {
@@ -101,25 +101,25 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
-     * Số bậc của thang năng lực. Mặc định {@value #DEFAULT_BAND_COUNT} khi chưa có khung nào
-     * đang hiệu lực -- không phải vì VSTEP, mà vì đó là giá trị an toàn giữ nguyên hành vi cũ
-     * cho dữ liệu chưa cấu hình.
+     * The number of bands of the competency scale. Defaults to {@value #DEFAULT_BAND_COUNT} when no framework is
+     * in force -- not because of VSTEP, but because it is a safe value that keeps the old behaviour
+     * for data that is not configured.
      *
-     * <p>Từ V13 không còn nhận studentId: khung đánh giá của luyện tập là khái niệm TOÀN HỆ,
-     * không suy từ lớp học sinh qua assessment policy nữa.
+     * <p>Since V13 it no longer takes studentId: the assessment framework for practice is a SYSTEM-WIDE concept,
+     * no longer inferred from the student's class through an assessment policy.
      */
     public int frameworkBandCount() {
         return frameworkBandCount(practiceFrameworkVersionId());
     }
 
     /**
-     * Số bậc của MỘT khung cụ thể -- dùng khi học sinh đã chọn khung, thay vì lấy khung đang
-     * hiệu lực toàn hệ.
+     * The number of bands of ONE specific framework -- used when the student has chosen a framework, instead of taking the
+     * system-wide framework in force.
      *
-     * <p>Cần thiết từ khi màn luyện tập cho chọn khung: hai khung có thể khác số bậc (6 với
-     * KNLNNVN/CEFR, 9 với IELTS), mà số bậc đi thẳng vào phép kẹp độ khó ở
-     * {@code PracticeQuestionSelectionService} và {@code TensePolicy}. Lấy nhầm số bậc thì độ
-     * khó ánh xạ lệch mà không có lỗi nào.
+     * <p>Needed since the practice screen lets the student pick a framework: two frameworks can differ in band count (6 for
+     * KNLNNVN/CEFR, 9 for IELTS), and the band count goes straight into the difficulty clamp in
+     * {@code PracticeQuestionSelectionService} and {@code TensePolicy}. Taking the wrong band count
+     * maps difficulty off with no error at all.
      */
     public int frameworkBandCount(UUID frameworkVersionId) {
         List<Integer> values = learnerProfileRepository.findFrameworkBandCount(
@@ -131,28 +131,28 @@ public class PracticeTopicOfferEnrichmentService {
         return bandCount == null || bandCount < 1 ? DEFAULT_BAND_COUNT : bandCount;
     }
 
-    /** Cả thang bậc kèm mô tả, để gửi xuống Python dựng ladder trong prompt chấm câu hỏi.
-     * Rỗng thì Python tự lùi về ladder mặc định của nó. */
+    /** The whole band scale with descriptions, to send to Python to build the ladder in the question-grading prompt.
+     * Empty lets Python fall back to its own default ladder. */
     public List<FrameworkResultBand> frameworkBandLadder() {
         return frameworkBandLadder(practiceFrameworkVersionId());
     }
 
-    /** Thang bậc của MỘT khung cụ thể. Xem {@link #frameworkBandCount(UUID)} về lý do. */
+    /** The band scale of ONE specific framework. See {@link #frameworkBandCount(UUID)} for why. */
     public List<FrameworkResultBand> frameworkBandLadder(UUID frameworkVersionId) {
         return learnerProfileRepository.findFrameworkBandLadder(
             frameworkVersionId == null ? NO_FRAMEWORK : frameworkVersionId);
     }
 
-    /** Mọi khung còn hiệu lực kèm bản mới nhất -- nguồn cho ô chọn khung trước khi chọn bậc. */
+    /** Every framework in force with its latest version -- the source for the framework picker before picking a band. */
     public List<FrameworkVersionRepository.ActiveFramework> activeFrameworks() {
         return frameworkVersionRepository.findActiveFrameworks();
     }
 
     /**
-     * Khung đánh giá dùng cho luyện tập. Không có bản nào đang hiệu lực thì trả về một UUID
-     * KHÔNG tồn tại thay vì ném: hai hàm gọi nó đều có đường lùi hợp lý (số bậc mặc định,
-     * ladder rỗng để Python tự lùi), nên chặn cả màn chọn độ khó vì thiếu cấu hình là phản ứng
-     * nặng tay hơn vấn đề.
+     * The assessment framework used for practice. When no version is in force it returns a UUID that does NOT
+     * exist instead of throwing: both functions that call it have a sensible fallback (default band count,
+     * empty ladder so Python falls back itself), so blocking the whole difficulty-selection screen over missing configuration is a reaction
+     * heavier than the problem.
      */
     private UUID practiceFrameworkVersionId() {
         return frameworkVersionRepository.findActiveVersionId(practiceFrameworkVersionCode)
@@ -162,20 +162,20 @@ public class PracticeTopicOfferEnrichmentService {
     private static final UUID NO_FRAMEWORK = new UUID(0L, 0L);
 
     /**
-     * Trần độ dài MỘT phiên theo bậc ĐANG LUYỆN (thiết kế gói 6 mục 4.1: bậc 1-2 → 720s,
-     * bậc 3 → 900s, bậc 4+ → 1200s).
+     * The length cap of ONE session by the band BEING PRACTISED (package design 6 section 4.1: band 1-2 → 720s,
+     * band 3 → 900s, band 4+ → 1200s).
      *
-     * Khác bản chất với hạn mức subscription ({@link #minutesForStudent}): cái kia là giới hạn
-     * THƯƠNG MẠI (trường mua bao nhiêu), cái này là giới hạn SƯ PHẠM (bậc này ngồi luyện liên
-     * tục bao lâu là hợp lý). Phải áp CẢ HAI, lấy cái nhỏ hơn -- chỉ có hạn mức gói thì học
-     * sinh mới bắt đầu vẫn có thể bị đẩy vào phiên 20 phút.
+     * Different in nature from the subscription quota ({@link #minutesForStudent}): that is a COMMERCIAL limit
+     * (how much the school bought), this is a PEDAGOGICAL limit (how long is reasonable to practise
+     * continuously at this band). BOTH must apply, taking the smaller -- with only the plan quota, a
+     * student who has just started could still be pushed into a 20-minute session.
      *
-     * <p>Tham số là bậc học sinh CHỌN cho phiên này, không phải bậc hệ thống đoán -- đó là
-     * toàn bộ khác biệt so với bản trước.
+     * <p>The parameter is the band the student CHOSE for this session, not a band the system guessed -- that is
+     * the whole difference from the previous version.
      */
     public int sessionSecondsCapForBand(int bandOrder, int bandCount) {
-        // Chia theo TỈ LỆ vị trí trên thang, không cắt cứng ở bậc 2/3: với 6 bậc cho ra đúng
-        // 720/720/900/1200/1200/1200 như trước, với thang khác thì tự giãn theo.
+        // Divide by the PROPORTIONAL position on the scale, no hard cut at band 2/3: with 6 bands it gives exactly
+        // 720/720/900/1200/1200/1200 as before, and with another scale it stretches along.
         double ratio = (double) bandOrder / Math.max(1, bandCount);
         if (ratio <= 1.0 / 3) {
             return 720;
@@ -184,12 +184,12 @@ public class PracticeTopicOfferEnrichmentService {
     }
 
     /**
-     * Ngân sách nói THẬT SỰ của một phiên: chỗ hẹp hơn giữa hạn mức gói và trần bậc.
+     * The REAL speaking budget of a session: the narrower of the plan quota and the band cap.
      *
-     * Trước đây công thức này viết thẳng trong {@code ResolveNextPracticeQuestionClaimService}
-     * -- nơi duy nhất cần nó. Giờ màn hình luyện cũng phải hiện "đã nói / ngân sách" nên có hai
-     * nơi cần cùng con số; để mỗi nơi tự tính lại là mở đường cho chúng lệch nhau, rồi thanh
-     * tiến độ trên máy học sinh nói một đằng còn phiên dừng một nẻo.
+     * This formula used to be written directly in {@code ResolveNextPracticeQuestionClaimService}
+     * -- the only place that needed it. Now the practice screen must also show "spoken / budget", so two
+     * places need the same number; letting each recompute it opens the way for them to drift apart, and then the
+     * progress bar on the student's device says one thing while the session stops at another.
      */
     public int sessionBudgetSeconds(UUID studentId, int bandOrder) {
         return Math.min(
@@ -198,7 +198,7 @@ public class PracticeTopicOfferEnrichmentService {
         );
     }
 
-    /** Số phút mỗi lượt luyện theo đúng gói subscription đang hoạt động -- 0 nếu không có gói. */
+    /** Minutes per practice turn according to the active subscription -- 0 if there is no plan. */
     public int minutesForStudent(UUID studentId) {
         Integer minutes = schoolSubscriptionRepository.findMaxTimePerAttemptMinForUser(studentId);
         return minutes == null ? 0 : minutes;

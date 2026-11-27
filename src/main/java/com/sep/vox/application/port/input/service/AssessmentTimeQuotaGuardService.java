@@ -26,9 +26,9 @@ public class AssessmentTimeQuotaGuardService {
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
             .orElseThrow(() -> new BusinessRuleViolationException(
-                "Trường chưa có gói subscription đang hoạt động, không thể gắn cấu trúc đề này."));
+                "The school has no active subscription, so this assessment blueprint cannot be attached."));
         SubscriptionPlan plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói subscription"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription plan not found"));
 
         Integer maxMinutes = plan.getMaxTimePerAttemptMin();
         if (maxMinutes == null || maxMinutes <= 0) {
@@ -38,7 +38,7 @@ public class AssessmentTimeQuotaGuardService {
         long maxSeconds = maxMinutes.longValue() * 60L;
         if (durationSeconds.longValue() > maxSeconds) {
             throw new BusinessRuleViolationException(
-                "%s có thời lượng %s, vượt giới hạn %s của gói %s. Vui lòng giảm câu hỏi hoặc nâng cấp gói trước khi gắn."
+                "%s has a duration of %s, which exceeds the %s limit of the %s plan. Please reduce the questions or upgrade the plan before attaching."
                     .formatted(targetLabel, formatDuration(durationSeconds), formatDuration(maxSeconds), plan.getName()));
         }
     }
@@ -48,8 +48,8 @@ public class AssessmentTimeQuotaGuardService {
         long minutes = safeSeconds / 60L;
         long remainingSeconds = safeSeconds % 60L;
         if (remainingSeconds == 0L) {
-            return minutes + " phút";
+            return minutes + " minutes";
         }
-        return minutes + " phút " + remainingSeconds + " giây";
+        return minutes + " minutes " + remainingSeconds + " seconds";
     }
 }

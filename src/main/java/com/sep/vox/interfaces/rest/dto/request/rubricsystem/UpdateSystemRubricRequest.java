@@ -5,7 +5,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotBlank;
 
 public record UpdateSystemRubricRequest(
-        @NotBlank(message = "Tên bộ Rubric không được để trống")
+        @NotBlank(message = "Rubric name must not be blank")
         String name,
 
         String description

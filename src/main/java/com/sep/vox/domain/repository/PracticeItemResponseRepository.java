@@ -26,24 +26,24 @@ public interface PracticeItemResponseRepository {
 
 
     /**
-     * Câu cần xả chấm, BỎ QUA những câu vừa gửi yêu cầu gần đây.
+     * Questions that need a grading flush, SKIPPING those that recently had a request sent.
      *
-     * @param requestedBefore chỉ lấy câu chưa từng gửi, hoặc gửi trước mốc này. Không có tham số
-     *                        này thì câu đang chấm dở (mất ~3,5 phút) bị bắn lại mỗi 5 phút.
+     * @param requestedBefore only takes questions never sent, or sent before this moment. Without this parameter
+     *                        a question still being graded (takes ~3.5 minutes) would be fired again every 5 minutes.
      */
     List<PendingEvaluationResponse> findResponsesAwaitingFlush(
         UUID sessionId, Instant requestedBefore, int maxAttempts);
 
-    /** Đóng dấu đã gửi yêu cầu chấm (GRADING + tăng số lần thử) -- gọi NGAY SAU khi publish. */
+    /** Stamps that the grading request was sent (GRADING + increments the attempt count) -- call RIGHT AFTER publish. */
     void markGradingRequested(UUID responseId, Instant requestedAt);
 
-    /** Bản chấm đã về -- gọi CÙNG TRANSACTION với lúc ghi practice_item_evaluations. */
+    /** The grading is back -- call IN THE SAME TRANSACTION as writing practice_item_evaluations. */
     void markGraded(UUID responseId);
 
-    /** Agents báo chấm hỏng. */
+    /** Agents reported that grading failed. */
     void markGradingFailed(UUID responseId);
 
-    /** Số câu của phiên đã bỏ cuộc: hỏng và hết lượt thử. */
+    /** Number of questions of the session that were given up on: failed and out of attempts. */
     int countGradingGaveUp(UUID sessionId, int maxAttempts);
 
     List<UUID> findEndedSessionsWithUngradedResponses(Instant since);

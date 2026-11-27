@@ -14,13 +14,14 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Guard hạn gói "luôn cho qua", dành cho test KHÔNG kiểm tra luật hạn gói.
+ * A subscription-period guard that "always lets through", for tests that do NOT check the period rule.
  *
- * <p>Guard này nằm trên mọi đường tạo/sửa bài kiểm tra, nên test nào cũng phải dựng nó. Dùng guard
- * thật trên một gói rộng 100 năm thay vì mock rỗng: nếu sau này guard đổi cách tính biên thì test
- * vẫn chạy qua đúng đường code thật. Test nào muốn soi chính luật hạn gói thì mock
- * {@link SubscriptionPeriodGuardService} và {@code doThrow} (xem {@code CreateClassTestSetupTests}),
- * còn biên ngày được phủ riêng ở {@code SubscriptionPeriodGuardServiceTests}.
+ * <p>This guard sits on every path that creates/edits an assessment, so every test has to build it.
+ * It uses the real guard on a plan that spans 100 years instead of an empty mock: if the guard later
+ * changes how it computes the boundary, the test still runs through the real code path. A test that
+ * wants to examine the period rule itself mocks {@link SubscriptionPeriodGuardService} and uses
+ * {@code doThrow} (see {@code CreateClassTestSetupTests}), while the date boundary is covered
+ * separately in {@code SubscriptionPeriodGuardServiceTests}.
  */
 public final class SubscriptionPeriodGuards {
 

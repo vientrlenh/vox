@@ -14,10 +14,10 @@ import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResult
 public interface SpringDataAssessmentResultAppealRepository extends JpaRepository<AssessmentResultAppealJpaEntity, UUID> {
 
     /**
-     * Đơn còn đang chiếm chỗ. Liệt kê TƯỜNG MINH các trạng thái mở thay vì
-     * {@code NOT IN} các trạng thái đóng: mỗi lần thêm một trạng thái kết thúc mới
-     * (vừa rồi là {@code WITHDRAWN}) mà quên sửa {@code NOT IN} sẽ khoá học sinh khỏi
-     * việc nộp đơn mới mà không ai nhận ra.
+     * Appeals that still occupy the slot. Lists the open statuses EXPLICITLY instead of
+     * {@code NOT IN} the closed statuses: every time a new terminal status is added
+     * (the latest was {@code WITHDRAWN}) and {@code NOT IN} is forgotten, the student is locked out of
+     * filing a new appeal and nobody notices.
      */
     @Query("""
         SELECT COUNT(a) > 0 FROM AssessmentResultAppealJpaEntity a
@@ -26,7 +26,7 @@ public interface SpringDataAssessmentResultAppealRepository extends JpaRepositor
     """)
     boolean existsOpenByCandidateResultId(@Param("candidateResultId") UUID candidateResultId);
 
-    /** Hạn mức phúc khảo đếm số vòng đã công bố; đơn bị từ chối không đốt lượt. */
+    /** The appeal quota counts published rounds; a rejected appeal does not use up an attempt. */
     @Query("""
         SELECT COUNT(a) FROM AssessmentResultAppealJpaEntity a
         WHERE a.candidateResultId = :candidateResultId
@@ -47,14 +47,14 @@ public interface SpringDataAssessmentResultAppealRepository extends JpaRepositor
     long countBySchoolIdAndStatusIn(@Param("schoolId") UUID schoolId, @Param("statuses") Collection<String> statuses);
 
     /**
-     * Mốc nộp của đơn CHỜ XỬ LÝ lâu nhất; null khi không còn đơn nào chờ.
+     * Submission time of the longest-waiting PENDING appeal; null when no appeal is waiting.
      *
-     * <p>Chỉ {@code PENDING}: đơn đã {@code APPROVED}/{@code GRADING} đang được chấm nên đồng hồ của
-     * chúng đo một thứ khác — thời gian chấm, không phải thời gian trường bỏ quên đơn.
+     * <p>Only {@code PENDING}: appeals that are {@code APPROVED}/{@code GRADING} are being graded, so their clock
+     * measures something else -- grading time, not the time the school neglected the appeal.
      *
-     * <p>null KHÁC 0 và khác biệt đó phải đi tới tận giao diện: 0 ngày nghĩa là có đơn vừa nộp sáng
-     * nay, còn null nghĩa là hàng đợi sạch. Gộp hai cái làm một sẽ vẽ một hàng đợi rỗng trông y hệt
-     * một hàng đợi vừa nhận đơn.
+     * <p>null is NOT 0 and that difference must reach the UI: 0 days means an appeal was just submitted this
+     * morning, while null means the queue is clean. Merging the two would draw an empty queue that looks exactly like
+     * a queue that just received an appeal.
      */
     @Query("""
         SELECT MIN(a.requestedAt) FROM AssessmentResultAppealJpaEntity a, AssessmentCandidateResultJpaEntity r, AssessmentJpaEntity e

@@ -33,7 +33,7 @@ public record ExportAssessmentScoresQuery(
     AssessmentKind assessmentKind
 ) {
 
-    /** Chỉ có phạm vi, không lọc gì thêm — dùng cho test và cho lời gọi đơn giản. */
+    /** Scope only, no extra filtering -- for tests and for simple calls. */
     public static ExportAssessmentScoresQuery scopedTo(UUID assessmentId, UUID scheduleId, AssessmentKind assessmentKind) {
         return new ExportAssessmentScoresQuery(
             assessmentId, scheduleId, null, null, null, null, false, false, null, null, assessmentKind);

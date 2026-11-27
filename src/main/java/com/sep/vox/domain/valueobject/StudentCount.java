@@ -4,7 +4,7 @@ public record StudentCount(int value) {
 
     public StudentCount {
         if (value <= 0) {
-            throw new IllegalArgumentException("Số lượng học sinh phải lớn hơn 0");
+            throw new IllegalArgumentException("The number of students must be greater than 0");
         }
     }
 }

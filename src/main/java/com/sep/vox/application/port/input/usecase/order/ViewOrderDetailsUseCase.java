@@ -22,9 +22,9 @@ public class ViewOrderDetailsUseCase implements IUseCase<ViewOrderDetailsQuery, 
     @Override
     public OrderDto execute(ViewOrderDetailsQuery input) {
         Order order = orderRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin của đơn hàng yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested order was not found"));
         if (!userContextPort.isSystemAdmin() && !order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Bạn không có quyền truy cập vào đơn hàng này");
+            throw new ForbiddenException("You are not allowed to access this order");
         }
         return OrderDto.toDto(order);
     }

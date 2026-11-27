@@ -13,10 +13,10 @@ import com.sep.vox.application.support.FakeJsonSerializationPort;
  */
 class RubricCriterionExamplesNormalizerTests {
 
-    private static final String INVALID_FORMAT_MESSAGE = "Định dạng JSON của phần Examples không hợp lệ.";
-    private static final String EMPTY_MESSAGE = "Ví dụ của tiêu chí trong khung chấm điểm không được để trống";
+    private static final String INVALID_FORMAT_MESSAGE = "The JSON format of the Examples section is invalid.";
+    private static final String EMPTY_MESSAGE = "The criterion examples in the scoring framework must not be blank";
     private static final String NULL_ITEM_MESSAGE =
-        "Ví dụ của tiêu chí trong khung chấm điểm không được chứa giá trị trống";
+        "The criterion examples in the scoring framework must not contain blank values";
 
     private final RubricCriterionExamplesNormalizer normalizer =
         new RubricCriterionExamplesNormalizer(new FakeJsonSerializationPort());

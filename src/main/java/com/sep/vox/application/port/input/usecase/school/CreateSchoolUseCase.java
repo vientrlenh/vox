@@ -19,15 +19,15 @@ import com.sep.vox.application.port.output.AvatarConfigPort;
 import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 
 /**
- * Tạo trường TRỰC TIẾP, không qua đơn đăng ký -- SYSTEM_ADMIN nhập thẳng thông tin trường và
- * quản trị viên, bỏ toàn bộ vòng RegisterForm (OTP theo domain / nộp tài liệu / chờ duyệt) mà
- * RegisterFromSchoolDirectoryUseCase + ApproveRegisterFormUseCase phải đi qua.
+ * Creates a school DIRECTLY, without a register form -- the SYSTEM_ADMIN enters the school and administrator
+ * details straight in, skipping the whole RegisterForm cycle (domain OTP / document upload / waiting for
+ * approval) that RegisterFromSchoolDirectoryUseCase + ApproveRegisterFormUseCase have to go through.
  *
- * <p>Phần lưu dữ liệu KHÔNG viết lại: dùng chung ProvisionSchoolService với luồng duyệt đơn, nên
- * chống trùng (mã trường, domain, email, số điện thoại), tạo School + User quản trị + vai trò
- * SCHOOL_ADMIN + liên kết SchoolUser, và phát sự kiện USER_CREATED đều giống hệt. Sự kiện đó là
- * thứ khiến quản trị viên mới nhận mail đặt mật khẩu như mọi người dùng khác -- token sinh ở
- * consumer ngay trước lúc gửi, không nằm plaintext trong outbox/Kafka.
+ * <p>The persistence part is NOT rewritten: it shares ProvisionSchoolService with the form approval flow, so
+ * the duplicate guards (school code, domain, email, phone number), the creation of School + admin User +
+ * SCHOOL_ADMIN role + SchoolUser link, and the USER_CREATED event are all identical. That event is what makes
+ * the new administrator receive the set-password mail like every other user -- the token is generated in the
+ * consumer right before sending, and is never stored in plaintext in the outbox/Kafka.
  */
 @Service
 @RequiredArgsConstructor
@@ -76,18 +76,18 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
             StringNormalization.trimAndCollapseSpaces(input.adminFullName()),
             input.adminDateOfBirth(),
             StringNormalization.trimAndCollapseSpaces(input.adminAddress()),
-            // KHÔNG dùng trimAndCollapseSpaces như các trường chữ khác: "gộp khoảng trắng" là thao
-            // tác vô nghĩa với URL, và quan trọng hơn là nó không kiểm gì cả -- trước đây ô này
-            // nhận URL bất kỳ, tức là mọi giáo viên mở danh sách chấm sẽ tự gọi sang host lạ đó.
-            // Xem AvatarUrlPolicy. Đây là đường DUY NHẤT có avatar do người dùng nhập trong nhóm
-            // gọi ProvisionSchoolService; hai đường còn lại (duyệt đơn, xác thực OTP) truyền null.
+            // Do NOT use trimAndCollapseSpaces as for the other text fields: "collapsing whitespace" is meaningless
+            // for a URL, and more importantly it checks nothing -- this field used to accept any URL, so every
+            // teacher opening the grading list would call out to that foreign host.
+            // See AvatarUrlPolicy. This is the ONLY path with a user-entered avatar among the callers of
+            // ProvisionSchoolService; the other two (form approval, OTP verification) pass null.
             AvatarUrlPolicy.normalizeOrThrow(avatarConfigPort.allowedHosts(), input.adminAvatarUrl())
         );
     }
 
     private void validateCommand(CreateSchoolCommand command) {
         if (command.schoolDirectoryId() == null && (command.schoolCode() == null || command.schoolCode().isBlank() || command.schoolName() == null || command.schoolName().isBlank() || command.schoolAddress() == null || command.schoolAddress().isBlank())) {
-            throw new IllegalArgumentException("Yêu cầu cần phải có danh mục trường, hoặc phải có mã trường, tên trường và địa chỉ trường");
+            throw new IllegalArgumentException("A school directory entry is required, or else a school code, school name and school address");
         }
     }
 
@@ -118,7 +118,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
 
     private SchoolDirectory verifiedDirectory(UUID schoolDirectoryId) {
         SchoolDirectory directory = schoolDirectoryRepository.findById(schoolDirectoryId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested school directory entry was not found"));
 
         // Do NOT block when the directory entry is unverified -- this API deliberately skips the approval loop,
         // and a SYSTEM_ADMIN creating the school here is itself the act of verification. Mark it right away so
@@ -131,7 +131,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
         return directory;
     }
 
-    /** Bốn trường định danh trường, sau khi đã chốt lấy từ danh mục hay từ phần tự khai. */
+    /** The four fields that identify the school, once it is settled whether they come from the directory or from the self-declared part. */
     private record SchoolInfo(String code, String name, String address, String domain) {
     }
 }

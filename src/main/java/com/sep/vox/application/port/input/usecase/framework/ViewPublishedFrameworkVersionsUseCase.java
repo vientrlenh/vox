@@ -25,9 +25,9 @@ public class ViewPublishedFrameworkVersionsUseCase implements IUseCase<ViewFrame
     @Override
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {
         Framework framework = frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework not found"));
         if (!framework.isActive()) {
-            throw new ResourceNotFoundException("Không tìm thấy framework");
+            throw new ResourceNotFoundException("Framework not found");
         }
 
         PageResult<FrameworkVersion> result = frameworkVersionRepository.findByFrameworkIdAndStatus(

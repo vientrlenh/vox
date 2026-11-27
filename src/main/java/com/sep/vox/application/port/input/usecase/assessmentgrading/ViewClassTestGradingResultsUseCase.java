@@ -15,17 +15,17 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
- * MỌI bài của một bài kiểm tra trên lớp, gồm cả bài CHƯA có phân công.
+ * EVERY submission of a class test, including submissions that have NO assignment yet.
  *
- * <p>Khác {@link ViewMyClassTestGradingTasksUseCase}, vốn chỉ trả những bài đã giao cho
- * người gọi: bài chấm AI sạch đi thẳng sang {@code RELEASED} nên không được mở phân công
- * tự động, và trước khi có màn này thì giáo viên không có đường nào nhìn thấy — cụ thể là
- * lượt thi thứ hai của một em biến mất khỏi màn chấm. Nhận chấm cần {@code candidateResultId},
- * mà chỗ duy nhất phát ra id đó cho giáo viên chính là đây.
+ * <p>Different from {@link ViewMyClassTestGradingTasksUseCase}, which only returns the submissions assigned to
+ * the caller: a cleanly AI-graded submission goes straight to {@code RELEASED} so no assignment is opened
+ * automatically, and before this screen existed a teacher had no way to see it -- specifically
+ * a student's second attempt vanished from the grading screen. Claiming a submission needs {@code candidateResultId},
+ * and the only place that hands that id to a teacher is this one.
  *
- * <p>Dùng lại {@code searchAssignments} của bảng điều phối thay vì viết query mới: cùng
- * một câu hỏi ("mọi bài trong phạm vi, kèm phân công nếu có"), chỉ khác phạm vi và ai
- * được hỏi. Phạm vi ở đây đóng đúng bằng bài mà người gọi làm CHAIR.
+ * <p>It reuses {@code searchAssignments} of the coordination table instead of writing a new query: the same
+ * question ("every submission in scope, with the assignment if any"), only the scope and who
+ * is asking differ. The scope here closes to exactly the submissions of tests the caller is CHAIR of.
  */
 @Service
 @RequiredArgsConstructor

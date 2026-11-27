@@ -4,8 +4,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Kỳ thi tập trung (CENTRALIZED) gần với thời điểm hiện tại nhất của trường — dùng cho panel tổng
- * quan trên dashboard. {@code null} nếu trường chưa có kỳ thi tập trung nào (còn hiệu lực).
+ * The centralized (CENTRALIZED) assessment of a school that is nearest to the current time -- used for
+ * the overview panel on the dashboard. {@code null} if the school has no centralized assessment (still in effect).
  */
 public record NearestCentralizedAssessmentDto(
     UUID assessmentId,

@@ -48,7 +48,7 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         requireActiveCurrentUser();
 
         RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Criterion not found."));
         RubricVersion version = loadDraftVersionOfSystemRubric(criterion);
 
         // The code must not change after creation, so it is never updated.
@@ -71,21 +71,21 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
     }
 
     private RubricVersion loadDraftVersionOfSystemRubric(RubricCriterion criterion) {
         RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
+                .orElseThrow(() -> new ResourceNotFoundException("The Rubric Version containing this criterion was not found."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể sửa tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Criteria can only be edited while the Rubric version is in DRAFT status.");
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học.");
+            throw new ForbiddenException("Action denied: this criterion belongs to a School.");
         }
         return version;
     }
@@ -97,11 +97,11 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                 && (command.weight().compareTo(BigDecimal.ZERO) < 0
                         || command.weight().compareTo(BigDecimal.ONE) > 0)) {
             throw new IllegalArgumentException(
-                    "Trọng số (weight) phải nằm trong khoảng 0 đến 1 -- lưu dưới dạng phân số,"
-                            + " ví dụ 20% ghi là 0.2 và 100% ghi là 1.");
+                    "The weight must be between 0 and 1 -- stored as a fraction,"
+                            + " (0.2 = 20%, 1 = 100%).");
         }
         if (command.order() != null && command.order() <= 0) {
-            throw new IllegalArgumentException("Thứ tự (order) phải lớn hơn 0.");
+            throw new IllegalArgumentException("The order must be greater than 0.");
         }
     }
 
@@ -111,7 +111,7 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         BigDecimal finalMaxScore = command.maxScore() != null ? command.maxScore() : criterion.getMaxScore();
 
         if (finalMinScore.compareTo(finalMaxScore) > 0) {
-            throw new IllegalArgumentException("Điểm tối thiểu (minScore) không được lớn hơn điểm tối đa (maxScore).");
+            throw new IllegalArgumentException("The minimum score (minScore) must not be greater than the maximum score (maxScore).");
         }
 
         String nameForError = safeName != null ? safeName : criterion.getName();
@@ -146,7 +146,7 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                     command.isRequired()
             );
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");
+            throw new IllegalArgumentException("Cannot update the criterion because the data is duplicated or invalid.");
         }
     }
 }

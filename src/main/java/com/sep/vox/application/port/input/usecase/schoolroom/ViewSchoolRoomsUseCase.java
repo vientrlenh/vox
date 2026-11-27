@@ -22,9 +22,9 @@ public class ViewSchoolRoomsUseCase implements IUseCase<ViewSchoolRoomsQuery, Pa
     @Override
     @Transactional(readOnly = true)
     public PageResult<SchoolRoomFromDto> execute(ViewSchoolRoomsQuery query) {
-        // schoolId là tham số do client gửi lên, không phải suy ra từ token — phải chặn người gọi
-        // đọc phòng của trường khác. Bắt buộc từ khi query này mở cho cả TEACHER (giáo viên cần
-        // danh sách phòng để chọn phòng cho bài kiểm tra trên lớp).
+        // schoolId is a parameter sent by the client, not derived from the token -- the caller must be stopped from
+        // reading the rooms of another school. Required since this query was opened to TEACHER too (teachers need
+        // the room list to choose a room for a class test).
         myClassAccessGuard.requireSchoolMembership(query.schoolId());
 
         PageResult<SchoolRoom> pageResult = schoolRoomRepository.findBySchoolId(

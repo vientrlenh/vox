@@ -28,19 +28,19 @@ import com.sep.vox.domain.repository.ProcessedEventRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Gửi OTP đặt lại mật khẩu.
+ * Sends the OTP for password reset.
  *
- * <p>OTP được sinh TẠI ĐÂY chứ không ở use case, theo đúng khuôn của
- * {@code UserCreatedEventConsumer}: OTP là credential, không được nằm trong
- * {@code outboxes.payload} (có backup) hay trong topic Kafka (giữ theo retention). Payload
- * chỉ nói "cần gửi OTP cho địa chỉ này".
+ * <p>The OTP is generated HERE and not in the use case, following the same mould as
+ * {@code UserCreatedEventConsumer}: an OTP is a credential and must not sit in
+ * {@code outboxes.payload} (which is backed up) or in the Kafka topic (kept per retention). The payload
+ * only says "an OTP needs to be sent to this address".
  *
- * <p>Bản hash phải vào cache TRƯỚC khi gửi mail, nếu không người dùng nhập mã ngay có thể
- * gặp lúc cache chưa có gì để đối chiếu.
+ * <p>The hash must enter the cache BEFORE the mail is sent, otherwise a user entering the code right away may
+ * find the cache has nothing to compare against yet.
  *
- * <p>Retry sinh mã MỚI và ghi đè cache, nên mã ở mail lần trước hết hiệu lực. Đây là điểm
- * khác với token đặt mật khẩu (token cũ vẫn sống tới hạn): với OTP thì "mail mới nhất là
- * mail đúng" lại khớp với thứ người dùng chờ đợi.
+ * <p>A retry generates a NEW code and overwrites the cache, so the code in the previous mail stops working. This is a difference
+ * from the password-setting token (the old token stays alive until expiry): for an OTP, "the newest mail is
+ * the correct mail" matches what the user is waiting for.
  */
 @Component
 @RequiredArgsConstructor
@@ -48,8 +48,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class ResetPasswordOtpEmailConsumer {
 
     private static final String CONSUMER_GROUP = "reset-password-otp-email";
-    private static final String SUBJECT = "Mã xác thực đặt lại mật khẩu VOX";
-    private static final String EXPIRES_IN = "5 phút";
+    private static final String SUBJECT = "VOX password reset verification code";
+    private static final String EXPIRES_IN = "5 minutes";
 
     private static final int OTP_SIZE = 7;
     private static final Duration TTL = Duration.ofMinutes(5);
@@ -110,7 +110,7 @@ public class ResetPasswordOtpEmailConsumer {
         } catch (Exception e) {
             // Not logging the record value here loses nothing -- the payload only has the email.
             log.error("Invalid payload: eventId={}", eventId, e);
-            throw new IllegalStateException("Payload reset-password-otp không hợp lệ, eventId=" + eventId, e);
+            throw new IllegalStateException("Payload reset-password-otp is invalid, eventId=" + eventId, e);
         }
     }
 
@@ -120,7 +120,7 @@ public class ResetPasswordOtpEmailConsumer {
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             log.error("Send mail error: eventId={}", eventId, e);
-            throw new IllegalStateException("Gửi mail OTP đặt lại mật khẩu thất bại: eventId=" + eventId, e);
+            throw new IllegalStateException("Failed to send the password reset OTP email: eventId=" + eventId, e);
         }
     }
 

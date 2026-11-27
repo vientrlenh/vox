@@ -51,6 +51,6 @@ class UpdateProfileUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessage("Số điện thoại đã tồn tại");
+            .hasMessage("Phone number already exists");
     }
 }

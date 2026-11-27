@@ -5,9 +5,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Trường vừa CHUYỂN từ bị khóa sang hết nợ (mua thêm token đủ để usedQuantity trở lại trong hạn mức).
- * Người nhận là mọi SCHOOL_ADMIN của trường -- CHỐT NGAY lúc phát sự kiện, cùng lý do với
- * InvoicePaidPayloadV1.schoolAdminIds.
+ * A school has just moved from locked to debt-free (it bought enough extra tokens for
+ * usedQuantity to be back within the quota).
+ * Every SCHOOL_ADMIN of the school is a recipient -- FIXED when the event is published, for the
+ * same reason as InvoicePaidPayloadV1.schoolAdminIds.
  */
 public record SchoolDebtClearedPayloadV1(
     List<UUID> schoolAdminIds,

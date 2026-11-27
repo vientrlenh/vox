@@ -30,8 +30,8 @@ import com.sep.vox.domain.model.assessment.GradingRoundType;
 import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 
 /**
- * Đổi người chấm là cửa sau của luật xung đột lợi ích: giao phúc khảo đi đúng cửa thì
- * bị chặn, nhưng đổi người qua đây thì trước đây lọt (review BE-2).
+ * Changing the grader is a back door around the conflict-of-interest rule: assigning an appeal through the right door is
+ * blocked, but changing the person through here used to slip through (review BE-2).
  */
 class ReassignGradingUseCaseTests {
 
@@ -84,7 +84,7 @@ class ReassignGradingUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
             new ReassignGradingCommand(assignment.getId(), newTeacherId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("phúc khảo");
+            .hasMessageContaining("appeal");
 
         verify(assessmentGradingAssignmentRepository, never()).save(any());
     }

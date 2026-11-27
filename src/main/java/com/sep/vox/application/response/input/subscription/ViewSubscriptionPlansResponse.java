@@ -3,11 +3,11 @@ package com.sep.vox.application.response.input.subscription;
 import com.sep.vox.domain.dto.SubscriptionPlanDto;
 
 /**
- * Hạn mức của gói KHÔNG nằm ở đây: chúng được resolver GraphQL nạp qua DataLoader, nên client nào
- * không chọn trường quotas thì không tốn thêm truy vấn nào.
+ * The plan's quotas are NOT here: the GraphQL resolver loads them through a DataLoader, so a client that
+ * does not select the quotas field costs no extra query.
  *
- * <p>Còn "phổ biến nhất" thì không thuộc về {@link SubscriptionPlanDto} vì nó không phải thuộc tính
- * của gói -- nó là kết quả so gói này với các gói khác, chỉ có nghĩa trong ngữ cảnh một danh sách.
+ * <p>As for "most popular", it does not belong to {@link SubscriptionPlanDto} because it is not a property
+ * of the plan -- it is the result of comparing this plan with the others, meaningful only in the context of a list.
  */
 public record ViewSubscriptionPlansResponse(
     SubscriptionPlanDto subscription,

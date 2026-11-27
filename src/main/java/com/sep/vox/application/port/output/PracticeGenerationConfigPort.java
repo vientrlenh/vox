@@ -3,9 +3,10 @@ package com.sep.vox.application.port.output;
 import java.time.Duration;
 
 /**
- * Tham số sinh đề luyện mà application cần đọc. Giá trị thật bind từ application.yaml
- * ({@code app.personalization.generation.*}) ở PracticeGenerationProperties -- record đó implement
- * interface này nên application không phải biết tới @ConfigurationProperties.
+ * Practice-paper generation parameters that the application needs to read. The real values are
+ * bound from application.yaml ({@code app.personalization.generation.*}) in
+ * PracticeGenerationProperties -- that record implements this interface, so the application does
+ * not have to know about @ConfigurationProperties.
  */
 public interface PracticeGenerationConfigPort {
 

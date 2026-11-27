@@ -16,16 +16,16 @@ import jakarta.mail.internet.AddressException;
 import jakarta.mail.internet.InternetAddress;
 
 /**
- * Gửi mail qua SMTP.
+ * Sends mail over SMTP.
  *
- * <p>Địa chỉ người gửi được set TƯỜNG MINH ở cả hai method. Không set thì JavaMail tự suy địa chỉ
- * local từ user.name + hostname của máy đang chạy, và khi không suy được (rất hay gặp trong
- * container) nó ném "can't determine local email address" -- mọi mail đều không gửi được.
+ * <p>The sender address is set EXPLICITLY in both methods. If not set, JavaMail derives a local
+ * address from user.name + the hostname of the machine it runs on, and when it cannot (very common in
+ * containers) it throws "can't determine local email address" -- no mail can be sent at all.
  *
- * <p>CỐ TÌNH không dùng @Async: nơi duy nhất gọi port này là các Kafka consumer, mà container của
- * chúng đã lo concurrency còn @RetryableTopic đã lo retry/DLT. Chạy bất đồng bộ ở đây khiến lời gọi
- * trả về trước khi SMTP chạy, nên try/catch phía consumer không bắt được gì, event vẫn được
- * markProcessed + ack, và mail hỏng mất luôn không retry.
+ * <p>INTENTIONALLY not @Async: the only callers of this port are the Kafka consumers, whose container
+ * already handles concurrency while @RetryableTopic already handles retry/DLT. Running asynchronously here makes the call
+ * return before SMTP runs, so the consumer-side try/catch catches nothing, the event is still
+ * markProcessed + acked, and a failed mail is lost with no retry.
  */
 @Service
 public class SmtpEmailSendingService implements MailSendingPort {
@@ -67,8 +67,8 @@ public class SmtpEmailSendingService implements MailSendingPort {
     }
 
     /**
-     * Tên hiển thị chỉ là phần trang trí -- mã hoá hỏng thì vẫn phải gửi được mail, nên rơi về
-     * địa chỉ trần thay vì ném.
+     * The display name is only decoration -- if encoding fails the mail must still be sent, so it falls back to
+     * the bare address instead of throwing.
      */
     private InternetAddress fromAddress() throws AddressException, UnsupportedEncodingException {
         if (fromDisplayName == null || fromDisplayName.isBlank()) {

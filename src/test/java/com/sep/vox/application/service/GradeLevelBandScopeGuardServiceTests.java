@@ -24,14 +24,14 @@ import com.sep.vox.domain.repository.SchoolClassRepository;
 import com.sep.vox.domain.repository.SchoolGradeRepository;
 
 /**
- * Hai điểm mấu chốt của bộ test này:
+ * The two key points of this suite:
  *
- * <p>1. Trần bậc phải giữ được KỂ CẢ khi Assessment Policy chọn phạm vi hẹp hơn Khối. Policy bắt
- * buộc chọn đúng 1 trong 3 phạm vi (Lớp | Khối năm học | Khối), nên nếu chỉ canh lúc phạm vi là
- * Khối thì chọn phạm vi Lớp là trần tự mất tác dụng.
+ * <p>1. The band ceiling must hold EVEN WHEN the Assessment Policy picks a scope narrower than Grade. A policy must
+ * choose exactly 1 of 3 scopes (Class | School-year grade | Grade), so if we only guard when the scope is
+ * Grade then picking the Class scope makes the ceiling lose its effect by itself.
  *
- * <p>2. Trần khác nhau theo LOẠI BÀI KIỂM TRA: CENTRALIZE (phạm vi Khối/Niên khóa, không neo vào
- * 1 Lớp cụ thể) chỉ được trần thấp; CLASS_TEST (phạm vi neo đúng 1 Lớp) được nới trần cao hơn.
+ * <p>2. The ceiling differs by KIND OF ASSESSMENT: CENTRALIZE (Grade/School-year scope, not anchored to
+ * 1 specific Class) only gets the low ceiling; CLASS_TEST (scope anchored to exactly 1 Class) gets the higher ceiling.
  */
 class GradeLevelBandScopeGuardServiceTests {
 
@@ -64,15 +64,15 @@ class GradeLevelBandScopeGuardServiceTests {
                 gradeLevelRepository, schoolGradeRepository, schoolClassRepository);
     }
 
-    /** Trần CENTRALIZE = bậc order 4 ("B2"); trần CLASS_TEST = bậc order 5 ("C1"). */
+    /** CENTRALIZE ceiling = band order 4 ("B2"); CLASS_TEST ceiling = band order 5 ("C1"). */
     private void stubCaps() {
         GradeLevelBandScope scope = mock(GradeLevelBandScope.class);
         when(scope.getDefaultTargetBandId()).thenReturn(CENTRALIZE_CAP_BAND_ID);
         when(scope.getHardMaxBandId()).thenReturn(CLASS_TEST_CAP_BAND_ID);
         when(bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(GRADE_LEVEL_ID, FRAMEWORK_VERSION_ID))
                 .thenReturn(Optional.of(scope));
-        // Dựng band TRƯỚC rồi mới stub: gọi band() ngay trong thenReturn(...) là stub lồng stub,
-        // Mockito ném UnfinishedStubbingException.
+        // Build the band FIRST and stub afterwards: calling band() right inside thenReturn(...) is a stub nested in a stub,
+        // Mockito throws UnfinishedStubbingException.
         FrameworkResultBand centralizeCap = band("B2", 4);
         FrameworkResultBand classTestCap = band("C1", 5);
         when(frameworkResultBandRepository.findById(CENTRALIZE_CAP_BAND_ID)).thenReturn(Optional.of(centralizeCap));
@@ -130,8 +130,8 @@ class GradeLevelBandScopeGuardServiceTests {
 
     @Test
     void allows_whenClassScopeReachesClassTestCap() {
-        // Đúng cái CLASS_TEST cho phép mà CENTRALIZE thì không: cùng bậc order 5, chặn ở scope
-        // Khối/Niên khóa (2 test rejects_ ở trên) nhưng cho qua ở scope Lớp.
+        // Exactly what CLASS_TEST allows but CENTRALIZE does not: the same band order 5, blocked at the Grade/School-year
+        // scope (the 2 rejects_ tests above) but let through at the Class scope.
         stubCaps();
         stubClassPointingAtGrade();
         stubGradePointingAtLevel();
@@ -143,7 +143,7 @@ class GradeLevelBandScopeGuardServiceTests {
 
     @Test
     void rejects_whenClassScopeExceedsClassTestCap() {
-        // Dù đã ở phạm vi hẹp nhất (Lớp), Bậc 6 vẫn luôn bị chặn.
+        // Even at the narrowest scope (Class), Band 6 is still always blocked.
         stubCaps();
         stubClassPointingAtGrade();
         stubGradePointingAtLevel();
@@ -155,7 +155,7 @@ class GradeLevelBandScopeGuardServiceTests {
 
     @Test
     void allows_whenGradeLevelHasNoBandScopeConfigured() {
-        // Mở có chủ đích: chưa khai trần thì không chặn. Xem chú thích trong guard.
+        // Open on purpose: no ceiling declared means no blocking. See the comment in the guard.
         when(bandScopeRepository.findByGradeLevelIdAndFrameworkVersionId(GRADE_LEVEL_ID, FRAMEWORK_VERSION_ID))
                 .thenReturn(Optional.empty());
 
@@ -166,8 +166,8 @@ class GradeLevelBandScopeGuardServiceTests {
 
     @Test
     void allows_whenClassToGradeChainIsBroken() {
-        // Lớp trỏ tới năm học đã biến mất -> không suy được khối. Không chặn người dùng vì lỗi
-        // dữ liệu, guard chỉ ghi WARN.
+        // The class points to a school year that has vanished -> the grade cannot be inferred. Do not block the user over a data
+        // error, the guard only logs a WARN.
         stubCaps();
         when(schoolClassRepository.findById(SCHOOL_CLASS_ID)).thenReturn(Optional.empty());
 

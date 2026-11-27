@@ -32,7 +32,7 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
         validateCommand(command);
 
         if (supportedLanguageRepository.findByCode(command.code()).isPresent()) {
-            throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+            throw new ResourceDuplicatedException("Language already exists with code: " + command.code());
         }
 
         SupportedLanguage language = SupportedLanguage.defined(
@@ -42,7 +42,7 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
             SupportedLanguage saved = supportedLanguageRepository.save(language);
             return CreateSupportedLanguageResponseMapper.toResponse(saved.getId());
         } catch (DataConflictException e) {
-            throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
+            throw new ResourceDuplicatedException("Language already exists with code: " + command.code());
         }
     }
 
@@ -64,26 +64,26 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
 
     private void validateCode(String code) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("Mã ngôn ngữ không được để trống");
+            throw new IllegalArgumentException("Language code must not be empty");
         }
         if (code.length() > MAX_CODE_LENGTH) {
-            throw new IllegalArgumentException("Mã ngôn ngữ không được vượt quá 10 ký tự");
+            throw new IllegalArgumentException("Language code must not exceed 10 characters");
         }
         new LanguageCode(code);
     }
 
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Tên ngôn ngữ không được để trống");
+            throw new IllegalArgumentException("Language name must not be empty");
         }
         if (name.length() > MAX_NAME_LENGTH) {
-            throw new IllegalArgumentException("Tên ngôn ngữ không được vượt quá 100 ký tự");
+            throw new IllegalArgumentException("Language name must not exceed 100 characters");
         }
     }
 
     private void validateDescription(String description) {
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new IllegalArgumentException("Mô tả ngôn ngữ không được vượt quá 2048 ký tự");
+            throw new IllegalArgumentException("Language description must not exceed 2048 characters");
         }
     }
 }

@@ -34,7 +34,7 @@ public class DuplicateAssessmentBlueprintVersionUseCase
     @Transactional
     public AssessmentBlueprintVersionDto execute(DuplicateAssessmentBlueprintVersionCommand input) {
         AssessmentBlueprintVersion sourceVersion = assessmentBlueprintVersionRepository.findById(input.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Blueprint version not found"));
         List<CreateAssessmentBlueprintSectionCommand> sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(sourceVersion.getId()).stream()
             .map(section -> new CreateAssessmentBlueprintSectionCommand(
                 null,

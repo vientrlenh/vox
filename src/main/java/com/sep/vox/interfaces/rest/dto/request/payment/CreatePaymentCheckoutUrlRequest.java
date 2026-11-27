@@ -7,10 +7,10 @@ import com.sep.vox.domain.model.payment.PaymentProvider;
 import jakarta.validation.constraints.NotNull;
 
 public record CreatePaymentCheckoutUrlRequest(
-    @NotNull(message = "Đơn hàng cần thanh toán không được để trống")
+    @NotNull(message = "Order to pay must not be blank")
     UUID orderId,
 
-    @NotNull(message = "Cổng thanh toán không được để trống")
+    @NotNull(message = "Payment gateway must not be blank")
     PaymentProvider provider
 ) {
 }

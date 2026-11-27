@@ -28,8 +28,8 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * {@code schoolId} là tham số client gửi lên, không suy ra từ token — từ khi query này mở cho cả
- * giáo viên (để chọn phòng cho bài kiểm tra trên lớp) thì phải chặn đọc phòng của trường khác.
+ * {@code schoolId} is a parameter sent by the client, not derived from the token -- since this query was opened
+ * to teachers too (to choose a room for a class test), reading the rooms of another school must be blocked.
  */
 class ViewSchoolRoomsUseCaseTests {
 

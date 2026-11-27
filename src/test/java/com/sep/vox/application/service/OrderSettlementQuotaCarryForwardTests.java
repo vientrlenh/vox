@@ -63,19 +63,19 @@ import com.sep.vox.domain.repository.SubscriptionPlanQuotaRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Cái gì SỐNG SÓT qua ranh giới hai kỳ đăng ký -- tiền tự nạp chưa tiêu, và trần chi cá nhân.
+ * What SURVIVES the boundary between two subscription periods -- unspent self-funded money, and personal spending caps.
  *
- * <p>Đây là chỗ V12 dễ vỡ nhất, và cũng là file DUY NHẤT của lần thay đổi đó chưa có test nào.
- * {@code seedQuotaRecords} dựng LẠI bản ghi hạn mức mỗi kỳ, nên mọi thứ không được chép sang một cách
- * có chủ đích đều biến mất -- lần trước là trần chi (Q-2, "chia lại được"), lần này là TIỀN THẬT của
- * nhà trường (Q-7, "không chia lại được").
+ * <p>This is where V12 is most fragile, and also the ONLY file of that change that had no test yet.
+ * {@code seedQuotaRecords} REBUILDS the quota records each period, so everything not deliberately copied over
+ * disappears -- last time it was the spending caps (Q-2, "can be redistributed"), this time it is the school's REAL MONEY
+ * (Q-7, "cannot be redistributed").
  *
- * <p><b>Một phần các test dưới đây ĐANG ĐỎ và cố ý như vậy.</b> Chúng mô tả hành vi đúng của bốn lỗi
- * còn mở, không phải hành vi hiện tại; đọc javadoc của từng test để biết lỗi nào. Các test XANH xen
- * giữa chúng ghim phần đã chạy đúng, để lần sửa sắp tới không đạp lên.
+ * <p><b>Some of the tests below ARE RED and that is deliberate.</b> They describe the correct behaviour for the four bugs
+ * still open, not the current behaviour; read each test's Javadoc to see which bug. The GREEN tests interleaved
+ * between them pin what already works, so the coming fix does not trample it.
  *
- * <p>Vì có test đỏ, nhánh mang file này KHÔNG được là {@code default}: CI Build là cổng của cd.yml,
- * đỏ ở đó là chặn mọi lần deploy khác.
+ * <p>Because there are red tests, the branch carrying this file must NOT be {@code default}: CI Build is the gate of cd.yml,
+ * and red there blocks every other deploy.
  */
 class OrderSettlementQuotaCarryForwardTests {
 
@@ -98,7 +98,7 @@ class OrderSettlementQuotaCarryForwardTests {
 
     private final Instant now = Instant.parse("2026-11-01T03:00:00Z");
 
-    /** Giữ lại để test đọc ngược -- kỳ cũ KHÔNG bị settlement sửa, và đó chính là vấn đề ở ca gia hạn sớm. */
+    /** Kept so the test can read it back -- the old period is NOT modified by settlement, and that is exactly the problem in the early-renewal case. */
     private final Map<QuotaType, SchoolSubscriptionQuotaRecord> previousPools = new EnumMap<>(QuotaType.class);
 
     private SchoolSubscription previousSubscription;
@@ -188,7 +188,7 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     // =====================================================================
-    // XANH -- hành vi đã đúng, ghim lại để lần sửa tới không đạp lên
+    // GREEN -- behaviour already correct, pinned so the next fix does not trample it
     // =====================================================================
 
     @Test
@@ -244,7 +244,7 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     // =====================================================================
-    // ĐỎ -- bốn lỗi còn mở. Xem javadoc từng test.
+    // RED -- four bugs still open. See each test's Javadoc.
     // =====================================================================
 
     /**
@@ -270,26 +270,26 @@ class OrderSettlementQuotaCarryForwardTests {
         BigDecimal carriedToNewPeriod = seededPool(QuotaType.PRACTICE).getFundedFromBalanceVnd();
 
         assertThat(stillOpenOnOldPeriod.add(carriedToNewPeriod))
-            .as("5tr tự nạp đang mở ở cả hai kỳ cùng lúc")
+            .as("5M self-funded open in both periods at the same time")
             .isEqualByComparingTo("5000000");
     }
 
     /**
-     * ĐỎ -- gia hạn sớm, chiều "tiền bốc hơi".
+     * RED -- early renewal, the "money evaporates" direction.
      *
-     * <p>Mặt kia của cùng một mốc sai. Trường trả tiền gia hạn tháng 11 rồi nạp thêm 3tr vào tháng 12:
-     * khoản đó rơi vào ví hạn mức của KỲ CŨ (kỳ duy nhất đang hiệu lực), không có trong ảnh chụp đã
-     * lấy từ tháng 11, và chết theo kỳ cũ ở ranh giới. Đúng lỗi Q-7 sinh ra để chặn, chỉ thu hẹp vào
-     * đúng quãng gia hạn sớm.
+     * <p>The other face of the same wrong milestone. The school pays for the November renewal and then tops up 3M in December:
+     * that amount lands in the quota record of the OLD PERIOD (the only one in force), is not in the snapshot taken
+     * in November, and dies with the old period at the boundary. Exactly the Q-7 bug, narrowed to
+     * the early-renewal window.
      *
-     * <p>Không thể vá bằng cách chụp ảnh kỹ hơn: mọi con số tính TRƯỚC lúc kỳ cũ ngừng tiêu được đều
-     * có thể bị chính kỳ cũ làm sai đi. Phép mang sang phải chạy ở RANH GIỚI. Test này chỉ đòi đúng
-     * một điều -- đừng chốt con số đó ngay lúc thanh toán -- và để ngỏ việc chọn job quét hay
-     * materialize lúc đọc.
+     * <p>It cannot be patched by taking a better snapshot: every figure computed BEFORE the old period stops spending can
+     * be made wrong by the old period itself. The carry-over must run at the BOUNDARY. This test only demands
+     * one thing -- do not fix that figure at payment time -- and leaves open whether to choose a sweeping job or to
+     * materialize on read.
      *
-     * <p>Gia hạn khi kỳ cũ đã hết hạn thì hai mốc trùng nhau, và
-     * {@link #renewal_after_expiry_carries_unspent_funding_into_the_new_period} giữ nguyên yêu cầu
-     * mang sang NGAY ở ca đó.
+     * <p>A renewal after the old period has expired makes the two milestones coincide, and
+     * {@link #renewal_after_expiry_carries_unspent_funding_into_the_new_period} keeps the requirement to
+     * carry over IMMEDIATELY in that case.
      */
     @Test
     void funding_is_carried_at_the_period_boundary_not_at_settlement() {
@@ -302,9 +302,9 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     /**
-     * Hoãn mà không để lại dấu vết thì cũng là mất tiền, chỉ khác đường đi. Kỳ tương lai phải mang
-     * theo một cái HẸN trỏ về kỳ nguồn -- đó là toàn bộ thứ nối hai nửa của phép mang sang, và
-     * {@code CarryQuotaFundingAtPeriodStartService} không có cách nào khác để tìm ra kỳ nguồn.
+     * Deferring without leaving a trace is also losing money, just by a different path. The future period must carry
+     * a MARKER pointing back to the source period -- that is everything connecting the two halves of the carry-over, and
+     * {@code CarryQuotaFundingAtPeriodStartService} has no other way to find the source period.
      */
     @Test
     void an_early_renewal_leaves_a_promise_pointing_back_at_the_period_it_must_draw_from() {
@@ -319,7 +319,7 @@ class OrderSettlementQuotaCarryForwardTests {
 
     @Test
     void a_renewal_that_starts_immediately_leaves_no_promise_behind() {
-        // Mốc chốt sổ trùng mốc bắt đầu: đã mang sang ngay tại chỗ, còn hẹn treo là job sẽ cộng lần hai.
+        // The closing milestone coincides with the start: already carried over on the spot, and a lingering marker would be the job adding a second time.
         givenPreviousPool(QuotaType.PRACTICE, 15_000_000, 0, 5_000_000);
 
         settle();
@@ -355,16 +355,16 @@ class OrderSettlementQuotaCarryForwardTests {
     }
 
     /**
-     * ĐỎ -- trần cá nhân mang sang không bị kẹp vào ví của kỳ MỚI.
+     * RED -- the carried personal cap is not clamped to the NEW period's quota.
      *
-     * <p>Gói mới nhỏ hơn (hạ gói, hoặc hết khuyến mãi) thì tổng trần chép sang có thể lớn hơn cả ví.
-     * Trường mở kỳ mới trong trạng thái đã vượt trần của chính mình: banner hổ phách bật sẵn, và mọi
-     * lần sửa tay sau đó bị từ chối bằng "vượt quá phần được phép chia" -- đúng triệu chứng Q-6, vào
-     * lại bằng cửa gia hạn thay vì cửa chia đều.
+     * <p>A smaller new plan (downgrade, or promotion ending) can make the total of the copied caps larger than the quota.
+     * The school opens the new period already over its own cap: the amber banner is on from the start, and every
+     * manual edit afterwards is rejected with "exceeds the distributable share" -- exactly the Q-6 symptom, re-entered through the renewal door
+     * instead of the even-split door.
      *
-     * <p>Test kẹp ở mức chắc chắn đúng -- không bao giờ chép sang nhiều hơn ví đang có. Trần thật còn
-     * chặt hơn ({@code distributableAmountOf}, theo tỉ lệ của trường), nhưng chính sách đó nằm ở
-     * repository mà service này chưa cầm, nên để người sửa chọn.
+     * <p>The test clamps at a level that is certainly correct -- never copy more than the quota that exists. The real cap is
+     * tighter still ({@code distributableAmountOf}, by the school's ratio), but that policy sits in a
+     * repository this service does not hold yet, so it is left for whoever fixes it to choose.
      */
     @Test
     void carried_allocations_are_clamped_to_the_new_periods_pool() {
@@ -375,20 +375,20 @@ class OrderSettlementQuotaCarryForwardTests {
         settle();
 
         assertThat(carriedAmounts(QuotaType.ASSESSMENT).stream().reduce(BigDecimal.ZERO, (a, b) -> a.add(b)))
-            .as("chép sang 18tr trần cá nhân vào một ví chỉ có 10tr")
+            .as("18M of personal cap copied into a quota record holding only 10M")
             .isLessThanOrEqualTo(BigDecimal.valueOf(10_000_000));
     }
 
     /**
-     * ĐỎ -- chép trần cho loại ví mà gói mới KHÔNG còn.
+     * RED -- copying caps for a quota type that the new plan NO LONGER has.
      *
-     * <p>{@code carryForwardUserAllocations} duyệt {@code QuotaType.values()} rồi upsert vô điều kiện,
-     * không hỏi kỳ mới có ví loại đó không. Trường chuyển sang gói không kèm PRACTICE sẽ có một loạt
-     * dòng phân bổ trỏ vào một ví không tồn tại.
+     * <p>{@code carryForwardUserAllocations} walks {@code QuotaType.values()} and upserts unconditionally,
+     * without asking whether the new period has a quota record of that type. A school moving to a plan without PRACTICE would end up with a batch of
+     * allocation rows pointing at a quota record that does not exist.
      *
-     * <p>{@code seedQuotaRecords} đã xử đúng ca đối xứng cho TIỀN -- nó ghi WARN kèm số tiền không
-     * mang sang được. Phía trần thì im lặng. Danh sách loại ví đã dựng có sẵn ở đó (seededTypes) và
-     * {@code seedQuotaRecords} vốn đã chạy trước, nên chỉ là chuyện chuyền tay.
+     * <p>{@code seedQuotaRecords} already handles the symmetric case for MONEY -- it writes a WARN with the amount that could not
+     * be carried. The cap side is silent. The list of quota types already built is available there (seededTypes) and
+     * {@code seedQuotaRecords} already runs first, so it is just a matter of passing it along.
      */
     @Test
     void allocations_are_not_carried_for_quota_types_the_new_plan_dropped() {
@@ -413,7 +413,7 @@ class OrderSettlementQuotaCarryForwardTests {
         service.settlePaid(payment, now);
     }
 
-    /** Gia hạn SỚM: kỳ cũ còn hạn, nên kỳ mới xếp hàng phía sau nó thay vì chạy ngay. */
+    /** EARLY renewal: the old period is still valid, so the new period queues behind it instead of running immediately. */
     private void givenPreviousPeriodStillInForce() {
         previousSubscription.setEndDate(now.plus(60, ChronoUnit.DAYS));
         when(schoolSubscriptionRepository.findUnfinishedBySchoolId(eq(schoolId), any()))
@@ -489,7 +489,7 @@ class OrderSettlementQuotaCarryForwardTests {
         return captor.getAllValues().stream()
             .filter(record -> record.getQuotaType() == quotaType)
             .findFirst()
-            .orElseThrow(() -> new AssertionError("Kỳ mới không có ví " + quotaType + " nào được dựng"));
+            .orElseThrow(() -> new AssertionError("The new period has no " + quotaType + " quota record built"));
     }
 
     private List<BigDecimal> carriedAmounts(QuotaType quotaType) {

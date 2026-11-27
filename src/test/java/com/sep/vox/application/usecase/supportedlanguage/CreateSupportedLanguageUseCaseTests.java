@@ -65,7 +65,7 @@ class CreateSupportedLanguageUseCaseTests {
 
         ResourceDuplicatedException exception = org.junit.jupiter.api.Assertions.assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: EN");
+        assertThat(exception).hasMessage("Language already exists with code: EN");
         verify(supportedLanguageRepository).findByCode("EN");
         verify(supportedLanguageRepository, never()).save(any());
     }
@@ -95,6 +95,6 @@ class CreateSupportedLanguageUseCaseTests {
 
         ResourceDuplicatedException exception = org.junit.jupiter.api.Assertions.assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: EN");
+        assertThat(exception).hasMessage("Language already exists with code: EN");
     }
 }

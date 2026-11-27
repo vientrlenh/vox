@@ -1,19 +1,19 @@
 package com.sep.vox.domain.model.assessment;
 
 /**
- * Cách admin chọn tập bài để giao tự động cho một {@link GradingRoundType vòng chấm}.
+ * How the admin chooses the set of results to assign automatically for a {@link GradingRoundType grading round}.
  *
- * <p>Bốn chế độ tồn tại vì bốn nhu cầu khác nhau: chấm lần đầu thì lấy hết, hậu kiểm
- * thì bốc mẫu (không ai hậu kiểm 100% bài), thanh tra thì nhắm bài đáng ngờ, và
- * xử lý ca lẻ thì chọn tay.
+ * <p>Four modes exist for four different needs: first grading takes everything, spot check samples (nobody
+ * spot-checks 100% of results), inspection targets suspicious results, and handling edge cases is a manual
+ * selection.
  */
 public enum GradingSampleSelectionMode {
-    /** Toàn bộ bài đủ điều kiện chưa có người. Mặc định cho vòng INITIAL. */
+    /** Every eligible result that has nobody yet. Default for the INITIAL round. */
     ALL,
-    /** Bốc ngẫu nhiên N% — dùng cho hậu kiểm định kỳ. */
+    /** Randomly picks N% — used for periodic spot checks. */
     RANDOM_PERCENT,
-    /** Ưu tiên bài rủi ro cao: AI kém tự tin, hoặc điểm sát ngưỡng đạt. */
+    /** Prioritises high-risk results: low AI confidence, or a score close to the passing threshold. */
     RISK_BASED,
-    /** Danh sách bài do admin truyền vào. */
+    /** A list of results supplied by the admin. */
     MANUAL_LIST
 }

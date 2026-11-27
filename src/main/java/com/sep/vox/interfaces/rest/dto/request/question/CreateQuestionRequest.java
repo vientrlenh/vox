@@ -16,34 +16,34 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateQuestionRequest(
-    @NotNull(message = "ID ngân hàng không được để trống")
+    @NotNull(message = "Bank ID must not be blank")
     UUID questionBankId,
 
-    @NotNull(message = "ID chủ đề không được để trống")
+    @NotNull(message = "Topic ID must not be blank")
     UUID questionTopicId,
 
     String instructionText,
 
-    @NotBlank(message = "Nội dung câu hỏi không được để trống")
+    @NotBlank(message = "Question content must not be blank")
     String questionText,
 
     String promptText,
 
     String preparationText,
 
-    @NotNull(message = "Loại câu hỏi không được để trống")
+    @NotNull(message = "Question type must not be blank")
     QuestionType type,
 
-    @NotNull(message = "Thời gian chuẩn bị không được để trống")
-    @Min(value = 0, message = "Thời gian chuẩn bị không được dưới 0")
+    @NotNull(message = "Preparation time must not be blank")
+    @Min(value = 0, message = "Preparation time must not be below 0")
     Integer preparationTimeSeconds,
 
-    @NotNull(message = "Thời gian trả lời tối thiểu không được để trống")
-    @Min(value = 0, message = "Thời gian trả lời tối thiểu không được nhỏ hơn 0")
+    @NotNull(message = "Minimum answer time must not be blank")
+    @Min(value = 0, message = "Minimum answer time must not be less than 0")
     Integer minResponseSeconds,
 
-    @NotNull(message = "Thời gian trả lời tối đa không được để trống")
-    @Min(value = 0, message = "Thời gian trả lời tối đa phải lớn hơn hoặc bằng 0")
+    @NotNull(message = "Maximum answer time must not be blank")
+    @Min(value = 0, message = "Maximum answer time must be greater than or equal to 0")
     Integer maxResponseSeconds,
 
     QuestionSharing sharing,
@@ -55,7 +55,7 @@ public record CreateQuestionRequest(
     QuestionEvaluationGuideRequest evaluationGuide
 ) {
 
-    @AssertTrue(message = "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa")
+    @AssertTrue(message = "Minimum answer time must not be greater than maximum answer time")
     public boolean isResponseDurationRangeValid() {
         return minResponseSeconds == null
             || maxResponseSeconds == null

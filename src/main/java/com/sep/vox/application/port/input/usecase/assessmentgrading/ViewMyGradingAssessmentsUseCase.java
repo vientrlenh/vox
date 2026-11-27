@@ -14,16 +14,16 @@ import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
- * Danh sách kỳ thi cho bộ lọc của hàng đợi giáo viên — CHỈ những kỳ thi người gọi đang
- * hoặc đã có phân công, không phải mọi kỳ thi của trường.
+ * The assessment list for the filter of the teacher's queue -- ONLY the assessments in which the caller currently
+ * has or has had an assignment, not every assessment of the school.
  *
- * <p>Không đi qua lối đọc kỳ thi chung được: ở đó điều kiện nhìn thấy là system admin /
- * school admin / thành viên kỳ thi / kỳ thi đã đóng, mà giáo viên chấm bài không phải
- * thành viên kỳ thi tập trung — quyền của họ đến từ chính dòng phân công. Nên phạm vi
- * dropdown cũng phải suy ra từ đó, và nó tự đóng đúng bằng tập bài họ được giao.
+ * <p>It cannot go through the common assessment read path: there the visibility condition is system admin /
+ * school admin / assessment member / closed assessment, but a teacher grading submissions is not a
+ * member of a centralized assessment -- their permission comes from the assignment row itself. So the scope of the
+ * dropdown must also be derived from it, and it closes by itself to exactly the set of submissions assigned to them.
  *
- * <p>CHỈ kỳ thi tập trung, khoá cứng như {@link ViewMyGradingTasksUseCase}: hai chỗ phải
- * lọc trên cùng một tập, nếu không dropdown liệt kê ra kỳ thi mà hàng đợi trả về rỗng.
+ * <p>ONLY centralized assessments, hard-locked like {@link ViewMyGradingTasksUseCase}: both places must
+ * filter on the same set, otherwise the dropdown lists an assessment for which the queue returns nothing.
  */
 @Service
 @RequiredArgsConstructor

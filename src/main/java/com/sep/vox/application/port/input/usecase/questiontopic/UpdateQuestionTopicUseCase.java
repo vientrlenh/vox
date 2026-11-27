@@ -36,14 +36,14 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         QuestionTopic topic = questionTopicRepository.findById(command.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question topic not found"));
         QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         questionBankManageAccessService.requireManageAccess(bank, currentUserId);
 
         if (topic.getStatus() != QuestionTopicStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được cập nhật chủ đề ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Only a topic in DRAFT status can be updated");
         }
 
         if (command.name() != null) {

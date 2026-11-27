@@ -46,9 +46,9 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
     public Void execute(DeleteAssessmentPaperCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaper paper = assessmentPaperRepository.findById(input.paperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         AssessmentPaperAuthoringAccessService.PaperActor actor = assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
         // Once an assessment has started, a paper variant is live data -- the same boundary that AssignAssessmentPapersUseCase
@@ -67,16 +67,16 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
         // paper variant: changing the blueprint requires wiping every existing paper variant, and the original author may
         // have left the council already -- without this branch the assessment would be stuck forever on the old blueprint.
         if (!actor.canDecide() && !paper.isCreatedBy(currentUserId)) {
-            throw new ForbiddenException("Chỉ người đã tạo đề thi này mới được xoá");
+            throw new ForbiddenException("Only the creator of this paper may delete it");
         }
         if (paper.getStatus() != AssessmentPaperStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ xoá được đề thi khi còn ở trạng thái DRAFT");
+            throw new IllegalArgumentException("A paper can only be deleted while it is DRAFT");
         }
 
         // An exam session points at the paper variant through paper_id NOT NULL: once a student has taken it there is
         // no way to clean the pointer up, so the only option is to refuse the delete.
         if (assessmentSessionRepository.existsByPaperId(paper.getId())) {
-            throw new IllegalArgumentException("Không thể xoá mã đề đã có học sinh làm bài");
+            throw new IllegalArgumentException("A paper that students have already taken cannot be deleted");
         }
     }
 

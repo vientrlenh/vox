@@ -26,12 +26,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Bài kiểm tra trên lớp: nhà trường không chấm, nên chính giáo viên tạo bài duyệt /
- * từ chối đơn và tự nhận chấm phúc khảo.
+ * Class test: the school does not grade, so the teacher who created the test approves /
+ * rejects appeals and takes the appeal grading themselves.
  *
- * <p>Bề mặt REST + GraphQL của phúc khảo đã nới sang {@code TEACHER}, nên chốt quyền
- * thật nằm ở đây — ca {@code should_reject_a_teacher_who_is_not_the_chair} là thứ giữ
- * cho việc nới đó không biến thành "mọi giáo viên đọc mọi đơn của trường".
+ * <p>The REST + GraphQL surface of appeals has been loosened to {@code TEACHER}, so the real
+ * authorization gate lives here — the case {@code should_reject_a_teacher_who_is_not_the_chair} is what keeps
+ * that loosening from turning into "every teacher reads every appeal of the school".
  */
 class AssessmentAppealAccessClassTestTests {
 

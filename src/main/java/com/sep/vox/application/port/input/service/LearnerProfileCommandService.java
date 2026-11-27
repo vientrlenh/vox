@@ -29,7 +29,7 @@ public class LearnerProfileCommandService {
     public void submitQuiz(UUID studentId, List<QuizAnswer> answers) {
         if (answers == null || answers.size() < 5 || answers.size() > 7) {
             throw new IllegalArgumentException(
-                "Quiz sở thích phải có từ 5 đến 7 câu trả lời"
+                "The interest quiz must have 5 to 7 answers"
             );
         }
         Map<String, Integer> raw = new HashMap<String, Integer>();
@@ -47,7 +47,7 @@ public class LearnerProfileCommandService {
         if (answer.getMostStatementIndex()
                 == answer.getLeastStatementIndex()) {
             throw new IllegalArgumentException(
-                "Lựa chọn giống nhất và ít giống nhất phải khác nhau"
+                "The most-like and least-like choices must differ"
             );
         }
         List<String> dimensions = requireThreeDistinctDimensions(answer);
@@ -66,28 +66,28 @@ public class LearnerProfileCommandService {
     private List<String> requireThreeDistinctDimensions(QuizAnswer answer) {
         InterestQuizSeedItem item = quizItemRepository.findActiveQuizItem(answer.getItemId())
             .orElseThrow(() -> new ResourceNotFoundException(
-                "Không tìm thấy item quiz sở thích"
+                "Interest quiz item not found"
             ));
         List<String> dimensions = item.getDimensionPerStatement();
         if (dimensions.size() != 3
                 || dimensions.stream().distinct().count() != 3) {
             throw new IllegalStateException(
-                "Item quiz không có đúng ba chiều khác nhau"
+                "The quiz item does not have exactly three distinct dimensions"
             );
         }
         return dimensions;
     }
 
-    // GỠ 2026-08-07: submitFlsa -- thang tự đánh giá lo lắng ngoại ngữ (FLSA). Không client nào
-    // gọi mutation submitFlsaSelfReport, và không cơ chế nào ĐỌC flsaScore để đổi hành vi: nó chỉ
-    // được ghi rồi dội ngược lại qua GraphQL. Xoá cả cột flsa_score/flsa_raw_answers_json khỏi
-    // ánh xạ (cột trong DB giữ nguyên, xem chú thích ở LearnerProfileJpaEntity).
+    // REMOVED 2026-08-07: submitFlsa -- the foreign-language anxiety self-assessment scale (FLSA). No client
+    // calls the mutation submitFlsaSelfReport, and no mechanism READS flsaScore to change behavior: it is only
+    // written and then echoed back through GraphQL. Dropped the flsa_score/flsa_raw_answers_json columns from the
+    // mapping (the DB columns stay, see the note in LearnerProfileJpaEntity).
 
     public void setGoal(UUID studentId, String goalType) {
         if (!"ASSESSMENT_PREP".equals(goalType)
                 && !"ABILITY_IMPROVEMENT".equals(goalType)) {
             throw new IllegalArgumentException(
-                "Mục tiêu luyện tập không hợp lệ"
+                "The practice goal is invalid"
             );
         }
         upsertProfile(studentId, goalType, null, null);
@@ -112,7 +112,7 @@ public class LearnerProfileCommandService {
     private String dimensionAt(List<String> dimensions, int index) {
         if (index < 0 || index >= dimensions.size()) {
             throw new IllegalArgumentException(
-                "Chỉ số lựa chọn quiz không hợp lệ"
+                "The quiz choice index is invalid"
             );
         }
         return dimensions.get(index);

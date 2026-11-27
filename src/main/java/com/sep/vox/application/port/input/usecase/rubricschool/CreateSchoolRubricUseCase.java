@@ -55,33 +55,33 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
     private void requireActiveSchoolMember(CreateSchoolRubricCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
 
         // Strict school membership check to prevent cross-tenant data leaks.
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not assigned to any school."));
         if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không được quyền tạo Rubric cho một trường học khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to create a Rubric for another school.");
         }
 
         School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School information not found."));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học đang bị khóa, không thể thực hiện thao tác này.");
+            throw new IllegalArgumentException("The school is locked, so this operation cannot be performed.");
         }
     }
 
     private void requireActiveLanguageAndFramework(CreateSchoolRubricCommand command) {
         if (!languageRepository.existsById(command.languageId())) {
-            throw new ResourceNotFoundException("Ngôn ngữ chỉ định không tồn tại trên hệ thống.");
+            throw new ResourceNotFoundException("The specified language does not exist in the system.");
         }
         Framework framework = frameworkRepository.findById(command.frameworkId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khung tiêu chuẩn (Framework)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Framework not found."));
         if (!framework.isActive()) {
-            throw new IllegalArgumentException("Khung tiêu chuẩn (Framework) này đã bị vô hiệu hóa.");
+            throw new IllegalArgumentException("This Framework has been disabled.");
         }
     }
 
@@ -105,9 +105,9 @@ public class CreateSchoolRubricUseCase implements IUseCase<CreateSchoolRubricCom
                 RubricOwnerType.SCHOOL.toString(), command.schoolId(), command.languageId(),
                 command.frameworkId(), safeCode);
         if (isCodeTaken) {
-            throw new ResourceDuplicatedException("Trường của bạn đã có một bộ tiêu chí đánh giá mang mã '"
-                    + safeCode + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác"
-                    + " (ví dụ đặt theo khối: ENG-K10, ENG-K11).");
+            throw new ResourceDuplicatedException("Your school already has an assessment Rubric with code '"
+                    + safeCode + "' for this language and framework. Use another code"
+                    + " (for example named after the grade level: ENG-K10, ENG-K11).");
         }
     }
 }

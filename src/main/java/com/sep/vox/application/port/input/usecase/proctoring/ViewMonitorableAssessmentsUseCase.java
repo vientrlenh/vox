@@ -54,7 +54,7 @@ public class ViewMonitorableAssessmentsUseCase implements IUseCase<Void, List<Mo
         if (isSchoolAdmin) {
             UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
                 .map(schoolUser -> schoolUser.getSchoolId())
-                .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
             return monitoredAssessmentQueryRepository.findMonitorableBySchool(schoolId, null, now, leadUntil);
         }
         return monitoredAssessmentQueryRepository.findMonitorableByTeacher(currentUserId, null, now, leadUntil);

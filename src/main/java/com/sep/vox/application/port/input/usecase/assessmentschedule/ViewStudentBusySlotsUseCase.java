@@ -44,7 +44,7 @@ public class ViewStudentBusySlotsUseCase
         List<StudentBusySlotResponse> slots = new ArrayList<StudentBusySlotResponse>();
         for (UUID scheduleId : input.scheduleIds()) {
             AssessmentSchedule schedule = assessmentScheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
             // The same permission rule as the student directory: whoever can see the list may also know who in it is busy.
             assessmentDirectoryAccessService.resolveByAssessmentId(schedule.getAssessmentId());
             addBusySlots(slots, schedule, input.studentIds());

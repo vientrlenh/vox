@@ -1,8 +1,11 @@
-# Concurrency track: review every thread path to its end
+# Background paths: trace every thread path to its end
+
+The thread map built here gives the background path rows (`B1`, `B2`, ...) of the matrix. It settles NSP4 and
+supports TRU5 (how background work fails), NSP2 (races) and SPD3 (where a wait's time goes).
 
 ## When the target is multi-threaded
 
-Any one of these makes the track mandatory:
+Any one of these makes the thread map mandatory:
 
 - It hands work to another thread: `@Async`, an executor bean (see `infrastructure/config/AsyncConfig`; at the time
   of writing `fileImportExecutor`, `practiceGenerationExecutor` and `pushExecutor`), `CompletableFuture`,
@@ -37,8 +40,8 @@ Money, quota and billing paths are always in this track.
 3. **A path is done only when** its end is reached and every checklist item below has been answered for each hop,
    either with evidence (`file:line`) or with "N/A: <reason>". "Probably fine" is not an answer.
 4. **No cap, no sampling.** Twelve consumers means twelve rows. Never write "the others are similar". If the review
-   gets long, keep going, because context is summarized automatically. Keep the map in the task list (one task per
-   path) so a summary cannot lose it.
+   gets long, keep going, because context is summarized automatically. Keep the map in `matrix.md` (one background
+   path row per path) and in the task list, so a summary cannot lose it.
 5. **Do not hand back with open rows.** A path that leaves the repository (the AI grading service, `vox-streaming`,
    PayOS) ends at the boundary: write "ends outside the repo at <topic / endpoint>" and state the contract you
    assumed (delivery guarantee, idempotency, ordering).
@@ -130,11 +133,12 @@ Money, quota and billing paths are always in this track.
 
 ## Dynamic proof
 
-When a suspected race is reachable over HTTP, propose a k6 race probe (`references/performance-k6.md`, "Race
-probe"): many VUs fire the same operation at the same resource at once, then SQL checks the invariant. A failing
-probe confirms the race. A passing probe does not prove there is none, so say that in the report.
+When a suspected race is reachable over HTTP, run the k6 race probe (`racingRequests`,
+`references/performance-k6.md`, section I): many VUs fire the same operation at the same resource at once, then SQL
+checks the invariant. A failing probe confirms the race (NSP2 FAIL). A passing probe does not prove there is none, so
+the cell also needs the `Static` mechanism, and the report says so.
 
 ## In the report
 
-Put the full thread map in the report, one row per path, with both success and failure ends and the findings for each
-path. A row whose end is outside the repository says so.
+Put the full thread map in the report, one row per path, with both success and failure ends and the cells settled
+for each path. A row whose end is outside the repository says so.

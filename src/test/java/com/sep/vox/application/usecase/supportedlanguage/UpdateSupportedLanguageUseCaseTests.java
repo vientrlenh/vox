@@ -22,7 +22,6 @@ import com.sep.vox.application.exception.ResourceDuplicatedException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.supportedlanguage.UpdateSupportedLanguageCommand;
 import com.sep.vox.application.port.input.usecase.supportedlanguage.UpdateSupportedLanguageUseCase;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.response.input.supportedlanguage.UpdateSupportedLanguageResponse;
 import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
@@ -31,13 +30,11 @@ import com.sep.vox.domain.valueobject.LanguageCode;
 class UpdateSupportedLanguageUseCaseTests {
 
     private SupportedLanguageRepository supportedLanguageRepository;
-    private UserContextPort userContextPort;
     private UpdateSupportedLanguageUseCase useCase;
 
     @BeforeEach
     void setUp() {
         supportedLanguageRepository = mock(SupportedLanguageRepository.class);
-        userContextPort = mock(UserContextPort.class);
         useCase = new UpdateSupportedLanguageUseCase(supportedLanguageRepository);
     }
 

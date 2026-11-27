@@ -86,7 +86,7 @@ public record CreateSchoolRubricCriteriaRequest(
     public static CreateSchoolRubricCriteriaCommand toCommand(UUID schoolId, UUID versionId, CreateSchoolRubricCriteriaRequest request) {
 
         List<CreateSchoolRubricCriteriaCommand.CriterionItemCommand> criteriaCommands = request.criteria().stream()
-                .map(CriterionItemRequest::asCriterionItemCommand)
+                .map(r -> r.asCriterionItemCommand())
                 .toList();
 
         return new CreateSchoolRubricCriteriaCommand(schoolId, versionId, criteriaCommands);

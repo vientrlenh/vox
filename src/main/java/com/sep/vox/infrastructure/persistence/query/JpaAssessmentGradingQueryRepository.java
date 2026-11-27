@@ -470,7 +470,7 @@ public class JpaAssessmentGradingQueryRepository implements AssessmentGradingQue
 
         List<GradingStatsInfo.ResultStatusCount> byResultStatus =
             findResultStatusCounts(schoolId, assessmentId, scheduleId, assessmentKind);
-        int total = byResultStatus.stream().mapToInt(GradingStatsInfo.ResultStatusCount::count).sum();
+        int total = byResultStatus.stream().mapToInt(c -> c.count()).sum();
 
         Tuple openRow = findOpenAssignmentCounts(schoolId, assessmentId, scheduleId, assessmentKind, now);
         int assigned = openRow.get(0, Long.class).intValue();

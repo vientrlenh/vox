@@ -80,7 +80,7 @@ public class SchoolGradeImportCommitHandler implements ImportCommitHandler {
         Set<String> seenKeys = new HashSet<String>();
         Map<RowOutcome, Long> outcomeCounts = new EnumMap<RowOutcome, Long>(RowOutcome.class);
         for (RowContext rowContext : rowContexts) {
-            outcomeCounts.merge(commitRow(rowContext, schoolId, levelsByCode, seenKeys), 1L, Long::sum);
+            outcomeCounts.merge(commitRow(rowContext, schoolId, levelsByCode, seenKeys), 1L, (a, b) -> Long.sum(a, b));
         }
         return toResult(outcomeCounts);
     }

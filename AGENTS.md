@@ -260,13 +260,6 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   write a fully qualified name in code (`java.util.List<String> names`, `new com.sep.vox.domain.model.Foo()`), in
   annotations, generics, casts or Javadoc `{@link}`. The only exception is two types with the same simple name used in
   one file: import one and qualify the other.
-- **Null type safety.** Code must pass the null analysis of VS Code (Java language server) and Eclipse (JDT) without new
-  warnings. Mark every parameter, return type and field that may be null with `org.jspecify.annotations.Nullable` (the
-  annotation the project already uses, e.g. `AuthTokenPort`); everything unannotated is non-null. Do not dereference,
-  unbox or pass a nullable value where a non-null one is expected without a check. Do not return `null` from a method not
-  marked `@Nullable`: return `Optional`, an empty collection, or throw. Do not silence a warning with
-  `@SuppressWarnings("null")` or a blind `Objects.requireNonNull`; add the check or fix the type. Adding a new
-  annotation library is a new dependency (see Ask first).
 - **No N+1 queries.** Never query inside a loop or per element of a collection. Fetch in bulk (`IN` queries, joins, fetch
   graphs, batch methods on the repository). This also applies to GraphQL field resolvers, so use batch mapping there.
 - **Read the docs for the version in use.** Before using a package or framework API, read the official documentation

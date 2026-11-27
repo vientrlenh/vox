@@ -74,7 +74,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         Set<String> seenCodes = new HashSet<String>();
         Map<RowOutcome, Long> outcomeCounts = new EnumMap<RowOutcome, Long>(RowOutcome.class);
         for (RowContext rowContext : rowContexts) {
-            outcomeCounts.merge(commitRow(rowContext, schoolId, existingByCode, seenCodes), 1L, Long::sum);
+            outcomeCounts.merge(commitRow(rowContext, schoolId, existingByCode, seenCodes), 1L, (a, b) -> Long.sum(a, b));
         }
         return toResult(outcomeCounts);
     }

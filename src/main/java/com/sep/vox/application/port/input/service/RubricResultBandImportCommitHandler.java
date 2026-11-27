@@ -157,7 +157,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
         RubricResultBand existingForCode = errors.isEmpty() ? run.existingCodeMap().get(normalizeCode(safeCode)) : null;
         BigDecimal previousScoreMin = existingForCode != null ? existingForCode.getScoreMin() : null;
         String safeName = fields.name() == null ? "" : fields.name().trim();
-        addOverlapError(run, scores, safeName, existingForCode, previousScoreMin, errors);
+        addOverlapError(run, scores, safeName, previousScoreMin, errors);
         return new ValidatedRow(fields, safeCode, safeName, scores, existingForCode, previousScoreMin);
     }
 
@@ -206,8 +206,8 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
     }
 
     // No overlap (touching boundaries included) with the other existing bands or those already processed in the file
-    private void addOverlapError(CommitRun run, ParsedScores scores, String safeName, RubricResultBand existingForCode,
-            BigDecimal previousScoreMin, List<Map<String, String>> errors) {
+    private void addOverlapError(CommitRun run, ParsedScores scores, String safeName, BigDecimal previousScoreMin,
+            List<Map<String, String>> errors) {
         if (!errors.isEmpty()) {
             return;
         }

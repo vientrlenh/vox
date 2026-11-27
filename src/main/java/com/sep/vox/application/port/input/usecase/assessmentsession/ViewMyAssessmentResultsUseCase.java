@@ -57,7 +57,7 @@ public class ViewMyAssessmentResultsUseCase implements IUseCase<Void, List<Stude
 
         return candidates.stream()
             .map(candidate -> toSummary(candidate, assessmentsById.get(candidate.getAssessmentId()), rubricVersionCache))
-            .flatMap(Optional::stream)
+            .flatMap(o -> o.stream())
             .sorted(Comparator.comparing(
                 (StudentAssessmentResultSummaryResponse response) -> response.submittedAt(),
                 Comparator.nullsLast(Comparator.reverseOrder())

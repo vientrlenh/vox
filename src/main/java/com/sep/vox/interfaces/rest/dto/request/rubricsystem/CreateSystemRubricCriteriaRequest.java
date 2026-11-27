@@ -85,7 +85,7 @@ public record CreateSystemRubricCriteriaRequest(
     public static CreateSystemRubricCriteriaCommand toCommand(UUID versionId, CreateSystemRubricCriteriaRequest request) {
 
         List<CreateSystemRubricCriteriaCommand.CriterionItemCommand> criteriaCommands = request.criteria().stream()
-                .map(CriterionItemRequest::asCriterionItemCommand)
+                .map(r -> r.asCriterionItemCommand())
                 .toList();
 
         return new CreateSystemRubricCriteriaCommand(versionId, criteriaCommands);

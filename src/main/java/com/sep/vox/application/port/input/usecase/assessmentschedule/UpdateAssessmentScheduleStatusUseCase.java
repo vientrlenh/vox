@@ -59,12 +59,22 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         UUID currentUserId = authorize(assessment);
 
+        applyAction(input, schedule, assessment, currentUserId);
+
+        return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
+    }
+
+    private void applyAction(
+            UpdateAssessmentScheduleStatusCommand input,
+            AssessmentSchedule schedule,
+            Assessment assessment,
+            UUID currentUserId) {
         Instant now = Instant.now();
         String action = input.action() == null ? "" : input.action().trim().toUpperCase();
         switch (action) {
             case "PUBLISH" -> publish(schedule);
-            // Dời ca là thao tác xếp lịch nên bị khoá khi kỳ thi đã bắt đầu; publish/complete/cancel
-            // là thao tác vận hành trong lúc thi nên vẫn phải chạy được.
+            // Moving a session is a scheduling operation, so it is locked once the assessment has started; publish/complete/cancel
+            // are operations run while the exam is going on, so they must still work.
             case "MOVE" -> {
                 requireAssessmentNotStarted(assessment);
                 move(schedule, input.targetScheduleId(), currentUserId, now);
@@ -73,8 +83,6 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
             case "CANCEL" -> cancel(schedule);
             default -> throw new IllegalArgumentException("Hành động không hợp lệ");
         }
-
-        return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
     }
 
     private void requireAssessmentNotStarted(Assessment assessment) {
@@ -123,6 +131,16 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
      * Room capacity is not checked because school_rooms has no capacity column.
      */
     private void move(AssessmentSchedule schedule, UUID targetScheduleId, UUID currentUserId, Instant now) {
+        AssessmentSchedule target = requireMoveTarget(schedule, targetScheduleId);
+
+        moveCandidates(schedule.getId(), target, currentUserId, now);
+        moveProctors(schedule.getId(), target);
+
+        schedule.setStatus(AssessmentScheduleStatus.MOVED);
+        schedule.setMovedToScheduleId(targetScheduleId);
+    }
+
+    private AssessmentSchedule requireMoveTarget(AssessmentSchedule schedule, UUID targetScheduleId) {
         if (schedule.getStatus() != AssessmentScheduleStatus.DRAFT && schedule.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
             throw new IllegalArgumentException("Chỉ có thể chuyển ca thi ở trạng thái nháp hoặc đã công bố");
         }
@@ -132,7 +150,7 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
         if (targetScheduleId.equals(schedule.getId())) {
             throw new IllegalArgumentException("Ca thi đích phải khác ca thi hiện tại");
         }
-        // Khoá hàng ca đích để không chạy song song với thao tác xếp thí sinh vào đúng ca đó.
+        // Lock the target session row so it does not run in parallel with placing candidates into that same session.
         AssessmentSchedule target = assessmentScheduleRepository.findByIdForUpdate(targetScheduleId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi đích"));
         if (!target.getAssessmentId().equals(schedule.getAssessmentId())) {
@@ -141,12 +159,7 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
         if (target.getStatus() != AssessmentScheduleStatus.DRAFT && target.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
             throw new IllegalArgumentException("Ca thi đích không ở trạng thái hợp lệ");
         }
-
-        moveCandidates(schedule.getId(), target, currentUserId, now);
-        moveProctors(schedule.getId(), target);
-
-        schedule.setStatus(AssessmentScheduleStatus.MOVED);
-        schedule.setMovedToScheduleId(targetScheduleId);
+        return target;
     }
 
     private void moveCandidates(UUID sourceScheduleId, AssessmentSchedule target, UUID currentUserId, Instant now) {

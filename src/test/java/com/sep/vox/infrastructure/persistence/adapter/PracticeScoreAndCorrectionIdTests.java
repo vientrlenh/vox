@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
-import com.sep.vox.domain.dto.personalization.TurnCorrectionDto;
 import com.sep.vox.domain.repository.PracticeCriterionScoreRepository;
 import com.sep.vox.domain.repository.TurnCorrectionRepository;
 import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeCriterionScoreJpaEntity;
@@ -53,7 +52,7 @@ class PracticeScoreAndCorrectionIdTests {
         List<TurnCorrectionJpaEntity> stored = springDataCorrectionRepository.findAll();
         assertThat(stored).allSatisfy(entity -> assertThat(entity.getId().version()).isEqualTo(7));
         assertThat(correctionRepository.findByTurnIdOrderById(turnId))
-            .extracting(TurnCorrectionDto::originalText)
+            .extracting(dto -> dto.originalText())
             .containsExactly("first", "second", "third");
     }
 

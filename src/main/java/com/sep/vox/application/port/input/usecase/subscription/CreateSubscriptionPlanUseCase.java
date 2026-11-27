@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.common.StringNormalization;
 import com.sep.vox.application.port.input.command.subscription.CreateSubscriptionPlanCommand;
 import com.sep.vox.application.port.input.command.subscription.CreateSubscriptionPlanQuotaCommand;
+import com.sep.vox.application.port.input.service.SubscriptionPlanQuotaAmountValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SubscriptionPlan;
@@ -24,12 +25,9 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 @RequiredArgsConstructor
 public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptionPlanCommand, UUID> {
 
-    // Column subscription_plan_quotas.included_amount_vnd is numeric(18,6) -- above this limit Postgres
-    // reports "numeric field overflow" at the DB layer instead of a readable message here.
-    private static final BigDecimal MAX_INCLUDED_AMOUNT_VND = new BigDecimal("999999999999.999999");
-
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanQuotaRepository subscriptionPlanQuotaRepository;
+    private final SubscriptionPlanQuotaAmountValidator quotaAmountValidator;
 
     @Override
     @Transactional
@@ -39,12 +37,21 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
         }
 
         CreateSubscriptionPlanCommand command = normalize(input);
+        Map<QuotaType, BigDecimal> includedAmountByQuotaType = validatedIncludedAmounts(command.quotas());
 
+        SubscriptionPlan plan = SubscriptionPlan.create(command.name(), command.tagline(), command.priceVnd(), command.periodType(), command.periodCount(), command.maxTimePerAttemptMin());
+        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
+        savePlanQuotas(savedPlan.getId(), includedAmountByQuotaType);
+
+        return savedPlan.getId();
+    }
+
+    private Map<QuotaType, BigDecimal> validatedIncludedAmounts(List<CreateSubscriptionPlanQuotaCommand> quotas) {
         // Collect the checked quotas into a map instead of only checking and discarding them: the map
         // itself is the duplicate detector, so no separate Set is needed. LinkedHashMap keeps the
         // quota rows saved in the order the admin entered them.
         Map<QuotaType, BigDecimal> includedAmountByQuotaType = new LinkedHashMap<QuotaType, BigDecimal>();
-        for (CreateSubscriptionPlanQuotaCommand quota : command.quotas()) {
+        for (CreateSubscriptionPlanQuotaCommand quota : quotas) {
             QuotaType quotaType = quota.quotaType();
             // subscription_plan_quotas does NOT have a unique (subscription_plan_id, quota_type) yet, so the DB does not block it:
             // sending two GRADING rows would save both, and whichever row every later quota read picks up depends on the order
@@ -53,35 +60,20 @@ public class CreateSubscriptionPlanUseCase implements IUseCase<CreateSubscriptio
                 throw new IllegalArgumentException(
                     "Loại hạn mức \"" + quotaType + "\" bị khai báo nhiều lần trong cùng một gói");
             }
-            if (quota.includedAmountVnd() == null) {
-                throw new IllegalArgumentException("Định mức của hạn mức \"" + quotaType + "\" không được để trống");
-            }
-            if (quota.includedAmountVnd().signum() < 0) {
-                throw new IllegalArgumentException("Định mức của hạn mức \"" + quotaType + "\" không được âm");
-            }
-            if (quota.includedAmountVnd().compareTo(MAX_INCLUDED_AMOUNT_VND) > 0) {
-                throw new IllegalArgumentException(
-                    "Định mức của hạn mức \"" + quotaType + "\" vượt quá giới hạn cho phép (tối đa 999.999.999.999 VND)");
-            }
+            quotaAmountValidator.requireValidIncludedAmount(quotaType, quota.includedAmountVnd());
             includedAmountByQuotaType.put(quotaType, quota.includedAmountVnd());
         }
+        return includedAmountByQuotaType;
+    }
 
-        SubscriptionPlan plan = SubscriptionPlan.create(command.name(), command.tagline(), command.priceVnd(), command.periodType(), command.periodCount(), command.maxTimePerAttemptMin());
-        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
-
-        // A quota row only declares the QUOTA amount, with no unit price. The USD->VND exchange rate is recorded per usage
-        // (SchoolBalanceEntry.fxRateUsed) and the service fee is a separate line on the order, so the plan does not need to, and
-        // must not, freeze an exchange rate of its own.
+    // A quota row only declares the QUOTA amount, with no unit price. The USD->VND exchange rate is recorded per usage
+    // (SchoolBalanceEntry.fxRateUsed) and the service fee is a separate line on the order, so the plan does not need to, and
+    // must not, freeze an exchange rate of its own.
+    private void savePlanQuotas(UUID planId, Map<QuotaType, BigDecimal> includedAmountByQuotaType) {
         List<SubscriptionPlanQuota> quotas = includedAmountByQuotaType.entrySet().stream()
-            .map(entry -> SubscriptionPlanQuota.builder()
-                .subscriptionPlanId(savedPlan.getId())
-                .quotaType(entry.getKey())
-                .includedAmountVnd(entry.getValue())
-                .build())
+            .map(entry -> SubscriptionPlanQuota.forPlan(planId, entry.getKey(), entry.getValue()))
             .toList();
         subscriptionPlanQuotaRepository.saveAll(quotas);
-
-        return savedPlan.getId();
     }
 
     /**

@@ -48,262 +48,347 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
     @Override
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
-        UUID versionId = session.getImportedEntityId();
+        RubricVersion version = requireDraftVersion(session.getImportedEntityId());
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
+        CommitRun run = buildCommitRun(version, rubric, resolveMapping(session));
+
+        List<RubricCriterion> criterionsToSave = new ArrayList<>();
+        long importedCount = 0;
+        long invalidCount = 0;
+        for (ImportRow row : rows) {
+            if (row.getStatus() != ImportRowStatus.PENDING) continue;
+            if (commitRow(row, run, criterionsToSave)) {
+                importedCount++;
+            } else {
+                invalidCount++;
+            }
+        }
+
+        saveCriterions(criterionsToSave);
+        return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    }
+
+    private RubricVersion requireDraftVersion(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể import Tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
+        return version;
+    }
 
-        Map<String, String> mapping = new HashMap<>();
+    private Map<String, String> resolveMapping(ImportSession session) {
         if (session.getConfirmedMappingJson() != null && !session.getConfirmedMappingJson().isBlank()) {
-            mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+            return jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         } else if (session.getSuggestedMappingJson() != null && !session.getSuggestedMappingJson().isBlank()) {
-            mapping = jsonSerializationPort.toStringMap(session.getSuggestedMappingJson());
+            return jsonSerializationPort.toStringMap(session.getSuggestedMappingJson());
         }
-        // 1. Lấy ra Phiên bản Khung năng lực đang PUBLISHED
-        List<FrameworkVersion> activeVersions = frameworkVersionRepository.findByFrameworkIdAndStatus(
-                rubric.getFrameworkId(),
-                FrameworkVersionStatus.PUBLISHED
-        );
+        return new HashMap<>();
+    }
 
-        FrameworkVersion activeFwVersion = activeVersions.stream().findFirst()
+    private record CommitRun(
+            RubricVersion version,
+            Map<String, String> mapping,
+            Map<String, UUID> fwCodeToIdMap,
+            Map<String, RubricCriterion> existingCodeMap,
+            Map<UUID, RubricCriterion> existingByFwCriterionId,
+            Set<String> codesInFile,
+            Set<Integer> ordersInFile,
+            Set<UUID> fwCriterionIdsInFile) {}
+
+    private CommitRun buildCommitRun(RubricVersion version, Rubric rubric, Map<String, String> mapping) {
+        FrameworkVersion activeFwVersion = frameworkVersionRepository.findByFrameworkIdAndStatus(
+                        rubric.getFrameworkId(), FrameworkVersionStatus.PUBLISHED)
+                .stream().findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên bản Khung tiêu chuẩn nào đang hoạt động cho Framework này."));
-
-        // 2. SỬA CHỖ NÀY: Phải lấy theo ID của Phiên bản (Version ID), chứ không lấy theo Framework ID nữa!
+        // Framework criteria are fetched by the framework VERSION id, not by the framework id.
         List<FrameworkCriterion> fwCriterions = frameworkCriterionRepository.findByFrameworkVersionId(activeFwVersion.getId());
+        List<RubricCriterion> existingCriterions = rubricCriterionRepository.findByRubricVersionId(version.getId());
 
-        //  3. TỐI ƯU THÊM BỌC GIÁP: Thêm (existing, newValue) -> existing để đề phòng
-        // dưới Database vô tình có 2 mã trùng nhau thì nó lấy thằng đầu tiên, không bị sập (Crash) toàn bộ luồng ngầm
-        Map<String, UUID> fwCodeToIdMap = fwCriterions.stream()
+        return new CommitRun(version, mapping, indexFrameworkCriterionIdsByCode(fwCriterions),
+                indexByCode(existingCriterions), indexByFrameworkCriterionId(existingCriterions),
+                new HashSet<>(), new HashSet<>(), new HashSet<>());
+    }
+
+    // The merge function (existing, newValue) -> existing guards against the database accidentally
+    // holding two equal codes: the first one wins instead of crashing the whole background flow.
+    private Map<String, UUID> indexFrameworkCriterionIdsByCode(List<FrameworkCriterion> fwCriterions) {
+        return fwCriterions.stream()
                 .collect(Collectors.toMap(
                         fc -> normalizeCode(fc.getCode()),
                         fc -> fc.getId(),
-                        (existingValue, newValue) -> existingValue // Giáp chống sập Duplicate Key
+                        (existingValue, newValue) -> existingValue
                 ));
-        List<RubricCriterion> existingCriterions = rubricCriterionRepository.findByRubricVersionId(versionId);
+    }
 
-        Map<String, RubricCriterion> existingCodeMap = existingCriterions.stream()
+    private Map<String, RubricCriterion> indexByCode(List<RubricCriterion> existingCriterions) {
+        return existingCriterions.stream()
                 .collect(Collectors.toMap(
                         c -> normalizeCode(c.getCode()),
                         c -> c,
                         (existingValue, newValue) -> existingValue
                 ));
+    }
 
-        // Tra cứu ngược: 1 Framework Criterion đang bị Rubric Criterion (code) nào trong version này chiếm giữ
-        Map<UUID, RubricCriterion> existingByFwCriterionId = existingCriterions.stream()
+    // Reverse lookup: which Rubric Criterion (code) of this version already holds a Framework Criterion
+    private Map<UUID, RubricCriterion> indexByFrameworkCriterionId(List<RubricCriterion> existingCriterions) {
+        return existingCriterions.stream()
                 .collect(Collectors.toMap(
                         rc -> rc.getFrameworkCriterionId(),
                         c -> c,
                         (existingValue, newValue) -> existingValue
                 ));
+    }
 
-        List<RubricCriterion> criterionsToSave = new ArrayList<>();
-        long importedCount = 0;
-        long invalidCount = 0;
+    private record RowFields(String code, String name, String description, String frameworkCriterionCode,
+                             String examples, String weight, String minScore, String maxScore,
+                             String required, String order) {}
 
-        Set<String> codesInFile = new HashSet<>();
-        Set<Integer> ordersInFile = new HashSet<>();
-        Set<UUID> fwCriterionIdsInFile = new HashSet<>();
+    private record ParsedNumbers(BigDecimal weight, BigDecimal minScore, BigDecimal maxScore, int order,
+                                 boolean isRequired) {
+        static final ParsedNumbers DEFAULT = new ParsedNumbers(null, null, null, 0, true);
+    }
 
-        for (ImportRow row : rows) {
-            if (row.getStatus() != ImportRowStatus.PENDING) continue;
-
-            List<Map<String, String>> errors = new ArrayList<>();
-            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-
-            Map<String, String> mappedData = new HashMap<>();
-            for (Map.Entry<String, String> entry : rawData.entrySet()) {
-                String sysField = mapping.get(entry.getKey());
-                if (sysField != null) mappedData.put(sysField, entry.getValue());
+    /** Returns true when the row was imported, false when it was marked invalid. */
+    private boolean commitRow(ImportRow row, CommitRun run, List<RubricCriterion> criterionsToSave) {
+        List<Map<String, String>> errors = new ArrayList<>();
+        Map<String, String> mappedData = mapRow(row, run.mapping());
+        try {
+            ValidatedRow validated = validateRow(run, mappedData, errors);
+            if (!errors.isEmpty()) {
+                markInvalid(row, errors);
+                return false;
             }
-
-            try {
-                String codeStr = mappedData.get("code");
-                String nameStr = mappedData.get("name");
-                String descStr = mappedData.get("description");
-                String fwCodeStr = mappedData.get("frameworkCriterionCode");
-                String examplesStr = mappedData.get("examples");
-                String weightStr = mappedData.get("weight");
-                String minStr = mappedData.get("minScore");
-                String maxStr = mappedData.get("maxScore");
-                String reqStr = mappedData.get("isRequired");
-                String orderStr = mappedData.get("order");
-
-                if (codeStr == null || codeStr.isBlank()) errors.add(error("code", "Thiếu Mã tiêu chí."));
-                if (nameStr == null || nameStr.isBlank()) errors.add(error("name", "Thiếu Tên tiêu chí."));
-                if (fwCodeStr == null || fwCodeStr.isBlank()) errors.add(error("frameworkCriterionCode", "Thiếu Mã Khung tiêu chuẩn tham chiếu."));
-                if (weightStr == null || weightStr.isBlank()) errors.add(error("weight", "Thiếu Trọng số."));
-                if (minStr == null || minStr.isBlank()) errors.add(error("minScore", "Thiếu Điểm sàn."));
-                if (maxStr == null || maxStr.isBlank()) errors.add(error("maxScore", "Thiếu Điểm trần."));
-                if (orderStr == null || orderStr.isBlank()) errors.add(error("order", "Thiếu Thứ tự."));
-
-                String safeCode = codeStr != null ? codeStr.trim() : "";
-                if (errors.isEmpty()) {
-                    if (!codesInFile.add(normalizeCode(safeCode))) {
-                        errors.add(error("code", "Bị trùng Mã tiêu chí '" + safeCode + "' ngay trong file Excel."));
-                    }
-                }
-
-                UUID fwCriterionId = null;
-                if (errors.isEmpty()) {
-                    fwCriterionId = fwCodeToIdMap.get(normalizeCode(fwCodeStr));
-                    if (fwCriterionId == null) {
-                        errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fwCodeStr + "' không tồn tại trong Framework gốc."));
-                    }
-                }
-
-                RubricCriterion targetCriterion = errors.isEmpty() ? existingCodeMap.get(normalizeCode(safeCode)) : null;
-
-                // frameworkCriterionId là bất biến sau khi tạo (giống code):
-                // - Nếu sắp TẠO MỚI (targetCriterion == null): framework này không được trùng với tiêu chí khác trong file/DB.
-                // - Nếu tiêu chí ĐÃ TỒN TẠI: chặn cả dòng nếu file cố đổi sang framework khác, tránh tạo trạng thái
-                //   nửa-vời (các field khác bị update theo dòng "sai" trong khi frameworkCriterionId vẫn giữ nguyên).
-                if (errors.isEmpty() && fwCriterionId != null) {
-                    if (targetCriterion == null) {
-                        if (!fwCriterionIdsInFile.add(fwCriterionId)) {
-                            errors.add(error("frameworkCriterionCode", "Bị trùng Mã Khung tiêu chuẩn tham chiếu '" + fwCodeStr + "' ngay trong file Excel."));
-                        } else {
-                            RubricCriterion holder = existingByFwCriterionId.get(fwCriterionId);
-                            if (holder != null) {
-                                errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fwCodeStr
-                                        + "' đã được gán cho tiêu chí khác (mã: " + holder.getCode() + ") trong phiên bản này."));
-                            }
-                        }
-                    } else if (!fwCriterionId.equals(targetCriterion.getFrameworkCriterionId())) {
-                        errors.add(error("frameworkCriterionCode", "Không thể thay đổi Khung tiêu chuẩn tham chiếu của tiêu chí '"
-                                + safeCode + "' đã tồn tại (Mã Khung tiêu chuẩn tham chiếu không được phép sửa sau khi tạo)."));
-                    }
-                }
-
-                //  FIX LỖI THIẾU PARAMETER Ở ĐÂY
-                RubricCriterionExamples examplesObj = null;
-                if (errors.isEmpty() && examplesStr != null && !examplesStr.isBlank()) {
-                    try {
-                        List<String> rawExamples = Arrays.stream(examplesStr.split(";"))
-                                .map(s -> s.trim())
-                                .filter(s -> !s.isBlank())
-                                .toList();
-
-                        if (!rawExamples.isEmpty()) {
-                            List<RubricCriterionExample> exampleList = rawExamples.stream()
-                                    .map(chuoi -> new RubricCriterionExample(
-                                            chuoi,   // Truyền vào cho transcript
-                                            chuoi,   // Truyền vào cho explanation
-                                            BigDecimal.ZERO
-                                    ))
-                                    .toList();
-                            examplesObj = new RubricCriterionExamples(exampleList);
-                        }
-                    } catch (Exception e) {
-                        errors.add(error("examples", "Dữ liệu ví dụ không hợp lệ (Hãy phân cách các ví dụ bằng dấu ;). Lỗi: " + e.getMessage()));
-                    }
-                }
-
-                BigDecimal weight = null, minScore = null, maxScore = null;
-                int order = 0;
-                boolean isRequired = true;
-
-                if (errors.isEmpty()) {
-                    String safeWeightStr = weightStr == null ? "" : weightStr.trim();
-                    String safeMinStr = minStr == null ? "" : minStr.trim();
-                    String safeMaxStr = maxStr == null ? "" : maxStr.trim();
-                    String safeOrderStr = orderStr == null ? "" : orderStr.trim();
-
-                    try {
-                        // File Excel ghi PHẦN TRĂM (20), cột DB lưu PHÂN SỐ (0.2).
-                        //
-                        // Quy đổi ngay tại đây cho khớp màn nhập tay: người dùng ở cả hai đường
-                        // đều làm việc bằng phần trăm, còn cổng ban hành
-                        // (ChangeSchoolRubricVersionStatusUseCase) đòi tổng đúng bằng 1. Không
-                        // chia thì file 5 tiêu chí × 20 vào DB thành tổng 100, tạo/sửa vẫn
-                        // trót lọt vì chỗ đó chỉ kiểm >= 0, tới lúc ban hành mới nổ.
-                        //
-                        // Chia 100 với scale 6: 20 -> 0.200000, đủ chỗ cho cả trọng số lẻ như
-                        // 12.5% mà không mất chữ số.
-                        BigDecimal weightPercent = new BigDecimal(safeWeightStr);
-                        if (weightPercent.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
-                        weight = weightPercent.divide(ONE_HUNDRED, 6, RoundingMode.HALF_UP);
-
-                        minScore = new BigDecimal(safeMinStr);
-                        maxScore = new BigDecimal(safeMaxStr);
-                        if (minScore.compareTo(maxScore) > 0) errors.add(error("minScore", "Điểm sàn không được lớn hơn điểm trần."));
-
-                        order = Integer.parseInt(safeOrderStr.trim());
-                        if (order <= 0) errors.add(error("order", "Thứ tự phải lớn hơn 0."));
-
-                        if (!ordersInFile.add(order)) {
-                            errors.add(error("order", "Bị trùng Thứ tự " + order + " ngay trong file Excel."));
-                        }
-
-                        if (reqStr != null && !reqStr.isBlank()) {
-                            String r = reqStr.trim().toLowerCase();
-                            isRequired = r.equals("true") || r.equals("yes") || r.equals("1") || r.equals("có") || r.equals("co");
-                        }
-                    } catch (NumberFormatException e) {
-                        errors.add(error("general", "Dữ liệu Trọng số/Điểm/Thứ tự không đúng định dạng số."));
-                    }
-                }
-
-                // Kiểm tra khoảng điểm có nằm trong thang điểm tổng của Rubric Version không
-                if (errors.isEmpty()) {
-                    try {
-                        ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
-                                minScore, maxScore, safeCode);
-                    } catch (IllegalArgumentException e) {
-                        errors.add(error("minScore", e.getMessage()));
-                    }
-                }
-
-                if (!errors.isEmpty()) {
-                    row.setStatus(ImportRowStatus.INVALID);
-                    row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                    invalidCount++;
-                } else {
-                    String safeNameStr = nameStr == null ? "" : nameStr.trim();
-                    if (targetCriterion != null) {
-                        // Không setFrameworkCriterionId: tiêu chí đã tồn tại thì framework tham chiếu là bất biến,
-                        // giống hệt cách "code" được bảo vệ không cho sửa sau khi tạo.
-                        targetCriterion.setName(safeNameStr);
-                        targetCriterion.setDescription(descStr);
-                        targetCriterion.setExamples(examplesObj);
-                        targetCriterion.setWeight(weight);
-                        targetCriterion.setMinScore(minScore);
-                        targetCriterion.setMaxScore(maxScore);
-                        targetCriterion.setOrder(order);
-                        targetCriterion.setRequired(isRequired);
-
-                        criterionsToSave.add(targetCriterion);
-                    } else {
-                        targetCriterion = RubricCriterion.create(
-                                versionId, fwCriterionId, safeCode, safeNameStr, descStr, examplesObj,
-                                weight, minScore, maxScore, order, isRequired);
-                        criterionsToSave.add(targetCriterion);
-                    }
-
-                    row.setStatus(ImportRowStatus.IMPORTED);
-                    row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
-                    importedCount++;
-                }
-            } catch (Exception ex) {
-                errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
-                row.setStatus(ImportRowStatus.INVALID);
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                invalidCount++;
-            }
+            criterionsToSave.add(applyToCriterion(run.version().getId(), validated));
+            markImported(row, mappedData);
+            return true;
+        } catch (Exception ex) {
+            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            markInvalid(row, errors);
+            return false;
         }
+    }
 
-        if (!criterionsToSave.isEmpty()) {
-            try {
-                rubricCriterionRepository.saveAll(criterionsToSave);
-            } catch (DataConflictException e) {
-                throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp trong phiên bản Rubric này.", e);
-            }
+    private record ValidatedRow(RowFields fields, String safeCode, UUID fwCriterionId,
+                                RubricCriterion targetCriterion, RubricCriterionExamples examples,
+                                ParsedNumbers numbers) {}
+
+    private ValidatedRow validateRow(CommitRun run, Map<String, String> mappedData, List<Map<String, String>> errors) {
+        RowFields fields = readFields(mappedData);
+        addMissingFieldErrors(fields, errors);
+        String safeCode = fields.code() != null ? fields.code().trim() : "";
+        addDuplicateCodeError(run, safeCode, errors);
+        UUID fwCriterionId = errors.isEmpty() ? resolveFrameworkCriterionId(run, fields, errors) : null;
+        RubricCriterion targetCriterion = errors.isEmpty() ? run.existingCodeMap().get(normalizeCode(safeCode)) : null;
+        addFrameworkCriterionBindingErrors(run, fields, safeCode, fwCriterionId, targetCriterion, errors);
+        RubricCriterionExamples examplesObj = errors.isEmpty() ? parseExamples(fields.examples(), errors) : null;
+        ParsedNumbers numbers = parseNumbers(fields, run.ordersInFile(), errors);
+        addScoreRangeError(run.version(), numbers, safeCode, errors);
+        return new ValidatedRow(fields, safeCode, fwCriterionId, targetCriterion, examplesObj, numbers);
+    }
+
+    private void addDuplicateCodeError(CommitRun run, String safeCode, List<Map<String, String>> errors) {
+        if (errors.isEmpty() && !run.codesInFile().add(normalizeCode(safeCode))) {
+            errors.add(error("code", "Bị trùng Mã tiêu chí '" + safeCode + "' ngay trong file Excel."));
         }
+    }
 
-        return new ImportCommitResult(importedCount, 0, 0, invalidCount);
+    private void markImported(ImportRow row, Map<String, String> mappedData) {
+        row.setStatus(ImportRowStatus.IMPORTED);
+        row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
+    }
+
+    private Map<String, String> mapRow(ImportRow row, Map<String, String> mapping) {
+        Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+        Map<String, String> mappedData = new HashMap<>();
+        for (Map.Entry<String, String> entry : rawData.entrySet()) {
+            String sysField = mapping.get(entry.getKey());
+            if (sysField != null) mappedData.put(sysField, entry.getValue());
+        }
+        return mappedData;
+    }
+
+    private void markInvalid(ImportRow row, List<Map<String, String>> errors) {
+        row.setStatus(ImportRowStatus.INVALID);
+        row.setErrorsJson(jsonSerializationPort.toJson(errors));
+    }
+
+    private static RowFields readFields(Map<String, String> mappedData) {
+        return new RowFields(
+                mappedData.get("code"), mappedData.get("name"), mappedData.get("description"),
+                mappedData.get("frameworkCriterionCode"), mappedData.get("examples"), mappedData.get("weight"),
+                mappedData.get("minScore"), mappedData.get("maxScore"), mappedData.get("isRequired"),
+                mappedData.get("order"));
+    }
+
+    private static void addMissingFieldErrors(RowFields fields, List<Map<String, String>> errors) {
+        if (isBlank(fields.code())) errors.add(error("code", "Thiếu Mã tiêu chí."));
+        if (isBlank(fields.name())) errors.add(error("name", "Thiếu Tên tiêu chí."));
+        if (isBlank(fields.frameworkCriterionCode())) errors.add(error("frameworkCriterionCode", "Thiếu Mã Khung tiêu chuẩn tham chiếu."));
+        if (isBlank(fields.weight())) errors.add(error("weight", "Thiếu Trọng số."));
+        if (isBlank(fields.minScore())) errors.add(error("minScore", "Thiếu Điểm sàn."));
+        if (isBlank(fields.maxScore())) errors.add(error("maxScore", "Thiếu Điểm trần."));
+        if (isBlank(fields.order())) errors.add(error("order", "Thiếu Thứ tự."));
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private static String trimOrEmpty(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static UUID resolveFrameworkCriterionId(CommitRun run, RowFields fields, List<Map<String, String>> errors) {
+        UUID fwCriterionId = run.fwCodeToIdMap().get(normalizeCode(fields.frameworkCriterionCode()));
+        if (fwCriterionId == null) {
+            errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fields.frameworkCriterionCode() + "' không tồn tại trong Framework gốc."));
+        }
+        return fwCriterionId;
+    }
+
+    // frameworkCriterionId is immutable after creation (like code):
+    // - About to CREATE (targetCriterion == null): this framework must not duplicate another criterion in the file/DB.
+    // - The criterion ALREADY EXISTS: reject the whole row if the file tries to switch to another framework, to avoid
+    //   a half-applied state (the other fields updated by the "wrong" row while frameworkCriterionId stays unchanged).
+    private void addFrameworkCriterionBindingErrors(CommitRun run, RowFields fields, String safeCode, UUID fwCriterionId,
+            RubricCriterion targetCriterion, List<Map<String, String>> errors) {
+        if (!errors.isEmpty() || fwCriterionId == null) {
+            return;
+        }
+        String fwCodeStr = fields.frameworkCriterionCode();
+        if (targetCriterion == null) {
+            if (!run.fwCriterionIdsInFile().add(fwCriterionId)) {
+                errors.add(error("frameworkCriterionCode", "Bị trùng Mã Khung tiêu chuẩn tham chiếu '" + fwCodeStr + "' ngay trong file Excel."));
+            } else {
+                RubricCriterion holder = run.existingByFwCriterionId().get(fwCriterionId);
+                if (holder != null) {
+                    errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fwCodeStr
+                            + "' đã được gán cho tiêu chí khác (mã: " + holder.getCode() + ") trong phiên bản này."));
+                }
+            }
+        } else if (!fwCriterionId.equals(targetCriterion.getFrameworkCriterionId())) {
+            errors.add(error("frameworkCriterionCode", "Không thể thay đổi Khung tiêu chuẩn tham chiếu của tiêu chí '"
+                    + safeCode + "' đã tồn tại (Mã Khung tiêu chuẩn tham chiếu không được phép sửa sau khi tạo)."));
+        }
+    }
+
+    private static RubricCriterionExamples parseExamples(String examplesStr, List<Map<String, String>> errors) {
+        if (examplesStr == null || examplesStr.isBlank()) {
+            return null;
+        }
+        try {
+            List<String> rawExamples = Arrays.stream(examplesStr.split(";"))
+                    .map(s -> s.trim())
+                    .filter(s -> !s.isBlank())
+                    .toList();
+            if (rawExamples.isEmpty()) {
+                return null;
+            }
+            return new RubricCriterionExamples(rawExamples.stream()
+                    .map(exampleText -> new RubricCriterionExample(exampleText, exampleText, BigDecimal.ZERO))
+                    .toList());
+        } catch (Exception e) {
+            errors.add(error("examples", "Dữ liệu ví dụ không hợp lệ (Hãy phân cách các ví dụ bằng dấu ;). Lỗi: " + e.getMessage()));
+            return null;
+        }
+    }
+
+    private static ParsedNumbers parseNumbers(RowFields fields, Set<Integer> ordersInFile, List<Map<String, String>> errors) {
+        if (!errors.isEmpty()) {
+            return ParsedNumbers.DEFAULT;
+        }
+        try {
+            BigDecimal weight = parseWeightFraction(trimOrEmpty(fields.weight()), errors);
+            BigDecimal minScore = new BigDecimal(trimOrEmpty(fields.minScore()));
+            BigDecimal maxScore = new BigDecimal(trimOrEmpty(fields.maxScore()));
+            if (minScore.compareTo(maxScore) > 0) errors.add(error("minScore", "Điểm sàn không được lớn hơn điểm trần."));
+            int order = parseOrder(trimOrEmpty(fields.order()), ordersInFile, errors);
+            return new ParsedNumbers(weight, minScore, maxScore, order, parseIsRequired(fields.required()));
+        } catch (NumberFormatException e) {
+            errors.add(error("general", "Dữ liệu Trọng số/Điểm/Thứ tự không đúng định dạng số."));
+            return ParsedNumbers.DEFAULT;
+        }
+    }
+
+    // The Excel file holds a PERCENTAGE (20), the DB column holds a FRACTION (0.2).
+    //
+    // Converted right here to match the manual entry screen: users work in percentages on both paths,
+    // while the publishing gate (ChangeSchoolRubricVersionStatusUseCase) demands a total of exactly 1.
+    // Without the division a file of 5 criteria x 20 reaches the DB as a total of 100, create/update
+    // still pass because they only check >= 0, and it blows up only at publish time.
+    //
+    // Divide by 100 with scale 6: 20 -> 0.200000, enough room for fractional weights such as 12.5%
+    // without losing digits.
+    private static BigDecimal parseWeightFraction(String weightText, List<Map<String, String>> errors) {
+        BigDecimal weightPercent = new BigDecimal(weightText);
+        if (weightPercent.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
+        return weightPercent.divide(ONE_HUNDRED, 6, RoundingMode.HALF_UP);
+    }
+
+    private static int parseOrder(String orderText, Set<Integer> ordersInFile, List<Map<String, String>> errors) {
+        int order = Integer.parseInt(orderText.trim());
+        if (order <= 0) errors.add(error("order", "Thứ tự phải lớn hơn 0."));
+        if (!ordersInFile.add(order)) {
+            errors.add(error("order", "Bị trùng Thứ tự " + order + " ngay trong file Excel."));
+        }
+        return order;
+    }
+
+    private static boolean parseIsRequired(String requiredText) {
+        if (requiredText == null || requiredText.isBlank()) {
+            return true;
+        }
+        String r = requiredText.trim().toLowerCase();
+        return r.equals("true") || r.equals("yes") || r.equals("1") || r.equals("có") || r.equals("co");
+    }
+
+    private static void addScoreRangeError(RubricVersion version, ParsedNumbers numbers, String safeCode,
+            List<Map<String, String>> errors) {
+        if (!errors.isEmpty()) {
+            return;
+        }
+        try {
+            ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                    numbers.minScore(), numbers.maxScore(), safeCode);
+        } catch (IllegalArgumentException e) {
+            errors.add(error("minScore", e.getMessage()));
+        }
+    }
+
+    private RubricCriterion applyToCriterion(UUID versionId, ValidatedRow validated) {
+        RowFields fields = validated.fields();
+        ParsedNumbers numbers = validated.numbers();
+        RubricCriterion targetCriterion = validated.targetCriterion();
+        String safeNameStr = fields.name() == null ? "" : fields.name().trim();
+        if (targetCriterion == null) {
+            return RubricCriterion.create(
+                    versionId, validated.fwCriterionId(), validated.safeCode(), safeNameStr, fields.description(), validated.examples(),
+                    numbers.weight(), numbers.minScore(), numbers.maxScore(), numbers.order(), numbers.isRequired());
+        }
+        // frameworkCriterionId is deliberately not set: for an existing criterion the referenced framework
+        // criterion is immutable, exactly how "code" is protected from edits after creation.
+        targetCriterion.setName(safeNameStr);
+        targetCriterion.setDescription(fields.description());
+        targetCriterion.setExamples(validated.examples());
+        targetCriterion.setWeight(numbers.weight());
+        targetCriterion.setMinScore(numbers.minScore());
+        targetCriterion.setMaxScore(numbers.maxScore());
+        targetCriterion.setOrder(numbers.order());
+        targetCriterion.setRequired(numbers.isRequired());
+        return targetCriterion;
+    }
+
+    private void saveCriterions(List<RubricCriterion> criterionsToSave) {
+        if (criterionsToSave.isEmpty()) {
+            return;
+        }
+        try {
+            rubricCriterionRepository.saveAll(criterionsToSave);
+        } catch (DataConflictException e) {
+            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp trong phiên bản Rubric này.", e);
+        }
     }
 
     private static Map<String, String> error(String field, String message) {

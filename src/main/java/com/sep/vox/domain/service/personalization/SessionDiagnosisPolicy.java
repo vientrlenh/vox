@@ -43,36 +43,7 @@ public final class SessionDiagnosisPolicy {
             int helpRequestCount,
             int longPauseCount) {
         if (normalizedScore == null) {
-            // Đây là đường CHÍNH, không phải ngoại lệ hiếm.
-            //
-            // Phương thức này chỉ được gọi khi status = ABANDONED, mà ABANDONED <=>
-            // gradedSeconds == 0 <=> học sinh chưa nói lượt nào <=> chưa có bản chấm nào <=>
-            // normalizedScore == null. Nói cách khác: nhánh này chạy MỌI lần, còn hai luật
-            // theo điểm bên dưới thì không bao giờ. Trả thẳng UNKNOWN như trước đồng nghĩa
-            // với việc abandon_diagnosis vĩnh viễn là UNKNOWN, BORED không bao giờ xuất hiện,
-            // và vì InterestVectorService chỉ ghi tín hiệu khi completed HOẶC BORED nên phiên
-            // bỏ dở KHÔNG BAO GIỜ dạy được gì cho hồ sơ sở thích. Kiểm trên DB 2026-08-05:
-            // toàn hệ 0 phiên BORED, 0 phiên TOO_HARD.
-            //
-            // Không có điểm nhưng VẪN CÒN hành vi -- và hai con số này đo được kể cả khi học
-            // sinh chưa mở miệng, vì longPauseCount đếm sau lúc AI đọc xong câu hỏi.
-            if (helpRequestCount >= 1 || longPauseCount >= 2) {
-                // Đã thử: bấm xin gợi ý, hoặc ngồi im hết 10 giây qua hai câu.
-                return "TOO_HARD";
-            }
-            if (longPauseCount == 0) {
-                // Thoát trước cả khi im đủ 10 giây một lần: không có dấu hiệu bí nào, mà vẫn
-                // không muốn tiếp. Cùng dạng lập luận với luật điểm cao bên dưới -- "không
-                // vất vả mà vẫn bỏ".
-                //
-                // Chấp nhận rủi ro dương giả (có việc đột xuất, bấm nhầm): tín hiệu chỉ 0,15
-                // và EMA α = 0,3 nên một lần sai kéo điểm từ 0,50 xuống 0,395, vài buổi sau
-                // là hồi. Đổi lại, đây là đường DUY NHẤT để phiên bỏ dở nói được gì.
-                return "BORED";
-            }
-            // Đúng một lần im 10 giây rồi thoát: một điểm dữ liệu, hai cách giải thích ngang
-            // nhau. Không đoán.
-            return "UNKNOWN";
+            return diagnoseWithoutScore(helpRequestCount, longPauseCount);
         }
         if (normalizedScore >= 0.65
                 && helpRequestCount == 0
@@ -83,6 +54,42 @@ public final class SessionDiagnosisPolicy {
                 || helpRequestCount >= 1
                 || longPauseCount >= 2) {
             return "TOO_HARD";
+        }
+        return "UNKNOWN";
+    }
+
+    /**
+     * This is the MAIN path, not a rare exception.
+     *
+     * <p>{@link #diagnose} is only called when status = ABANDONED, and ABANDONED <=> gradedSeconds == 0
+     * <=> the student has not spoken a single turn <=> there is no grading yet <=> normalizedScore ==
+     * null. In other words: this branch runs EVERY time, while the two score-based rules in
+     * {@code diagnose} never do. Returning UNKNOWN straight away, as before, meant abandon_diagnosis
+     * was UNKNOWN forever, BORED never appeared, and since InterestVectorService only records a signal
+     * when the session is completed OR BORED, an abandoned session NEVER taught the interest profile
+     * anything. Checked on the DB on 2026-08-05: the whole system had 0 BORED sessions and 0 TOO_HARD
+     * sessions.
+     *
+     * <p>There is no score but there IS still behaviour -- and both numbers are measurable even when
+     * the student has not opened their mouth, because longPauseCount counts after the AI has finished
+     * reading the question.
+     *
+     * <p>Having tried (asked for a hint, or sat silent for the full 10 seconds across two questions)
+     * means TOO_HARD. Leaving before even one full 10-second silence shows no sign of being stuck yet
+     * still not wanting to continue; it follows the same reasoning as the high-score rule in
+     * {@code diagnose} -- "not struggling yet still quits" -- and means BORED. The false-positive risk
+     * (an urgent errand, a mis-tap) is accepted: the signal is only 0.15 and with EMA alpha = 0.3 one
+     * wrong call moves the score from 0.50 to 0.395, which recovers within a few sessions. In return
+     * this is the ONLY path through which an abandoned session can say anything. Exactly one 10-second
+     * silence and then leaving is one data point with two equally likely explanations, so it is not
+     * guessed: UNKNOWN.
+     */
+    private static String diagnoseWithoutScore(int helpRequestCount, int longPauseCount) {
+        if (helpRequestCount >= 1 || longPauseCount >= 2) {
+            return "TOO_HARD";
+        }
+        if (longPauseCount == 0) {
+            return "BORED";
         }
         return "UNKNOWN";
     }

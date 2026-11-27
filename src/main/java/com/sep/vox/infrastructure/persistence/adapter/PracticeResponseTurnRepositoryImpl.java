@@ -22,16 +22,10 @@ public class PracticeResponseTurnRepositoryImpl implements PracticeResponseTurnR
 
     @Override
     public TurnWrite save(
-            UUID practiceResponseId,
-            int turnOrder,
-            String turnType,
-            String promptText,
-            String audioUrl,
-            String transcript,
-            int durationSeconds,
-            String wordFeedbackJson,
-            Double turnScore) {
-        Optional<PracticeResponseTurnJpaEntity> existing = repository.findByPracticeResponseIdAndTurnOrder(practiceResponseId, turnOrder);
+            UUID practiceResponseId, int turnOrder, String turnType, String promptText, String audioUrl,
+            String transcript, int durationSeconds, String wordFeedbackJson, Double turnScore) {
+        Optional<PracticeResponseTurnJpaEntity> existing =
+            repository.findByPracticeResponseIdAndTurnOrder(practiceResponseId, turnOrder);
         if (existing.isPresent()) {
             // Same turn already recorded -- a Python retry after a lost HTTP response, not a
             // real second turn (turn_order is client-driven and monotonic per question).

@@ -95,9 +95,9 @@ class MethodSizeConventionTests {
             assertThat(stream).as(EXEMPTIONS_RESOURCE + " must exist").isNotNull();
             String content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             return content.lines()
-                .map(String::strip)
+                .map(s -> s.strip())
                 .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-                .collect(Collectors.toMap(line -> line, line -> 1, Integer::sum, TreeMap::new));
+                .collect(Collectors.toMap(line -> line, line -> 1, (a, b) -> Integer.sum(a, b), TreeMap::new));
         }
     }
 

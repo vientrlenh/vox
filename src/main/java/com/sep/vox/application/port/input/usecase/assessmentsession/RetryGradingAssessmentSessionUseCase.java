@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentCandidateResult;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,7 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 @Service
 @RequiredArgsConstructor
-public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradingAssessmentSessionCommand, java.util.UUID> {
+public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradingAssessmentSessionCommand, UUID> {
 
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
@@ -36,7 +37,7 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
 
     @Override
     @Transactional
-    public java.util.UUID execute(RetryGradingAssessmentSessionCommand input) {
+    public UUID execute(RetryGradingAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
@@ -45,6 +46,14 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
 
         moderationAccessService.authorize(assessment, candidate);
+        requireRetryable(assessment, session, candidate);
+        countSchoolRegradeAttempt(session);
+
+        submitAssessmentSessionUseCase.execute(new SubmitAssessmentSessionCommand(session.getId()));
+        return session.getId();
+    }
+
+    private void requireRetryable(Assessment assessment, AssessmentSession session, AssessmentCandidate candidate) {
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
             throw new IllegalArgumentException("Kỳ thi đã công bố điểm, không thể chấm lại");
         }
@@ -59,15 +68,19 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
         if (session.getStatus() != AssessmentSessionStatus.GRADING_FAILED && !isUnblockedInvalidRetry) {
             throw new IllegalArgumentException("Chỉ có thể chấm lại phiên thi đang lỗi chấm");
         }
+    }
 
-        // Định mức chỉ áp cho phía TRƯỜNG, và chỉ cho lượt chấm lại thật (phiên đang lỗi chấm).
-        //
-        // Quản trị hệ thống không tiêu vào định mức này: lượt của họ là lượt khắc phục sự cố nền
-        // tảng, và nếu nó đốt định mức của trường thì một lần AI hỏng hàng loạt sẽ ép hàng trăm bài
-        // sang chấm tay vì lỗi của chính mình. Cùng lý do sẽ áp cho job tự chạy lại sau này.
-        //
-        // Nhánh INVALID được dỡ cấm KHÔNG tính: đó là lần chấm AI ĐẦU TIÊN của phiên, không phải
-        // chấm lại sau khi hỏng.
+    /**
+     * The limit applies only to the SCHOOL side, and only to a real regrade (a session in grading failure).
+     *
+     * <p>The system administrator does not spend this limit: their run is a fix for a platform incident, and if it
+     * burned the limit of the school, one mass AI failure would force hundreds of attempts to manual grading through
+     * no fault of the school. The same reason will apply to the automatic re-run job later.
+     *
+     * <p>The unblocked INVALID branch does NOT count: that is the FIRST AI grading of the session, not a regrade
+     * after a failure.
+     */
+    private void countSchoolRegradeAttempt(AssessmentSession session) {
         boolean schoolInitiated = !userContextPort.isSystemAdmin();
         if (schoolInitiated && session.getStatus() == AssessmentSessionStatus.GRADING_FAILED) {
             if (!session.canSchoolRequestAiRegrade()) {
@@ -78,8 +91,5 @@ public class RetryGradingAssessmentSessionUseCase implements IUseCase<RetryGradi
             session.setSchoolRegradeCount(session.getSchoolRegradeCount() + 1);
             assessmentSessionRepository.save(session);
         }
-
-        submitAssessmentSessionUseCase.execute(new SubmitAssessmentSessionCommand(session.getId()));
-        return session.getId();
     }
 }

@@ -54,9 +54,9 @@ public class GradeLevelBandScopeGuardService {
     private final SchoolClassRepository schoolClassRepository;
 
     /**
-     * Ném IllegalArgumentException nếu bậc mục tiêu vượt trần của khối tương ứng.
+     * Throws IllegalArgumentException if the target band exceeds the ceiling of the corresponding grade level.
      *
-     * <p>Truyền cả ba cột phạm vi đúng như policy đang dựng; chỉ một trong ba khác null.
+     * <p>Pass all three scope columns exactly as the policy is being built; only one of the three is non-null.
      */
     public void assertWithinScope(UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId,
             UUID frameworkVersionId, FrameworkResultBand targetBand) {
@@ -101,49 +101,62 @@ public class GradeLevelBandScopeGuardService {
 
             UUID resolvedGradeLevelId = resolveGradeLevelId(gradeLevelId, schoolGradeId, schoolClassId);
             if (resolvedGradeLevelId == null) {
-                // Không suy được khối -> không có trần nào để so. Chuỗi Lớp -> Khối năm học -> Khối
-                // bị đứt là bất thường về dữ liệu (lớp trỏ tới năm học đã biến mất), nên kêu to.
-                if (schoolClassId != null || schoolGradeId != null) {
-                    log.warn(
-                        "Không suy được Khối từ phạm vi (schoolClassId={}, schoolGradeId={}) -- bỏ qua"
-                            + " kiểm trần bậc mục tiêu. Dữ liệu phân cấp lớp/năm học đang không nhất quán.",
-                        schoolClassId, schoolGradeId
-                    );
-                }
+                warnGradeLevelNotResolved(schoolClassId, schoolGradeId);
                 return;
             }
 
+            Optional<FrameworkResultBand> effectiveCeiling =
+                    findEffectiveCeiling(resolvedGradeLevelId, frameworkVersionId, schoolClassId);
+            if (effectiveCeiling.isPresent() && targetBand.getOrder() > effectiveCeiling.get().getOrder()) {
+                throw new IllegalArgumentException(
+                        buildMessage(resolvedGradeLevelId, targetBand, effectiveCeiling.get()));
+            }
+        }
+
+        private void warnGradeLevelNotResolved(UUID schoolClassId, UUID schoolGradeId) {
+            // The grade level cannot be derived -> there is no ceiling to compare against. A broken Class -> School grade -> Grade level
+            // chain is abnormal data (a class pointing to a school year that has disappeared), so shout.
+            if (schoolClassId != null || schoolGradeId != null) {
+                log.warn(
+                    "Không suy được Khối từ phạm vi (schoolClassId={}, schoolGradeId={}) -- bỏ qua"
+                        + " kiểm trần bậc mục tiêu. Dữ liệu phân cấp lớp/năm học đang không nhất quán.",
+                    schoolClassId, schoolGradeId
+                );
+            }
+        }
+
+        private Optional<FrameworkResultBand> findEffectiveCeiling(
+                UUID resolvedGradeLevelId, UUID frameworkVersionId, UUID schoolClassId) {
             Optional<GradeLevelBandScope> scope = findScope(resolvedGradeLevelId, frameworkVersionId);
             if (scope.isEmpty()) {
-                // CHỦ ĐÍCH mở: cặp (khối, phiên bản khung) chưa khai trần thì không chặn gì cả.
-                // Chặn hết sẽ làm đứng mọi luồng tạo policy ngay ngày đầu, vì V42 không seed dòng
-                // trần nào. Đổi sang chặn mặc định chỉ cần sửa đúng nhánh này.
+                // DELIBERATELY open: a (grade level, framework version) pair with no declared ceiling blocks nothing.
+                // Blocking everything would stall every policy-creation flow on day one, because V42 seeds no
+                // ceiling row. Switching to block-by-default only needs a change in exactly this branch.
                 log.debug(
                     "Khối {} chưa cấu hình trần bậc cho phiên bản khung {} -- không áp trần.",
                     resolvedGradeLevelId, frameworkVersionId
                 );
-                return;
+                return Optional.empty();
             }
+            return ceilingOfScope(scope.get(), resolvedGradeLevelId, frameworkVersionId, schoolClassId);
+        }
 
-            Optional<FrameworkResultBand> centralizeCapBand = findBand(scope.get().getDefaultTargetBandId());
-            Optional<FrameworkResultBand> classTestCapBand = findBand(scope.get().getHardMaxBandId());
+        private Optional<FrameworkResultBand> ceilingOfScope(GradeLevelBandScope scope,
+                UUID resolvedGradeLevelId, UUID frameworkVersionId, UUID schoolClassId) {
+            Optional<FrameworkResultBand> centralizeCapBand = findBand(scope.getDefaultTargetBandId());
+            Optional<FrameworkResultBand> classTestCapBand = findBand(scope.getHardMaxBandId());
             if (centralizeCapBand.isEmpty() || classTestCapBand.isEmpty()) {
-                // FK trong V42 lẽ ra không cho phép xảy ra; nếu vẫn xảy ra thì cấu hình hỏng chứ
-                // không phải người dùng sai -- không chặn họ, nhưng phải để lại dấu vết.
+                // The FK in V42 should make this impossible; if it still happens the configuration is broken and
+                // the user is not at fault -- do not block them, but leave a trace.
                 log.error(
                     "Trần bậc của khối {} (phiên bản khung {}) trỏ tới bậc không tồn tại"
                         + " (centralize={}, classTest={}).",
                     resolvedGradeLevelId, frameworkVersionId,
-                    scope.get().getDefaultTargetBandId(), scope.get().getHardMaxBandId()
+                    scope.getDefaultTargetBandId(), scope.getHardMaxBandId()
                 );
-                return;
+                return Optional.empty();
             }
-
-            FrameworkResultBand effectiveCeiling =
-                    effectiveCeilingBand(schoolClassId, centralizeCapBand.get(), classTestCapBand.get());
-            if (targetBand.getOrder() > effectiveCeiling.getOrder()) {
-                throw new IllegalArgumentException(buildMessage(resolvedGradeLevelId, targetBand, effectiveCeiling));
-            }
+            return Optional.of(effectiveCeilingBand(schoolClassId, centralizeCapBand.get(), classTestCapBand.get()));
         }
 
         /**

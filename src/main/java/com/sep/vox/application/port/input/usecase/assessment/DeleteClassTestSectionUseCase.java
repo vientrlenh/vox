@@ -13,19 +13,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.assessment.DeleteClassTestSectionCommand;
+import com.sep.vox.application.port.input.service.ClassTestDirectEditGuard;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentDto;
 import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
-import com.sep.vox.domain.model.assessment.AssessmentKind;
-import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
-import com.sep.vox.domain.model.assessment.AssessmentStatus;
-import com.sep.vox.domain.repository.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.AssessmentPaperItemRepository;
 import com.sep.vox.domain.repository.AssessmentPaperRepository;
 import com.sep.vox.domain.repository.AssessmentPaperSectionRepository;
@@ -36,7 +32,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSectionCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
-    private final AssessmentMemberRepository assessmentMemberRepository;
+    private final ClassTestDirectEditGuard classTestDirectEditGuard;
     private final AssessmentPaperRepository assessmentPaperRepository;
     private final AssessmentPaperSectionRepository assessmentPaperSectionRepository;
     private final AssessmentPaperItemRepository assessmentPaperItemRepository;
@@ -50,44 +46,65 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
-            throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
-        }
-        if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-        if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
-        }
-        if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
-            throw new IllegalArgumentException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
-        }
-        requireNoAttachedBlueprint(assessment);
+        classTestDirectEditGuard.requireDirectlyEditable(assessment, currentUserId);
 
-        // Suy mã đề từ chính section được xoá: bài trên lớp giờ có thể có nhiều mã đề, đoán "đề đầu
-        // tiên" là xoá nhầm section của mã đề khác.
+        // The paper is derived from the section being deleted: a class test can now have several papers,
+        // and guessing "the first paper" would delete a section of another paper by mistake.
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.findById(input.sectionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy section"));
+        AssessmentPaper paper = requirePaperOfAssessment(paperSection, assessment);
+        List<AssessmentPaperSection> allPaperSections = requireMoreThanOneSection(paper);
+
+        boolean shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
+
+        deleteSectionWithItems(paperSection);
+        List<AssessmentPaperSection> remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
+        renumberSections(remainingPaperSections);
+        reweightRemainingSections(shouldRebalanceAfterDelete, paper, remainingPaperSections);
+
+        Assessment saved = assessmentRepository.save(assessment);
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentDtoMapper.toDto(saved);
+    }
+
+    private void reweightRemainingSections(
+            boolean shouldRebalance,
+            AssessmentPaper paper,
+            List<AssessmentPaperSection> remainingPaperSections) {
+        if (shouldRebalance) {
+            rebalanceSectionWeights(paper.getId());
+        } else {
+            normalizeSectionWeights(remainingPaperSections);
+        }
+    }
+
+    private AssessmentPaper requirePaperOfAssessment(AssessmentPaperSection paperSection, Assessment assessment) {
         AssessmentPaper paper = assessmentPaperRepository.findById(paperSection.getPaperId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
         if (!paper.getAssessmentId().equals(assessment.getId())) {
             throw new ResourceNotFoundException("Không tìm thấy section");
         }
+        return paper;
+    }
+
+    private List<AssessmentPaperSection> requireMoreThanOneSection(AssessmentPaper paper) {
         List<AssessmentPaperSection> allPaperSections = assessmentPaperSectionRepository.findByPaperId(paper.getId()).stream()
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
         if (allPaperSections.size() <= 1) {
             throw new IllegalArgumentException("Mã đề phải có ít nhất 1 section");
         }
+        return allPaperSections;
+    }
 
-        boolean shouldRebalanceAfterDelete = ClassTestSectionWeightPolicy.looksAutoWeighted(allPaperSections);
-
+    private void deleteSectionWithItems(AssessmentPaperSection paperSection) {
         for (AssessmentPaperItem item : assessmentPaperItemRepository.findBySectionId(paperSection.getId())) {
             assessmentPaperItemRepository.deleteById(item.getId());
         }
         assessmentPaperSectionRepository.deleteById(paperSection.getId());
+    }
 
-        List<AssessmentPaperSection> remainingPaperSections = allPaperSections.stream().filter(item -> !item.getId().equals(paperSection.getId())).toList();
+    private void renumberSections(List<AssessmentPaperSection> remainingPaperSections) {
         for (int i = 0; i < remainingPaperSections.size(); i++) {
             AssessmentPaperSection remaining = remainingPaperSections.get(i);
             int newOrder = i + 1;
@@ -96,23 +113,8 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             }
             assessmentPaperSectionRepository.save(remaining);
         }
-        if (shouldRebalanceAfterDelete) {
-            rebalanceSectionWeights(paper.getId());
-        } else {
-            normalizeSectionWeights(remainingPaperSections);
-        }
-
-        Assessment saved = assessmentRepository.save(assessment);
-        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentDtoMapper.toDto(saved);
     }
 
-    private void requireNoAttachedBlueprint(Assessment assessment) {
-        if (assessment.getBlueprintId() != null) {
-            throw new IllegalArgumentException(
-                "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
-        }
-    }
     private void rebalanceSectionWeights(UUID paperId) {
         List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paperId).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))

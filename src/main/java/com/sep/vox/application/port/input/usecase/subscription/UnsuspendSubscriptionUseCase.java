@@ -43,31 +43,40 @@ public class UnsuspendSubscriptionUseCase implements IUseCase<UnsuspendSubscript
     @Override
     @Transactional
     public UUID execute(UnsuspendSubscriptionCommand input) {
-        SchoolSubscription subscription = schoolSubscriptionRepository.findById(input.subscriptionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
-        if (subscription.getStatus() != SchoolSubscriptionStatus.SUSPENDED) {
-            throw new IllegalArgumentException("Gói đăng ký này hiện không bị đình chỉ");
-        }
+        SchoolSubscription subscription = requireSuspended(input.subscriptionId());
 
         Instant now = Instant.now();
         UUID actorId = userContextPort.getCurrentAuthenticatedUserId();
-        // Ghi chú không bắt buộc: gỡ đình chỉ là trả lại quyền, không phải tước đi, nên không cần
-        // biện minh như lúc đình chỉ. CHECK ở DB cũng chỉ ép reason với SUSPENDED.
+        // The note is optional: lifting a suspension gives rights back rather than taking them away, so it does not need
+        // justifying the way suspending does. The DB CHECK also only forces a reason for SUSPENDED.
         String note = StringNormalization.trimAndCollapseSpaces(input.note());
 
-        // Ghi sổ TRƯỚC khi xóa ba cột suspended_*: sau lệnh save bên dưới thì lý do đình chỉ không
-        // còn ở đâu để mà chép lại nữa.
+        // Write the ledger BEFORE clearing the three suspended_* columns: after the save below the suspension reason is
+        // nowhere left to copy from.
         schoolSubscriptionEventRepository.save(SchoolSubscriptionEvent.unsuspended(
             subscription.getSchoolId(), subscription.getId(), actorId, note, now));
 
-        subscription.setStatus(SchoolSubscriptionStatus.ACTIVE);
-        subscription.setSuspendedAt(null);
-        subscription.setSuspendedReason(null);
-        subscription.setSuspendedBy(null);
-        SchoolSubscription saved = schoolSubscriptionRepository.save(subscription);
+        SchoolSubscription saved = clearSuspension(subscription);
 
         suspensionNotificationService.publishUnsuspended(saved.getId(), saved.getSchoolId(), now);
 
         return saved.getId();
+    }
+
+    private SchoolSubscription requireSuspended(UUID subscriptionId) {
+        SchoolSubscription subscription = schoolSubscriptionRepository.findById(subscriptionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
+        if (subscription.getStatus() != SchoolSubscriptionStatus.SUSPENDED) {
+            throw new IllegalArgumentException("Gói đăng ký này hiện không bị đình chỉ");
+        }
+        return subscription;
+    }
+
+    private SchoolSubscription clearSuspension(SchoolSubscription subscription) {
+        subscription.setStatus(SchoolSubscriptionStatus.ACTIVE);
+        subscription.setSuspendedAt(null);
+        subscription.setSuspendedReason(null);
+        subscription.setSuspendedBy(null);
+        return schoolSubscriptionRepository.save(subscription);
     }
 }

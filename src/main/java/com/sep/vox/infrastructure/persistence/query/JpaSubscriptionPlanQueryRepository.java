@@ -15,36 +15,40 @@ import jakarta.persistence.PersistenceContext;
 @Repository
 public class JpaSubscriptionPlanQueryRepository implements SubscriptionPlanQueryRepository {
 
+    /**
+     * Counts the NUMBER OF SCHOOLS in use, not the number of payments: a replaced plan (replacedByPlanId) gets a new
+     * id, so the payment history permanently stays on the old ARCHIVED plan -- the new plan would count 0 even if
+     * everybody buys it. Counting the schools in use, the number follows automatically when a school renews onto
+     * the new plan. A renewal is also not counted twice as it would be when counting transactions.
+     *
+     * <p>DISTINCT guards the case where a school accidentally has two ACTIVE rows on the same plan -- it still
+     * counts as one customer. Only s.status = ACTIVE counts: a SUSPENDED school has lost its right to use the
+     * service, so it is no longer evidence that the plan is popular.
+     *
+     * <p>ORDER BY must be EXHAUSTED down to a unique key (school count -> price -> id): if sorted only by school
+     * count then, at the start, plans with 1 school each would tie and Postgres would return an arbitrary order --
+     * the "most popular" label would jump to another plan on every page load. On a tie of school count the CHEAPER
+     * plan wins, then the one created earlier; id is uuidv7 so "id ASC" means "oldest first" and, being unique,
+     * it fixes the order completely.
+     *
+     * <p>JOIN (not LEFT JOIN) is deliberate: a plan with no school using it is dropped outright, and when nobody
+     * in the system has subscribed yet no plan is labelled.
+     */
+    private static final String MOST_POPULAR_PLAN_QUERY = """
+        SELECT p.id
+        FROM SubscriptionPlanJpaEntity p
+            JOIN SchoolSubscriptionJpaEntity s ON s.subscriptionPlanId = p.id
+        WHERE p.status = :planStatus AND s.status = :subscriptionStatus
+        GROUP BY p.id, p.priceVnd
+        ORDER BY COUNT(DISTINCT s.schoolId) DESC, p.priceVnd ASC, p.id ASC
+        """;
+
     @PersistenceContext
     private EntityManager em;
 
     @Override
     public Optional<UUID> findMostPopularPlanId() {
-        // Đếm SỐ TRƯỜNG đang dùng, không đếm số lần thanh toán: gói được thay thế (replacedByPlanId)
-        // sinh ra một id mới, nên lịch sử thanh toán vĩnh viễn nằm ở gói cũ đã ARCHIVED -- gói mới dù
-        // ai cũng mua vẫn đếm ra 0. Còn đếm trường đang dùng thì khi gia hạn sang gói mới, con số tự
-        // chuyển theo. Gia hạn cũng không bị đếm hai lần như khi đếm giao dịch.
-        //
-        // DISTINCT phòng trường hợp một trường lỡ có hai dòng ACTIVE trên cùng gói -- vẫn tính là một
-        // khách. Chỉ tính s.status = ACTIVE: trường bị SUSPENDED đã mất quyền dùng nên không còn là
-        // bằng chứng cho việc gói đó đang được ưa chuộng.
-        //
-        // ORDER BY phải VÉT CẠN tới mức duy nhất (số trường -> giá -> id): nếu chỉ sắp theo số trường
-        // thì lúc mới chạy, các gói cùng có 1 trường sẽ hòa nhau và Postgres trả về thứ tự tùy ý --
-        // nhãn "phổ biến nhất" nhảy sang gói khác sau mỗi lần tải trang. Hòa số trường thì ưu tiên gói
-        // RẺ HƠN, rồi tới gói ra đời trước; id là uuidv7 nên "id ASC" chính là "cũ nhất trước" và vì
-        // nó duy nhất nên thứ tự chốt hoàn toàn ở đây.
-        //
-        // JOIN (không phải LEFT JOIN) là cố ý: gói chưa có trường nào dùng bị loại thẳng, và khi cả
-        // hệ thống chưa ai đăng ký thì không gói nào được gắn nhãn.
-        return em.createQuery("""
-            SELECT p.id
-            FROM SubscriptionPlanJpaEntity p
-                JOIN SchoolSubscriptionJpaEntity s ON s.subscriptionPlanId = p.id
-            WHERE p.status = :planStatus AND s.status = :subscriptionStatus
-            GROUP BY p.id, p.priceVnd
-            ORDER BY COUNT(DISTINCT s.schoolId) DESC, p.priceVnd ASC, p.id ASC
-        """, UUID.class)
+        return em.createQuery(MOST_POPULAR_PLAN_QUERY, UUID.class)
             .setParameter("planStatus", SubscriptionPlanStatus.ACTIVE.name())
             .setParameter("subscriptionStatus", SchoolSubscriptionStatus.ACTIVE.name())
             .setMaxResults(1)

@@ -50,11 +50,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
     @Override
     @Transactional
     public List<AssessmentCandidateDto> execute(UpdateAssessmentCandidatesAttendanceCommand input) {
-        AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
-        if (schedule.getStatus() != null && !schedule.getStatus().allowsAttendance()) {
-            throw new IllegalArgumentException("Không thể điểm danh ca thi đã bị huỷ, dời hoặc xoá");
-        }
+        AssessmentSchedule schedule = requireAttendableSchedule(input.scheduleId());
         List<AssessmentCandidate> candidates = assessmentCandidateRepository.findByScheduleId(schedule.getId());
         if (candidates.isEmpty()) {
             return List.of();
@@ -64,23 +60,54 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của ca thi"));
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        requireAttendanceAccess(assessment, schedule, currentUserId);
+
+        Instant now = Instant.now();
+        requireInsideAttendanceWindow(schedule, now);
+        Set<UUID> absentIds = requireValidAbsentIds(input, candidates);
+
+        List<AssessmentCandidate> changed = markAttendance(candidates, absentIds, now, currentUserId);
+        if (changed.isEmpty()) {
+            return List.of();
+        }
+        return AssessmentCandidateDtoMapper.toDtoList(assessmentCandidateRepository.saveAll(changed));
+    }
+
+    private AssessmentSchedule requireAttendableSchedule(UUID scheduleId) {
+        AssessmentSchedule schedule = assessmentScheduleRepository.findById(scheduleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+        if (schedule.getStatus() != null && !schedule.getStatus().allowsAttendance()) {
+            throw new IllegalArgumentException("Không thể điểm danh ca thi đã bị huỷ, dời hoặc xoá");
+        }
+        return schedule;
+    }
+
+    private void requireAttendanceAccess(Assessment assessment, AssessmentSchedule schedule, UUID currentUserId) {
         if (!hasAttendanceAccess(assessment, schedule.getId(), currentUserId)) {
             throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
         }
+    }
 
-        Instant now = Instant.now();
+    private void requireInsideAttendanceWindow(AssessmentSchedule schedule, Instant now) {
         Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
         Instant windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
             throw new IllegalArgumentException("Chỉ được điểm danh trong khoảng 30 phút trước giờ bắt đầu đến khi kết thúc ca thi");
         }
+    }
 
+    private Set<UUID> requireValidAbsentIds(
+        UpdateAssessmentCandidatesAttendanceCommand input, List<AssessmentCandidate> candidates) {
         Set<UUID> absentIds = new HashSet<>(input.candidateIds() == null ? List.<UUID>of() : input.candidateIds());
         Set<UUID> scheduleCandidateIds = candidates.stream().map(candidate -> candidate.getId()).collect(Collectors.toSet());
         if (!scheduleCandidateIds.containsAll(absentIds)) {
             throw new IllegalArgumentException("Danh sách thí sinh điểm danh không hợp lệ");
         }
+        return absentIds;
+    }
 
+    private List<AssessmentCandidate> markAttendance(
+        List<AssessmentCandidate> candidates, Set<UUID> absentIds, Instant now, UUID currentUserId) {
         List<AssessmentCandidate> changed = new ArrayList<AssessmentCandidate>();
         for (AssessmentCandidate candidate : candidates) {
             boolean shouldBeAbsent = absentIds.contains(candidate.getId());
@@ -100,11 +127,7 @@ public class UpdateAssessmentCandidatesAttendanceUseCase
             candidate.setUpdatedBy(currentUserId);
             changed.add(candidate);
         }
-
-        if (changed.isEmpty()) {
-            return List.of();
-        }
-        return AssessmentCandidateDtoMapper.toDtoList(assessmentCandidateRepository.saveAll(changed));
+        return changed;
     }
 
     private boolean hasAttendanceAccess(Assessment assessment, UUID scheduleId, UUID currentUserId) {

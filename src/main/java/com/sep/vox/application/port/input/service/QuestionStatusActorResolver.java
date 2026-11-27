@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.sep.vox.application.common.RoleConstant;
+import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
@@ -39,5 +40,16 @@ public class QuestionStatusActorResolver {
                 .anyMatch(role -> RoleConstant.SCHOOL_ADMIN_ROLE.equals(role.roleCode()));
 
         return new QuestionStatusTransition.Actor(currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
+    }
+
+    /**
+     * Resolves the caller for a listing: everyone except a system admin must belong to a school.
+     */
+    public QuestionStatusTransition.Actor resolveForListing() {
+        QuestionStatusTransition.Actor actor = resolve();
+        if (!actor.systemAdmin() && actor.schoolId() == null) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+        return actor;
     }
 }

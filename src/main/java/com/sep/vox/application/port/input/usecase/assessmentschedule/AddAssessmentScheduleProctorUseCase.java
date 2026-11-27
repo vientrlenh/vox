@@ -2,6 +2,8 @@ package com.sep.vox.application.port.input.usecase.assessmentschedule;
 
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
+import java.util.UUID;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,26 +50,30 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
         assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
-        // Giám thị phải là school_user vai trò TEACHER cùng trường với bài kiểm tra.
-        if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), input.teacherId())) {
-            throw new IllegalArgumentException("Giáo viên không thuộc trường của bài kiểm tra");
-        }
-        boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(input.teacherId()).stream()
-            .anyMatch(role -> SchoolRoleCodes.TEACHER.equals(role.roleCode()));
-        if (!isTeacher) {
-            throw new IllegalArgumentException("Người dùng không phải là giáo viên");
-        }
+        requireTeacherOfAssessmentSchool(assessment, input.teacherId());
 
         if (assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(schedule.getId(), input.teacherId())) {
             throw new ResourceDuplicatedException("Giám thị đã được phân công cho ca này");
         }
 
-        // Loại chính ca này khỏi phép kiểm tra: kiểm tra trùng ngay bên trên đã lo trường hợp đó,
-        // ở đây chỉ hỏi giáo viên có đang bận ở ca thi nào khác không (kể cả kỳ thi khác).
+        // Exclude this session itself from the check: the duplicate check right above already covers that case,
+        // here we only ask whether the teacher is busy in any other session (including other assessments).
         assessmentScheduleProctorConflictValidator.requireTeacherFree(
             input.teacherId(), schedule.getStartDate(), schedule.getEndDate(), schedule.getId());
 
         AssessmentScheduleProctor proctor = AssessmentScheduleProctor.assigned(schedule.getId(), input.teacherId());
         return AssessmentScheduleProctorDtoMapper.toDto(assessmentScheduleProctorRepository.save(proctor));
+    }
+
+    private void requireTeacherOfAssessmentSchool(Assessment assessment, UUID teacherId) {
+        // The proctor must be a school_user with the TEACHER role in the same school as the assessment.
+        if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), teacherId)) {
+            throw new IllegalArgumentException("Giáo viên không thuộc trường của bài kiểm tra");
+        }
+        boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(teacherId).stream()
+            .anyMatch(role -> SchoolRoleCodes.TEACHER.equals(role.roleCode()));
+        if (!isTeacher) {
+            throw new IllegalArgumentException("Người dùng không phải là giáo viên");
+        }
     }
 }

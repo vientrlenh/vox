@@ -217,6 +217,10 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             return;
         }
 
+        seedFromActiveFramework(language);
+    }
+
+    private void seedFromActiveFramework(SupportedLanguage language) {
         Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
             log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
@@ -231,6 +235,10 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             return;
         }
 
+        seedTemplates(language, framework, frameworkVersion);
+    }
+
+    private void seedTemplates(SupportedLanguage language, Framework framework, FrameworkVersion frameworkVersion) {
         // A rubric criterion must point to a real framework_criterion_id, so look it up by the framework's code instead
         // of guessing. Any missing code means the framework has been changed -- stopping is better than building a template
         // that lacks criteria and then cannot be published.
@@ -270,7 +278,23 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             Map<String, FrameworkCriterion> criterionByCode,
             Instant now) {
 
-        Rubric rubric = rubricRepository.save(Rubric.builder()
+        Rubric rubric = saveRubric(template, languageId, frameworkId);
+        RubricVersion version = saveRubricVersion(rubric, template, now);
+        List<RubricCriterion> criteria = buildCriteria(version, template, criterionByCode);
+
+        // Checked with exactly the rules of the real publish path, before writing. Wrong numbers in this file will break
+        // at startup -- loudly and early -- instead of silently producing a template that a school copies over and
+        // can never publish.
+        RubricScoringConsistencyValidator.assertPublishable(
+            RubricTotalScoreMethod.SUM, SCORING_SCALE_MIN, SCORING_SCALE_MAX, criteria);
+
+        rubricCriterionRepository.saveAll(criteria);
+
+        saveResultBands(version);
+    }
+
+    private Rubric saveRubric(TemplateSeed template, UUID languageId, UUID frameworkId) {
+        return rubricRepository.save(Rubric.builder()
                 .languageId(languageId)
                 .frameworkId(frameworkId)
                 .code(template.code())
@@ -280,8 +304,10 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
                 // SYSTEM requires school_id NULL -- chk_rubrics_owner_school_valid.
                 .schoolId(null)
                 .build());
+    }
 
-        RubricVersion version = rubricVersionRepository.save(RubricVersion.builder()
+    private RubricVersion saveRubricVersion(Rubric rubric, TemplateSeed template, Instant now) {
+        return rubricVersionRepository.save(RubricVersion.builder()
                 .rubricId(rubric.getId())
                 .version(1)
                 .code(template.code() + "-V1")
@@ -296,8 +322,11 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
                 .scoringScaleMax(SCORING_SCALE_MAX)
                 .totalScoreMethod(RubricTotalScoreMethod.SUM)
                 .build());
+    }
 
-        List<RubricCriterion> criteria = CRITERIA.stream()
+    private List<RubricCriterion> buildCriteria(
+            RubricVersion version, TemplateSeed template, Map<String, FrameworkCriterion> criterionByCode) {
+        return CRITERIA.stream()
             .map(seed -> RubricCriterion.builder()
                     .rubricVersionId(version.getId())
                     .frameworkCriterionId(criterionByCode.get(seed.frameworkCriterionCode()).getId())
@@ -314,15 +343,9 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
                     .required(true)
                     .build())
             .toList();
+    }
 
-        // Checked with exactly the rules of the real publish path, before writing. Wrong numbers in this file will break
-        // at startup -- loudly and early -- instead of silently producing a template that a school copies over and
-        // can never publish.
-        RubricScoringConsistencyValidator.assertPublishable(
-            RubricTotalScoreMethod.SUM, SCORING_SCALE_MIN, SCORING_SCALE_MAX, criteria);
-
-        rubricCriterionRepository.saveAll(criteria);
-
+    private void saveResultBands(RubricVersion version) {
         rubricResultBandRepository.saveAll(RESULT_BANDS.stream()
             .map(seed -> RubricResultBand.builder()
                     .rubricVersionId(version.getId())

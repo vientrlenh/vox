@@ -83,19 +83,8 @@ public class GraphQLQuestionController {
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         PageArguments.validate(page, size);
-        ViewQuestionsQuery query = new ViewQuestionsQuery(
-            questionBankId,
-            questionTopicId,
-            topicName,
-            status,
-            type,
-            sharing,
-            assetType,
-            scope,
-            keyword,
-            page,
-            size
-        );
+        ViewQuestionsQuery query = toViewQuestionsQuery(questionBankId, questionTopicId, topicName, status, type, sharing,
+            scope, assetType, keyword, page, size);
         return viewQuestionsUseCase.execute(query);
     }
 
@@ -113,7 +102,15 @@ public class GraphQLQuestionController {
             @Argument(name = "page") int page,
             @Argument(name = "size") int size) {
         PageArguments.validate(page, size);
-        ViewQuestionsQuery query = new ViewQuestionsQuery(
+        ViewQuestionsQuery query = toViewQuestionsQuery(questionBankId, questionTopicId, topicName, status, type, sharing,
+            scope, assetType, keyword, page, size);
+        return viewQuestionsForAssessmentPaperUseCase.execute(query);
+    }
+
+    private ViewQuestionsQuery toViewQuestionsQuery(UUID questionBankId, UUID questionTopicId, String topicName,
+            QuestionStatus status, QuestionType type, QuestionSharing sharing, String scope, String assetType,
+            String keyword, int page, int size) {
+        return new ViewQuestionsQuery(
             questionBankId,
             questionTopicId,
             topicName,
@@ -126,7 +123,6 @@ public class GraphQLQuestionController {
             page,
             size
         );
-        return viewQuestionsForAssessmentPaperUseCase.execute(query);
     }
 
     @QueryMapping(name = "question")

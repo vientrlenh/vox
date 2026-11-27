@@ -56,6 +56,18 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private final SchoolSubscriptionActiveGuardService schoolSubscriptionActiveGuardService;
     private final PracticePaperDtoMapper practicePaperDtoMapper;
 
+    /**
+     * Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
+     * to the Python agents service (diversity check, and -- on a thin/new topic -- live
+     * LLM question generation, which alone can take 10+ seconds). Holding a HikariCP
+     * connection open for that whole external call starves the pool under load; confirmed
+     * via HikariCP's own leak-detector firing on this exact method. Each individual
+     * repository call still gets its own short-lived transaction from Spring Data's
+     * repository proxy, so no atomicity is lost here -- only the final paper/item/exposure
+     * write (persistenceService.persist, a separate bean so @Transactional actually applies
+     * -- self-invocation within this class would bypass the AOP proxy) needs a real
+     * transaction, scoped separately there.
+     */
     @Override
     public PracticePaper execute(BuildPracticePaperCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
@@ -64,22 +76,17 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         BigDecimal spendableFundsVnd = spendablePracticeFundsVnd(studentId);
         PracticeFocusInfo focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
         ChosenBand chosen = chosenBand(input.targetFrameworkBandId());
-        int chosenBandOrder = chosen.order();
-        // Deliberately NOT wrapped in a Spring transaction: resolveNextQuestion can call out
-        // to the Python agents service (diversity check, and -- on a thin/new topic -- live
-        // LLM question generation, which alone can take 10+ seconds). Holding a HikariCP
-        // connection open for that whole external call starves the pool under load; confirmed
-        // via HikariCP's own leak-detector firing on this exact method. Each individual
-        // repository call below still gets its own short-lived transaction from Spring Data's
-        // repository proxy, so no atomicity is lost here -- only the final paper/item/exposure
-        // write (persistenceService.persist, a separate bean so @Transactional actually applies
-        // -- self-invocation within this class would bypass the AOP proxy) needs a real
-        // transaction, scoped separately there.
         PracticeQuestionSelectionService.NextQuestionSelection selection = selectionService
-            .resolveNextQuestion(topic, studentId, focus, chosenBandOrder, chosen.bandCount(),
+            .resolveNextQuestion(topic, studentId, focus, chosen.order(), chosen.bandCount(),
                 chosen.frameworkVersionId(), List.of())
             .orElseThrow(() -> new ResourceNotFoundException("Chủ đề chưa có câu luyện phù hợp."));
         PracticeQuestion question = selection.question();
+        requireFundsCoverWorstCaseCost(studentId, spendableFundsVnd, question);
+        return persistAndMapToResponse(studentId, input, question, selection, chosen.order());
+    }
+
+    private void requireFundsCoverWorstCaseCost(UUID studentId, BigDecimal spendableFundsVnd,
+                                                PracticeQuestion question) {
         // Worst-case estimate (seconds x calibrated price/second) -- not the real cost, in the same
         // spirit as Formula 1 of ClassTestTokenQuotaGuardService (see AI_USAGE_QUOTA_USD_MIGRATION.md
         // sections 5/6), but using the SEPARATE calibrated rate for PRACTICE (currentEstimatedCostPerPracticeSecondUsd,
@@ -98,6 +105,12 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         if (spendableFundsVnd.compareTo(estimatedCostVnd) < 0) {
             throw new BusinessRuleViolationException("Không còn đủ hạn mức hoặc số dư cho một câu luyện trọn vẹn.");
         }
+    }
+
+    private PracticePaper persistAndMapToResponse(UUID studentId, BuildPracticePaperCommand input,
+                                                  PracticeQuestion question,
+                                                  PracticeQuestionSelectionService.NextQuestionSelection selection,
+                                                  int chosenBandOrder) {
         com.sep.vox.domain.model.personalization.PracticePaper paper = persistenceService.persist(
             studentId,
             input.topicId(),

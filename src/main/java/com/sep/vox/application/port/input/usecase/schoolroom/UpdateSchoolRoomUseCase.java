@@ -33,16 +33,27 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
     @Transactional
     public UUID execute(UpdateSchoolRoomCommand command) {
 
-        // 1. Validate the user (optimized with an exists call)
+        // exists call instead of loading the user, for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
         }
 
-        // 2. Find the room to edit
         SchoolRoom room = schoolRoomRepository.findById(command.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học với ID đã cho."));
 
+        requireSameSchoolForSchoolUser(currentUserId, room);
+
+        int updatedRows = updateAtomically(command);
+
+        if (updatedRows == 0) {
+            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi nào.");
+        }
+
+        return command.id();
+    }
+
+    private void requireSameSchoolForSchoolUser(UUID currentUserId, SchoolRoom room) {
         // SECURITY GUARD: check the school user's rights
         Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
         if (schoolUserOpt.isPresent()) {
@@ -51,25 +62,17 @@ public class UpdateSchoolRoomUseCase implements IUseCase<UpdateSchoolRoomCommand
                 throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa thông tin phòng học của trường khác.");
             }
         }
+    }
 
-        // 3. Normalize and validate the input
+    // The repository statement keeps a column when its value is null (COALESCE) and clears the description only when it is provided.
+    private int updateAtomically(UpdateSchoolRoomCommand command) {
         String safeName = (command.name() != null) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
         String safeDesc = (command.description() != null) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
-
-        // 4. Run the atomic update
-        // The repository statement keeps a column when its value is null (COALESCE) and clears the description only when it is provided.
-        int updatedRows = schoolRoomRepository.updateSchoolRoomAtomic(
+        return schoolRoomRepository.updateSchoolRoomAtomic(
                 command.id(),
                 safeName,
                 safeDesc,
                 command.descriptionProvided()
         );
-
-        if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi nào.");
-        }
-
-        // Return the id of the room that was just updated
-        return command.id();
     }
 }

@@ -29,35 +29,38 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
     @Override
     @Transactional
     public Void execute(DeleteSystemRubricCriterionCommand command) {
-        // 1. Xác thực
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        requireActiveCurrentUser();
+        RubricVersion version = loadDraftVersionOfSystemRubric(command.versionId());
 
-        // 2. Check Version (DRAFT)
-        RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
-        if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ xóa được khi là DRAFT.");
-        }
-
-        // 3. Check Quyền System
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
-        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
-        }
-
-        // 4. Lấy và kiểm tra Tiêu chí
         RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí."));
         if (!criterion.getRubricVersionId().equals(version.getId())) {
             throw new IllegalArgumentException("Tiêu chí sai phiên bản.");
         }
 
-        // 5. Xóa cứng Tiêu chí
         rubricCriterionRepository.deleteById(criterion.getId());
 
         return null;
+    }
+
+    private void requireActiveCurrentUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+    }
+
+    private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
+        RubricVersion version = rubricVersionRepository.findById(versionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
+        if (version.getStatus() != RubricStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ xóa được khi là DRAFT.");
+        }
+
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
+        }
+        return version;
     }
 }

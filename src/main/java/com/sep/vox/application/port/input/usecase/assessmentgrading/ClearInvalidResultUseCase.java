@@ -62,35 +62,59 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
         AssessmentCandidateResult result = prepared.context().candidateResult();
         Instant now = Instant.now();
 
+        unblockCandidate(result, prepared.currentUserId(), now);
+
+        // finish() closes the REMEDIATION row and releases active_result_id; only after that can the
+        // INITIAL round be opened for the same attempt without hitting the unique index.
+        gradingActionSupport.finish(prepared, result);
+
+        AssessmentGradingAssignment next = openInitialRound(result, prepared.currentUserId(), now);
+        publishInvalidCleared(prepared, result, now);
+
+        return new GradingActionResponse(
+            command.assignmentId(),
+            result.getId(),
+            GradingOutcome.CLEARED_INVALID.name(),
+            result.getStatus() == null ? null : result.getStatus().name(),
+            result.getTotalScore(),
+            next.getId()
+        );
+    }
+
+    private void unblockCandidate(AssessmentCandidateResult result, UUID currentUserId, Instant now) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(result.getCandidateId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của bài thi."));
         if (candidate.getBlockedAt() != null) {
             candidate.setBlockedAt(null);
             candidate.setUpdatedAt(now);
-            candidate.setUpdatedBy(prepared.currentUserId());
+            candidate.setUpdatedBy(currentUserId);
             assessmentCandidateRepository.save(candidate);
         }
+    }
 
-        // finish() đóng dòng REMEDIATION và nhả active_result_id; chỉ sau đó mới mở
-        // được vòng INITIAL cho cùng bài mà không đụng unique index.
-        gradingActionSupport.finish(prepared, result);
-
-        // Hạn của vòng REMEDIATION KHÔNG được kế thừa: vòng soi bài vô hiệu thường
-        // được xử lý sát hoặc đã quá hạn, nên phân công mới sẽ sinh ra với một mốc đã
-        // trôi qua — đỏ "quá hạn" ngay lúc tạo, job nhắc bắn ngay lượt sau, và lọt vào
-        // danh sách thu hồi dù giáo viên chưa có một phút nào để chấm. Để trống, admin
-        // đặt hạn sau qua PUT /grading-assignments/{id}/deadline.
-        AssessmentGradingAssignment next = assessmentGradingAssignmentRepository.save(AssessmentGradingAssignment.open(
+    /**
+     * The deadline of the REMEDIATION round is NOT inherited: the invalid-attempt review round is usually
+     * handled close to or after its deadline, so the new assignment would be born with a timestamp that has
+     * already passed -- red "overdue" at creation, the reminder job firing on its very next run, and landing in
+     * the reclaim list although the teacher has not had a single minute to grade. It is left empty and the admin
+     * sets the deadline afterwards through PUT /grading-assignments/{id}/deadline.
+     */
+    private AssessmentGradingAssignment openInitialRound(
+            AssessmentCandidateResult result, UUID currentUserId, Instant now) {
+        return assessmentGradingAssignmentRepository.save(AssessmentGradingAssignment.open(
             result.getId(),
-            prepared.currentUserId(),
+            currentUserId,
             GradingRoundType.INITIAL,
             null,
             result.getTotalScore(),
             now,
-            prepared.currentUserId(),
+            currentUserId,
             null
         ));
+    }
 
+    private void publishInvalidCleared(
+            GradingActionSupport.PreparedAction prepared, AssessmentCandidateResult result, Instant now) {
         UUID studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
             AssessmentResultInvalidClearedPayloadV1 payload = new AssessmentResultInvalidClearedPayloadV1(
@@ -104,14 +128,5 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
                 now
             ));
         }
-
-        return new GradingActionResponse(
-            command.assignmentId(),
-            result.getId(),
-            GradingOutcome.CLEARED_INVALID.name(),
-            result.getStatus() == null ? null : result.getStatus().name(),
-            result.getTotalScore(),
-            next.getId()
-        );
     }
 }

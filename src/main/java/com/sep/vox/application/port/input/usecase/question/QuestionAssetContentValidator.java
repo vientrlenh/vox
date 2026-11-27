@@ -29,9 +29,7 @@ public final class QuestionAssetContentValidator {
             String description,
             String altText) {
         if (type == QuestionAssetType.TEXT_PASSAGE) {
-            if (isBlank(transcript)) {
-                throw new IllegalArgumentException("Nội dung đoạn văn không được để trống");
-            }
+            requireTextPassageContent(transcript);
             return;
         }
 
@@ -40,14 +38,28 @@ public final class QuestionAssetContentValidator {
         }
 
         if (type == QuestionAssetType.IMAGE) {
-            if (isBlank(description) && isBlank(altText)) {
-                throw new IllegalArgumentException(
-                    "Ảnh phải có mô tả nội dung (hoặc alt text). AI không nhìn thấy ảnh — "
-                        + "nó chỉ biết ảnh qua phần mô tả này, để trống thì AI sẽ hỏi và chấm chung chung.");
-            }
+            requireImageDescription(description, altText);
             return;
         }
 
+        requireMediaTranscript(transcript);
+    }
+
+    private static void requireTextPassageContent(String transcript) {
+        if (isBlank(transcript)) {
+            throw new IllegalArgumentException("Nội dung đoạn văn không được để trống");
+        }
+    }
+
+    private static void requireImageDescription(String description, String altText) {
+        if (isBlank(description) && isBlank(altText)) {
+            throw new IllegalArgumentException(
+                "Ảnh phải có mô tả nội dung (hoặc alt text). AI không nhìn thấy ảnh — "
+                    + "nó chỉ biết ảnh qua phần mô tả này, để trống thì AI sẽ hỏi và chấm chung chung.");
+        }
+    }
+
+    private static void requireMediaTranscript(String transcript) {
         if (isBlank(transcript)) {
             throw new IllegalArgumentException(
                 "Audio/video phải có transcript. AI không nghe được tệp — "

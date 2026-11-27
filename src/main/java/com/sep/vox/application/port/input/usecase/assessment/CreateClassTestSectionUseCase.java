@@ -2,23 +2,20 @@ package com.sep.vox.application.port.input.usecase.assessment;
 
 import com.sep.vox.application.port.input.command.assessment.ClassTestQuestionCommand;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
-import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionCollaborator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.assessment.CreateClassTestSectionCommand;
+import com.sep.vox.application.port.input.service.ClassTestDirectEditGuard;
 import com.sep.vox.application.port.input.service.ClassTestPaperResolver;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
@@ -26,32 +23,22 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentDto;
 import com.sep.vox.domain.mapper.AssessmentDtoMapper;
 import com.sep.vox.domain.model.assessment.Assessment;
-import com.sep.vox.domain.model.assessment.AssessmentKind;
-import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
 import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
 import com.sep.vox.domain.model.assessment.AssessmentSecurePoolReleaseMode;
-import com.sep.vox.domain.model.assessment.AssessmentStatus;
-import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
-import com.sep.vox.domain.model.question.QuestionSharing;
-import com.sep.vox.domain.repository.AssessmentMemberRepository;
 import com.sep.vox.domain.repository.AssessmentPaperItemRepository;
 import com.sep.vox.domain.repository.AssessmentPaperSectionRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
-import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
-import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
 @RequiredArgsConstructor
 public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSectionCommand, AssessmentDto> {
 
     private final AssessmentRepository assessmentRepository;
-    private final AssessmentMemberRepository assessmentMemberRepository;
+    private final ClassTestDirectEditGuard classTestDirectEditGuard;
     private final ClassTestPaperResolver classTestPaperResolver;
     private final AssessmentPaperSectionRepository assessmentPaperSectionRepository;
     private final AssessmentPaperItemRepository assessmentPaperItemRepository;
-    private final QuestionRepository questionRepository;
-    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final AssessmentQuestionSecureLockService assessmentQuestionSecureLockService;
     private final RecalculateAssessmentTimeDurationService recalculateAssessmentTimeDurationService;
     private final UserContextPort userContextPort;
@@ -63,35 +50,11 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
 
-        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
-            throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
-        }
-        if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-        if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
-        }
-        if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
-            throw new IllegalArgumentException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
-        }
-        requireNoAttachedBlueprint(assessment);
+        classTestDirectEditGuard.requireDirectlyEditable(assessment, currentUserId);
         if (input.questions() == null || input.questions().isEmpty()) {
             throw new IllegalArgumentException("Section phải có ít nhất 1 câu hỏi");
         }
-
-        for (ClassTestQuestionCommand questionCommand : input.questions()) {
-            Question question = questionRepository.findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
-                .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionCommand.questionId()));
-            boolean isOwner = question.isCreatedBy(currentUserId);
-            boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
-            if (!isOwner && !isSchoolShared) {
-                Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
-                if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
-                    throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
-                }
-            }
-        }
+        requireQuestionsUsable(input.questions(), assessment, currentUserId);
 
         AssessmentPaper paper = classTestPaperResolver.resolve(assessment.getId(), input.paperId());
         int order = assessmentPaperSectionRepository.findByPaperId(paper.getId()).size() + 1;
@@ -99,7 +62,37 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.forClassTest(
             paper.getId(), order, input.title(), input.instruction(), input.weight()));
 
-        List<ClassTestQuestionCommand> questions = input.questions();
+        saveAndLockQuestions(input.questions(), paperSection, paper, assessment, currentUserId);
+        rebalanceOrValidateSectionWeights(input.weight(), paper.getId());
+
+        Assessment saved = assessmentRepository.save(assessment);
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentDtoMapper.toDto(saved);
+    }
+
+    private void rebalanceOrValidateSectionWeights(BigDecimal requestedWeight, UUID paperId) {
+        if (requestedWeight == null) {
+            rebalanceSectionWeights(paperId);
+        } else {
+            List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paperId).stream()
+                .sorted(Comparator.comparingInt(section -> section.getOrder()))
+                .toList();
+            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
+        }
+    }
+
+    private void requireQuestionsUsable(List<ClassTestQuestionCommand> questions, Assessment assessment, UUID currentUserId) {
+        for (ClassTestQuestionCommand questionCommand : questions) {
+            classTestDirectEditGuard.loadUsableQuestion(assessment, questionCommand.questionId(), currentUserId);
+        }
+    }
+
+    private void saveAndLockQuestions(
+            List<ClassTestQuestionCommand> questions,
+            AssessmentPaperSection paperSection,
+            AssessmentPaper paper,
+            Assessment assessment,
+            UUID currentUserId) {
         List<BigDecimal> weights = ClassTestSectionWeightPolicy.resolveQuestionWeights(questions);
         for (int i = 0; i < questions.size(); i++) {
             UUID questionId = questions.get(i).questionId();
@@ -108,25 +101,6 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             assessmentQuestionSecureLockService.lockQuestionForAssessment(
                 questionId, assessment.getId(), AssessmentSecurePoolReleaseMode.AUTO_AFTER_CLOSE, currentUserId
             );
-        }
-        if (input.weight() == null) {
-            rebalanceSectionWeights(paper.getId());
-        } else {
-            List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paper.getId()).stream()
-                .sorted(Comparator.comparingInt(section -> section.getOrder()))
-                .toList();
-            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
-        }
-
-        Assessment saved = assessmentRepository.save(assessment);
-        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentDtoMapper.toDto(saved);
-    }
-
-    private void requireNoAttachedBlueprint(Assessment assessment) {
-        if (assessment.getBlueprintId() != null) {
-            throw new IllegalArgumentException(
-                "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
         }
     }
 

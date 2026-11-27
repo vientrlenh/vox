@@ -60,11 +60,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
     @Override
     @Transactional
     public AssessmentBlueprintVersionDto execute(UpdateAssessmentBlueprintVersionStatusCommand input) {
-        UpdateAssessmentBlueprintVersionStatusCommand command = new UpdateAssessmentBlueprintVersionStatusCommand(
-            input.versionId(),
-            StringNormalization.normalizeCode(input.action()),
-            StringNormalization.trimAndCollapseSpaces(input.note())
-        );
+        UpdateAssessmentBlueprintVersionStatusCommand command = normalize(input);
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
@@ -77,8 +73,25 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
 
         requireStatusActor(version, blueprint, currentUserId, currentSchoolId);
         Instant now = Instant.now();
+        applyStatusAction(version, command.action());
+        AssessmentBlueprintVersion saved = assessmentBlueprintVersionRepository.save(version);
 
-        switch (command.action()) {
+        if (command.action().equals("PUBLISH")) {
+            saveVersionPublishedEvent(blueprint, saved, now);
+        }
+        return AssessmentBlueprintVersionDtoMapper.toDto(saved);
+    }
+
+    private UpdateAssessmentBlueprintVersionStatusCommand normalize(UpdateAssessmentBlueprintVersionStatusCommand input) {
+        return new UpdateAssessmentBlueprintVersionStatusCommand(
+            input.versionId(),
+            StringNormalization.normalizeCode(input.action()),
+            StringNormalization.trimAndCollapseSpaces(input.note())
+        );
+    }
+
+    private void applyStatusAction(AssessmentBlueprintVersion version, String action) {
+        switch (action) {
             case "PUBLISH" -> {
                 if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
                     throw new IllegalArgumentException("Chỉ được publish version ở trạng thái DRAFT");
@@ -94,27 +107,23 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
             }
             default -> throw new IllegalArgumentException("Action không hợp lệ");
         }
+    }
 
-        AssessmentBlueprintVersion saved = assessmentBlueprintVersionRepository.save(version);
-
-        if (command.action().equals("PUBLISH")) {
-            List<UUID> schoolAdminIds = schoolUserRepository.findBySchoolIdWithRole(blueprint.getSchoolId(), "SCHOOL_ADMIN")
-                .stream()
-                .map(su -> su.getUserId())
-                .toList();
-            AssessmentBlueprintVersionPublishedEvent event = new AssessmentBlueprintVersionPublishedEvent(
-                schoolAdminIds,
-                blueprint.getCode(),
-                blueprint.getName(),
-                blueprint.getId(),
-                saved.getId()
-            );
-            String payload = jsonSerializationPort.toJson(event);
-            Outbox outbox = Outbox.create(AggregateTypeConstant.ASSESSMENT_BLUEPRINT_VERSION, version.getId(), EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED, payload, now);
-            outboxRepository.save(outbox);
-        }
-
-        return AssessmentBlueprintVersionDtoMapper.toDto(saved);
+    private void saveVersionPublishedEvent(AssessmentBlueprint blueprint, AssessmentBlueprintVersion saved, Instant now) {
+        List<UUID> schoolAdminIds = schoolUserRepository.findBySchoolIdWithRole(blueprint.getSchoolId(), "SCHOOL_ADMIN")
+            .stream()
+            .map(su -> su.getUserId())
+            .toList();
+        AssessmentBlueprintVersionPublishedEvent event = new AssessmentBlueprintVersionPublishedEvent(
+            schoolAdminIds,
+            blueprint.getCode(),
+            blueprint.getName(),
+            blueprint.getId(),
+            saved.getId()
+        );
+        String payload = jsonSerializationPort.toJson(event);
+        Outbox outbox = Outbox.create(AggregateTypeConstant.ASSESSMENT_BLUEPRINT_VERSION, saved.getId(), EventTypeConstant.ASSESSMENT_BLUEPRINT_VERSION_PUBLISHED, payload, now);
+        outboxRepository.save(outbox);
     }
 
     private void requireStatusActor(AssessmentBlueprintVersion version, AssessmentBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
@@ -122,29 +131,31 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
             throw new ForbiddenException(
                 "Quyền truy cập bị từ chối — cần là SCHOOL_ADMIN hoặc CHAIR/REVIEWER của kỳ thi đã gắn blueprint này");
         }
-        // Who may SELF-APPROVE a version they created themselves.
-        //
-        // SCHOOL_ADMIN/SYSTEM_ADMIN: allowed, because they are the highest authority over the blueprint and in practice
-        // a school usually has only 1 admin -- blocking absolutely would leave the version stuck in DRAFT forever.
-        //
-        // CHAIR: allowed, on par with the admin (changed 2026-08-15). Previously maker-checker applied to the
-        // teacher branch too, so after a CHAIR created a version they had to find someone else to press publish before it could
-        // be attached to their own assessment (AttachAssessmentBlueprintUseCase requires the version to be
-        // PUBLISHED). In a small school that "someone else" often does not exist, and the CHAIR
-        // is already the person ultimately responsible for the assessment -- making them ask for approval of the paper
-        // frame of the very assessment they chair only produces a formal signature.
-        //
-        // REVIEWER: NO. They exist precisely to be the second person, and letting them self-approve would erase their own
-        // role. This is why isChairOfAssessmentUsingBlueprint has to be asked instead of reusing
-        // canChangeVersionStatus above -- that one lumps CHAIR together with REVIEWER.
-        boolean isAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()) || "SYSTEM_ADMIN".equals(role.roleCode()));
-        boolean isChair = assessmentBlueprintRepository.isChairOfAssessmentUsingBlueprint(
-            blueprint.getId(), currentUserId, currentSchoolId
-        );
-        if (!isAdmin && !isChair && version.isCreatedBy(currentUserId)) {
+        if (version.isCreatedBy(currentUserId) && !maySelfApproveVersion(blueprint, currentUserId, currentSchoolId)) {
             throw new ForbiddenException("Người tạo version không được tự đổi trạng thái version của chính mình");
         }
+    }
+
+    // Who may SELF-APPROVE a version they created themselves.
+    //
+    // SCHOOL_ADMIN/SYSTEM_ADMIN: allowed, because they are the highest authority over the blueprint and in practice
+    // a school usually has only 1 admin -- blocking absolutely would leave the version stuck in DRAFT forever.
+    //
+    // CHAIR: allowed, on par with the admin (changed 2026-08-15). Previously maker-checker applied to the
+    // teacher branch too, so after a CHAIR created a version they had to find someone else to press publish before it could
+    // be attached to their own assessment (AttachAssessmentBlueprintUseCase requires the version to be
+    // PUBLISHED). In a small school that "someone else" often does not exist, and the CHAIR
+    // is already the person ultimately responsible for the assessment -- making them ask for approval of the paper
+    // frame of the very assessment they chair only produces a formal signature.
+    //
+    // REVIEWER: NO. They exist precisely to be the second person, and letting them self-approve would erase their own
+    // role. This is why isChairOfAssessmentUsingBlueprint has to be asked instead of reusing
+    // canChangeVersionStatus above -- that one lumps CHAIR together with REVIEWER.
+    private boolean maySelfApproveVersion(AssessmentBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
+        boolean isAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+            .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()) || "SYSTEM_ADMIN".equals(role.roleCode()));
+        return isAdmin || assessmentBlueprintRepository.isChairOfAssessmentUsingBlueprint(
+            blueprint.getId(), currentUserId, currentSchoolId);
     }
 
     private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
@@ -162,6 +173,11 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
         }
 
         List<AssessmentBlueprintSlot> allSlots = assessmentBlueprintSlotRepository.findByBlueprintVersionId(version.getId());
+        requireFixedQuestionsPublished(allSlots);
+        requireSlotWeightsPerSection(sections, allSlots);
+    }
+
+    private void requireFixedQuestionsPublished(List<AssessmentBlueprintSlot> allSlots) {
         allSlots.stream()
             .filter(slot -> slot.getSlotType() == AssessmentBlueprintSlotType.FIXED)
             .forEach(slot -> {
@@ -172,7 +188,9 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
                     throw new IllegalArgumentException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
                 }
             });
+    }
 
+    private void requireSlotWeightsPerSection(List<AssessmentBlueprintSection> sections, List<AssessmentBlueprintSlot> allSlots) {
         Map<UUID, List<AssessmentBlueprintSlot>> slotsBySectionId = allSlots.stream()
             .collect(Collectors.groupingBy(slot -> slot.getSectionId()));
         for (AssessmentBlueprintSection section : sections) {

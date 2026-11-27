@@ -56,16 +56,8 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
             int maxItems,
             List<String> existingStatements,
             List<String> dimensions) {
-        Map<String, Object> body = new LinkedHashMap<String, Object>();
-        body.put("max_items", maxItems);
-        body.put("existing_statements", existingStatements);
-        body.put("dimensions", dimensions);
         try {
-            HttpRequest request = HttpRequest.newBuilder(generateUri)
-                .timeout(Duration.ofSeconds(45))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(jsonMapper.writeValueAsString(body)))
-                .build();
+            HttpRequest request = buildGenerateRequest(maxItems, existingStatements, dimensions);
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() / 100 != 2) {
                 log.warn(
@@ -83,6 +75,18 @@ public class InterestQuizGenerationClient implements InterestQuizGenerationPort 
             );
             return List.of();
         }
+    }
+
+    private HttpRequest buildGenerateRequest(int maxItems, List<String> existingStatements, List<String> dimensions) {
+        Map<String, Object> body = new LinkedHashMap<String, Object>();
+        body.put("max_items", maxItems);
+        body.put("existing_statements", existingStatements);
+        body.put("dimensions", dimensions);
+        return HttpRequest.newBuilder(generateUri)
+            .timeout(Duration.ofSeconds(45))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(jsonMapper.writeValueAsString(body)))
+            .build();
     }
 
     private List<InterestQuizSeedItem> toItems(String responseBody) throws Exception {

@@ -88,61 +88,44 @@ public class SchoolDebtEmailConsumer {
 
         String eventType = KafkaEventHeaders.readEventType(record);
 
-        Mail mail = switch (eventType) {
-            case EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED -> {
-                SchoolDebtCapExceededPayloadV1 payload = parse(record.value(), SchoolDebtCapExceededPayloadV1.class, eventId);
-                yield new Mail(
-                    payload.systemAdminIds(),
-                    "Cảnh báo: nợ hạn mức AI vượt trần",
-                    renderCapExceeded(payload, eventId)
-                );
-            }
-            case EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT -> {
-                SchoolLockedDueToDebtPayloadV1 payload = parse(record.value(), SchoolLockedDueToDebtPayloadV1.class, eventId);
-                yield new Mail(
-                    payload.schoolAdminIds(),
-                    "Trường đang bị khóa do nợ hạn mức AI",
-                    mailTemplatePort.renderSchoolLockedDueToDebtEmail(schoolNameOf(payload.schoolId(), eventId))
-                );
-            }
-            case EventTypeConstant.SCHOOL_DEBT_CLEARED -> {
-                SchoolDebtClearedPayloadV1 payload = parse(record.value(), SchoolDebtClearedPayloadV1.class, eventId);
-                yield new Mail(
-                    payload.schoolAdminIds(),
-                    "Trường đã hết nợ hạn mức AI",
-                    mailTemplatePort.renderSchoolDebtClearedEmail(schoolNameOf(payload.schoolId(), eventId))
-                );
-            }
-            case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> {
-                SchoolSubscriptionSuspendedPayloadV1 payload = parse(record.value(), SchoolSubscriptionSuspendedPayloadV1.class, eventId);
-                yield new Mail(
-                    payload.schoolAdminIds(),
-                    "Gói subscription bị đình chỉ",
-                    mailTemplatePort.renderSchoolSubscriptionSuspendedEmail(
-                        schoolNameOf(payload.schoolId(), eventId), payload.reason())
-                );
-            }
-            case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> {
-                SchoolSubscriptionUnsuspendedPayloadV1 payload = parse(record.value(), SchoolSubscriptionUnsuspendedPayloadV1.class, eventId);
-                yield new Mail(
-                    payload.schoolAdminIds(),
-                    "Gói subscription đã được gỡ đình chỉ",
-                    mailTemplatePort.renderSchoolSubscriptionUnsuspendedEmail(schoolNameOf(payload.schoolId(), eventId))
-                );
-            }
-            default -> throw new IllegalStateException(
-                "eventType không được xử lý: eventId=" + eventId + ", eventType=" + eventType);
-        };
+        Mail mail = renderMail(eventType, record.value(), eventId);
 
         if (mail.recipientIds() == null || mail.recipientIds().isEmpty()) {
-            log.warn("Skip mail, không có người nhận: eventId={}, eventType={}", eventId, eventType);
-            markProcessed(eventId);
-            ack.acknowledge();
+            skipWithoutRecipients(eventId, eventType, ack);
             return;
         }
 
-        // One bad address must not block the others: collect the errors and throw ONCE at the end,
-        // the same way InvoiceEmailConsumer does it.
+        deliverMail(mail, eventId, eventType);
+        ack.acknowledge();
+    }
+
+    private void skipWithoutRecipients(UUID eventId, String eventType, Acknowledgment ack) {
+        log.warn("Skip mail, không có người nhận: eventId={}, eventType={}", eventId, eventType);
+        markProcessed(eventId);
+        ack.acknowledge();
+    }
+
+    private void deliverMail(Mail mail, UUID eventId, String eventType) {
+        int failed = sendToRecipients(mail, eventId);
+
+        if (failed > 0) {
+            throw new IllegalStateException(
+                "Gửi mail nợ hạn mức thất bại cho " + failed + " người nhận: eventId=" + eventId);
+        }
+
+        markProcessed(eventId);
+
+        log.info("School-debt mail sent: eventId={}, eventType={}, recipients={}",
+            eventId, eventType, mail.recipientIds().size());
+    }
+
+    /**
+     * One bad address must not block the others: collect the errors and let the caller throw ONCE at the end,
+     * the same way InvoiceEmailConsumer does it.
+     *
+     * @return the number of recipients the mail could not be sent to
+     */
+    private int sendToRecipients(Mail mail, UUID eventId) {
         int failed = 0;
         for (UUID recipientId : mail.recipientIds()) {
             User recipient = userRepository.findById(recipientId).orElse(null);
@@ -157,21 +140,69 @@ public class SchoolDebtEmailConsumer {
                 log.error("Send mail error: eventId={}, to={}", eventId, recipient.getEmail().value(), e);
             }
         }
+        return failed;
+    }
 
-        if (failed > 0) {
-            throw new IllegalStateException(
-                "Gửi mail nợ hạn mức thất bại cho " + failed + " người nhận: eventId=" + eventId);
-        }
+    private Mail renderMail(String eventType, String value, UUID eventId) {
+        return switch (eventType) {
+            case EventTypeConstant.SCHOOL_DEBT_CAP_EXCEEDED -> renderCapExceededMail(value, eventId);
+            case EventTypeConstant.SCHOOL_LOCKED_DUE_TO_DEBT -> renderLockedMail(value, eventId);
+            case EventTypeConstant.SCHOOL_DEBT_CLEARED -> renderClearedMail(value, eventId);
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> renderSuspendedMail(value, eventId);
+            case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> renderUnsuspendedMail(value, eventId);
+            default -> throw new IllegalStateException(
+                "eventType không được xử lý: eventId=" + eventId + ", eventType=" + eventType);
+        };
+    }
 
-        markProcessed(eventId);
+    private Mail renderCapExceededMail(String value, UUID eventId) {
+        SchoolDebtCapExceededPayloadV1 payload = parse(value, SchoolDebtCapExceededPayloadV1.class, eventId);
+        return new Mail(
+            payload.systemAdminIds(),
+            "Cảnh báo: nợ hạn mức AI vượt trần",
+            renderCapExceeded(payload, eventId)
+        );
+    }
 
-        log.info("School-debt mail sent: eventId={}, eventType={}, recipients={}",
-            eventId, eventType, mail.recipientIds().size());
-        ack.acknowledge();
+    private Mail renderLockedMail(String value, UUID eventId) {
+        SchoolLockedDueToDebtPayloadV1 payload = parse(value, SchoolLockedDueToDebtPayloadV1.class, eventId);
+        return new Mail(
+            payload.schoolAdminIds(),
+            "Trường đang bị khóa do nợ hạn mức AI",
+            mailTemplatePort.renderSchoolLockedDueToDebtEmail(schoolNameOf(payload.schoolId(), eventId))
+        );
+    }
+
+    private Mail renderClearedMail(String value, UUID eventId) {
+        SchoolDebtClearedPayloadV1 payload = parse(value, SchoolDebtClearedPayloadV1.class, eventId);
+        return new Mail(
+            payload.schoolAdminIds(),
+            "Trường đã hết nợ hạn mức AI",
+            mailTemplatePort.renderSchoolDebtClearedEmail(schoolNameOf(payload.schoolId(), eventId))
+        );
+    }
+
+    private Mail renderSuspendedMail(String value, UUID eventId) {
+        SchoolSubscriptionSuspendedPayloadV1 payload = parse(value, SchoolSubscriptionSuspendedPayloadV1.class, eventId);
+        return new Mail(
+            payload.schoolAdminIds(),
+            "Gói subscription bị đình chỉ",
+            mailTemplatePort.renderSchoolSubscriptionSuspendedEmail(
+                schoolNameOf(payload.schoolId(), eventId), payload.reason())
+        );
+    }
+
+    private Mail renderUnsuspendedMail(String value, UUID eventId) {
+        SchoolSubscriptionUnsuspendedPayloadV1 payload = parse(value, SchoolSubscriptionUnsuspendedPayloadV1.class, eventId);
+        return new Mail(
+            payload.schoolAdminIds(),
+            "Gói subscription đã được gỡ đình chỉ",
+            mailTemplatePort.renderSchoolSubscriptionUnsuspendedEmail(schoolNameOf(payload.schoolId(), eventId))
+        );
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error("school-debt event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",
             eventId, record.topic(), record.partition(), record.offset(), record.value());

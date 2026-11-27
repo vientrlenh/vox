@@ -41,15 +41,7 @@ public class AwsS3StorageService implements StoragePort {
 
         String objectKey = buildObjectKey(key);
         try {
-            PutObjectResponse response = s3Client.putObject(
-                PutObjectRequest.builder()
-                    .bucket(requiredBucket())
-                    .key(objectKey)
-                    .contentType(contentTypeOf(file))
-                    .contentLength(file.size())
-                    .build(),
-                RequestBody.fromBytes(file.content())
-            );
+            PutObjectResponse response = putObject(objectKey, file);
 
             return new StoredFile(
                 objectKey,
@@ -61,6 +53,18 @@ public class AwsS3StorageService implements StoragePort {
         } catch (S3Exception e) {
             throw new IllegalStateException("Khong the tai tep len S3: " + errorMessageOf(e));
         }
+    }
+
+    private PutObjectResponse putObject(String objectKey, UploadedFile file) {
+        return s3Client.putObject(
+            PutObjectRequest.builder()
+                .bucket(requiredBucket())
+                .key(objectKey)
+                .contentType(contentTypeOf(file))
+                .contentLength(file.size())
+                .build(),
+            RequestBody.fromBytes(file.content())
+        );
     }
 
     @Override

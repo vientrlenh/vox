@@ -118,6 +118,24 @@ public class TopicSuggestion {
         this.respondedAt = respondedAt;
     }
 
+    public static TopicSuggestion keywordRequested(UUID studentId, String keyword, String reasonText,
+                                                   Instant createdAt) {
+        return builder()
+                .id(null)
+                .studentId(studentId)
+                .suggestedTopicName(keyword)
+                .keyword(keyword)
+                .interestDimension("UNKNOWN")
+                .curriculumGroup(null)
+                .confidence(BigDecimal.ZERO)
+                .reasonText(reasonText)
+                .evidenceJson("{}")
+                .status("REQUESTED")
+                .createdAt(createdAt)
+                .respondedAt(null)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

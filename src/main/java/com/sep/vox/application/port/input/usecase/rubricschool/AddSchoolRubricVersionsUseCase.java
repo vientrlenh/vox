@@ -40,18 +40,8 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
     @Override
     @Transactional
     public List<UUID> execute(AddSchoolRubricVersionsCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
-
-        //  CHECK QUYỀN TRƯỜNG HỌC
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên trường này.");
-
-        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường bạn.");
-        }
+        requireActiveSchoolMember(command.schoolId());
+        Rubric rubric = loadSchoolOwnedRubric(command);
 
         Set<Integer> existingVersions = rubricVersionRepository.findByRubricId(command.rubricId()).stream()
                 .map(v -> v.getVersion())
@@ -60,36 +50,63 @@ public class AddSchoolRubricVersionsUseCase implements IUseCase<AddSchoolRubricV
         Set<Integer> incomingVersions = new HashSet<>();
         Instant now = Instant.now();
 
-        List<RubricVersion> newVersions = command.versions().stream().map(vCmd -> {
-            if (!incomingVersions.add(vCmd.version())) {
-                throw new IllegalArgumentException("Hệ thống lỗi: Bạn đang gửi nhiều dữ liệu có cùng số Version (" + vCmd.version() + ").");
-            }
-            if (existingVersions.contains(vCmd.version())) {
-                throw new IllegalArgumentException("Hệ thống lỗi: Version " + vCmd.version() + " đã tồn tại trong bộ Rubric này.");
-            }
-            if (vCmd.scoringScaleMin().compareTo(vCmd.scoringScaleMax()) > 0) {
-                throw new IllegalArgumentException("Version " + vCmd.version() + ": Điểm sàn không được lớn hơn điểm trần.");
-            }
-
-
-            Instant validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
-            if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
-                throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày kết thúc không được nằm trước ngày bắt đầu.");
-            }
-
-            String safeCode = rubric.getCode() + "_V" + vCmd.version();
-            String safeName = (vCmd.name() != null && !vCmd.name().isBlank())
-                    ? vCmd.name().trim()
-                    : rubric.getName() + " - Version " + vCmd.version();
-
-            return RubricVersion.draft(
-                    command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),
-                    validFrom, vCmd.effectiveTo(),
-                    vCmd.scoringScaleMin(), vCmd.scoringScaleMax(), vCmd.totalScoreMethod());
-        }).toList();
+        List<RubricVersion> newVersions = command.versions().stream()
+                .map(vCmd -> toDraftVersion(command, rubric, vCmd, existingVersions, incomingVersions, now))
+                .toList();
 
         List<RubricVersion> savedVersions = rubricVersionRepository.saveAll(newVersions);
 
         return savedVersions.stream().map(v -> v.getId()).toList();
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên trường này.");
+    }
+
+    private Rubric loadSchoolOwnedRubric(AddSchoolRubricVersionsCommand command) {
+        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
+            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường bạn.");
+        }
+        return rubric;
+    }
+
+    private void requireNewVersionWithValidScale(AddSchoolRubricVersionsCommand.RubricVersionItemCommand vCmd,
+                                                 Set<Integer> existingVersions, Set<Integer> incomingVersions) {
+        if (!incomingVersions.add(vCmd.version())) {
+            throw new IllegalArgumentException("Hệ thống lỗi: Bạn đang gửi nhiều dữ liệu có cùng số Version (" + vCmd.version() + ").");
+        }
+        if (existingVersions.contains(vCmd.version())) {
+            throw new IllegalArgumentException("Hệ thống lỗi: Version " + vCmd.version() + " đã tồn tại trong bộ Rubric này.");
+        }
+        if (vCmd.scoringScaleMin().compareTo(vCmd.scoringScaleMax()) > 0) {
+            throw new IllegalArgumentException("Version " + vCmd.version() + ": Điểm sàn không được lớn hơn điểm trần.");
+        }
+    }
+
+    private RubricVersion toDraftVersion(AddSchoolRubricVersionsCommand command, Rubric rubric,
+                                         AddSchoolRubricVersionsCommand.RubricVersionItemCommand vCmd,
+                                         Set<Integer> existingVersions, Set<Integer> incomingVersions, Instant now) {
+        requireNewVersionWithValidScale(vCmd, existingVersions, incomingVersions);
+
+        Instant validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
+        if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
+            throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày kết thúc không được nằm trước ngày bắt đầu.");
+        }
+
+        String safeCode = rubric.getCode() + "_V" + vCmd.version();
+        String safeName = (vCmd.name() != null && !vCmd.name().isBlank())
+                ? vCmd.name().trim()
+                : rubric.getName() + " - Version " + vCmd.version();
+
+        return RubricVersion.draft(
+                command.rubricId(), vCmd.version(), safeCode, safeName, rubric.getDescription(),
+                validFrom, vCmd.effectiveTo(),
+                vCmd.scoringScaleMin(), vCmd.scoringScaleMax(), vCmd.totalScoreMethod());
     }
 }

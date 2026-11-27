@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -39,34 +40,42 @@ public class QuestionAssetAnalysisRequestPublisher {
     }
 
     public void publish(Question question, QuestionAsset asset) {
-        QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
-        QuestionAssetAnalysisRequestedExternalEvent event = new QuestionAssetAnalysisRequestedExternalEvent(
-            asset.getId().toString(),
-            question.getId().toString(),
-            new QuestionAssetAnalysisRequestedExternalEvent.Payload(
-                asset.getType().name(),
-                asset.getUrl(),
-                question.getQuestionText(),
-                guide == null
-                    ? null
-                    : new QuestionAssetAnalysisRequestedExternalEvent.EvaluationGuide(
-                        guide.getExpectedContent(),
-                        guide.getKeyPoints(),
-                        guide.getAcceptableResponses(),
-                        guide.getOffTopicExamples(),
-                        guide.getScoringHints(),
-                        guide.getCommonMistakes()
-                    ),
-                isBlank(asset.getTranscript()) ? null : asset.getTranscript(),
-                isBlank(asset.getDescription()) ? null : asset.getDescription()
-            )
-        );
+        Optional<QuestionEvaluationGuide> guide = questionEvaluationGuideRepository.findByQuestionId(question.getId());
+        QuestionAssetAnalysisRequestedExternalEvent event = buildEvent(question, asset, guide);
 
         try {
             externalEventPublisherPort.publish(event);
         } catch (Exception ex) {
             log.warn("Không thể publish yêu cầu phân tích asset questionAssetId={}", asset.getId(), ex);
         }
+    }
+
+    private QuestionAssetAnalysisRequestedExternalEvent buildEvent(
+            Question question, QuestionAsset asset, Optional<QuestionEvaluationGuide> guide) {
+        return new QuestionAssetAnalysisRequestedExternalEvent(
+            asset.getId().toString(),
+            question.getId().toString(),
+            new QuestionAssetAnalysisRequestedExternalEvent.Payload(
+                asset.getType().name(),
+                asset.getUrl(),
+                question.getQuestionText(),
+                guide.map(this::toEvaluationGuidePayload).orElse(null),
+                isBlank(asset.getTranscript()) ? null : asset.getTranscript(),
+                isBlank(asset.getDescription()) ? null : asset.getDescription()
+            )
+        );
+    }
+
+    private QuestionAssetAnalysisRequestedExternalEvent.EvaluationGuide toEvaluationGuidePayload(
+            QuestionEvaluationGuide guide) {
+        return new QuestionAssetAnalysisRequestedExternalEvent.EvaluationGuide(
+            guide.getExpectedContent(),
+            guide.getKeyPoints(),
+            guide.getAcceptableResponses(),
+            guide.getOffTopicExamples(),
+            guide.getScoringHints(),
+            guide.getCommonMistakes()
+        );
     }
 
     public static boolean supportsTranscript(QuestionAssetType type) {

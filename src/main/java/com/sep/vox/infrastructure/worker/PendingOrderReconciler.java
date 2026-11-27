@@ -74,44 +74,64 @@ public class PendingOrderReconciler {
             return;
         }
 
-        int remoteCalls = 0;
-        int settled = 0;
-        int expired = 0;
-
+        SweepProgress progress = new SweepProgress();
         for (Order order : pendingOrders) {
-            PaymentRecord pendingAttempt = paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
-
-            if (pendingAttempt != null) {
-                if (remoteCalls >= MAX_REMOTE_CALLS_PER_RUN) {
-                    log.warn("Dừng đối soát ở {} lần gọi cổng trong lượt này, phần còn lại để lượt sau",
-                        MAX_REMOTE_CALLS_PER_RUN);
-                    break;
-                }
-                // Pace BEFORE each call (except the first) instead of after: if the loop exits early it also
-                // does not pay for a useless sleep.
-                if (remoteCalls > 0 && !throttle()) {
-                    break;
-                }
-                remoteCalls++;
-                if (reconcileAttempt(order, pendingAttempt)) {
-                    settled++;
-                    // An order just settled as PAID is no longer overdue -- move on to the next order.
-                    continue;
-                }
-            }
-
-            // Try to close the order if it is overdue. Do NOT assume here that the order has no pending attempt left:
-            // reconcileAttempt returns false both for "the gateway says it is still waiting for payment" and for a failed gateway call.
-            // expireIfOverdue re-checks under a row lock and refuses by itself while a PENDING row remains.
-            if (expireOverdue(order, now)) {
-                expired++;
+            if (!reconcileOrder(order, now, progress)) {
+                break;
             }
         }
 
-        if (settled > 0 || expired > 0) {
+        if (progress.settled > 0 || progress.expired > 0) {
             log.info("[RECONCILER] Quét {} đơn PENDING: chốt {} đơn đã thu được tiền, đóng {} đơn quá hạn",
-                pendingOrders.size(), settled, expired);
+                pendingOrders.size(), progress.settled, progress.expired);
         }
+    }
+
+    private static final class SweepProgress {
+        private int remoteCalls;
+        private int settled;
+        private int expired;
+    }
+
+    /**
+     * @return false when the sweep must stop (call budget used up, or interrupted while pacing)
+     */
+    private boolean reconcileOrder(Order order, Instant now, SweepProgress progress) {
+        PaymentRecord pendingAttempt = paymentRecordRepository.findPendingByOrderId(order.getId()).orElse(null);
+
+        if (pendingAttempt != null) {
+            if (!reserveRemoteCall(progress)) {
+                return false;
+            }
+            if (reconcileAttempt(order, pendingAttempt)) {
+                progress.settled++;
+                // An order just settled as PAID is no longer overdue -- move on to the next order.
+                return true;
+            }
+        }
+
+        // Try to close the order if it is overdue. Do NOT assume here that the order has no pending attempt left:
+        // reconcileAttempt returns false both for "the gateway says it is still waiting for payment" and for a failed gateway call.
+        // expireIfOverdue re-checks under a row lock and refuses by itself while a PENDING row remains.
+        if (expireOverdue(order, now)) {
+            progress.expired++;
+        }
+        return true;
+    }
+
+    private boolean reserveRemoteCall(SweepProgress progress) {
+        if (progress.remoteCalls >= MAX_REMOTE_CALLS_PER_RUN) {
+            log.warn("Dừng đối soát ở {} lần gọi cổng trong lượt này, phần còn lại để lượt sau",
+                MAX_REMOTE_CALLS_PER_RUN);
+            return false;
+        }
+        // Pace BEFORE each call (except the first) instead of after: if the loop exits early it also
+        // does not pay for a useless sleep.
+        if (progress.remoteCalls > 0 && !throttle()) {
+            return false;
+        }
+        progress.remoteCalls++;
+        return true;
     }
 
     /**
@@ -126,19 +146,10 @@ public class PendingOrderReconciler {
                 .status();
 
             if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
-                log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành PAID qua polling {}",
-                    attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider());
-                orderSettlementService.settlePaid(attempt, Instant.now());
+                settleAsPaid(attempt);
                 return true;
             }
-
-            // Close only the ATTEMPT, not the order -- same reason as in the callback: the school must be able to press pay
-            // again without placing a new order. See OrderSettlementService.failAttempt.
-            if (isFinalFailure(remoteStatus, attempt)) {
-                log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành FAILED do cổng {} báo {}",
-                    attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider(), remoteStatus);
-                orderSettlementService.failAttempt(attempt, PaymentStatus.FAILED);
-            }
+            failAttemptIfFinal(attempt, remoteStatus);
             return false;
         } catch (Exception e) {
             // Swallow the error of EACH order: a failing gateway must not be allowed to block reconciling the remaining
@@ -146,6 +157,22 @@ public class PendingOrderReconciler {
             log.warn("Lỗi khi đối soát đơn {} provider={} orderRef={}",
                 order.getId(), attempt.getProvider(), attempt.getProviderOrderRef(), e);
             return false;
+        }
+    }
+
+    private void settleAsPaid(PaymentRecord attempt) {
+        log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành PAID qua polling {}",
+            attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider());
+        orderSettlementService.settlePaid(attempt, Instant.now());
+    }
+
+    // Close only the ATTEMPT, not the order -- same reason as in the callback: the school must be able to press pay
+    // again without placing a new order. See OrderSettlementService.failAttempt.
+    private void failAttemptIfFinal(PaymentRecord attempt, PaymentLinkRemoteStatus remoteStatus) {
+        if (isFinalFailure(remoteStatus, attempt)) {
+            log.info("[RECONCILER] Chốt lần thanh toán {} (orderRef={}) thành FAILED do cổng {} báo {}",
+                attempt.getId(), attempt.getProviderOrderRef(), attempt.getProvider(), remoteStatus);
+            orderSettlementService.failAttempt(attempt, PaymentStatus.FAILED);
         }
     }
 

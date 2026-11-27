@@ -24,10 +24,21 @@ public class JpaNearestCentralizedAssessmentQueryRepository implements NearestCe
 
     @Override
     public Optional<NearestCentralizedAssessmentDto> findNearestForSchool(UUID schoolId) {
-        // The school's list of centralized assessments (usually only a few dozen) is read in full and the assessment
-        // nearest to the current time is picked -- this avoids computing "|open_at - now()|" in JPQL,
-        // which has no timestamp-subtraction function that is stable across Hibernate versions.
-        List<CandidateAssessmentProjection> candidates = em.createQuery("""
+        List<CandidateAssessmentProjection> candidates = findCentralizedCandidates(schoolId);
+
+        Instant now = Instant.now();
+        return candidates.stream()
+            .min(Comparator.comparing(c -> Duration.between(now, c.openAt()).abs()))
+            .map(this::toNearestAssessment);
+    }
+
+    /**
+     * The school's list of centralized assessments (usually only a few dozen) is read in full and the assessment
+     * nearest to the current time is picked -- this avoids computing "|open_at - now()|" in JPQL,
+     * which has no timestamp-subtraction function that is stable across Hibernate versions.
+     */
+    private List<CandidateAssessmentProjection> findCentralizedCandidates(UUID schoolId) {
+        return em.createQuery("""
             SELECT new com.sep.vox.application.response.output.CandidateAssessmentProjection(
                 e.id, e.code, e.name, e.status, e.openAt, e.closeAt
             )
@@ -39,20 +50,13 @@ public class JpaNearestCentralizedAssessmentQueryRepository implements NearestCe
         """, CandidateAssessmentProjection.class)
             .setParameter("schoolId", schoolId)
             .getResultList();
+    }
 
-        Instant now = Instant.now();
-        Optional<CandidateAssessmentProjection> nearest = candidates.stream()
-            .min(Comparator.comparing(c -> Duration.between(now, c.openAt()).abs()));
-
-        if (nearest.isEmpty()) {
-            return Optional.empty();
-        }
-        CandidateAssessmentProjection assessment = nearest.get();
-
+    private NearestCentralizedAssessmentDto toNearestAssessment(CandidateAssessmentProjection assessment) {
         long totalCandidates = countCandidatesTotal(assessment.id());
         long absentCandidates = countCandidatesByStatus(assessment.id(), "ABSENT");
 
-        return Optional.of(new NearestCentralizedAssessmentDto(
+        return new NearestCentralizedAssessmentDto(
             assessment.id(),
             assessment.code(),
             assessment.name(),
@@ -61,7 +65,7 @@ public class JpaNearestCentralizedAssessmentQueryRepository implements NearestCe
             assessment.closeAt(),
             totalCandidates,
             absentCandidates
-        ));
+        );
     }
 
     private long countCandidatesTotal(UUID assessmentId) {

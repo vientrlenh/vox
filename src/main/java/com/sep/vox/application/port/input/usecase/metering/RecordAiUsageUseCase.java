@@ -29,17 +29,7 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
     @Override
     @Transactional
     public Void execute(RecordAiUsageCommand input) {
-        if (input.usageEventId() == null) {
-            throw new IllegalArgumentException("Thiếu usageEventId trong dữ liệu usage");
-        }
-        if (input.assessmentSessionId() == null) {
-            throw new IllegalArgumentException("Thiếu assessmentSessionId trong dữ liệu usage");
-        }
-        // Block early instead of letting an NPE happen in the multiplication below: cost_vnd is NOT NULL, so a row missing
-        // costUsd cannot be written, and swallowing it silently means losing a real charge entirely.
-        if (input.costUsd() == null) {
-            throw new IllegalArgumentException("Thiếu costUsd trong dữ liệu usage");
-        }
+        requireRequiredUsageFields(input);
 
         // Idempotent: Kafka may redeliver the same usageEventId on retry/rebalance -- skip instead of writing a duplicate;
         // uk_ai_usage_record_usage_event_id is the last guard if a rare race slips through here.
@@ -47,34 +37,39 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
             return null;
         }
 
+        saveUsageRecord(input);
+        return null;
+    }
+
+    private void requireRequiredUsageFields(RecordAiUsageCommand input) {
+        if (input.usageEventId() == null) {
+            throw new IllegalArgumentException("Thiếu usageEventId trong dữ liệu usage");
+        }
+        if (input.assessmentSessionId() == null) {
+            throw new IllegalArgumentException("Thiếu assessmentSessionId trong dữ liệu usage");
+        }
+        // Block early instead of letting an NPE happen in the multiplication in saveUsageRecord: cost_vnd is NOT NULL, so a row missing
+        // costUsd cannot be written, and swallowing it silently means losing a real charge entirely.
+        if (input.costUsd() == null) {
+            throw new IllegalArgumentException("Thiếu costUsd trong dữ liệu usage");
+        }
+    }
+
+    private void saveUsageRecord(RecordAiUsageCommand input) {
         // Go through QuotaPricingPort instead of reading ExchangeRateSnapshotRepository directly: that port already combines
         // "the latest exchange rate, falling back to the constant in .env when no fetch has succeeded yet", so repeating the logic
         // here would build a second exchange rate that silently drifts from the quota selling price.
         //
         // Fix the exchange rate AT WRITE TIME and store it on this very row: a Kafka/DLT retry may push an event to the next day,
         // and converting again with the "latest" rate would then give a different number from the one at the time the real cost
-        // arose. The idempotency constraint above guarantees an event is only fixed exactly once.
+        // arose. The idempotency constraint in execute guarantees an event is only fixed exactly once.
         BigDecimal exchangeRateVnd = quotaPricingPort.usdToVndRate();
         BigDecimal costVnd = input.costUsd().multiply(exchangeRateVnd).setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
 
-        aiUsageRecordRepository.save(AiUsageRecord.builder()
-            .assessmentSessionId(input.assessmentSessionId())
-            .turnId(input.turnId())
-            .usageEventId(input.usageEventId())
-            .usageType(input.usageType())
-            .provider(input.provider())
-            .modelName(input.modelName())
-            .inputTokens(input.inputTokens())
-            .outputTokens(input.outputTokens())
-            .cacheCreationInputTokens(input.cacheCreationInputTokens())
-            .cacheReadInputTokens(input.cacheReadInputTokens())
-            .durationMs(input.durationMs())
-            .unitPriceJson(input.unitPriceJson())
-            .costUsd(input.costUsd())
-            .costVnd(costVnd)
-            .fxRateUsed(exchangeRateVnd)
-            .occurredAt(input.occurredAt())
-            .build());
-        return null;
+        aiUsageRecordRepository.save(AiUsageRecord.recorded(
+            input.assessmentSessionId(), input.turnId(), input.usageEventId(), input.usageType(), input.provider(),
+            input.modelName(), input.inputTokens(), input.outputTokens(), input.cacheCreationInputTokens(),
+            input.cacheReadInputTokens(), input.durationMs(), input.unitPriceJson(), input.costUsd(), costVnd,
+            exchangeRateVnd, input.occurredAt()));
     }
 }

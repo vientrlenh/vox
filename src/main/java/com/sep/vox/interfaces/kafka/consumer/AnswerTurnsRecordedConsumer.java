@@ -50,37 +50,13 @@ public class AnswerTurnsRecordedConsumer {
             log.info("Receive answer turns event topic={} partition={} offset={} answerKey={}",
                 record.topic(), record.partition(), record.offset(), record.key());
 
-            if (event == null || event.payload() == null || event.payload().turns() == null) {
-                ack.acknowledge();
-                return;
-            }
-            if (event.eventType() != null && !"AnswerTurnsRecorded".equals(event.eventType())) {
+            if (isIgnorable(event)) {
                 ack.acknowledge();
                 return;
             }
 
-            for (AnswerTurnsRecordedEventDto.AnswerTurnPayloadDto turn : event.payload().turns()) {
-                UUID answerId = parseUuid(turn.answerId() != null ? turn.answerId() : event.answerId(), "answerId");
-                recordAnswerTurnUseCase.execute(new RecordAnswerTurnCommand(
-                    answerId,
-                    parseUuid(turn.sessionId(), "sessionId"),
-                    parseNullableUuid(turn.paperItemId(), "paperItemId"),
-                    turn.turnOrder() == null ? 0 : turn.turnOrder(),
-                    turn.turnType(),
-                    turn.promptText(),
-                    turn.audioUrl(),
-                    turn.transcript(),
-                    turn.durationSeconds(),
-                    turn.wordCount(),
-                    parseAnsweredAt(turn.answeredAt())
-                ));
-            }
-            if (event.payload().reason() != null && !event.payload().reason().isBlank()) {
-                recordAnswerTerminationReasonUseCase.execute(new RecordAnswerTerminationReasonUseCase.Command(
-                    parseUuid(event.answerId(), "answerId"),
-                    event.payload().reason().trim()
-                ));
-            }
+            recordTurns(event);
+            recordTerminationReason(event);
 
             ack.acknowledge();
         } catch (Exception e) {
@@ -88,6 +64,39 @@ public class AnswerTurnsRecordedConsumer {
             throw e instanceof RuntimeException runtimeException
                 ? runtimeException
                 : new IllegalStateException("Failed to process answer turns event", e);
+        }
+    }
+
+    private boolean isIgnorable(AnswerTurnsRecordedEventDto event) {
+        return event == null || event.payload() == null || event.payload().turns() == null
+            || (event.eventType() != null && !"AnswerTurnsRecorded".equals(event.eventType()));
+    }
+
+    private void recordTurns(AnswerTurnsRecordedEventDto event) {
+        for (AnswerTurnsRecordedEventDto.AnswerTurnPayloadDto turn : event.payload().turns()) {
+            UUID answerId = parseUuid(turn.answerId() != null ? turn.answerId() : event.answerId(), "answerId");
+            recordAnswerTurnUseCase.execute(new RecordAnswerTurnCommand(
+                answerId,
+                parseUuid(turn.sessionId(), "sessionId"),
+                parseNullableUuid(turn.paperItemId(), "paperItemId"),
+                turn.turnOrder() == null ? 0 : turn.turnOrder(),
+                turn.turnType(),
+                turn.promptText(),
+                turn.audioUrl(),
+                turn.transcript(),
+                turn.durationSeconds(),
+                turn.wordCount(),
+                parseAnsweredAt(turn.answeredAt())
+            ));
+        }
+    }
+
+    private void recordTerminationReason(AnswerTurnsRecordedEventDto event) {
+        if (event.payload().reason() != null && !event.payload().reason().isBlank()) {
+            recordAnswerTerminationReasonUseCase.execute(new RecordAnswerTerminationReasonUseCase.Command(
+                parseUuid(event.answerId(), "answerId"),
+                event.payload().reason().trim()
+            ));
         }
     }
 

@@ -1,104 +1,55 @@
 package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
 import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
-import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.HashSet;
 
-import java.util.Set;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
-import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.assessmentblueprint.CreateAssessmentBlueprintSectionCommand;
 import com.sep.vox.application.port.input.command.assessmentblueprint.CreateAssessmentBlueprintSlotCommand;
 import com.sep.vox.application.port.input.command.assessmentblueprint.CreateAssessmentBlueprintVersionCommand;
 import com.sep.vox.application.port.input.command.assessmentblueprint.CreateQuestionSelectionSpecCommand;
+import com.sep.vox.application.port.input.service.AssessmentBlueprintEditAccessService;
+import com.sep.vox.application.port.input.service.AssessmentBlueprintStructureValidator;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentBlueprintVersionDto;
 import com.sep.vox.domain.mapper.AssessmentBlueprintVersionDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSection;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
-import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
-import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSectionRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSlotRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
-import com.sep.vox.domain.repository.QuestionRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service
 @RequiredArgsConstructor
 public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateAssessmentBlueprintVersionCommand, AssessmentBlueprintVersionDto> {
 
-    private final AssessmentBlueprintRepository assessmentBlueprintRepository;
+    private final AssessmentBlueprintEditAccessService assessmentBlueprintEditAccessService;
     private final AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository;
     private final AssessmentBlueprintSectionRepository assessmentBlueprintSectionRepository;
     private final AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository;
-    private final QuestionRepository questionRepository;
-    private final SchoolUserRepository schoolUserRepository;
+    private final AssessmentBlueprintStructureValidator assessmentBlueprintStructureValidator;
     private final AssessmentTimeQuotaGuardService assessmentTimeQuotaGuardService;
     private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
-    private final UserContextPort userContextPort;
 
     @Override
     @Transactional
     public AssessmentBlueprintVersionDto execute(CreateAssessmentBlueprintVersionCommand input) {
         CreateAssessmentBlueprintVersionCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+        AssessmentBlueprint blueprint = assessmentBlueprintEditAccessService.requireEditableBlueprint(command.blueprintId());
+        assessmentBlueprintStructureValidator.validateSections(command.sections());
 
-        AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(command.blueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
-        if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
-        validateSections(command);
-
-        Instant now = Instant.now();
-        int versionNumber = assessmentBlueprintVersionRepository.nextVersionNumber(blueprint.getId());
-        AssessmentBlueprintVersion version = AssessmentBlueprintVersion.draft(
-            blueprint.getId(),
-            versionNumber,
-            blueprint.getCode() + "-V" + versionNumber,
-            command.effectiveFrom() == null ? now : command.effectiveFrom(),
-            command.effectiveTo());
-        AssessmentBlueprintVersion savedVersion = assessmentBlueprintVersionRepository.save(version);
-
+        AssessmentBlueprintVersion savedVersion = saveDraftVersion(blueprint, command);
         for (CreateAssessmentBlueprintSectionCommand sectionCommand : command.sections()) {
-            AssessmentBlueprintSection savedSection = assessmentBlueprintSectionRepository.save(AssessmentBlueprintSection.create(
-                savedVersion.getId(),
-                sectionCommand.order(),
-                sectionCommand.title(),
-                sectionCommand.instruction(),
-                sectionCommand.sectionTimeLimitSeconds(),
-                defaultWeight(sectionCommand.sectionWeight())));
-            for (CreateAssessmentBlueprintSlotCommand slotCommand : slotsOf(sectionCommand)) {
-                assessmentBlueprintSlotRepository.save(AssessmentBlueprintSlot.create(
-                    savedSection.getId(),
-                    savedVersion.getId(),
-                    slotCommand.order(),
-                    defaultWeight(slotCommand.weight()),
-                    slotCommand.prepTimeSecondsOverride(),
-                    slotCommand.responseTimeSecondsOverride(),
-                    slotCommand.slotType(),
-                    slotCommand.fixedQuestionId(),
-                    selectionSpecOf(slotCommand.selectionSpec())));
-            }
+            saveSectionWithSlots(savedVersion, sectionCommand);
         }
 
         AssessmentBlueprintVersion recalculatedVersion = recalculateBlueprintVersionTimeLimitService.recalculate(savedVersion.getId());
@@ -108,6 +59,40 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
             "Phiên bản blueprint " + recalculatedVersion.getCode()
         );
         return AssessmentBlueprintVersionDtoMapper.toDto(recalculatedVersion);
+    }
+
+    private AssessmentBlueprintVersion saveDraftVersion(AssessmentBlueprint blueprint, CreateAssessmentBlueprintVersionCommand command) {
+        Instant now = Instant.now();
+        int versionNumber = assessmentBlueprintVersionRepository.nextVersionNumber(blueprint.getId());
+        AssessmentBlueprintVersion version = AssessmentBlueprintVersion.draft(
+            blueprint.getId(),
+            versionNumber,
+            blueprint.getCode() + "-V" + versionNumber,
+            command.effectiveFrom() == null ? now : command.effectiveFrom(),
+            command.effectiveTo());
+        return assessmentBlueprintVersionRepository.save(version);
+    }
+
+    private void saveSectionWithSlots(AssessmentBlueprintVersion savedVersion, CreateAssessmentBlueprintSectionCommand sectionCommand) {
+        AssessmentBlueprintSection savedSection = assessmentBlueprintSectionRepository.save(AssessmentBlueprintSection.create(
+            savedVersion.getId(),
+            sectionCommand.order(),
+            sectionCommand.title(),
+            sectionCommand.instruction(),
+            sectionCommand.sectionTimeLimitSeconds(),
+            defaultWeight(sectionCommand.sectionWeight())));
+        for (CreateAssessmentBlueprintSlotCommand slotCommand : slotsOf(sectionCommand)) {
+            assessmentBlueprintSlotRepository.save(AssessmentBlueprintSlot.create(
+                savedSection.getId(),
+                savedVersion.getId(),
+                slotCommand.order(),
+                defaultWeight(slotCommand.weight()),
+                slotCommand.prepTimeSecondsOverride(),
+                slotCommand.responseTimeSecondsOverride(),
+                slotCommand.slotType(),
+                slotCommand.fixedQuestionId(),
+                selectionSpecOf(slotCommand.selectionSpec())));
+        }
     }
 
     private CreateAssessmentBlueprintVersionCommand normalize(CreateAssessmentBlueprintVersionCommand input) {
@@ -160,65 +145,6 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
             StringNormalization.trimAndCollapseSpaces(input.skillCode()),
             input.topicId()
         );
-    }
-
-    private static final BigDecimal WEIGHT_TOLERANCE = new BigDecimal("0.01");
-
-    private void validateSections(CreateAssessmentBlueprintVersionCommand command) {
-        if (command.sections().isEmpty()) {
-            throw new IllegalArgumentException("Blueprint version phải có ít nhất một section");
-        }
-        Set<Integer> sectionOrders = new HashSet<Integer>();
-        BigDecimal sectionWeightSum = BigDecimal.ZERO;
-        for (CreateAssessmentBlueprintSectionCommand section : command.sections()) {
-            if (!sectionOrders.add(section.order())) {
-                throw new IllegalArgumentException("Thứ tự section không được trùng lặp");
-            }
-            if (slotsOf(section).isEmpty()) {
-                throw new IllegalArgumentException("Mỗi section phải có ít nhất một slot");
-            }
-            Set<Integer> slotOrders = new HashSet<Integer>();
-            BigDecimal slotWeightSum = BigDecimal.ZERO;
-            for (CreateAssessmentBlueprintSlotCommand slot : slotsOf(section)) {
-                if (!slotOrders.add(slot.order())) {
-                    throw new IllegalArgumentException("Thứ tự slot trong section không được trùng lặp");
-                }
-                validateSlot(slot);
-                slotWeightSum = slotWeightSum.add(defaultWeight(slot.weight()));
-            }
-            if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-                throw new IllegalArgumentException(
-                    "Tổng trọng số ô câu hỏi trong phần \"" + section.title() + "\" phải bằng 1.00");
-            }
-            sectionWeightSum = sectionWeightSum.add(defaultWeight(section.sectionWeight()));
-        }
-        if (sectionWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalArgumentException("Tổng trọng số section phải bằng 1.00");
-        }
-    }
-
-    private void validateSlot(CreateAssessmentBlueprintSlotCommand slot) {
-        AssessmentBlueprintSlotType slotType = slot.slotType();
-        if (slotType == AssessmentBlueprintSlotType.FIXED) {
-            if (slot.fixedQuestionId() == null) {
-                throw new IllegalArgumentException("Slot FIXED bắt buộc phải có fixedQuestionId");
-            }
-            if (slot.selectionSpec() != null) {
-                throw new IllegalArgumentException("Slot FIXED không được có selectionSpec");
-            }
-            Question question = questionRepository.findById(slot.fixedQuestionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi fixed cho slot"));
-            if (question.getStatus() != QuestionStatus.PUBLISHED) {
-                throw new IllegalArgumentException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
-            }
-            return;
-        }
-        if (slot.fixedQuestionId() != null) {
-            throw new IllegalArgumentException("Slot SELECTION không được có fixedQuestionId");
-        }
-        if (slot.selectionSpec() == null) {
-            throw new IllegalArgumentException("Slot SELECTION bắt buộc phải có selectionSpec");
-        }
     }
 
     private java.util.List<CreateAssessmentBlueprintSlotCommand> slotsOf(CreateAssessmentBlueprintSectionCommand section) {

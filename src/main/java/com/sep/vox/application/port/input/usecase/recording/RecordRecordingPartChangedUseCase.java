@@ -39,20 +39,31 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
 
         if (existing.isPresent()
             && RecordingPrecedence.shouldKeepExisting(existing.get().getStatus(), input.status())) {
-            log.info(
-                "Giữ bản ghi hiện có assessmentSessionId={} streamType={} source={} status={}; bỏ qua event status={} objectKey={}",
-                input.assessmentSessionId(), input.streamType(),
-                existing.get().getSource(), existing.get().getStatus(),
-                input.status(), input.objectKey()
-            );
+            logKeptExistingRecording(existing.get(), input);
             return null;
         }
 
         AssessmentRecording recording = existing.orElseGet(() -> AssessmentRecording.registered(
                 input.assessmentSessionId(), input.candidateId(), input.streamType(), input.source(), input.status(), now));
 
-        // Không set lại source: nó là một phần danh tính của hàng, nên hàng tìm được luôn đã
-        // thuộc đúng nguồn này rồi.
+        applyPartChange(recording, input);
+
+        assessmentRecordingRepository.save(recording);
+        return null;
+    }
+
+    private void logKeptExistingRecording(AssessmentRecording existing, RecordRecordingPartChangedCommand input) {
+        log.info(
+            "Giữ bản ghi hiện có assessmentSessionId={} streamType={} source={} status={}; bỏ qua event status={} objectKey={}",
+            input.assessmentSessionId(), input.streamType(),
+            existing.getSource(), existing.getStatus(),
+            input.status(), input.objectKey()
+        );
+    }
+
+    private void applyPartChange(AssessmentRecording recording, RecordRecordingPartChangedCommand input) {
+        // The source is not set again: it is part of the row identity, so the row found already belongs to
+        // this source.
         recording.setStatus(input.status());
 
         if (input.objectKey() != null && !input.objectKey().isBlank()) {
@@ -66,9 +77,6 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
             }
             recording.setAssembledAt(input.occurredAt());
         }
-
-        assessmentRecordingRepository.save(recording);
-        return null;
     }
 
 }

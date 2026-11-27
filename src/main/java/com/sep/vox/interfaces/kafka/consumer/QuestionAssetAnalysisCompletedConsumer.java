@@ -45,21 +45,12 @@ public class QuestionAssetAnalysisCompletedConsumer {
             log.info("Receive question asset analysis event topic={} partition={} offset={} assetId={}",
                 record.topic(), record.partition(), record.offset(), event == null ? null : event.assetId());
 
-            if (event == null || event.assetId() == null || event.assetId().isBlank()) {
-                ack.acknowledge();
-                return;
-            }
-            if (event.eventType() != null && !"QuestionAssetAnalysisCompleted".equals(event.eventType())) {
+            if (isIgnorable(event)) {
                 ack.acknowledge();
                 return;
             }
 
-            QuestionAssetAnalysisCompletedEventDto.Payload payloadDto = event.payload();
-            recordQuestionAssetAnalysisResultUseCase.execute(new RecordQuestionAssetAnalysisResultUseCase.Command(
-                UUID.fromString(event.assetId().trim()),
-                payloadDto == null ? null : payloadDto.transcript(),
-                payloadDto == null ? null : payloadDto.description()
-            ));
+            recordAnalysisResult(event);
 
             ack.acknowledge();
         } catch (Exception e) {
@@ -68,6 +59,20 @@ public class QuestionAssetAnalysisCompletedConsumer {
                 ? runtimeException
                 : new IllegalStateException("Failed to process question asset analysis event", e);
         }
+    }
+
+    private boolean isIgnorable(QuestionAssetAnalysisCompletedEventDto event) {
+        return event == null || event.assetId() == null || event.assetId().isBlank()
+            || (event.eventType() != null && !"QuestionAssetAnalysisCompleted".equals(event.eventType()));
+    }
+
+    private void recordAnalysisResult(QuestionAssetAnalysisCompletedEventDto event) {
+        QuestionAssetAnalysisCompletedEventDto.Payload payloadDto = event.payload();
+        recordQuestionAssetAnalysisResultUseCase.execute(new RecordQuestionAssetAnalysisResultUseCase.Command(
+            UUID.fromString(event.assetId().trim()),
+            payloadDto == null ? null : payloadDto.transcript(),
+            payloadDto == null ? null : payloadDto.description()
+        ));
     }
 
     @DltHandler

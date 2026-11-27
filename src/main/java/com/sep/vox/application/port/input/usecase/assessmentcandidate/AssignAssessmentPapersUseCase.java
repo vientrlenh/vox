@@ -58,23 +58,41 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
             return new AssignAssessmentPapersResponse(0);
         }
 
-        // Toàn bộ mã đề của kỳ thi phải đã khoá (LOCKED) mới được phân đề.
+        Set<UUID> lockedPaperIds = requireAllPapersLocked(assessment);
+        Map<UUID, AssessmentCandidate> candidatesById = findCandidatesById(assessment, input.assignments());
+        requireValidAssignments(input.assignments(), candidatesById, lockedPaperIds);
+
+        List<AssessmentCandidate> toSave = assignPapers(input.assignments(), candidatesById, currentUserId);
+        List<AssessmentCandidate> saved = assessmentCandidateRepository.saveAll(toSave);
+        return new AssignAssessmentPapersResponse(saved.size());
+    }
+
+    /** Papers can only be assigned once every paper variant of the assessment is LOCKED. */
+    private Set<UUID> requireAllPapersLocked(Assessment assessment) {
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
         if (papers.isEmpty() || papers.stream().anyMatch(paper -> paper.getStatus() != AssessmentPaperStatus.LOCKED)) {
             throw new IllegalArgumentException("Tất cả mã đề của kỳ thi phải được khoá trước khi phân đề");
         }
-        Set<UUID> lockedPaperIds = papers.stream()
+        return papers.stream()
             .map(paper -> paper.getId())
             .collect(Collectors.toSet());
+    }
 
-        Set<UUID> candidateIds = input.assignments().stream()
+    private Map<UUID, AssessmentCandidate> findCandidatesById(
+        Assessment assessment, List<AssessmentPaperAssignmentItem> assignments) {
+        Set<UUID> candidateIds = assignments.stream()
             .map(assignment -> assignment.candidateId())
             .collect(Collectors.toCollection(HashSet::new));
-        Map<UUID, AssessmentCandidate> candidatesById = assessmentCandidateRepository.findByIdInAndAssessmentId(candidateIds, assessment.getId()).stream()
+        return assessmentCandidateRepository.findByIdInAndAssessmentId(candidateIds, assessment.getId()).stream()
             .collect(Collectors.toMap(candidate -> candidate.getId(), Function.identity()));
+    }
 
-        // Validate all-or-nothing: mọi cặp phải hợp lệ trước khi ghi bất kỳ thứ gì.
-        for (AssessmentPaperAssignmentItem assignment : input.assignments()) {
+    /** All-or-nothing: every pair must be valid before anything is written. */
+    private void requireValidAssignments(
+        List<AssessmentPaperAssignmentItem> assignments,
+        Map<UUID, AssessmentCandidate> candidatesById,
+        Set<UUID> lockedPaperIds) {
+        for (AssessmentPaperAssignmentItem assignment : assignments) {
             if (!candidatesById.containsKey(assignment.candidateId())) {
                 throw new IllegalArgumentException("Thí sinh không thuộc kỳ thi này");
             }
@@ -82,11 +100,16 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
                 throw new IllegalArgumentException("Mã đề không hợp lệ hoặc chưa được khoá");
             }
         }
+    }
 
+    private List<AssessmentCandidate> assignPapers(
+        List<AssessmentPaperAssignmentItem> assignments,
+        Map<UUID, AssessmentCandidate> candidatesById,
+        UUID currentUserId) {
         Instant now = Instant.now();
         List<AssessmentCandidate> toSave = new ArrayList<AssessmentCandidate>();
         Set<UUID> handled = new HashSet<>();
-        for (AssessmentPaperAssignmentItem assignment : input.assignments()) {
+        for (AssessmentPaperAssignmentItem assignment : assignments) {
             if (!handled.add(assignment.candidateId())) {
                 continue;
             }
@@ -94,9 +117,7 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
             candidate.assignPaper(assignment.paperId(), now, currentUserId);
             toSave.add(candidate);
         }
-
-        List<AssessmentCandidate> saved = assessmentCandidateRepository.saveAll(toSave);
-        return new AssignAssessmentPapersResponse(saved.size());
+        return toSave;
     }
 
     private UUID authorize(Assessment assessment) {

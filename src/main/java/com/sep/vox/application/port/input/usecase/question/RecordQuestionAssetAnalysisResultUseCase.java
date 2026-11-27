@@ -24,15 +24,27 @@ public class RecordQuestionAssetAnalysisResultUseCase
     public Void execute(Command input) {
         QuestionAsset asset = questionAssetRepository.findById(input.assetId()).orElse(null);
         if (asset == null) {
-            // Race hợp lệ: asset có thể đã bị xoá hoặc question đã bị đổi (clone sang draft khác)
-            // giữa lúc publish yêu cầu và lúc Python trả kết quả về -- không phải lỗi đáng retry/DLT.
+            // Legitimate race: the asset may have been deleted or the question replaced (cloned to another draft)
+            // between publishing the request and the Python service returning the result -- not an error worth
+            // a retry or the dead-letter topic.
             log.warn("Bỏ qua kết quả phân tích asset -- không còn tìm thấy assetId={}", input.assetId());
             return null;
         }
 
-        // Chỉ điền vào field ĐANG rỗng -- nội dung người đã gõ tay hoặc AI đã viết trước đó luôn
-        // thắng, không bao giờ bị ghi đè ở đây. "Tạo lại bằng AI" (RegenerateQuestionAssetAnalysisUseCase
-        // .resetForAnalysis()) xoá trắng field trước khi publish chính là để luật này cho phép ghi lại.
+        if (fillBlankFields(asset, input)) {
+            questionAssetRepository.save(asset);
+        }
+        return null;
+    }
+
+    /**
+     * Fills only the fields that are CURRENTLY blank -- content a person typed or AI wrote earlier always wins
+     * and is never overwritten here. "Tạo lại bằng AI" (RegenerateQuestionAssetAnalysisUseCase.resetForAnalysis())
+     * blanks the field before publishing precisely so that this rule lets it be written again.
+     *
+     * @return whether any field was filled
+     */
+    private boolean fillBlankFields(QuestionAsset asset, Command input) {
         boolean changed = false;
         if (isBlank(asset.getTranscript()) && !isBlank(input.transcript())) {
             asset.setTranscript(input.transcript());
@@ -42,11 +54,7 @@ public class RecordQuestionAssetAnalysisResultUseCase
             asset.setDescription(input.description());
             changed = true;
         }
-
-        if (changed) {
-            questionAssetRepository.save(asset);
-        }
-        return null;
+        return changed;
     }
 
     private boolean isBlank(String value) {

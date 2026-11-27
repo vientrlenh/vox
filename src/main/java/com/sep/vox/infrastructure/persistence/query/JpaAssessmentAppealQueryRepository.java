@@ -1,6 +1,5 @@
 package com.sep.vox.infrastructure.persistence.query;
 
-import jakarta.persistence.TypedQuery;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -36,27 +35,53 @@ import com.sep.vox.infrastructure.persistence.paging.OneBasedPaging;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Tuple;
+import jakarta.persistence.TypedQuery;
 
 @Repository
 public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQueryRepository {
 
-    /** Trạng thái đơn còn đang xử lý — deadline chỉ có ý nghĩa ở đây. */
+    /** Statuses of an appeal that is still being handled; the deadline only means something here. */
     private static final Set<AssessmentAppealStatus> IN_PROGRESS_STATUSES =
         Set.of(AssessmentAppealStatus.APPROVED, AssessmentAppealStatus.GRADING);
+
+    private static final String APPEAL_DETAIL_SELECT = """
+        SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
+               a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
+               rv.scoringScaleMin, rv.scoringScaleMax, a.withdrawnAt, a.reviewerOverrideReason
+        FROM AssessmentResultAppealJpaEntity a
+        JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+        JOIN AssessmentJpaEntity e ON e.id = cr.assessmentId
+        JOIN AssessmentCandidateJpaEntity c ON c.id = cr.candidateId
+        JOIN UserJpaEntity u ON u.id = c.studentId
+        JOIN RubricVersionJpaEntity rv ON rv.id = cr.rubricVersionId
+        """;
 
     @PersistenceContext
     private EntityManager em;
 
-    // ---- danh sách đơn (school admin) --------------------------------------
+    // ---- appeal list (school admin) --------------------------------------
 
     @Override
     public PageResult<AppealSummaryInfo> searchAppeals(
             UUID schoolId, UUID assessmentId, AssessmentAppealStatus status, String keyword, int page, int size) {
-        String normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
+        String normalizedKeyword = toLikePattern(keyword);
+        List<Tuple> rows = schoolAppealSummaryQuery(schoolId, assessmentId, status, normalizedKeyword)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
+            .setMaxResults(size)
+            .getResultList();
+        List<AppealSummaryInfo> content = toAppealSummaries(rows);
+        Long total = countSchoolAppeals(schoolId, assessmentId, status, normalizedKeyword);
+        return toAppealPage(content, page, size, total);
+    }
 
-        // Do NOT join to the assessment slots here: one appeal has N slots, and a to-many join would multiply rows
-        // and break pagination (one appeal taking several slots) as well as drift from the COUNT query below.
-        TypedQuery<Tuple> query = em.createQuery("""
+    /**
+     * Do NOT join to the assessment slots here: one appeal has N slots, and a to-many join would multiply rows
+     * and break pagination (one appeal taking several slots) as well as drift from the COUNT query of
+     * {@link #countSchoolAppeals}.
+     */
+    private TypedQuery<Tuple> schoolAppealSummaryQuery(
+            UUID schoolId, UUID assessmentId, AssessmentAppealStatus status, String normalizedKeyword) {
+        return em.createQuery("""
             SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
             FROM AssessmentResultAppealJpaEntity a
             JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
@@ -72,40 +97,12 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             .setParameter("schoolId", schoolId)
             .setParameter("assessmentId", assessmentId)
             .setParameter("status", statusName(status))
-            .setParameter("keyword", normalizedKeyword)
-            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
-            .setMaxResults(size);
+            .setParameter("keyword", normalizedKeyword);
+    }
 
-        List<Tuple> rows = query.getResultList();
-        List<UUID> appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
-        Map<UUID, AppealReviewerInfo> reviewersByAppeal = reviewersByAppealIds(appealIds);
-        Map<UUID, String> classNamesByAppeal = classNamesByAppealIds(appealIds);
-        Map<UUID, List<String>> partLabelsByAppeal = partLabelsByAppealIds(appealIds);
-        Instant now = Instant.now();
-
-        List<AppealSummaryInfo> content = new ArrayList<AppealSummaryInfo>();
-        for (Tuple row : rows) {
-            UUID appealId = row.get(0, UUID.class);
-            AppealReviewerInfo reviewer = reviewersByAppeal.get(appealId);
-            AssessmentAppealStatus appealStatus = AssessmentAppealStatus.valueOf(row.get(4, String.class));
-            Instant deadline = row.get(6, Instant.class);
-            content.add(new AppealSummaryInfo(
-                appealId,
-                row.get(1, String.class),
-                classNamesByAppeal.get(appealId),
-                row.get(2, String.class),
-                partLabelsByAppeal.getOrDefault(appealId, List.of()),
-                row.get(3, BigDecimal.class),
-                appealStatus,
-                row.get(5, Instant.class),
-                deadline,
-                reviewer == null ? null : reviewer.reviewerName(),
-                reviewer == null ? null : reviewer.status(),
-                isOverdue(deadline, appealStatus, now)
-            ));
-        }
-
-        Long total = em.createQuery("""
+    private Long countSchoolAppeals(
+            UUID schoolId, UUID assessmentId, AssessmentAppealStatus status, String normalizedKeyword) {
+        return em.createQuery("""
             SELECT COUNT(a) FROM AssessmentResultAppealJpaEntity a
             JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
             JOIN AssessmentJpaEntity e ON e.id = cr.assessmentId
@@ -121,7 +118,89 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             .setParameter("status", statusName(status))
             .setParameter("keyword", normalizedKeyword)
             .getSingleResult();
+    }
 
+    @Override
+    public PageResult<AppealSummaryInfo> searchAppealsByStudentId(
+            UUID studentId, AssessmentAppealStatus status, int page, int size) {
+        List<Tuple> rows = studentAppealSummaryQuery(studentId, status)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
+            .setMaxResults(size)
+            .getResultList();
+        List<AppealSummaryInfo> content = toAppealSummaries(rows);
+        Long total = countStudentAppeals(studentId, status);
+        return toAppealPage(content, page, size, total);
+    }
+
+    private TypedQuery<Tuple> studentAppealSummaryQuery(UUID studentId, AssessmentAppealStatus status) {
+        return em.createQuery("""
+            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
+            FROM AssessmentResultAppealJpaEntity a
+            JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN AssessmentJpaEntity e ON e.id = cr.assessmentId
+            JOIN AssessmentCandidateJpaEntity c ON c.id = cr.candidateId
+            JOIN UserJpaEntity u ON u.id = c.studentId
+            WHERE c.studentId = :studentId
+            AND (:status IS NULL OR a.status = :status)
+            ORDER BY a.requestedAt DESC
+        """, Tuple.class)
+            .setParameter("studentId", studentId)
+            .setParameter("status", statusName(status));
+    }
+
+    private Long countStudentAppeals(UUID studentId, AssessmentAppealStatus status) {
+        return em.createQuery("""
+            SELECT COUNT(a) FROM AssessmentResultAppealJpaEntity a
+            JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
+            JOIN AssessmentCandidateJpaEntity c ON c.id = cr.candidateId
+            WHERE c.studentId = :studentId
+            AND (:status IS NULL OR a.status = :status)
+        """, Long.class)
+            .setParameter("studentId", studentId)
+            .setParameter("status", statusName(status))
+            .getSingleResult();
+    }
+
+    private List<AppealSummaryInfo> toAppealSummaries(List<Tuple> rows) {
+        List<UUID> appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
+        Map<UUID, AppealReviewerInfo> reviewersByAppeal = reviewersByAppealIds(appealIds);
+        Map<UUID, String> classNamesByAppeal = classNamesByAppealIds(appealIds);
+        Map<UUID, List<String>> partLabelsByAppeal = partLabelsByAppealIds(appealIds);
+        Instant now = Instant.now();
+        List<AppealSummaryInfo> content = new ArrayList<AppealSummaryInfo>();
+        for (Tuple row : rows) {
+            UUID appealId = row.get(0, UUID.class);
+            content.add(toAppealSummary(
+                row,
+                reviewersByAppeal.get(appealId),
+                classNamesByAppeal.get(appealId),
+                partLabelsByAppeal.getOrDefault(appealId, List.of()),
+                now));
+        }
+        return content;
+    }
+
+    private AppealSummaryInfo toAppealSummary(
+            Tuple row, AppealReviewerInfo reviewer, String className, List<String> partLabels, Instant now) {
+        AssessmentAppealStatus appealStatus = AssessmentAppealStatus.valueOf(row.get(4, String.class));
+        Instant deadline = row.get(6, Instant.class);
+        return new AppealSummaryInfo(
+            row.get(0, UUID.class),
+            row.get(1, String.class),
+            className,
+            row.get(2, String.class),
+            partLabels,
+            row.get(3, BigDecimal.class),
+            appealStatus,
+            row.get(5, Instant.class),
+            deadline,
+            reviewer == null ? null : reviewer.reviewerName(),
+            reviewer == null ? null : reviewer.status(),
+            isOverdue(deadline, appealStatus, now)
+        );
+    }
+
+    private PageResult<AppealSummaryInfo> toAppealPage(List<AppealSummaryInfo> content, int page, int size, Long total) {
         int totalPages = (int) Math.ceil((double) total / size);
         return new PageResult<>(content, page, size, total, totalPages);
     }
@@ -133,72 +212,21 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
      * <p>One appeal can have several rows over time (the first grader returns it, the admin assigns
      * someone else), so the NEWEST row is kept.
      */
-    @Override
-    public PageResult<AppealSummaryInfo> searchAppealsByStudentId(
-            UUID studentId, AssessmentAppealStatus status, int page, int size) {
-        List<Tuple> rows = em.createQuery("""
-            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline
-            FROM AssessmentResultAppealJpaEntity a
-            JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
-            JOIN AssessmentJpaEntity e ON e.id = cr.assessmentId
-            JOIN AssessmentCandidateJpaEntity c ON c.id = cr.candidateId
-            JOIN UserJpaEntity u ON u.id = c.studentId
-            WHERE c.studentId = :studentId
-            AND (:status IS NULL OR a.status = :status)
-            ORDER BY a.requestedAt DESC
-        """, Tuple.class)
-            .setParameter("studentId", studentId)
-            .setParameter("status", statusName(status))
-            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
-            .setMaxResults(size)
-            .getResultList();
-
-        List<UUID> appealIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
-        Map<UUID, AppealReviewerInfo> reviewersByAppeal = reviewersByAppealIds(appealIds);
-        Map<UUID, String> classNamesByAppeal = classNamesByAppealIds(appealIds);
-        Map<UUID, List<String>> partLabelsByAppeal = partLabelsByAppealIds(appealIds);
-        Instant now = Instant.now();
-        List<AppealSummaryInfo> content = new ArrayList<AppealSummaryInfo>();
-        for (Tuple row : rows) {
-            UUID appealId = row.get(0, UUID.class);
-            AppealReviewerInfo reviewer = reviewersByAppeal.get(appealId);
-            AssessmentAppealStatus appealStatus = AssessmentAppealStatus.valueOf(row.get(4, String.class));
-            Instant deadline = row.get(6, Instant.class);
-            content.add(new AppealSummaryInfo(
-                appealId,
-                row.get(1, String.class),
-                classNamesByAppeal.get(appealId),
-                row.get(2, String.class),
-                partLabelsByAppeal.getOrDefault(appealId, List.of()),
-                row.get(3, BigDecimal.class),
-                appealStatus,
-                row.get(5, Instant.class),
-                deadline,
-                reviewer == null ? null : reviewer.reviewerName(),
-                reviewer == null ? null : reviewer.status(),
-                isOverdue(deadline, appealStatus, now)
-            ));
-        }
-
-        Long total = em.createQuery("""
-            SELECT COUNT(a) FROM AssessmentResultAppealJpaEntity a
-            JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
-            JOIN AssessmentCandidateJpaEntity c ON c.id = cr.candidateId
-            WHERE c.studentId = :studentId
-            AND (:status IS NULL OR a.status = :status)
-        """, Long.class)
-            .setParameter("studentId", studentId)
-            .setParameter("status", statusName(status))
-            .getSingleResult();
-        int totalPages = (int) Math.ceil((double) total / size);
-        return new PageResult<>(content, page, size, total, totalPages);
-    }
-
     private Map<UUID, AppealReviewerInfo> reviewersByAppealIds(List<UUID> appealIds) {
         if (appealIds.isEmpty()) {
             return Map.of();
         }
-        List<Tuple> rows = em.createQuery("""
+        List<Tuple> rows = findAppealReviewerRows(appealIds);
+        Instant now = Instant.now();
+        Map<UUID, AppealReviewerInfo> map = new LinkedHashMap<UUID, AppealReviewerInfo>();
+        for (Tuple row : rows) {
+            map.putIfAbsent(row.get(0, UUID.class), toAppealReviewer(row, now));
+        }
+        return map;
+    }
+
+    private List<Tuple> findAppealReviewerRows(List<UUID> appealIds) {
+        return em.createQuery("""
             SELECT ga.appealId, ga.id, ga.teacherId, u.fullName, ga.status, ga.outcome,
                    ga.assignedAt, ga.completedAt, ga.deadlineAt
             FROM AssessmentGradingAssignmentJpaEntity ga
@@ -208,27 +236,24 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         """, Tuple.class)
             .setParameter("appealIds", appealIds)
             .getResultList();
+    }
 
-        Instant now = Instant.now();
-        Map<UUID, AppealReviewerInfo> map = new LinkedHashMap<UUID, AppealReviewerInfo>();
-        for (Tuple row : rows) {
-            GradingAssignmentStatus assignmentStatus = GradingAssignmentStatus.valueOf(row.get(4, String.class));
-            String outcome = row.get(5, String.class);
-            Instant deadlineAt = row.get(8, Instant.class);
-            map.putIfAbsent(row.get(0, UUID.class), new AppealReviewerInfo(
-                row.get(1, UUID.class),
-                row.get(2, UUID.class),
-                row.get(3, String.class),
-                assignmentStatus,
-                outcome == null ? null : GradingOutcome.valueOf(outcome),
-                row.get(6, Instant.class),
-                row.get(7, Instant.class),
-                deadlineAt,
-                assignmentStatus == GradingAssignmentStatus.ASSIGNED
-                    && deadlineAt != null && deadlineAt.isBefore(now)
-            ));
-        }
-        return map;
+    private AppealReviewerInfo toAppealReviewer(Tuple row, Instant now) {
+        GradingAssignmentStatus assignmentStatus = GradingAssignmentStatus.valueOf(row.get(4, String.class));
+        String outcome = row.get(5, String.class);
+        Instant deadlineAt = row.get(8, Instant.class);
+        return new AppealReviewerInfo(
+            row.get(1, UUID.class),
+            row.get(2, UUID.class),
+            row.get(3, String.class),
+            assignmentStatus,
+            outcome == null ? null : GradingOutcome.valueOf(outcome),
+            row.get(6, Instant.class),
+            row.get(7, Instant.class),
+            deadlineAt,
+            assignmentStatus == GradingAssignmentStatus.ASSIGNED
+                && deadlineAt != null && deadlineAt.isBefore(now)
+        );
     }
 
     /** The (active) class names of many appeals in 1 query; keeps the first value per appeal. */
@@ -303,6 +328,10 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             .setParameter("schoolId", schoolId)
             .getResultList();
 
+        return toAppealStats(rows);
+    }
+
+    private AppealStatsInfo toAppealStats(List<Tuple> rows) {
         int pending = 0;
         int processing = 0;
         int published = 0;
@@ -323,33 +352,38 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         return new AppealStatsInfo(pending, processing, published, rejected, withdrawn);
     }
 
-    // ---- chi tiết đơn (school admin) ---------------------------------------
+    // ---- appeal detail (school admin) ---------------------------------------
 
     @Override
     public Optional<AppealDetailInfo> findDetailById(UUID appealId, UUID schoolId) {
-        List<Tuple> rows = em.createQuery("""
-            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
-                   a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
-                   rv.scoringScaleMin, rv.scoringScaleMax, a.withdrawnAt, a.reviewerOverrideReason
-            FROM AssessmentResultAppealJpaEntity a
-            JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
-            JOIN AssessmentJpaEntity e ON e.id = cr.assessmentId
-            JOIN AssessmentCandidateJpaEntity c ON c.id = cr.candidateId
-            JOIN UserJpaEntity u ON u.id = c.studentId
-            JOIN RubricVersionJpaEntity rv ON rv.id = cr.rubricVersionId
+        return em.createQuery(APPEAL_DETAIL_SELECT + """
             WHERE a.id = :appealId AND e.schoolId = :schoolId
         """, Tuple.class)
             .setParameter("appealId", appealId)
             .setParameter("schoolId", schoolId)
-            .getResultList();
-        if (rows.isEmpty()) {
-            return Optional.empty();
-        }
-        Tuple row = rows.get(0);
+            .getResultList()
+            .stream()
+            .findFirst()
+            .map(row -> toAppealDetail(row, appealId));
+    }
+
+    @Override
+    public Optional<AppealDetailInfo> findStudentDetailById(UUID appealId, UUID studentId) {
+        return em.createQuery(APPEAL_DETAIL_SELECT + """
+            WHERE a.id = :appealId AND c.studentId = :studentId
+        """, Tuple.class)
+            .setParameter("appealId", appealId)
+            .setParameter("studentId", studentId)
+            .getResultList()
+            .stream()
+            .findFirst()
+            .map(row -> toAppealDetail(row, appealId));
+    }
+
+    private AppealDetailInfo toAppealDetail(Tuple row, UUID appealId) {
         AssessmentAppealStatus status = AssessmentAppealStatus.valueOf(row.get(4, String.class));
         Instant deadline = row.get(6, Instant.class);
-
-        return Optional.of(new AppealDetailInfo(
+        return new AppealDetailInfo(
             row.get(0, UUID.class),
             row.get(1, String.class),
             className(appealId),
@@ -358,20 +392,16 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             status,
             row.get(5, Instant.class),
             deadline,
-            row.get(7, String.class),
-            row.get(8, String.class),
-            row.get(9, String.class),
+            row.get(7, String.class), row.get(8, String.class), row.get(9, String.class),
             row.get(10, BigDecimal.class),
-            row.get(11, Instant.class),
-            row.get(12, Instant.class),
-            row.get(15, Instant.class),
+            row.get(11, Instant.class), row.get(12, Instant.class), row.get(15, Instant.class),
             row.get(16, String.class),
             appealItems(appealId),
             reviewersByAppealIds(List.of(appealId)).get(appealId),
             isOverdue(deadline, status, Instant.now()),
             row.get(13, BigDecimal.class),
             row.get(14, BigDecimal.class)
-        ));
+        );
     }
 
     /**
@@ -381,65 +411,9 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
      * <p>The two different evaluation lookups are intentional: the comparison score comes from the evaluation
      * currently in effect, while the spoken turns must come from the AI version because only the AI version has turns.
      */
-    @Override
-    public Optional<AppealDetailInfo> findStudentDetailById(UUID appealId, UUID studentId) {
-        List<Tuple> rows = em.createQuery("""
-            SELECT a.id, u.fullName, e.name, a.scoreBefore, a.status, a.requestedAt, a.deadline,
-                   a.reason, a.notes, a.decisionNote, a.scoreAfter, a.approvedAt, a.resolvedAt,
-                   rv.scoringScaleMin, rv.scoringScaleMax, a.withdrawnAt, a.reviewerOverrideReason
-            FROM AssessmentResultAppealJpaEntity a
-            JOIN AssessmentCandidateResultJpaEntity cr ON cr.id = a.candidateResultId
-            JOIN AssessmentJpaEntity e ON e.id = cr.assessmentId
-            JOIN AssessmentCandidateJpaEntity c ON c.id = cr.candidateId
-            JOIN UserJpaEntity u ON u.id = c.studentId
-            JOIN RubricVersionJpaEntity rv ON rv.id = cr.rubricVersionId
-            WHERE a.id = :appealId AND c.studentId = :studentId
-        """, Tuple.class)
-            .setParameter("appealId", appealId)
-            .setParameter("studentId", studentId)
-            .getResultList();
-        if (rows.isEmpty()) {
-            return Optional.empty();
-        }
-        Tuple row = rows.get(0);
-        AssessmentAppealStatus status = AssessmentAppealStatus.valueOf(row.get(4, String.class));
-        Instant deadline = row.get(6, Instant.class);
-        return Optional.of(new AppealDetailInfo(
-            row.get(0, UUID.class),
-            row.get(1, String.class),
-            className(appealId),
-            row.get(2, String.class),
-            row.get(3, BigDecimal.class),
-            status,
-            row.get(5, Instant.class),
-            deadline,
-            row.get(7, String.class),
-            row.get(8, String.class),
-            row.get(9, String.class),
-            row.get(10, BigDecimal.class),
-            row.get(11, Instant.class),
-            row.get(12, Instant.class),
-            row.get(15, Instant.class),
-            row.get(16, String.class),
-            appealItems(appealId),
-            reviewersByAppealIds(List.of(appealId)).get(appealId),
-            isOverdue(deadline, status, Instant.now()),
-            row.get(13, BigDecimal.class),
-            row.get(14, BigDecimal.class)
-        ));
-    }
 
     private List<AppealItemInfo> appealItems(UUID appealId) {
-        List<Tuple> rows = em.createQuery("""
-            SELECT ai.id, ai.paperItemId, ai.responseId, sec.title, ai.finalScore
-            FROM AssessmentResultAppealItemJpaEntity ai
-            LEFT JOIN AssessmentPaperItemJpaEntity pi ON pi.id = ai.paperItemId
-            LEFT JOIN AssessmentPaperSectionJpaEntity sec ON sec.id = pi.sectionId
-            WHERE ai.appealId = :appealId
-            ORDER BY sec.order ASC, pi.order ASC
-        """, Tuple.class)
-            .setParameter("appealId", appealId)
-            .getResultList();
+        List<Tuple> rows = findAppealItemRows(appealId);
         if (rows.isEmpty()) {
             return List.of();
         }
@@ -450,22 +424,42 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         Map<UUID, List<AppealCriterionScoreInfo>> scoresByEvaluation = criterionScoresByEvaluationIds(List.copyOf(baselineEvaluationIds.values()));
         Map<UUID, List<AppealTurnInfo>> turnsByEvaluation = turnsByEvaluationIds(List.copyOf(aiEvaluationIds.values()));
 
-        List<AppealItemInfo> result = new ArrayList<AppealItemInfo>();
-        for (Tuple row : rows) {
-            UUID responseId = row.get(2, UUID.class);
-            UUID baselineEvaluationId = baselineEvaluationIds.get(responseId);
-            UUID aiEvaluationId = aiEvaluationIds.get(responseId);
-            result.add(new AppealItemInfo(
-                row.get(0, UUID.class),
-                row.get(1, UUID.class),
-                row.get(3, String.class),
-                baselineEvaluationId == null
-                    ? List.of() : scoresByEvaluation.getOrDefault(baselineEvaluationId, List.of()),
-                aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of()),
-                row.get(4, BigDecimal.class)
-            ));
-        }
-        return result;
+        return rows.stream()
+            .map(row -> toAppealItem(row, baselineEvaluationIds, aiEvaluationIds, scoresByEvaluation, turnsByEvaluation))
+            .toList();
+    }
+
+    private List<Tuple> findAppealItemRows(UUID appealId) {
+        return em.createQuery("""
+            SELECT ai.id, ai.paperItemId, ai.responseId, sec.title, ai.finalScore
+            FROM AssessmentResultAppealItemJpaEntity ai
+            LEFT JOIN AssessmentPaperItemJpaEntity pi ON pi.id = ai.paperItemId
+            LEFT JOIN AssessmentPaperSectionJpaEntity sec ON sec.id = pi.sectionId
+            WHERE ai.appealId = :appealId
+            ORDER BY sec.order ASC, pi.order ASC
+        """, Tuple.class)
+            .setParameter("appealId", appealId)
+            .getResultList();
+    }
+
+    private AppealItemInfo toAppealItem(
+            Tuple row,
+            Map<UUID, UUID> baselineEvaluationIds,
+            Map<UUID, UUID> aiEvaluationIds,
+            Map<UUID, List<AppealCriterionScoreInfo>> scoresByEvaluation,
+            Map<UUID, List<AppealTurnInfo>> turnsByEvaluation) {
+        UUID responseId = row.get(2, UUID.class);
+        UUID baselineEvaluationId = baselineEvaluationIds.get(responseId);
+        UUID aiEvaluationId = aiEvaluationIds.get(responseId);
+        return new AppealItemInfo(
+            row.get(0, UUID.class),
+            row.get(1, UUID.class),
+            row.get(3, String.class),
+            baselineEvaluationId == null
+                ? List.of() : scoresByEvaluation.getOrDefault(baselineEvaluationId, List.of()),
+            aiEvaluationId == null ? List.of() : turnsByEvaluation.getOrDefault(aiEvaluationId, List.of()),
+            row.get(4, BigDecimal.class)
+        );
     }
 
     /**
@@ -538,15 +532,19 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         Map<UUID, List<AppealCriterionScoreInfo>> map = new LinkedHashMap<UUID, List<AppealCriterionScoreInfo>>();
         for (Tuple row : rows) {
             map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
-                .add(new AppealCriterionScoreInfo(
-                    row.get(1, UUID.class),
-                    row.get(2, String.class),
-                    row.get(3, String.class),
-                    row.get(4, BigDecimal.class),
-                    row.get(5, String.class)
-                ));
+                .add(toCriterionScore(row));
         }
         return map;
+    }
+
+    private AppealCriterionScoreInfo toCriterionScore(Tuple row) {
+        return new AppealCriterionScoreInfo(
+            row.get(1, UUID.class),
+            row.get(2, String.class),
+            row.get(3, String.class),
+            row.get(4, BigDecimal.class),
+            row.get(5, String.class)
+        );
     }
 
     /** Spoken turns of many evaluations in 1 query, grouped by evaluationId (avoids N+1). */
@@ -566,20 +564,24 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         Map<UUID, List<AppealTurnInfo>> map = new LinkedHashMap<UUID, List<AppealTurnInfo>>();
         for (Tuple row : rows) {
             map.computeIfAbsent(row.get(0, UUID.class), ignored -> new ArrayList<>())
-                .add(new AppealTurnInfo(
-                    row.get(1, UUID.class),
-                    row.get(2, Integer.class),
-                    TurnType.valueOf(row.get(3, String.class)),
-                    row.get(4, String.class),
-                    row.get(5, String.class),
-                    row.get(6, String.class),
-                    row.get(7, Integer.class)
-                ));
+                .add(toTurn(row));
         }
         return map;
     }
 
-    // ---- picker phân công --------------------------------------------------
+    private AppealTurnInfo toTurn(Tuple row) {
+        return new AppealTurnInfo(
+            row.get(1, UUID.class),
+            row.get(2, Integer.class),
+            TurnType.valueOf(row.get(3, String.class)),
+            row.get(4, String.class),
+            row.get(5, String.class),
+            row.get(6, String.class),
+            row.get(7, Integer.class)
+        );
+    }
+
+    // ---- assignment picker --------------------------------------------------
 
     /**
      * Candidates for grading the appeal, with a conflict-of-interest flag.
@@ -589,23 +591,7 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
      */
     @Override
     public List<AppealReviewerLiteInfo> findAssignableReviewers(UUID schoolId, UUID appealId, String keyword) {
-        String normalizedKeyword = keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
-        List<Tuple> rows = em.createQuery("""
-            SELECT DISTINCT u.id, u.fullName
-            FROM SchoolUserJpaEntity su
-            JOIN UserJpaEntity u ON u.id = su.userId
-            JOIN UserRoleJpaEntity ur ON ur.userId = u.id
-            JOIN RoleJpaEntity ro ON ro.id = ur.roleId
-            WHERE su.schoolId = :schoolId
-            AND ro.code = 'TEACHER'
-            AND u.status = 'ACTIVE'
-            AND (:keyword IS NULL OR LOWER(u.fullName) LIKE :keyword)
-            ORDER BY u.fullName ASC
-        """, Tuple.class)
-            .setParameter("schoolId", schoolId)
-            .setParameter("keyword", normalizedKeyword)
-            .getResultList();
-
+        List<Tuple> rows = findActiveTeacherRows(schoolId, toLikePattern(keyword));
         List<UUID> reviewerIds = rows.stream().map(row -> row.get(0, UUID.class)).toList();
         Map<UUID, Long> loadByReviewer = openLoadByTeacherIds(reviewerIds);
         Set<UUID> conflicted = appealId == null ? Set.<UUID>of() : teacherIdsWithHumanEvaluationForAppeal(appealId);
@@ -623,10 +609,28 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
         return result;
     }
 
+    private List<Tuple> findActiveTeacherRows(UUID schoolId, String normalizedKeyword) {
+        return em.createQuery("""
+            SELECT DISTINCT u.id, u.fullName
+            FROM SchoolUserJpaEntity su
+            JOIN UserJpaEntity u ON u.id = su.userId
+            JOIN UserRoleJpaEntity ur ON ur.userId = u.id
+            JOIN RoleJpaEntity ro ON ro.id = ur.roleId
+            WHERE su.schoolId = :schoolId
+            AND ro.code = 'TEACHER'
+            AND u.status = 'ACTIVE'
+            AND (:keyword IS NULL OR LOWER(u.fullName) LIKE :keyword)
+            ORDER BY u.fullName ASC
+        """, Tuple.class)
+            .setParameter("schoolId", schoolId)
+            .setParameter("keyword", normalizedKeyword)
+            .getResultList();
+    }
+
     /**
-     * Ai đã từng ghi điểm tay cho bài của đơn này. Người chấm tay nằm ở
-     * {@code reviewerId} của evaluation engine HUMAN; người chỉ xác nhận điểm cũ
-     * (UPHOLD) không sinh evaluation nên không bị tính là xung đột.
+     * Everyone who has ever entered a manual score for the work behind this appeal. The manual grader is stored in
+     * {@code reviewerId} of the HUMAN engine evaluation; someone who only confirmed the old score (UPHOLD) creates no
+     * evaluation and is therefore not counted as a conflict.
      */
     private Set<UUID> teacherIdsWithHumanEvaluationForAppeal(UUID appealId) {
         return new HashSet<>(em.createQuery("""
@@ -661,6 +665,10 @@ public class JpaAssessmentAppealQueryRepository implements AssessmentAppealQuery
             map.put(row.get(0, UUID.class), row.get(1, Long.class));
         }
         return map;
+    }
+
+    private static String toLikePattern(String keyword) {
+        return keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%";
     }
 
     private static String statusName(AssessmentAppealStatus status) {

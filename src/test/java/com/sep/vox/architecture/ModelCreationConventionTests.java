@@ -110,7 +110,7 @@ class ModelCreationConventionTests {
             assertThat(stream).as(EXEMPTIONS_RESOURCE + " must exist").isNotNull();
             String content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
             return content.lines()
-                .map(String::strip)
+                .map(s -> s.strip())
                 .filter(line -> !line.isEmpty() && !line.startsWith("#"))
                 .map(line -> line.replaceFirst("^application/", ""))
                 .collect(Collectors.toCollection(TreeSet::new));

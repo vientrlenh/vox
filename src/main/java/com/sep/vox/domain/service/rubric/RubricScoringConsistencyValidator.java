@@ -2,6 +2,7 @@ package com.sep.vox.domain.service.rubric;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
@@ -64,33 +65,40 @@ public final class RubricScoringConsistencyValidator {
 
         BigDecimal weightSum = criteria.stream()
                 .map(criterion -> criterion.getWeight())
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
 
         if (method == RubricTotalScoreMethod.WEIGHTED_AVERAGE) {
-            // Average: every criterion is balanced at 100% -> the total equals the number of criteria.
-            //
-            // Using "equals the number of criteria" instead of "equals 1" is deliberate: the weight
-            // column is numeric(6,2), so splitting evenly against 1 gives 0.33+0.33+0.33 = 0.99 for 3
-            // criteria, which never matches and forces a skewed 0.34/0.33/0.33. Against n all three
-            // are 1.00, which matches exactly for any number of criteria, and adding a criterion does
-            // not require rewriting the existing ones.
-            BigDecimal expected = BigDecimal.valueOf(criteria.size());
-            if (weightSum.compareTo(expected) != 0) {
-                throw new IllegalArgumentException(String.format(
-                        "Không thể ban hành: phương pháp Trung bình yêu cầu mọi tiêu chí cân bằng ở"
-                                + " trọng số 100%%, nên tổng trọng số của %d tiêu chí phải bằng %s."
-                                + " Hiện đang là %s.",
-                        criteria.size(), expected.toPlainString(), weightSum.toPlainString()));
-            }
+            assertWeightsEqualCriteriaCount(criteria.size(), weightSum);
             return;
         }
+        assertWeightsSumToOne(criteria.size(), weightSum);
+    }
 
+    private static void assertWeightsEqualCriteriaCount(int criteriaCount, BigDecimal weightSum) {
+        // Average: every criterion is balanced at 100% -> the total equals the number of criteria.
+        //
+        // Using "equals the number of criteria" instead of "equals 1" is deliberate: the weight
+        // column is numeric(6,2), so splitting evenly against 1 gives 0.33+0.33+0.33 = 0.99 for 3
+        // criteria, which never matches and forces a skewed 0.34/0.33/0.33. Against n all three
+        // are 1.00, which matches exactly for any number of criteria, and adding a criterion does
+        // not require rewriting the existing ones.
+        BigDecimal expected = BigDecimal.valueOf(criteriaCount);
+        if (weightSum.compareTo(expected) != 0) {
+            throw new IllegalArgumentException(String.format(
+                    "Không thể ban hành: phương pháp Trung bình yêu cầu mọi tiêu chí cân bằng ở"
+                            + " trọng số 100%%, nên tổng trọng số của %d tiêu chí phải bằng %s."
+                            + " Hiện đang là %s.",
+                    criteriaCount, expected.toPlainString(), weightSum.toPlainString()));
+        }
+    }
+
+    private static void assertWeightsSumToOne(int criteriaCount, BigDecimal weightSum) {
         if (weightSum.compareTo(BigDecimal.ONE) != 0) {
             throw new IllegalArgumentException(String.format(
                     "Không thể ban hành: phương pháp Phân bổ yêu cầu tổng trọng số của %d tiêu chí"
                             + " phải bằng 100%% (tức 1), hiện đang là %s (%s%%).",
-                    criteria.size(), weightSum.toPlainString(),
+                    criteriaCount, weightSum.toPlainString(),
                     weightSum.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString()));
         }
     }

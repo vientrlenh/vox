@@ -58,77 +58,127 @@ public class UpdateAssessmentScheduleUseCase implements IUseCase<UpdateAssessmen
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         boolean isClassTest = assessment.getKind() == AssessmentKind.CLASS_TEST;
+        requireEditableForKind(schedule, assessment, isClassTest);
+
+        ScheduleWindow window = effectiveWindowOf(input, schedule);
+        requireWindowValid(assessment, window, isClassTest);
+        requireNoOverlapConflicts(input, schedule, assessment, window, isClassTest);
+        persistUpdate(input, schedule, assessment, window, isClassTest);
+        return schedule.getId();
+    }
+
+    /** Effective values: the new value when provided (a provided null room clears it), otherwise the current one. */
+    private record ScheduleWindow(UUID roomId, Instant start, Instant end) {
+    }
+
+    private void requireEditableForKind(AssessmentSchedule schedule, Assessment assessment, boolean isClassTest) {
         if (isClassTest && assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
             throw new IllegalArgumentException("Chỉ có thể sửa lịch bài kiểm tra trên lớp trước khi bắt đầu");
         }
         if (!isClassTest && !schedule.isModifiable()) {
             throw new IllegalArgumentException("Chỉ có thể sửa ca thi khi đang ở trạng thái nháp");
         }
+    }
 
-        // Effective values: the new value when provided (a provided null room clears it), otherwise the current one.
-        UUID effectiveRoomId = input.schoolRoomIdProvided() ? input.schoolRoomId() : schedule.getSchoolRoomId();
-        Instant effectiveStart = input.startDate() != null ? input.startDate() : schedule.getStartDate();
-        Instant effectiveEnd = input.endDate() != null ? input.endDate() : schedule.getEndDate();
+    private ScheduleWindow effectiveWindowOf(UpdateAssessmentScheduleCommand input, AssessmentSchedule schedule) {
+        return new ScheduleWindow(
+            input.schoolRoomIdProvided() ? input.schoolRoomId() : schedule.getSchoolRoomId(),
+            input.startDate() != null ? input.startDate() : schedule.getStartDate(),
+            input.endDate() != null ? input.endDate() : schedule.getEndDate());
+    }
 
-        if (!effectiveEnd.isAfter(effectiveStart)) {
+    private void requireWindowValid(Assessment assessment, ScheduleWindow window, boolean isClassTest) {
+        if (!window.end().isAfter(window.start())) {
             throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
         }
-        if (assessment.isScheduleWindowShorterThanAssessmentTime(effectiveStart, effectiveEnd)) {
+        if (assessment.isScheduleWindowShorterThanAssessmentTime(window.start(), window.end())) {
             throw new IllegalArgumentException(AssessmentScheduleWindowMessages.tooShortForAssessmentTime(assessment));
         }
         // Only for a regular assessment: the schedule must lie inside the assessment's open/close window.
         // CLASS_TEST goes the other way -- openAt/closeAt are written back from the schedule below, so
         // comparing with the old window and blocking would make it impossible to move a class test.
-        if (!isClassTest && assessment.isScheduleWindowOutsideAssessmentWindow(effectiveStart, effectiveEnd)) {
+        if (!isClassTest && assessment.isScheduleWindowOutsideAssessmentWindow(window.start(), window.end())) {
             throw new IllegalArgumentException(AssessmentScheduleWindowMessages.outsideAssessmentWindow(assessment));
         }
+    }
 
+    private void requireNoOverlapConflicts(
+            UpdateAssessmentScheduleCommand input,
+            AssessmentSchedule schedule,
+            Assessment assessment,
+            ScheduleWindow window,
+            boolean isClassTest) {
+        requireRoomUsable(input, schedule, assessment, window);
+        requireParticipantsFree(schedule, assessment, window, isClassTest);
+    }
+
+    private void requireRoomUsable(
+            UpdateAssessmentScheduleCommand input,
+            AssessmentSchedule schedule,
+            Assessment assessment,
+            ScheduleWindow window) {
         if (input.schoolRoomId() != null) {
             assessmentScheduleRoomValidator.requireRoomOfAssessmentSchool(input.schoolRoomId(), assessment);
         }
 
-        if (effectiveRoomId != null) {
+        if (window.roomId() != null) {
             assessmentScheduleRoomValidator.requireNoOverlap(
-                effectiveRoomId, effectiveStart, effectiveEnd, schedule.getId());
+                window.roomId(), window.start(), window.end(), schedule.getId());
         }
+    }
 
+    private void requireParticipantsFree(
+            AssessmentSchedule schedule,
+            Assessment assessment,
+            ScheduleWindow window,
+            boolean isClassTest) {
         // Moving a schedule must also check proctors, otherwise the "no proctoring two overlapping schedules"
         // rule is bypassed by assigning while the schedules do not touch and then dragging them on top of each other.
         assessmentScheduleProctorConflictValidator.requireProctorsFreeForNewWindow(
-            schedule.getId(), effectiveStart, effectiveEnd);
+            schedule.getId(), window.start(), window.end());
         // Same reason on the candidate axis: assigning students while two schedules do not touch and then moving
         // them to overlap is the identical bypass.
         assessmentScheduleCandidateConflictValidator.requireCandidatesFreeForNewWindow(
-            schedule.getId(), effectiveStart, effectiveEnd);
+            schedule.getId(), window.start(), window.end());
 
         // For a class test, the session IS the open/close window of the test (written back down to the assessment below),
         // so editing the session is another path that writes openAt/closeAt -- without checking here, changing the time of a
         // session would be a detour around the plan deadline constraint that Create/UpdateAssessmentUseCase apply.
         if (isClassTest) {
             subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(
-                assessment.getSchoolId(), effectiveStart, effectiveEnd);
+                assessment.getSchoolId(), window.start(), window.end());
         }
+    }
 
+    private void persistUpdate(
+            UpdateAssessmentScheduleCommand input,
+            AssessmentSchedule schedule,
+            Assessment assessment,
+            ScheduleWindow window,
+            boolean isClassTest) {
         if (isClassTest) {
-            schedule.setSchoolRoomId(effectiveRoomId);
-            schedule.setStartDate(effectiveStart);
-            schedule.setEndDate(effectiveEnd);
+            schedule.setSchoolRoomId(window.roomId());
+            schedule.setStartDate(window.start());
+            schedule.setEndDate(window.end());
             assessmentScheduleRepository.save(schedule);
-            assessment.setOpenAt(effectiveStart);
-            assessment.setCloseAt(effectiveEnd);
+            assessment.setOpenAt(window.start());
+            assessment.setCloseAt(window.end());
             assessmentRepository.save(assessment);
         } else {
-            int updated = assessmentScheduleRepository.updateAtomic(
-                schedule.getId(),
-                input.schoolRoomId(),
-                input.schoolRoomIdProvided(),
-                input.startDate(),
-                input.endDate());
-            if (updated == 0) {
-                throw new IllegalArgumentException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
-            }
+            updateScheduleAtomically(input, schedule);
         }
-        return schedule.getId();
+    }
+
+    private void updateScheduleAtomically(UpdateAssessmentScheduleCommand input, AssessmentSchedule schedule) {
+        int updated = assessmentScheduleRepository.updateAtomic(
+            schedule.getId(),
+            input.schoolRoomId(),
+            input.schoolRoomIdProvided(),
+            input.startDate(),
+            input.endDate());
+        if (updated == 0) {
+            throw new IllegalArgumentException("Không thể cập nhật ca thi (đã bị thay đổi trạng thái)");
+        }
     }
 
     private void authorize(Assessment assessment) {

@@ -64,6 +64,22 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của kết quả này"));
 
         moderationAccessService.authorize(assessment, candidate);
+        requireDecidable(input, assessment, result);
+
+        Instant now = Instant.now();
+        UUID actorId = moderationAccessService.getCurrentUserId();
+        ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(result);
+        result.setStatus(input.decision());
+        assessmentCandidateResultRepository.save(result);
+
+        resultStatusHistoryRecorder.record(
+            before, result, ResultStatusChangeSource.ASSESSMENT_PUBLISH, actorId, null);
+        saveOutcomeDecidedOutbox(input, assessment, candidate, result, now);
+        return result.getId();
+    }
+
+    private void requireDecidable(
+        DecideAssessmentCandidateResultOutcomeCommand input, Assessment assessment, AssessmentCandidateResult result) {
         if (assessment.getStatus() != AssessmentStatus.RESULTS_PUBLISHED) {
             throw new IllegalArgumentException("Chỉ có thể chốt đậu/rớt sau khi kỳ thi đã công bố kết quả");
         }
@@ -74,17 +90,18 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
                 && input.decision() != AssessmentCandidateResultStatus.FAILED) {
             throw new IllegalArgumentException("Quyết định không hợp lệ, chỉ chấp nhận PASSED hoặc FAILED");
         }
+    }
 
-        Instant now = Instant.now();
-        UUID actorId = moderationAccessService.getCurrentUserId();
-        ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(result);
-        result.setStatus(input.decision());
-        assessmentCandidateResultRepository.save(result);
-
-        // Hành vi nghiệp vụ giữ nguyên; chỉ thêm dấu vết và thông báo — đây là mốc
-        // cuối cùng của bài, mà trước đây học sinh không được báo gì.
-        resultStatusHistoryRecorder.record(
-            before, result, ResultStatusChangeSource.ASSESSMENT_PUBLISH, actorId, null);
+    /**
+     * The business behaviour is unchanged; only the trail and the notification are added -- this is the final
+     * milestone of the attempt, and the student used to be told nothing about it.
+     */
+    private void saveOutcomeDecidedOutbox(
+        DecideAssessmentCandidateResultOutcomeCommand input,
+        Assessment assessment,
+        AssessmentCandidate candidate,
+        AssessmentCandidateResult result,
+        Instant now) {
         AssessmentResultOutcomeDecidedPayloadV1 payload = new AssessmentResultOutcomeDecidedPayloadV1(
             result.getId(), candidate.getStudentId(), assessment.getName(),
             input.decision().name(), result.getTotalScore(),
@@ -96,6 +113,5 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
             jsonSerializationPort.toJson(payload),
             now
         ));
-        return result.getId();
     }
 }

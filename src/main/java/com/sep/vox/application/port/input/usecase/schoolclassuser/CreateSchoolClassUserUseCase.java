@@ -48,33 +48,29 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
         User currentUser = findCurrentUser(currentUserId);
         UUID schoolId = getSchoolId(currentUser);
 
+        validateAgainstCallerSchool(input, schoolId);
+
+        // Adding a member = join or re-join. The (userId, classId) row is unique, so a student who left the
+        // class (isActive=false) must be reactivated instead of being blocked.
+        SchoolClassUser existing = schoolClassUserRepository.findByUserIdAndSchoolClassId(input.userId(), input.classId())
+            .orElse(null);
+        if (existing != null) {
+            return rejoinExistingMember(existing, currentUserId);
+        }
+
+        return joinNewMember(input, now, currentUserId);
+    }
+
+    private void validateAgainstCallerSchool(CreateSchoolClassUserCommand input, UUID schoolId) {
         validateRequestedSchool(input.schoolId(), schoolId);
         validateSchool(schoolId);
         validateSchoolClass(input.classId(), schoolId);
         validateTargetUser(input.userId(), schoolId);
+    }
 
-        // Thêm thành viên = join hoặc re-join. Bản ghi (userId, classId) là duy nhất nên
-        // học sinh đã rời lớp (isActive=false) phải được kích hoạt lại thay vì bị chặn.
-        SchoolClassUser existing = schoolClassUserRepository.findByUserIdAndSchoolClassId(input.userId(), input.classId())
-            .orElse(null);
-        if (existing != null) {
-            if (existing.isActive()) {
-                throw new ResourceDuplicatedException("Người dùng đã thuộc lớp học");
-            }
-            existing.activate();
-            existing.setAssignedBy(currentUserId);
-            SchoolClassUser saved = schoolClassUserRepository.save(existing);
-            return new CreateSchoolClassUserResponse(saved.getId());
-        }
-
-        SchoolClassUser schoolClassUser = SchoolClassUser.builder()
-            .userId(input.userId())
-            .schoolClassId(input.classId())
-            .active(true)
-            .joinedAt(now)
-            .leftAt(null)
-            .assignedBy(currentUserId)
-            .build();
+    private CreateSchoolClassUserResponse joinNewMember(
+            CreateSchoolClassUserCommand input, Instant now, UUID currentUserId) {
+        SchoolClassUser schoolClassUser = SchoolClassUser.joined(input.userId(), input.classId(), now, currentUserId);
         try {
             SchoolClassUser saved = schoolClassUserRepository.save(schoolClassUser);
             return new CreateSchoolClassUserResponse(saved.getId());
@@ -82,6 +78,16 @@ public class CreateSchoolClassUserUseCase implements IUseCase<CreateSchoolClassU
             // Race-condition guard: two requests that add the same member both pass the check and only then hit the unique index.
             throw new ResourceDuplicatedException("Người dùng đã thuộc lớp học");
         }
+    }
+
+    private CreateSchoolClassUserResponse rejoinExistingMember(SchoolClassUser existing, UUID currentUserId) {
+        if (existing.isActive()) {
+            throw new ResourceDuplicatedException("Người dùng đã thuộc lớp học");
+        }
+        existing.activate();
+        existing.setAssignedBy(currentUserId);
+        SchoolClassUser saved = schoolClassUserRepository.save(existing);
+        return new CreateSchoolClassUserResponse(saved.getId());
     }
 
     private void validateCommand(CreateSchoolClassUserCommand input) {

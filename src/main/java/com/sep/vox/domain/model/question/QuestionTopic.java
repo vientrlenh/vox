@@ -57,6 +57,16 @@ public class QuestionTopic extends BaseModel {
         return this.status == QuestionTopicStatus.PUBLISHED;
     }
 
+    public static QuestionTopic draft(UUID questionBankId, String code, String name, String description) {
+        return builder()
+                .questionBankId(questionBankId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .status(QuestionTopicStatus.DRAFT)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

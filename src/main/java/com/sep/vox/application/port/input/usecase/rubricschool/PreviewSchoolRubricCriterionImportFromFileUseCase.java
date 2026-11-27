@@ -53,71 +53,20 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
     @Override
     @Transactional
     public PreviewRubricCriterionImportResponse execute(PreviewRubricCriterionImportCommand command) {
-        // Validation khắt khe đầu vào tránh Null Pointer bậy bạ
         if (command.schoolId() == null) {
             throw new IllegalArgumentException("Yêu cầu không hợp lệ: Thiếu mã trường học đối với luồng School Admin.");
         }
 
-        // Bước 1: Kiểm tra trạng thái tài khoản đang đăng nhập
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
-        }
+        requireActiveSchoolMember(command.schoolId());
+        requireSchoolOwnedRubricVersion(command);
 
-        // Bước 2: Kiểm tra liên kết giữa tài khoản và trường học (Gác cổng bảo mật)
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
+        ParseImportFileResult parsedResult = parseNonEmptyFile(command);
+        Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
 
-        // Chống hack: Đổi schoolId trên URL khác với id trường của chính mình
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bạn không có quyền thao tác trên dữ liệu của trường khác.");
-        }
+        // Store the school id strictly so the background worker can pick up the job.
+        UUID generatedSessionId = saveSessionWithRows(command.schoolId(), ImportType.RUBRIC_CRITERION,
+                command.file().fileName(), command.rubricVersionId(), parsedResult, expiresAt);
 
-        // Bước 3: Kiểm tra tính tồn tại và quyền sở hữu bộ Rubric
-        RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-
-        // Chống hack: Cố tình truyền Id của một Rubric thuộc về System hoặc của một trường khác vào URL trường mình
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường bạn.");
-        }
-
-        // Bước 4: Bóc tách cấu trúc file Excel thô
-        ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_CRITERION);
-        if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên rỗng hoặc không có dữ liệu hợp lệ.");
-        }
-
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
-
-        // Store the school id strictly so the background worker can pick up the job
-        ImportSession session = ImportSession.previewedForEntity(
-            command.schoolId(),
-            ImportType.RUBRIC_CRITERION,
-            command.file().fileName(),
-            jsonSerializationPort.toJson(parsedResult.originalHeaders()),
-            jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
-            parsedResult.rows().size(),
-            expiresAt,
-            command.rubricVersionId());
-
-        ImportSession savedSession = importSessionRepository.save(session);
-        UUID generatedSessionId = savedSession.getId();
-
-        List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> ImportRow.pending(
-                    generatedSessionId,
-                    i + 1,
-                    jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
-
-        importRowRepository.saveAll(importRows);
-
-        // Bước 7: Trả kết quả thống kê cấu trúc file về cho Frontend dựng giao diện
         return new PreviewRubricCriterionImportResponse(
                 generatedSessionId,
                 command.file().fileName(),
@@ -127,5 +76,65 @@ public class PreviewSchoolRubricCriterionImportFromFileUseCase implements IUseCa
                 parsedResult.totalRows(),
                 expiresAt
         );
+    }
+
+    private ParseImportFileResult parseNonEmptyFile(PreviewRubricCriterionImportCommand command) {
+        ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_CRITERION);
+        if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
+            throw new IllegalArgumentException("File tải lên rỗng hoặc không có dữ liệu hợp lệ.");
+        }
+        return parsedResult;
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
+
+        // Security: the school id in the URL must match the caller's real school.
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("Bạn không có quyền thao tác trên dữ liệu của trường khác.");
+        }
+    }
+
+    private void requireSchoolOwnedRubricVersion(PreviewRubricCriterionImportCommand command) {
+        RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản (Version) yêu cầu."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+
+        // Security: the id of a SYSTEM rubric or of another school's rubric must not be accepted through this school's URL.
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
+            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường bạn.");
+        }
+    }
+
+    private UUID saveSessionWithRows(UUID schoolId, ImportType importType, String fileName, UUID importedEntityId,
+                                     ParseImportFileResult parsedResult, Instant expiresAt) {
+        ImportSession session = ImportSession.previewedForEntity(
+            schoolId,
+            importType,
+            fileName,
+            jsonSerializationPort.toJson(parsedResult.originalHeaders()),
+            jsonSerializationPort.toJson(parsedResult.suggestedMapping()),
+            parsedResult.rows().size(),
+            expiresAt,
+            importedEntityId);
+        ImportSession savedSession = importSessionRepository.save(session);
+        UUID generatedSessionId = savedSession.getId();
+
+        List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
+                .mapToObj(i -> ImportRow.pending(
+                    generatedSessionId,
+                    i + 1,
+                    jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
+        importRowRepository.saveAll(importRows);
+        return generatedSessionId;
     }
 }

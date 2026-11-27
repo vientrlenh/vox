@@ -53,32 +53,39 @@ public class DimensionInterestScoreRepositoryImpl
 
     @Override
     @Transactional
-    public void replaceScores(
-            UUID learnerProfileId,
-            Map<String, Double> scores) {
+    public void replaceScores(UUID learnerProfileId, Map<String, Double> scores) {
+        deleteScoresAndFlush(learnerProfileId);
+        repository.saveAll(scores.entrySet().stream()
+            .map(entry -> toNewEntity(learnerProfileId, entry.getKey(), entry.getValue()))
+            .toList());
+    }
+
+    private void deleteScoresAndFlush(UUID learnerProfileId) {
         repository.deleteByLearnerProfileId(learnerProfileId);
-        // FLUSH bắt buộc trước saveAll -- KHÔNG phải thừa.
+        // The flush before saveAll is required -- it is NOT redundant.
         //
-        // deleteByLearnerProfileId không có @Modifying nên Spring Data JPA thực hiện nó bằng
-        // entityManager.remove() cho từng dòng, tức chỉ XẾP HÀNG một EntityDeleteAction trong
-        // Hibernate persistence context, không chạy DELETE ngay. Hibernate luôn thực thi hàng đợi
-        // action theo một THỨ TỰ CỐ ĐỊNH lúc flush -- insert TRƯỚC, delete SAU -- bất kể thứ tự
-        // gọi trong code Java. Không flush() ở đây thì saveAll() bên dưới chèn dòng mới trong khi
-        // dòng cũ (cùng khoá (learner_profile_id, dimension)) vẫn còn nằm trong bảng, vi phạm
+        // deleteByLearnerProfileId has no @Modifying, so Spring Data JPA runs it as entityManager.remove() per
+        // row, which only QUEUES an EntityDeleteAction in the Hibernate persistence context and does not run
+        // the DELETE yet. At flush time Hibernate always executes its action queue in a FIXED ORDER -- inserts
+        // first, deletes after -- regardless of the order of the calls in the Java code. Without flush() here,
+        // saveAll() below would insert the new rows while the old rows (same key
+        // (learner_profile_id, dimension)) are still in the table, violating
         // idx_dimension_interest_profile_dimension.
         //
-        // Đo thật: học sinh làm lại quiz sở thích (mọi lần thứ hai trở đi, vì lần đầu bảng còn
-        // trống) là hỏng 100% -- DataIntegrityViolationException, GraphQL trả lỗi, transaction
-        // rollback sạch nên không mất dữ liệu, nhưng học sinh không cách nào làm lại quiz.
+        // Measured: a student retaking the interest quiz (every second time onwards, because the first time
+        // the table is empty) failed 100% of the time -- DataIntegrityViolationException, GraphQL returned an
+        // error, the transaction rolled back cleanly so no data was lost, but the student could never retake
+        // the quiz.
         repository.flush();
-        repository.saveAll(scores.entrySet().stream()
-            .map(entry -> DimensionInterestScoreJpaEntity.builder()
-                    .learnerProfileId(learnerProfileId)
-                    .dimension(entry.getKey())
-                    .score(BigDecimal.valueOf(entry.getValue()).setScale(4, RoundingMode.HALF_UP))
-                    .baselineScore(null)
-                    .build())
-            .toList());
+    }
+
+    private DimensionInterestScoreJpaEntity toNewEntity(UUID learnerProfileId, String dimension, double score) {
+        return DimensionInterestScoreJpaEntity.builder()
+            .learnerProfileId(learnerProfileId)
+            .dimension(dimension)
+            .score(BigDecimal.valueOf(score).setScale(4, RoundingMode.HALF_UP))
+            .baselineScore(null)
+            .build();
     }
 
 }

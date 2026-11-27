@@ -21,7 +21,6 @@ import com.sep.vox.domain.repository.ImportRowRepository;
 import com.sep.vox.domain.repository.ImportSessionRepository;
 import com.sep.vox.domain.repository.RubricRepository;
 import com.sep.vox.domain.repository.UserRepository;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,28 +45,53 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
 
     @Override
     @Transactional
-    public PreviewRubricVersionImportResponse execute(PreviewRubricVersionImportFromFileCommand command) { // 👉 ĐỔI KIỂU TRẢ VỀ Ở ĐÂY
+    public PreviewRubricVersionImportResponse execute(PreviewRubricVersionImportFromFileCommand command) {
+        requireActiveCurrentUser();
+        requireSystemOwnedRubric(command.rubricId());
+
+        ParseImportFileResult parsedResult = parseNonEmptyFile(command);
+        Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
+
+        UUID generatedSessionId = saveSessionWithRows(command, parsedResult, expiresAt);
+
+        return new PreviewRubricVersionImportResponse(
+                generatedSessionId,
+                command.file().fileName(),
+                parsedResult.originalHeaders(),
+                parsedResult.suggestedMapping(),
+                parsedResult.sampleRows(),
+                parsedResult.totalRows(),
+                expiresAt
+        );
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
+    }
 
-        Rubric rubric = rubricRepository.findById(command.rubricId())
+    private void requireSystemOwnedRubric(UUID rubricId) {
+        Rubric rubric = rubricRepository.findById(rubricId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric hệ thống yêu cầu."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bộ Rubric này thuộc về trường học. System Admin không thể nạp Version vào đây.");
         }
+    }
 
+    private ParseImportFileResult parseNonEmptyFile(PreviewRubricVersionImportFromFileCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_VERSION);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
             throw new IllegalArgumentException("File tải lên trống hoặc không chứa dòng dữ liệu hợp lệ.");
         }
+        return parsedResult;
+    }
 
-        Instant now = Instant.now();
-        Instant expiresAt = now.plus(1, ChronoUnit.DAYS); // Phiên hết hạn sau 1 ngày
-
+    private UUID saveSessionWithRows(PreviewRubricVersionImportFromFileCommand command, ParseImportFileResult parsedResult,
+                                     Instant expiresAt) {
         // The session id stays null so the database generates the UUIDv7
         ImportSession session = ImportSession.previewedForEntity(
             null,
@@ -83,23 +107,12 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
         UUID generatedSessionId = savedSession.getId();
 
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
-                .mapToObj(i -> {
-                    Map<String, String> rowMap = parsedResult.rows().get(i);
-                    return ImportRow.pending(generatedSessionId, i + 1, jsonSerializationPort.toJson(rowMap));
-                })
-                .toList();
+                .mapToObj(i -> ImportRow.pending(
+                    generatedSessionId,
+                    i + 1,
+                    jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
 
         importRowRepository.saveAll(importRows);
-
-        //  TRẢ VỀ CỤC RESPONSE FULL OPTION CHO FRONTEND
-        return new PreviewRubricVersionImportResponse(
-                generatedSessionId,
-                command.file().fileName(),
-                parsedResult.originalHeaders(),
-                parsedResult.suggestedMapping(),
-                parsedResult.sampleRows(),
-                parsedResult.totalRows(),
-                expiresAt
-        );
+        return generatedSessionId;
     }
 }

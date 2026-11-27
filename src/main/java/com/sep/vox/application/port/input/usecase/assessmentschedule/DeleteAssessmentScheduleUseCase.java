@@ -48,6 +48,14 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
         authorize(assessment);
 
+        requireScheduleDeletable(schedule, assessment);
+
+        schedule.setStatus(AssessmentScheduleStatus.DELETED);
+        assessmentScheduleRepository.save(schedule);
+        return schedule.getId();
+    }
+
+    private void requireScheduleDeletable(AssessmentSchedule schedule, Assessment assessment) {
         if (assessmentCandidateRepository.countByScheduleId(schedule.getId()) > 0) {
             throw new IllegalArgumentException("Không thể xoá ca thi đang có thí sinh");
         }
@@ -59,10 +67,6 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
         if (assessment.isLockedForEditing()) {
             throw new IllegalArgumentException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
         }
-
-        schedule.setStatus(AssessmentScheduleStatus.DELETED);
-        assessmentScheduleRepository.save(schedule);
-        return schedule.getId();
     }
 
     private UUID authorize(Assessment assessment) {

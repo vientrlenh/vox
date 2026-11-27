@@ -33,25 +33,9 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricDto> execute(SearchSchoolRubricsQuery query) {
+        requireSchoolAdminOfSchool(query.schoolId());
 
-        // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-        }
-
-        // 2. Chốt chặn bảo mật: Kiểm tra School Admin có thuộc về trường này không
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-
-        if (!schoolUser.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tìm kiếm Rubric của trường học khác.");
-        }
-
-        // 3. Gọi DB (Repository xử lý SQL lọc động)
+        // The repository builds the dynamic filter SQL.
         PageResult<Rubric> pageResult = rubricRepository.searchSchoolRubrics(
                 query.schoolId(),
                 query.keyword(),
@@ -60,8 +44,6 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
                 query.page(),
                 query.size()
                 );
-
-        // 4. Map sang DTO và trả về
         return new PageResult<>(
                 pageResult.content().stream()
                         .map(RubricDtoMapper::toRubricDto)
@@ -71,5 +53,21 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
                 pageResult.totalElements(),
                 pageResult.totalPages()
         );
+    }
+
+    private void requireSchoolAdminOfSchool(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+
+        // Security gate: the School Admin must belong to this school.
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tìm kiếm Rubric của trường học khác.");
+        }
     }
 }

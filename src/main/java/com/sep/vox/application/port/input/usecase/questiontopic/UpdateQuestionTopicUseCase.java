@@ -9,18 +9,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.questiontopic.UpdateQuestionTopicCommand;
+import com.sep.vox.application.port.input.service.QuestionBankManageAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuestionTopicDto;
 import com.sep.vox.domain.mapper.QuestionTopicDtoMapper;
-import com.sep.vox.domain.model.question.QuestionBankOwnerType;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -29,29 +27,20 @@ public class UpdateQuestionTopicUseCase implements IUseCase<UpdateQuestionTopicC
     private final QuestionTopicRepository questionTopicRepository;
     private final QuestionBankRepository questionBankRepository;
     private final UserContextPort userContextPort;
-    private final SchoolUserRepository schoolUserRepository;
+    private final QuestionBankManageAccessService questionBankManageAccessService;
 
     @Override
     @Transactional
     public QuestionTopicDto execute(UpdateQuestionTopicCommand input) {
         UpdateQuestionTopicCommand command = normalize(input);
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
 
         QuestionTopic topic = questionTopicRepository.findById(command.id())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
         QuestionBank bank = questionBankRepository.findById(topic.getQuestionBankId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
-        if (bank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
-            if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
-        } else if (currentSchoolId == null || !currentSchoolId.equals(bank.getSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
+        questionBankManageAccessService.requireManageAccess(bank, currentUserId);
 
         if (topic.getStatus() != QuestionTopicStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ được cập nhật chủ đề ở trạng thái DRAFT");

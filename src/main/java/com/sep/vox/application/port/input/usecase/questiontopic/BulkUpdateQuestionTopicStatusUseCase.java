@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -65,47 +66,67 @@ public class BulkUpdateQuestionTopicStatusUseCase
 
         Map<UUID, QuestionTopic> topicsById = questionTopicRepository.findByIdIn(ids).stream()
             .collect(Collectors.toMap(topic -> topic.getId(), topic -> topic, (first, second) -> first));
-        // Quyền của chủ đề suy từ ngân hàng chứa nó, nên phải nạp kèm -- vẫn một query cho cả lô.
-        Map<UUID, QuestionBank> banksById = loadBanks(topicsById);
+        // The permission on a topic derives from the bank that holds it, so the banks are loaded too --
+        // still one query for the whole batch.
+        StatusUpdateContext context = new StatusUpdateContext(action, currentSchoolId, loadBanks(topicsById));
 
+        StatusUpdateOutcome outcome = applyTransitions(ids, topicsById, context);
+        List<QuestionTopicDto> updated = saveEach(outcome.toSave());
+
+        return new BulkUpdateQuestionTopicStatusResponse(List.copyOf(updated), List.copyOf(outcome.failed()));
+    }
+
+    private StatusUpdateOutcome applyTransitions(
+            Set<UUID> ids, Map<UUID, QuestionTopic> topicsById, StatusUpdateContext context) {
         List<BulkUpdateQuestionScopeStatusFailure> failed = new ArrayList<BulkUpdateQuestionScopeStatusFailure>();
         List<QuestionTopic> toSave = new ArrayList<QuestionTopic>();
 
         for (UUID id : ids) {
+            Optional<BulkUpdateQuestionScopeStatusFailure> failure = findFailure(id, topicsById, context);
+            if (failure.isPresent()) {
+                failed.add(failure.get());
+                continue;
+            }
             QuestionTopic topic = topicsById.get(id);
-            if (topic == null) {
-                failed.add(new BulkUpdateQuestionScopeStatusFailure(
-                    id, null, null,
-                    RejectionCode.NOT_FOUND.name(),
-                    QuestionScopeStatusTransition.NOT_FOUND_TOPIC));
-                continue;
-            }
-            QuestionBank bank = banksById.get(topic.getQuestionBankId());
-            if (bank == null || !canManage(bank, currentSchoolId)) {
-                failed.add(failure(topic, RejectionCode.NO_PERMISSION.name(),
-                    QuestionScopeStatusTransition.NO_PERMISSION));
-                continue;
-            }
-
-            QuestionScopeStatusTransition.Rejection rejection = QuestionScopeStatusTransition.rejectionFor(
-                topic.getStatus().name(), action, "chủ đề câu hỏi");
-            if (rejection != null) {
-                failed.add(failure(topic, rejection.code().name(), rejection.reason()));
-                continue;
-            }
-
-            topic.setStatus(QuestionTopicStatus.valueOf(QuestionScopeStatusTransition.nextStatusName(action)));
+            topic.setStatus(QuestionTopicStatus.valueOf(QuestionScopeStatusTransition.nextStatusName(context.action())));
             toSave.add(topic);
         }
+        return new StatusUpdateOutcome(failed, toSave);
+    }
 
-        // Xem BulkUpdateQuestionBankStatusUseCase: repository chưa có saveAll, và trong cùng một
-        // transaction thì lưu từng mục không sinh thêm câu lệnh nào.
-        List<QuestionTopicDto> updated = new ArrayList<com.sep.vox.domain.dto.QuestionTopicDto>();
+    private Optional<BulkUpdateQuestionScopeStatusFailure> findFailure(
+            UUID id, Map<UUID, QuestionTopic> topicsById, StatusUpdateContext context) {
+        QuestionTopic topic = topicsById.get(id);
+        if (topic == null) {
+            return Optional.of(new BulkUpdateQuestionScopeStatusFailure(
+                id, null, null,
+                RejectionCode.NOT_FOUND.name(),
+                QuestionScopeStatusTransition.NOT_FOUND_TOPIC));
+        }
+        QuestionBank bank = context.banksById().get(topic.getQuestionBankId());
+        if (bank == null || !canManage(bank, context.currentSchoolId())) {
+            return Optional.of(failure(topic, RejectionCode.NO_PERMISSION.name(),
+                QuestionScopeStatusTransition.NO_PERMISSION));
+        }
+
+        QuestionScopeStatusTransition.Rejection rejection = QuestionScopeStatusTransition.rejectionFor(
+            topic.getStatus().name(), context.action(), "chủ đề câu hỏi");
+        if (rejection != null) {
+            return Optional.of(failure(topic, rejection.code().name(), rejection.reason()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * See BulkUpdateQuestionBankStatusUseCase: the repository has no saveAll, and inside one transaction
+     * saving one by one generates no extra statement.
+     */
+    private List<QuestionTopicDto> saveEach(List<QuestionTopic> toSave) {
+        List<QuestionTopicDto> updated = new ArrayList<QuestionTopicDto>();
         for (QuestionTopic topic : toSave) {
             updated.add(QuestionTopicDtoMapper.toDto(questionTopicRepository.save(topic)));
         }
-
-        return new BulkUpdateQuestionTopicStatusResponse(List.copyOf(updated), List.copyOf(failed));
+        return updated;
     }
 
     private Map<UUID, QuestionBank> loadBanks(Map<UUID, QuestionTopic> topicsById) {
@@ -129,5 +150,12 @@ public class BulkUpdateQuestionTopicStatusUseCase
     private BulkUpdateQuestionScopeStatusFailure failure(QuestionTopic topic, String reasonCode, String reason) {
         return new BulkUpdateQuestionScopeStatusFailure(
             topic.getId(), topic.getCode(), topic.getStatus().name(), reasonCode, reason);
+    }
+
+    private record StatusUpdateContext(String action, UUID currentSchoolId, Map<UUID, QuestionBank> banksById) {
+    }
+
+    private record StatusUpdateOutcome(
+            List<BulkUpdateQuestionScopeStatusFailure> failed, List<QuestionTopic> toSave) {
     }
 }

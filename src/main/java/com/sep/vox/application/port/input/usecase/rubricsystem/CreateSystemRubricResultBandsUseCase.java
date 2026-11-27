@@ -39,7 +39,25 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
     @Override
     @Transactional
     public List<UUID> execute(CreateSystemRubricResultBandsCommand command) {
-        // 1. Xác thực tài khoản
+        requireActiveCurrentUser();
+        RubricVersion version = loadDraftVersionOfSystemRubric(command.versionId());
+
+        Set<String> uniqueCodes = new HashSet<>();
+        // Bands already stored in the version plus the new bands of this batch, to check score-range overlap.
+        // A TreeMap keyed by scoreMin checks each band in O(log n) instead of scanning a List in O(n)
+        // (O(n log n) for the batch instead of O(n^2)).
+        NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin = new TreeMap<>();
+        Set<Integer> ordersSoFar = collectStoredBands(command.versionId(), bandsSoFarByMin);
+
+        List<RubricResultBand> bandsToSave = command.resultBands().stream()
+                .map(bCmd -> toResultBand(version, bCmd, uniqueCodes, bandsSoFarByMin, ordersSoFar))
+                .toList();
+
+        // Take the ids from the saved bands (the database assigned them), not from the original bandsToSave.
+        return saveBands(bandsToSave).stream().map(b -> b.getId()).toList();
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -47,82 +65,81 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
+    }
 
-        // 2. Lấy Version và kiểm tra trạng thái DRAFT
-        RubricVersion version = rubricVersionRepository.findById(command.versionId())
+    private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
+        RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ được thêm Thang điểm kết quả khi Rubric ở trạng thái DRAFT.");
         }
 
-        // 3. Phân quyền: Chặn System Admin sửa vào Rubric của Trường học
+        // Authorization: a System Admin must not edit a school's rubric.
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
         }
+        return version;
+    }
 
-        // Bộ nhớ tạm để kiểm tra trùng lặp dữ liệu đầu vào (O(1) lookup)
-        Set<String> uniqueCodes = new HashSet<>();
-
-        // Tích luỹ band đã có trong version + các band mới trong cùng batch để check overlap khoảng điểm.
-        // Dùng TreeMap (key = scoreMin) để check O(log n)/band thay vì quét List O(n)/band (O(n log n) cho cả batch thay vì O(n^2)).
-        NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin = new TreeMap<>();
-        // Tích luỹ order đã có trong version (DB) + order mới trong cùng batch để chống trùng thứ tự
+    // Fills bandsSoFarByMin with the stored bands and returns their orders, which the new orders of this
+    // batch are accumulated into to reject duplicates.
+    private Set<Integer> collectStoredBands(UUID versionId, NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin) {
         Set<Integer> ordersSoFar = new HashSet<>();
-        rubricResultBandRepository.findByRubricVersionId(command.versionId())
+        rubricResultBandRepository.findByRubricVersionId(versionId)
                 .forEach(b -> {
                     bandsSoFarByMin.put(b.getScoreMin(), b);
                     ordersSoFar.add(b.getOrder());
                 });
+        return ordersSoFar;
+    }
 
-        // 4. Lặp và build thực thể (Toàn bộ thao tác diễn ra trên RAM)
-        List<RubricResultBand> bandsToSave = command.resultBands().stream().map(bCmd -> {
-
-            String safeCode = StringNormalization.trimAndCollapseSpaces(bCmd.code());
-            String safeName = StringNormalization.trimAndCollapseSpaces(bCmd.name());
-
-            // 4.1 Validate trùng lặp từ request
-            if (!uniqueCodes.add(safeCode)) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
-            }
-
-            // 4.3 Validate Min/Max Score
-            if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
-                throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
-            }
-
-            // 4.3.1 Validate không chồng lấn với các band đã có/đang tạo cùng batch
-            RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
-
-            // 4.3.1b Validate không trùng thứ tự (order) với sibling đã có trong version hoặc trong cùng batch
-            RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, bCmd.order(), safeName);
-
-            // 4.3.2 Validate nằm trong thang điểm tổng của RubricVersion
-            ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
-                    bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
-
-            // 4.4 Build the object with id = null to tell Hibernate this is new data.
-            // The id stays unset (null): it prevents a redundant SELECT before the INSERT.
-            RubricResultBand band = RubricResultBand.create(
-                    command.versionId(), safeCode, safeName,
-                    bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
-                    bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), bCmd.order());
-            bandsSoFarByMin.put(band.getScoreMin(), band);
-            return band;
-        }).toList();
-
-        // Avoid N+1 (insert phase): push the whole list to the repository with saveAll
-        List<RubricResultBand> savedBands;
+    private List<RubricResultBand> saveBands(List<RubricResultBand> bandsToSave) {
         try {
-            savedBands = rubricResultBandRepository.saveAll(bandsToSave);
+            return rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataConflictException e) {
             throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
         }
+    }
 
-        // 5. Trích xuất ID từ List trả về và gửi cho Client
-        return savedBands.stream().map(b -> b.getId()).toList();
+    private void requireValidBand(RubricVersion version,
+                                  CreateSystemRubricResultBandsCommand.ResultBandItemCommand bCmd,
+                                  String safeCode, String safeName, Set<String> uniqueCodes,
+                                  NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin,
+                                  Set<Integer> ordersSoFar) {
+        if (!uniqueCodes.add(safeCode)) {
+            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
+        }
+
+        if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
+            throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
+        }
+
+        RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+        RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, bCmd.order(), safeName);
+        ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);
+    }
+
+    private RubricResultBand toResultBand(RubricVersion version,
+                                          CreateSystemRubricResultBandsCommand.ResultBandItemCommand bCmd,
+                                          Set<String> uniqueCodes,
+                                          NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin,
+                                          Set<Integer> ordersSoFar) {
+        String safeCode = StringNormalization.trimAndCollapseSpaces(bCmd.code());
+        String safeName = StringNormalization.trimAndCollapseSpaces(bCmd.name());
+
+        requireValidBand(version, bCmd, safeCode, safeName, uniqueCodes, bandsSoFarByMin, ordersSoFar);
+
+        // The id stays null so JPA treats this as a new record and the database generates the UUID.
+        RubricResultBand band = RubricResultBand.create(
+                version.getId(), safeCode, safeName,
+                bCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(bCmd.description()) : null,
+                bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), bCmd.order());
+        bandsSoFarByMin.put(band.getScoreMin(), band);
+        return band;
     }
 }

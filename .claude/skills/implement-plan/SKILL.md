@@ -220,6 +220,16 @@ Code rules:
   does not show. Write every new or edited comment in English. Translate Vietnamese comments in code you are
   already changing, keeping meaning and the "why". Leave user-facing string literals as they are.
 - Constructor injection with explicit constructors, `private final` fields. Prefer explicit types over `var`.
+- Use types by their simple name and import them. Never write a fully qualified name in code
+  (`java.util.List<String> x`, `new java.time.Instant(...)`); add an `import` instead. The only exception is two
+  types with the same simple name in one file, where one of them may stay qualified.
+- Code must be null-safe under the IDE's null analysis (VS Code / Eclipse JDT). Before finishing a slice, check the
+  files you edited for null warnings (possible null dereference, null passed to a non-null parameter, unboxing of a
+  nullable value, redundant null check) and fix each one in code: guard or check the value, return `Optional`
+  where the repository already does, or throw the proper exception from `application/exception`. Do not hide a
+  warning with `@SuppressWarnings("null")`. Do not add a null-annotation library or annotations that
+  `AGENTS.md` does not allow in that layer (`domain` and `application` accept only the types listed there): if a
+  warning can only be solved with such an annotation, ask first.
 - No query inside a loop or per element. Fetch in bulk. In GraphQL field resolvers use batch mapping.
 
 Architecture and conventions:
@@ -292,9 +302,11 @@ again.
 
 1. Run the final checks: `./gradlew compileJava` and the narrowest relevant `--tests` filters. Run the full build
    only if feasible.
-2. Look at `git status --short` and `git diff --stat`. Every changed file must trace to a plan item. Read each new
+2. Check every file you created or edited for fully qualified type names in code and for null-safety warnings (see
+   Code rules).
+3. Look at `git status --short` and `git diff --stat`. Every changed file must trace to a plan item. Read each new
    untracked file. Revert accidental edits (whitespace, import reordering, IDE or formatter changes).
-3. Do not commit or push unless the user asked.
+4. Do not commit or push unless the user asked.
 
 ## Final report
 

@@ -32,6 +32,13 @@ public class UpdateAssessmentItemResponseTurnUseCase
         AssessmentItemResponseTurn turn = assessmentItemResponseTurnRepository.findByAssessmentItemResponseIdAndTurnOrder(input.answerId(), input.turnOrder())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy turn cần cập nhật"));
 
+        applyProvidedFields(turn, input);
+
+        AssessmentItemResponseTurn saved = assessmentItemResponseTurnRepository.upsert(turn);
+        return AssessmentItemResponseResponseMapper.toTurnResponse(saved);
+    }
+
+    private void applyProvidedFields(AssessmentItemResponseTurn turn, UpdateAssessmentItemResponseTurnCommand input) {
         if (input.turnType() != null) {
             turn.setTurnType(input.turnType());
         }
@@ -53,9 +60,6 @@ public class UpdateAssessmentItemResponseTurnUseCase
         if (input.answeredAt() != null) {
             turn.setAnsweredAt(input.answeredAt());
         }
-
-        AssessmentItemResponseTurn saved = assessmentItemResponseTurnRepository.upsert(turn);
-        return AssessmentItemResponseResponseMapper.toTurnResponse(saved);
     }
 
 }

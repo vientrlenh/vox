@@ -1,6 +1,5 @@
 package com.sep.vox.application.port.input.service;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -12,7 +11,6 @@ import com.sep.vox.domain.model.personalization.PracticeTopic;
 import com.sep.vox.domain.model.personalization.TopicSuggestion;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.TopicSuggestionRepository;
-import com.sep.vox.domain.service.personalization.TensePolicy;
 
 /**
  * Ghi topic mới sinh từ từ khoá + ghi dòng nhật ký yêu cầu -- HAI lệnh ghi GẮN VỚI NHAU về
@@ -42,33 +40,15 @@ public class KeywordTopicPersistenceService {
             String curriculumGroup,
             String temporalAffordance) {
         Instant now = Instant.now();
-        PracticeTopic saved = practiceTopicRepository.save(PracticeTopic.builder()
-                .id(null)
-                .name(topicName)
-                .normalizedName(TopicSuggestionService.normalize(topicName))
-                .description(topicName)
-                .source("USER_GENERATED")
-                .interestDimension(dimension)
-                .curriculumGroup(curriculumGroup == null ? "OUT_OF_CURRICULUM" : curriculumGroup)
-                .active(true)
-                .createdAt(now)
-                .sourceQuestionTopicId(null)
-                .temporalAffordance(temporalAffordance == null ? TensePolicy.AFFORDANCE_MIXED : temporalAffordance)
-                .build());
-        topicSuggestionRepository.save(TopicSuggestion.builder()
-                .id(null)
-                .studentId(studentId)
-                .suggestedTopicName(keyword)
-                .keyword(keyword)
-                .interestDimension("UNKNOWN")
-                .curriculumGroup(null)
-                .confidence(BigDecimal.ZERO)
-                .reasonText("CREATED")
-                .evidenceJson("{}")
-                .status("REQUESTED")
-                .createdAt(now)
-                .respondedAt(null)
-                .build());
+        PracticeTopic saved = practiceTopicRepository.save(PracticeTopic.generatedFromName(
+                "USER_GENERATED",
+                topicName,
+                TopicSuggestionService.normalize(topicName),
+                dimension,
+                curriculumGroup,
+                temporalAffordance,
+                now));
+        topicSuggestionRepository.save(TopicSuggestion.keywordRequested(studentId, keyword, "CREATED", now));
         return saved.getId();
     }
 }

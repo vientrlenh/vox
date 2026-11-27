@@ -73,34 +73,36 @@ public class PracticePaperDraftService {
         UUID draftId = UUID.randomUUID();
         store(draftId, studentId, PracticePaperDraft.preparing(draftId));
 
-        // Chạy trên executor riêng, KHÔNG trên thread request: đó là điều cho phép OSIV nhả
-        // connection DB thay vì giữ suốt lúc chờ LLM (executor đã bọc SecurityContext nên
-        // use case bên trong vẫn đọc được người dùng hiện tại).
+        // Runs on its own executor, NOT on the request thread: that is what lets OSIV release the DB
+        // connection instead of holding it for the whole LLM wait (the executor wraps the SecurityContext, so
+        // the use case inside can still read the current user).
         CompletableFuture<PracticePlanningResponses.PracticePaper> future = practiceGenerationExecutorPort.supplyAsync(buildPaper);
 
         try {
             PracticePlanningResponses.PracticePaper paper = future.get(FAST_PATH_WAIT.toMillis(), TimeUnit.MILLISECONDS);
             return store(draftId, studentId, PracticePaperDraft.ready(draftId, paper));
         } catch (TimeoutException timeout) {
-            // Đang phải sinh câu mới -- để chạy tiếp nền, client hỏi lại sau.
-            future.whenComplete((paper, error) -> store(
-                draftId,
-                studentId,
-                error == null
-                    ? PracticePaperDraft.ready(draftId, paper)
-                    : failure(draftId, error)
-            ));
-            return PracticePaperDraft.preparing(draftId);
+            return finishInBackground(draftId, studentId, future);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            return store(
-                draftId,
-                studentId,
-                PracticePaperDraft.failed(draftId, "Dựng đề bị gián đoạn, vui lòng thử lại.", null)
-            );
+            return store(draftId, studentId,
+                PracticePaperDraft.failed(draftId, "Dựng đề bị gián đoạn, vui lòng thử lại.", null));
         } catch (ExecutionException failed) {
             return store(draftId, studentId, failure(draftId, failed));
         }
+    }
+
+    /** New questions still have to be generated -- let it keep running in the background, the client asks again later. */
+    private PracticePaperDraft finishInBackground(
+            UUID draftId, UUID studentId, CompletableFuture<PracticePlanningResponses.PracticePaper> future) {
+        future.whenComplete((paper, error) -> store(
+            draftId,
+            studentId,
+            error == null
+                ? PracticePaperDraft.ready(draftId, paper)
+                : failure(draftId, error)
+        ));
+        return PracticePaperDraft.preparing(draftId);
     }
 
     public PracticePaperDraft get(UUID studentId, UUID draftId) {

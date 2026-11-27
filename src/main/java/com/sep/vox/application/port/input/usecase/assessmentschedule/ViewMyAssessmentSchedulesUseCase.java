@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,23 +45,7 @@ public class ViewMyAssessmentSchedulesUseCase
             throw new ForbiddenException("Bạn không phải là thí sinh của bài kiểm tra này.");
         }
 
-        // A session only shows when the ASSESSMENT has been published, not only when the session is published.
-        //
-        // The two statuses are independent: the scheduler can publish a session while the assessment is still
-        // DRAFT (SCHEDULE not pressed yet). Previously only the session was filtered, so students saw the schedule of an
-        // unpublished assessment -- leaking the timeline before the school finalized it.
-        //
-        // The same rule as ViewMyAssessmentsUseCase#toRow: only DRAFT is hidden. CANCELLED is still shown so students
-        // know the assessment was cancelled, just as a CANCELLED session still passes isVisibleToStudent.
-        Set<UUID> publishedAssessmentIds = assessmentRepository.findByIdIn(
-                candidates.stream()
-                    .map(candidate -> candidate.getAssessmentId())
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList()).stream()
-            .filter(assessment -> assessment.getStatus() != AssessmentStatus.DRAFT)
-            .map(assessment -> assessment.getId())
-            .collect(java.util.stream.Collectors.toSet());
+        Set<UUID> publishedAssessmentIds = publishedAssessmentIdsOf(candidates);
 
         List<UUID> scheduleIds = candidates.stream()
             .filter(candidate -> publishedAssessmentIds.contains(candidate.getAssessmentId()))
@@ -71,9 +56,35 @@ public class ViewMyAssessmentSchedulesUseCase
         List<AssessmentSchedule> schedules = scheduleIds.isEmpty()
             ? List.<AssessmentSchedule>of()
             : assessmentScheduleRepository.findByIdIn(scheduleIds);
-        return AssessmentScheduleDtoMapper.toDtoList(schedules.stream()
-            // Lọc hiển thị đặt trước bộ lọc của client: ca DRAFT là ca chưa publish -- chưa xếp lịch
-            // xong -- nên dù client có truyền status=DRAFT cũng không được moi ra.
+        return AssessmentScheduleDtoMapper.toDtoList(filterAndSortSchedules(schedules, input));
+    }
+
+    /**
+     * A session only shows when the ASSESSMENT has been published, not only when the session is published.
+     *
+     * <p>The two statuses are independent: the scheduler can publish a session while the assessment is still
+     * DRAFT (SCHEDULE not pressed yet). Previously only the session was filtered, so students saw the schedule of an
+     * unpublished assessment -- leaking the timeline before the school finalized it.
+     *
+     * <p>The same rule as ViewMyAssessmentsUseCase#toRow: only DRAFT is hidden. CANCELLED is still shown so students
+     * know the assessment was cancelled, just as a CANCELLED session still passes isVisibleToStudent.
+     */
+    private Set<UUID> publishedAssessmentIdsOf(List<AssessmentCandidate> candidates) {
+        return assessmentRepository.findByIdIn(
+                candidates.stream()
+                    .map(candidate -> candidate.getAssessmentId())
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList()).stream()
+            .filter(assessment -> assessment.getStatus() != AssessmentStatus.DRAFT)
+            .map(assessment -> assessment.getId())
+            .collect(Collectors.toSet());
+    }
+
+    private List<AssessmentSchedule> filterAndSortSchedules(List<AssessmentSchedule> schedules, ViewAssessmentSchedulesQuery input) {
+        return schedules.stream()
+            // The visibility filter comes before the client's filter: a DRAFT session is not published yet -- scheduling is
+            // not finished -- so it must not be dug out even when the client passes status=DRAFT.
             .filter(schedule -> schedule.getStatus() != null && schedule.getStatus().isVisibleToStudent())
             .filter(schedule -> input.status() == null || input.status() == schedule.getStatus())
             .filter(schedule -> input.startDate() == null
@@ -82,6 +93,6 @@ public class ViewMyAssessmentSchedulesUseCase
                 || (schedule.getStartDate() != null && !schedule.getStartDate().isAfter(input.endDate())))
             .sorted(Comparator.comparing((AssessmentSchedule schedule) -> schedule.getStartDate(),
                 Comparator.nullsLast(Comparator.reverseOrder())))
-            .toList());
+            .toList();
     }
 }

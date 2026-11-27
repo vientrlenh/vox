@@ -135,6 +135,25 @@ public class SchoolDebtEvent {
         this.occurredAt = occurredAt;
     }
 
+    public static SchoolDebtEvent recorded(
+            UUID schoolId, UUID subscriptionId, SchoolDebtEventType eventType, QuotaType quotaType,
+            UUID triggerAssessmentSessionId, UUID triggerPracticeSessionId, BigDecimal triggerAmountVnd,
+            BigDecimal totalAllocatedVnd, BigDecimal usedAmountVnd, BigDecimal overageVnd, Instant occurredAt) {
+        return builder()
+                .schoolId(schoolId)
+                .subscriptionId(subscriptionId)
+                .eventType(eventType)
+                .quotaType(quotaType)
+                .triggerAssessmentSessionId(triggerAssessmentSessionId)
+                .triggerPracticeSessionId(triggerPracticeSessionId)
+                .triggerAmountVnd(triggerAmountVnd)
+                .totalAllocatedVnd(totalAllocatedVnd)
+                .usedAmountVnd(usedAmountVnd)
+                .overageVnd(overageVnd)
+                .occurredAt(occurredAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

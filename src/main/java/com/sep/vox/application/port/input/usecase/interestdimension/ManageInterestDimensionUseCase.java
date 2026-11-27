@@ -46,19 +46,16 @@ public class ManageInterestDimensionUseCase {
             throw new ResourceDuplicatedException("Mã chiều sở thích đã tồn tại: " + code);
         }
         requireLabel(input.label());
-        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.builder()
-                .code(code)
-                .label(input.label().strip())
-                .description(input.description() == null ? null : input.description().strip())
-                .active(input.active() == null || input.active())
-                .quizEligible(input.quizEligible() == null || input.quizEligible())
-                .displayOrder(input.displayOrder() == null ? 0 : input.displayOrder())
-                .createdAt(null)
-                .updatedAt(null)
-                .build()));
-        // Thêm chiều KHÔNG tự làm nó xuất hiện trong quiz: mọi triplet đã có đều gắn 3 chiều
-        // cũ. Không sinh bổ sung thì chiều mới không bao giờ được hỏi -> điểm luôn rỗng.
-        // Chạy nền để admin không phải chờ LLM.
+        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.defined(
+                code,
+                input.label().strip(),
+                input.description() == null ? null : input.description().strip(),
+                input.active() == null || input.active(),
+                input.quizEligible() == null || input.quizEligible(),
+                input.displayOrder() == null ? 0 : input.displayOrder())));
+        // Adding a dimension does NOT make it appear in the quiz by itself: every existing triplet is tied to the
+        // 3 old dimensions. Without a top-up the new dimension is never asked, so its score stays empty.
+        // Runs in the background so the admin does not wait for the LLM.
         if (saved.active() && saved.quizEligible()) {
             quizBankTopUpService.topUpAsync();
         }
@@ -72,16 +69,12 @@ public class ManageInterestDimensionUseCase {
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chiều sở thích: " + code));
         // The code is the key and is already assigned to practice_topics/dimension_interest_scores, so it cannot change:
         // only the display fields and flags are editable. To change a code, create a new one and deactivate the old one.
-        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.builder()
-                .code(existing.getCode())
-                .label(input.label() == null ? existing.getLabel() : input.label().strip())
-                .description(descriptionAfterUpdate(input, existing))
-                .active(input.active() == null ? existing.isActive() : input.active())
-                .quizEligible(input.quizEligible() == null ? existing.isQuizEligible() : input.quizEligible())
-                .displayOrder(input.displayOrder() == null ? existing.getDisplayOrder() : input.displayOrder())
-                .createdAt(existing.getCreatedAt())
-                .updatedAt(null)
-                .build()));
+        InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(existing.withEditableFields(
+                input.label() == null ? existing.getLabel() : input.label().strip(),
+                descriptionAfterUpdate(input, existing),
+                input.active() == null ? existing.isActive() : input.active(),
+                input.quizEligible() == null ? existing.isQuizEligible() : input.quizEligible(),
+                input.displayOrder() == null ? existing.getDisplayOrder() : input.displayOrder())));
         // Re-enabling a dimension that was off also needs a coverage check: while it was off, the bank may have
         // been topped up without this dimension.
         boolean becameUsable = saved.active() && saved.quizEligible()

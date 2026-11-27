@@ -45,6 +45,17 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
+        requireWindowFitsAssessment(assessment, input);
+
+        assessmentScheduleRoomValidator.validateForNewSchedule(
+            input.schoolRoomId(), assessment, input.startDate(), input.endDate());
+
+        AssessmentSchedule schedule = AssessmentSchedule.createFresh(
+            assessment.getId(), input.schoolRoomId(), input.startDate(), input.endDate());
+        return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
+    }
+
+    private void requireWindowFitsAssessment(Assessment assessment, CreateAssessmentScheduleCommand input) {
         if (input.startDate() == null || input.endDate() == null) {
             throw new IllegalArgumentException("Thời gian bắt đầu và kết thúc là bắt buộc");
         }
@@ -57,13 +68,6 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
         if (assessment.isScheduleWindowOutsideAssessmentWindow(input.startDate(), input.endDate())) {
             throw new IllegalArgumentException(AssessmentScheduleWindowMessages.outsideAssessmentWindow(assessment));
         }
-
-        assessmentScheduleRoomValidator.validateForNewSchedule(
-            input.schoolRoomId(), assessment, input.startDate(), input.endDate());
-
-        AssessmentSchedule schedule = AssessmentSchedule.createFresh(
-            assessment.getId(), input.schoolRoomId(), input.startDate(), input.endDate());
-        return AssessmentScheduleDtoMapper.toDto(assessmentScheduleRepository.save(schedule));
     }
 
     private UUID authorize(Assessment assessment) {

@@ -45,19 +45,15 @@ public class InterestQuizItemSelector {
             return usable;
         }
 
+        return selectGreedilyByCoverage(usable, count);
+    }
+
+    private List<InterestQuizSeedItem> selectGreedilyByCoverage(List<InterestQuizSeedItem> usable, int count) {
         Map<String, Integer> coverage = new HashMap<String, Integer>();
         List<InterestQuizSeedItem> remaining = new ArrayList<>(usable);
         List<InterestQuizSeedItem> selected = new ArrayList<InterestQuizSeedItem>();
         while (selected.size() < count && !remaining.isEmpty()) {
-            InterestQuizSeedItem best = remaining.get(0);
-            double bestScore = coverageScore(best, coverage);
-            for (InterestQuizSeedItem candidate : remaining) {
-                double score = coverageScore(candidate, coverage);
-                if (score > bestScore) {
-                    best = candidate;
-                    bestScore = score;
-                }
-            }
+            InterestQuizSeedItem best = pickItemWithHighestCoverageScore(remaining, coverage);
             remaining.remove(best);
             selected.add(best);
             for (String dimension : best.getDimensionPerStatement()) {
@@ -65,6 +61,20 @@ public class InterestQuizItemSelector {
             }
         }
         return selected;
+    }
+
+    private InterestQuizSeedItem pickItemWithHighestCoverageScore(
+            List<InterestQuizSeedItem> remaining, Map<String, Integer> coverage) {
+        InterestQuizSeedItem best = remaining.get(0);
+        double bestScore = coverageScore(best, coverage);
+        for (InterestQuizSeedItem candidate : remaining) {
+            double score = coverageScore(candidate, coverage);
+            if (score > bestScore) {
+                best = candidate;
+                bestScore = score;
+            }
+        }
+        return best;
     }
 
     /** Càng nhiều chiều đang ít lượt thì điểm càng cao. 1/(1+n) giảm dần nên item phủ chiều

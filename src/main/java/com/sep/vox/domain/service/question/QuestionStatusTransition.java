@@ -100,7 +100,30 @@ public final class QuestionStatusTransition {
         if (action == null) {
             return invalidAction();
         }
+        Standing standing = standingOf(question, bank, editorCollaborator, actor);
+        return switch (action) {
+            case "SUBMIT" -> submitRejection(question, standing, action);
+            case "APPROVE" -> reviewRejection(question, standing, action);
+            case "REJECT", "REQUEST_REVISION" -> firstRejection(
+                reviewRejection(question, standing, action),
+                requireNote(note, action));
+            case "PUBLISH" -> publishRejection(question, standing, action);
+            case "ARCHIVE" -> adminRejection(standing, action, question.getStatus(), QuestionStatus.PUBLISHED);
+            case "REOPEN" -> adminRejection(standing, action, question.getStatus(), QuestionStatus.ARCHIVED);
+            case "LOCK" -> lockRejection(question, standing, action);
+            case "UNLOCK" -> unlockRejection(question, standing, action);
+            default -> invalidAction();
+        };
+    }
 
+    private record Standing(
+            boolean owner,
+            boolean editorCollaborator,
+            boolean systemAdminOnSystemBank,
+            boolean schoolAdminOnSchoolBank) {
+    }
+
+    private static Standing standingOf(Question question, QuestionBank bank, boolean editorCollaborator, Actor actor) {
         boolean owner = question.isCreatedBy(actor.userId());
         boolean systemAdminOnSystemBank = actor.systemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
@@ -108,68 +131,68 @@ public final class QuestionStatusTransition {
             && actor.schoolAdmin()
             && actor.schoolId() != null
             && actor.schoolId().equals(bank.getSchoolId());
+        return new Standing(owner, editorCollaborator, systemAdminOnSystemBank, schoolAdminOnSchoolBank);
+    }
 
-        return switch (action) {
-            case "SUBMIT" -> firstRejection(
-                owner || editorCollaborator
-                    ? null
-                    : forbidden(RejectionCode.NO_PERMISSION, action,
-                        "bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này"),
-                requireStatus(question.getStatus(), action,
-                    QuestionStatus.DRAFT, QuestionStatus.REVISION_REQUESTED));
-            case "APPROVE" -> firstRejection(
-                reviewPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, editorCollaborator, owner, action),
-                requireStatus(question.getStatus(), action, QuestionStatus.SUBMITTED_FOR_REVIEW));
-            case "REJECT" -> firstRejection(
-                reviewPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, editorCollaborator, owner, action),
-                requireStatus(question.getStatus(), action, QuestionStatus.SUBMITTED_FOR_REVIEW),
-                requireNote(note, action));
-            case "REQUEST_REVISION" -> firstRejection(
-                reviewPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, editorCollaborator, owner, action),
-                requireStatus(question.getStatus(), action, QuestionStatus.SUBMITTED_FOR_REVIEW),
-                requireNote(note, action));
-            case "PUBLISH" -> {
-                // Re-publishing an archived question is an admin action; for a first publication the
-                // owner / a collaborator can also do it, as long as the question has been approved.
-                if (question.getStatus() == QuestionStatus.ARCHIVED) {
-                    yield adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
-                }
-                Rejection statusRejection = requireStatus(question.getStatus(), action, QuestionStatus.APPROVED);
-                if (statusRejection != null) {
-                    yield statusRejection;
-                }
-                yield owner || editorCollaborator || systemAdminOnSystemBank || schoolAdminOnSchoolBank
-                    ? null
-                    : forbidden(RejectionCode.NO_PERMISSION, action, "bạn không có quyền xuất bản câu hỏi này");
-            }
-            case "ARCHIVE" -> firstRejection(
-                adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action),
-                requireStatus(question.getStatus(), action, QuestionStatus.PUBLISHED));
-            case "REOPEN" -> firstRejection(
-                adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action),
-                requireStatus(question.getStatus(), action, QuestionStatus.ARCHIVED));
-            case "LOCK" -> {
-                Rejection permission = adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
-                if (permission != null) {
-                    yield permission;
-                }
-                yield question.isLocked()
-                    ? new Rejection(RejectionKind.INVALID_STATE, RejectionCode.ALREADY_LOCKED,
-                        prefix(action) + "câu hỏi đã bị khóa")
-                    : null;
-            }
-            case "UNLOCK" -> {
-                Rejection permission = adminPermission(systemAdminOnSystemBank, schoolAdminOnSchoolBank, action);
-                if (permission != null) {
-                    yield permission;
-                }
-                yield question.isLocked()
-                    ? null
-                    : new Rejection(RejectionKind.INVALID_STATE, RejectionCode.NOT_LOCKED,
-                        prefix(action) + "câu hỏi chưa bị khóa");
-            }
-            default -> invalidAction();
-        };
+    private static Rejection submitRejection(Question question, Standing standing, String action) {
+        return firstRejection(
+            standing.owner() || standing.editorCollaborator()
+                ? null
+                : forbidden(RejectionCode.NO_PERMISSION, action,
+                    "bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này"),
+            requireStatus(question.getStatus(), action,
+                QuestionStatus.DRAFT, QuestionStatus.REVISION_REQUESTED));
+    }
+
+    private static Rejection reviewRejection(Question question, Standing standing, String action) {
+        return firstRejection(
+            reviewPermission(standing, action),
+            requireStatus(question.getStatus(), action, QuestionStatus.SUBMITTED_FOR_REVIEW));
+    }
+
+    private static Rejection adminRejection(
+            Standing standing, String action, QuestionStatus actual, QuestionStatus required) {
+        return firstRejection(
+            adminPermission(standing, action),
+            requireStatus(actual, action, required));
+    }
+
+    private static Rejection publishRejection(Question question, Standing standing, String action) {
+        // Re-publishing an archived question is an admin action; for a first publication the
+        // owner / a collaborator can also do it, as long as the question has been approved.
+        if (question.getStatus() == QuestionStatus.ARCHIVED) {
+            return adminPermission(standing, action);
+        }
+        Rejection statusRejection = requireStatus(question.getStatus(), action, QuestionStatus.APPROVED);
+        if (statusRejection != null) {
+            return statusRejection;
+        }
+        return standing.owner() || standing.editorCollaborator()
+                || standing.systemAdminOnSystemBank() || standing.schoolAdminOnSchoolBank()
+            ? null
+            : forbidden(RejectionCode.NO_PERMISSION, action, "bạn không có quyền xuất bản câu hỏi này");
+    }
+
+    private static Rejection lockRejection(Question question, Standing standing, String action) {
+        Rejection permission = adminPermission(standing, action);
+        if (permission != null) {
+            return permission;
+        }
+        return question.isLocked()
+            ? new Rejection(RejectionKind.INVALID_STATE, RejectionCode.ALREADY_LOCKED,
+                prefix(action) + "câu hỏi đã bị khóa")
+            : null;
+    }
+
+    private static Rejection unlockRejection(Question question, Standing standing, String action) {
+        Rejection permission = adminPermission(standing, action);
+        if (permission != null) {
+            return permission;
+        }
+        return question.isLocked()
+            ? null
+            : new Rejection(RejectionKind.INVALID_STATE, RejectionCode.NOT_LOCKED,
+                prefix(action) + "câu hỏi chưa bị khóa");
     }
 
     /**
@@ -213,33 +236,27 @@ public final class QuestionStatusTransition {
         return null;
     }
 
-    private static Rejection adminPermission(
-            boolean systemAdminOnSystemBank, boolean schoolAdminOnSchoolBank, String action) {
-        return systemAdminOnSystemBank || schoolAdminOnSchoolBank
+    private static Rejection adminPermission(Standing standing, String action) {
+        return standing.systemAdminOnSystemBank() || standing.schoolAdminOnSchoolBank()
             ? null
             : forbidden(RejectionCode.ADMIN_ONLY, action,
                 "chỉ quản trị viên của ngân hàng câu hỏi mới thực hiện được");
     }
 
     /**
-     * Người tự viết câu hỏi không được tự duyệt bài của mình, kể cả khi họ là collaborator
-     * có quyền sửa — chỉ admin hoặc một collaborator khác mới review được.
+     * A question's author may not approve their own work, even when they are a collaborator with
+     * edit rights: only an admin or another collaborator can review it.
      */
-    private static Rejection reviewPermission(
-            boolean systemAdminOnSystemBank,
-            boolean schoolAdminOnSchoolBank,
-            boolean editorCollaborator,
-            boolean owner,
-            String action) {
-        if (systemAdminOnSystemBank || schoolAdminOnSchoolBank) {
+    private static Rejection reviewPermission(Standing standing, String action) {
+        if (standing.systemAdminOnSystemBank() || standing.schoolAdminOnSchoolBank()) {
             return null;
         }
-        if (editorCollaborator && !owner) {
+        if (standing.editorCollaborator() && !standing.owner()) {
             return null;
         }
-        // Tách riêng trường hợp tác giả tự duyệt: đây là lý do bị từ chối phổ biến nhất trên màn
-        // hình duyệt hàng loạt, và "bạn không có quyền" khiến người dùng tưởng bị thiếu vai trò.
-        return owner
+        // The author reviewing their own question is a separate case: it is the most common rejection
+        // reason on the bulk review screen, and "you have no permission" makes users think a role is missing.
+        return standing.owner()
             ? forbidden(RejectionCode.SELF_REVIEW, action, "bạn là người tạo câu hỏi này, cần người khác duyệt")
             : forbidden(RejectionCode.NO_PERMISSION, action, "bạn không có quyền duyệt câu hỏi trong ngân hàng này");
     }

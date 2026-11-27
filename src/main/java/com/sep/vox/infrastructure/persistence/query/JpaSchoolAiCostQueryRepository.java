@@ -25,7 +25,7 @@ import jakarta.persistence.Query;
 @Repository
 public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryRepository {
 
-    /** Cửa sổ NỬA MỞ {@code [from, to)} — cùng quy ước với schoolBalanceSummary và các thẻ dashboard. */
+    /** HALF-OPEN window {@code [from, to)} -- the same convention as schoolBalanceSummary and the dashboard cards. */
     private static final String WINDOW = """
         WHERE e.school_id = :schoolId
           AND e.occurred_at >= :fromInstant
@@ -33,11 +33,11 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
         """;
 
     /**
-     * Ghép bằng {@code formatted} chứ KHÔNG nối hai text block quanh giá trị.
+     * Assembled with {@code formatted}, NOT by concatenating two text blocks around the value.
      *
-     * <p>Nối text block thì phần thụt đầu dòng của block SAU dính luôn vào giá trị vừa chèn: đơn vị
-     * thành {@code 'day    '} và Postgres trả về "unit not recognized", một lỗi chỉ lộ ra lúc chạy
-     * chứ không phải lúc biên dịch. Cùng họ với cái bẫy {@code :expiringThroughORDER} đã ghi ở
+     * <p>When text blocks are concatenated, the indentation at the start of the SECOND block sticks to the value
+     * just inserted: the unit becomes {@code 'day    '} and Postgres answers "unit not recognized", an error that
+     * only shows at run time, not at compile time. Same family as the {@code :expiringThroughORDER} trap noted in
      * {@code JpaSchoolsAtRiskQueryRepository}.
      */
     private static final String BUCKETED_COST_SQL = """
@@ -55,15 +55,15 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
     private EntityManager em;
 
     /**
-     * {@code date_trunc} chạy trên giờ NGHIỆP VỤ rồi đổi ngược về instant.
+     * {@code date_trunc} runs on BUSINESS time and is then converted back to an instant.
      *
-     * <p>Bản cũ ({@code JpaTokenUsageTimeseriesQueryRepository}) cắt thẳng trên timestamptz, tức cắt
-     * theo UTC — chính javadoc của nó đã ghi nhận điều đó. Hệ quả: mọi khoản phát sinh từ 00:00 tới
-     * 07:00 giờ Việt Nam bị xếp vào cột NGÀY HÔM TRƯỚC, và cột cuối biểu đồ luôn thiếu một mẩu.
+     * <p>The old version ({@code JpaTokenUsageTimeseriesQueryRepository}) truncated straight on timestamptz, i.e. by
+     * UTC -- its own javadoc recorded that. Consequence: everything incurred from 00:00 to 07:00 Vietnam time landed
+     * in the column of the PREVIOUS DAY, and the last column of the chart was always missing a piece.
      *
-     * <p>{@code granularityUnit} KHÔNG đi qua tham số bind mà ghép vào chuỗi: Postgres đòi đối số đầu
-     * của {@code date_trunc} là hằng, và giá trị chỉ đến từ một enum đóng do chính server dựng — nó
-     * không bao giờ là chuỗi người dùng gửi lên.
+     * <p>{@code granularityUnit} does NOT go through a bind parameter but is spliced into the string: Postgres
+     * demands that the first argument of {@code date_trunc} is a constant, and the value only comes from a closed
+     * enum built by the server itself -- it is never a string sent up by the user.
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -94,27 +94,40 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
      * a number above 100% just because the school raised the cap midway.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public PageResult<UserAiSpendDto> findSpendByUser(
             UUID schoolId, Instant from, Instant to, String quotaType, int page, int size) {
-        String quotaFilter = quotaType == null ? "" : " AND e.quota_type = :quotaType\n";
-
-        // Count GROUPS, not rows: one person can spend in both wallet types and each one is a separate
-        // row in the table, so COUNT(*) over the ledger entries would return the total number of spends.
-        long total = toLong(bind(em.createNativeQuery("""
-            SELECT COUNT(*) FROM (
-                SELECT 1
-                FROM school_ai_spend_entries e
-                """ + WINDOW + " AND e.user_id IS NOT NULL\n" + quotaFilter + """
-                GROUP BY e.user_id, e.quota_type
-            ) grouped
-            """), schoolId, from, to, quotaType).getSingleResult());
+        long total = countSpendGroups(schoolId, from, to, quotaType);
 
         if (total == 0) {
             return new PageResult<>(List.of(), page, size, 0, 0);
         }
 
-        List<Object[]> rows = bind(em.createNativeQuery("""
+        List<UserAiSpendDto> content = findSpendRows(schoolId, from, to, quotaType, page, size).stream()
+            .map(JpaSchoolAiCostQueryRepository::toUserAiSpend)
+            .toList();
+
+        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+    }
+
+    /**
+     * Counts GROUPS, not rows: one person can spend in both wallet types and each one is a separate
+     * row in the table, so COUNT(*) over the ledger entries would return the total number of spends.
+     */
+    private long countSpendGroups(UUID schoolId, Instant from, Instant to, String quotaType) {
+        return toLong(bind(em.createNativeQuery("""
+            SELECT COUNT(*) FROM (
+                SELECT 1
+                FROM school_ai_spend_entries e
+                """ + WINDOW + " AND e.user_id IS NOT NULL\n" + quotaFilter(quotaType) + """
+                GROUP BY e.user_id, e.quota_type
+            ) grouped
+            """), schoolId, from, to, quotaType).getSingleResult());
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object[]> findSpendRows(
+            UUID schoolId, Instant from, Instant to, String quotaType, int page, int size) {
+        return bind(em.createNativeQuery("""
             SELECT
                 e.user_id,
                 u.full_name,
@@ -127,7 +140,7 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
                    ON a.user_id = e.user_id
                   AND a.quota_type = e.quota_type
                   AND a.school_subscription_id = e.subscription_id
-            """ + WINDOW + " AND e.user_id IS NOT NULL\n" + quotaFilter + """
+            """ + WINDOW + " AND e.user_id IS NOT NULL\n" + quotaFilter(quotaType) + """
             GROUP BY e.user_id, u.full_name, e.quota_type
             ORDER BY SUM(e.amount_vnd) DESC, u.full_name ASC, e.user_id ASC
             LIMIT :pageSize OFFSET :offset
@@ -135,17 +148,19 @@ public class JpaSchoolAiCostQueryRepository implements SchoolAiCostQueryReposito
             .setParameter("pageSize", size)
             .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
+    }
 
-        List<UserAiSpendDto> content = rows.stream()
-            .map(row -> new UserAiSpendDto(
-                toUuid(row[0]),
-                (String) row[1],
-                (String) row[2],
-                new BigDecimal(row[3].toString()),
-                row[4] == null ? null : new BigDecimal(row[4].toString())))
-            .toList();
+    private static UserAiSpendDto toUserAiSpend(Object[] row) {
+        return new UserAiSpendDto(
+            toUuid(row[0]),
+            (String) row[1],
+            (String) row[2],
+            new BigDecimal(row[3].toString()),
+            row[4] == null ? null : new BigDecimal(row[4].toString()));
+    }
 
-        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+    private static String quotaFilter(String quotaType) {
+        return quotaType == null ? "" : " AND e.quota_type = :quotaType\n";
     }
 
     @Override

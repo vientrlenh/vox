@@ -37,6 +37,20 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
     @Override
     @Transactional(readOnly = true)
     public PageResult<AssessmentPolicyDto> execute(ViewTeacherAssessmentPoliciesQuery query) {
+        UUID schoolId = requireActiveSchoolOfCaller();
+
+        if (query.effectiveFrom() != null && query.effectiveTo() != null && query.effectiveFrom().isAfter(query.effectiveTo())) {
+            throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");
+        }
+
+        // A Teacher may only see PUBLISHED policies
+        PageResult<AssessmentPolicy> policyPage = assessmentPolicyRepository.findAllBySchoolId(schoolId, AssessmentPolicyStatus.PUBLISHED.name(),
+                query.languageId(), query.rubricVersionId(), query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
+        return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
+    }
+
+    /** The Teacher's school is derived from SchoolUser (a schoolId is never accepted from the client). */
+    private UUID requireActiveSchoolOfCaller() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
@@ -44,7 +58,6 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
-        // Suy ra trường học của Teacher từ SchoolUser (không nhận schoolId từ client)
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
 
@@ -53,14 +66,6 @@ public class ViewTeacherAssessmentPoliciesUseCase implements IUseCase<ViewTeache
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
         }
-
-        if (query.effectiveFrom() != null && query.effectiveTo() != null && query.effectiveFrom().isAfter(query.effectiveTo())) {
-            throw new IllegalArgumentException("Khoảng thời gian effectiveFrom/effectiveTo không hợp lệ.");
-        }
-
-        // Teacher chỉ được xem các chính sách đã PUBLISHED
-        PageResult<AssessmentPolicy> policyPage = assessmentPolicyRepository.findAllBySchoolId(schoolUser.getSchoolId(), AssessmentPolicyStatus.PUBLISHED.name(),
-                query.languageId(), query.rubricVersionId(), query.effectiveFrom(), query.effectiveTo(), query.page(), query.size());
-        return AssessmentPolicyDtoMapper.toDtoPage(policyPage);
+        return schoolUser.getSchoolId();
     }
 }

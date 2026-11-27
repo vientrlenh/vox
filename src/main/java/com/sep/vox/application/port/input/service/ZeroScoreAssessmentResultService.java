@@ -79,35 +79,50 @@ public class ZeroScoreAssessmentResultService {
             if (AssessmentCandidateStatus.isNonScorable(candidate.getStatus())) {
                 continue;
             }
-            List<AssessmentSession> sessions = assessmentSessionRepository.findByCandidateId(candidate.getId()).stream()
-                .filter(session -> assessmentId.equals(session.getAssessmentId()))
-                .toList();
-            if (sessions.isEmpty()) {
-                UUID paperId = candidate.getAssignedPaperId() == null ? fallbackPaperId : candidate.getAssignedPaperId();
-                if (paperId == null) {
-                    continue;
-                }
-                AssessmentSession session = assessmentSessionRepository.save(
-                    AssessmentSession.gradedWithoutAnswers(assessmentId, candidate.getId(), paperId, now));
-                releaseZeroForSession(session, policy, now);
-                continue;
-            }
-
-            for (AssessmentSession session : sessions) {
-                if (assessmentCandidateResultRepository.findBySessionId(session.getId()).isPresent()) {
-                    continue;
-                }
-                if (!assessmentItemResponseRepository.findBySessionId(session.getId()).isEmpty()) {
-                    continue;
-                }
-                session.setStatus(AssessmentSessionStatus.GRADED);
-                if (session.getSubmittedAt() == null) {
-                    session.setSubmittedAt(now);
-                }
-                AssessmentSession saved = assessmentSessionRepository.save(session);
-                releaseZeroForSession(saved, policy, now);
-            }
+            releaseZeroForCandidate(assessmentId, candidate, policy, fallbackPaperId, now);
         }
+    }
+
+    private void releaseZeroForCandidate(
+            UUID assessmentId, AssessmentCandidate candidate, AssessmentPolicy policy, UUID fallbackPaperId,
+            Instant now) {
+        List<AssessmentSession> sessions = assessmentSessionRepository.findByCandidateId(candidate.getId()).stream()
+            .filter(session -> assessmentId.equals(session.getAssessmentId()))
+            .toList();
+        if (sessions.isEmpty()) {
+            UUID paperId = candidate.getAssignedPaperId() == null ? fallbackPaperId : candidate.getAssignedPaperId();
+            releaseZeroForCandidateWithoutSession(assessmentId, candidate, paperId, policy, now);
+            return;
+        }
+
+        for (AssessmentSession session : sessions) {
+            releaseZeroForEmptySessionWithoutResult(session, policy, now);
+        }
+    }
+
+    private void releaseZeroForCandidateWithoutSession(
+            UUID assessmentId, AssessmentCandidate candidate, UUID paperId, AssessmentPolicy policy, Instant now) {
+        if (paperId == null) {
+            return;
+        }
+        AssessmentSession session = assessmentSessionRepository.save(
+            AssessmentSession.gradedWithoutAnswers(assessmentId, candidate.getId(), paperId, now));
+        releaseZeroForSession(session, policy, now);
+    }
+
+    private void releaseZeroForEmptySessionWithoutResult(AssessmentSession session, AssessmentPolicy policy, Instant now) {
+        if (assessmentCandidateResultRepository.findBySessionId(session.getId()).isPresent()) {
+            return;
+        }
+        if (!assessmentItemResponseRepository.findBySessionId(session.getId()).isEmpty()) {
+            return;
+        }
+        session.setStatus(AssessmentSessionStatus.GRADED);
+        if (session.getSubmittedAt() == null) {
+            session.setSubmittedAt(now);
+        }
+        AssessmentSession saved = assessmentSessionRepository.save(session);
+        releaseZeroForSession(saved, policy, now);
     }
 
     private AssessmentCandidateResult releaseZeroForSession(AssessmentSession session, Instant now) {
@@ -161,13 +176,7 @@ public class ZeroScoreAssessmentResultService {
         if (policy.getRubricVersionId() == null) {
             return null;
         }
-        List<RubricResultBand> matchingBands = rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
-            .sorted(Comparator.comparingInt(band -> band.getOrder()))
-            .filter(band -> band.getScoreMin() != null
-                && band.getScoreMax() != null
-                && floorScore.compareTo(band.getScoreMin()) >= 0
-                && floorScore.compareTo(band.getScoreMax()) <= 0)
-            .toList();
+        List<RubricResultBand> matchingBands = findBandsContaining(policy, floorScore);
         if (matchingBands.isEmpty()) {
             log.info(
                 "Không có dải điểm kết quả nào chứa {} (rubricVersionId={}) -- lưu kết quả điểm sàn không kèm xếp loại.",
@@ -184,5 +193,15 @@ public class ZeroScoreAssessmentResultService {
             );
         }
         return matchingBands.get(0);
+    }
+
+    private List<RubricResultBand> findBandsContaining(AssessmentPolicy policy, BigDecimal floorScore) {
+        return rubricResultBandRepository.findByRubricVersionId(policy.getRubricVersionId()).stream()
+            .sorted(Comparator.comparingInt(band -> band.getOrder()))
+            .filter(band -> band.getScoreMin() != null
+                && band.getScoreMax() != null
+                && floorScore.compareTo(band.getScoreMin()) >= 0
+                && floorScore.compareTo(band.getScoreMax()) <= 0)
+            .toList();
     }
 }

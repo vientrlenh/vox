@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.usecase.rubricschool;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.exception.UnauthorizedException;
-import com.sep.vox.application.port.input.command.rubricsystem.AcceptRubricCriterionImportCommand; // Uses bác's shared Command
+import com.sep.vox.application.port.input.command.rubricsystem.AcceptRubricCriterionImportCommand;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
@@ -43,12 +43,38 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
     @Override
     @Transactional
     public AcceptRubricCriterionImportResponse execute(AcceptRubricCriterionImportCommand command) {
-        // Validation tránh việc truyền dữ liệu thiếu trường cần thiết
         if (command.schoolId() == null) {
             throw new IllegalArgumentException("Yêu cầu không hợp lệ: Thiếu mã trường học đối với luồng School Admin.");
         }
 
-        // Bước 1: Xác thực trạng thái tài khoản đang đăng nhập
+        requireActiveSchoolMember(command.schoolId());
+        ImportSession session = loadPreviewedSessionOfSchool(command);
+        requireSchoolOwnedRubric(session, command.schoolId());
+
+        queueForAsyncProcessing(session, command);
+
+        return new AcceptRubricCriterionImportResponse(
+                session.getId(),
+                session.getTotalRows(),
+                0, 0, 0,
+                session.getStatus().name()
+        );
+    }
+
+    private void queueForAsyncProcessing(ImportSession session, AcceptRubricCriterionImportCommand command) {
+        if (command.confirmedMapping() != null) {
+            String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
+            session.setConfirmedMappingJson(mappingJson);
+        }
+
+        // Hand over to the async worker: the scheduler picks up QUEUED sessions with zero attempts.
+        session.setStatus(ImportSessionStatus.QUEUED);
+        session.setAttempts(0);
+
+        importSessionRepository.save(session);
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
@@ -56,16 +82,16 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
             throw new UnauthorizedException("Tài khoản bị khóa.");
         }
 
-        // Bước 2: Bảo mật tài khoản School Admin
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
 
-        // Chống hack: Gửi mã trường trên URL khác với id trường thực tế của tài khoản
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
+        // Security: the school id in the URL must match the caller's real school.
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bạn không có quyền thao tác trên dữ liệu của trường khác.");
         }
+    }
 
-        // Bước 3: Kiểm tra thông tin phiên làm việc (ImportSession)
+    private ImportSession loadPreviewedSessionOfSchool(AcceptRubricCriterionImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import tương ứng."));
 
@@ -73,46 +99,27 @@ public class AcceptSchoolRubricCriterionImportUseCase implements IUseCase<Accept
             throw new IllegalArgumentException("Phiên làm việc import này không hợp lệ.");
         }
 
-        // Chốt chặn trạng thái: Chỉ cho phép xác nhận khi đã qua màn hình xem Preview thành công
+        // Confirmation is only allowed after the preview step succeeded.
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
             throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để thực hiện Xác nhận.");
         }
 
-        // Chống hack: Cố tình truyền ngẫu nhiên một sessionId của trường khác vào URL trường mình nhằm phá hoại
+        // Security: a session id of another school must not be accepted through this school's URL.
         if (!session.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException("Phiên làm việc này không thuộc về trường của bạn.");
         }
+        return session;
+    }
 
-        // Bước 4: Kiểm tra tính hợp lệ và quyền sở hữu đích đến (Bộ Rubric gốc)
-        UUID versionId = session.getImportedEntityId();
-        RubricVersion version = rubricVersionRepository.findById(versionId)
+    private void requireSchoolOwnedRubric(ImportSession session, UUID schoolId) {
+        RubricVersion version = rubricVersionRepository.findById(session.getImportedEntityId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric đích."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc cần bổ sung tiêu chí."));
 
-        // Chống hack: Chặn tuyệt đối School Admin can thiệp dữ liệu vào bộ Rubric hệ thống hoặc trường bạn
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
+        // Security: a school admin must never change system rubrics or another school's rubrics.
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bảo mật: Bạn chỉ được quyền thao tác trên các bộ Rubric thuộc sở hữu của trường mình.");
         }
-
-        if (command.confirmedMapping() != null) {
-            String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
-            session.setConfirmedMappingJson(mappingJson);
-        }
-
-
-        // Bước 5: Cập nhật trạng thái Session sang QUEUED để kích hoạt luồng xử lý ngầm (Async Worker)
-        session.setStatus(ImportSessionStatus.QUEUED);
-        session.setAttempts(0); // Reset số lần thử lại về 0 để Scheduler bốc việc lên chạy
-
-        importSessionRepository.save(session);
-
-        // Bước 6: Trả kết quả phản hồi nhanh chóng về cho giao diện (Frontend không phải chờ đợi lâu)
-        return new AcceptRubricCriterionImportResponse(
-                session.getId(),
-                session.getTotalRows(),
-                0, 0, 0,
-                session.getStatus().name()
-        );
     }
 }

@@ -40,57 +40,74 @@ public class EndPracticeSessionUseCase implements IUseCase<EndPracticeSessionCom
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         UUID sessionId = input.sessionId();
         requireOwnedInProgress(sessionId, studentId);
-        // Xả chấm TRƯỚC khi đọc điểm: câu học sinh bỏ dở chưa từng được chấm, và nếu không
-        // bắn ở đây thì không bao giờ có ai bắn nữa. Kết quả về sau vài chục giây --
-        // RecordPracticeAttemptEvaluationUseCase sẽ tự cập nhật lại overall_score lúc đó.
+        // Flush grading BEFORE reading the score: the question the student left unfinished has never
+        // been graded, and if it is not fired here nobody ever will. The result arrives some tens of
+        // seconds later -- RecordPracticeAttemptEvaluationUseCase then refreshes overall_score itself.
         gradingFlushService.flush(sessionId);
         Double lastScore = practiceItemEvaluationRepository.findLastValidNormalizedScore(sessionId);
         com.sep.vox.domain.model.personalization.PracticeSession session = practiceSessionRepository.findById(sessionId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
-        // COMPLETED = học sinh CÓ NÓI, không phải "đã chấm xong".
-        //
-        // Bản trước đếm countCompletedBySessionId, tức đếm bản chấm ĐÃ VỀ DB. Nhưng chấm là
-        // bất đồng bộ: đo trên dữ liệu thật, ended_at 11:03:25 còn evaluated_at 11:04:10 --
-        // về SAU 45 giây. Nên phiên nào cũng thành ABANDONED kể cả khi học sinh nói đủ lượt
-        // rồi tự bấm kết thúc.
-        //
-        // Cái giá không chỉ là một cái nhãn sai: recordSessionOutcome thoát ngay nếu không
-        // COMPLETED (điểm quan tâm không bao giờ được ghi) và findDashboardCounts lọc
-        // status='COMPLETED' (số buổi và điểm trung bình luôn 0).
-        //
-        // Trạng thái phải mô tả HÀNH VI NGƯỜI HỌC, không mô tả độ trễ hạ tầng. Kết quả chấm
-        // về sau vẫn ghi vào practice_item_evaluations và overall_score tính lại từ đó -- học
-        // sinh vào Lịch sử xem lại là thấy.
-        //
-        // gradedSeconds là giây VAD nghe thấy tiếng, cùng con số quota trừ. Mở phiên rồi
-        // thoát mà chưa nói gì thì vẫn ABANDONED -- đúng nghĩa bỏ dở.
-        String status = session.getGradedSeconds() > 0 ? "COMPLETED" : "ABANDONED";
+        String status = endedStatus(session);
         String diagnosis = "ABANDONED".equals(status)
             ? SessionDiagnosisPolicy.diagnose(lastScore, input.helpRequestCount(), input.longPauseCount())
             : null;
+        saveEndedSession(session, input, status, diagnosis);
+        learnFromClosedSession(studentId, sessionId, status, diagnosis);
+        return PracticeSessionResponseMapper.toResponse(
+            SessionRowMapper.toDto(
+                practiceSessionQueryRepository.findSessionRow(sessionId, studentId).orElse(null)
+            )
+        );
+    }
+
+    private void saveEndedSession(com.sep.vox.domain.model.personalization.PracticeSession session,
+                                  EndPracticeSessionCommand input, String status, String diagnosis) {
         practiceSessionRepository.save(session.ended(
             status,
             diagnosis,
             input.helpRequestCount(),
             input.longPauseCount(),
             Instant.now(),
-            practiceItemEvaluationRepository.findAverageItemScoreBySessionId(sessionId)
+            practiceItemEvaluationRepository.findAverageItemScoreBySessionId(input.sessionId())
         ));
-        // Phần "học từ buổi vừa rồi" nằm chung với đường job dọn -- xem
-        // PracticeSessionClosedHandler. Để riêng ở đây thì phiên bị job đóng (đa số, vì học
-        // sinh thường chỉ đóng app) sẽ không cập nhật điểm quan tâm và không sinh chủ đề mới.
+    }
+
+    /**
+     * COMPLETED = the student DID SPEAK, not "grading has finished".
+     *
+     * <p>The previous version counted countCompletedBySessionId, i.e. evaluations ALREADY in the DB. But
+     * grading is asynchronous: measured on real data, ended_at 11:03:25 while evaluated_at 11:04:10 --
+     * 45 seconds AFTER. So every session became ABANDONED even when the student spoke every turn and
+     * ended it themselves.
+     *
+     * <p>The cost is more than a wrong label: recordSessionOutcome exits at once when the status is not
+     * COMPLETED (the interest score is never written) and findDashboardCounts filters on
+     * status='COMPLETED' (session count and average score stay 0).
+     *
+     * <p>The status must describe the LEARNER'S BEHAVIOUR, not infrastructure latency. The grading result
+     * that arrives later is still written to practice_item_evaluations and overall_score is recomputed
+     * from it -- the student sees it when reopening the history.
+     *
+     * <p>gradedSeconds is the seconds in which VAD heard speech, the same number quota deducts. Opening a
+     * session and leaving without saying anything is still ABANDONED -- genuinely abandoned.
+     */
+    private String endedStatus(com.sep.vox.domain.model.personalization.PracticeSession session) {
+        return session.getGradedSeconds() > 0 ? "COMPLETED" : "ABANDONED";
+    }
+
+    /**
+     * The "learn from the session just ended" part is shared with the cleanup job path -- see
+     * PracticeSessionClosedHandler. Kept separate here, a session closed by the job (most of them,
+     * since students usually just close the app) would not update the interest score nor generate new topics.
+     */
+    private void learnFromClosedSession(UUID studentId, UUID sessionId, String status, String diagnosis) {
         try {
             sessionClosedHandler.afterClosed(studentId, sessionId, status, diagnosis);
         } catch (RuntimeException exception) {
-            // Phiên ĐÃ đóng xong ở trên; phần ghi nhận phía sau hỏng thì không được làm hỏng
-            // cả yêu cầu kết thúc phiên của học sinh. Bắt ở đây, ngoài ranh giới REQUIRES_NEW.
+            // The session IS already closed above; a failure in the follow-up bookkeeping must not
+            // break the student's end-session request. Caught here, outside the REQUIRES_NEW boundary.
             log.warn("Ghi nhận sau khi kết thúc phiên {} thất bại.", sessionId, exception);
         }
-        return PracticeSessionResponseMapper.toResponse(
-            SessionRowMapper.toDto(
-                practiceSessionQueryRepository.findSessionRow(sessionId, studentId).orElse(null)
-            )
-        );
     }
 
     private void requireOwnedInProgress(UUID sessionId, UUID studentId) {

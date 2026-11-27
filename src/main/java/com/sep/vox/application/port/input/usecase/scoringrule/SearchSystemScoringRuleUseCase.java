@@ -36,25 +36,11 @@ public class SearchSystemScoringRuleUseCase implements IUseCase<SearchScoringRul
     @Override
     @Transactional(readOnly = true)
     public PageResult<ScoringRuleDto> execute(SearchScoringRuleQuery query) {
-        // 1. Kiểm tra tài khoản System Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
-        }
+        requireActiveAccount();
+        requireSystemPolicy(query.policyId());
 
-        // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
-        if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");
-        }
-
-        // Lưu ý: KHÔNG chặn theo status ở đây (không như Create/Update) - cho phép xem lại
-        // Scoring Rule kể cả khi Policy đã PUBLISHED/ARCHIVED để phục vụ tra cứu lịch sử chấm điểm.
-
-        // 3. Search/paginate
+        // Note: do NOT block by status here (unlike Create/Update) - the Scoring Rules may be viewed again
+        // even when the Policy is already PUBLISHED/ARCHIVED, to look up the scoring history.
         PageResult<ScoringRule> pageResult = scoringRuleRepository.searchByPolicyId(
                 query.policyId(), query.keyword(), query.isActive(), query.page(), query.size());
 
@@ -66,4 +52,22 @@ public class SearchSystemScoringRuleUseCase implements IUseCase<SearchScoringRul
                 pageResult.totalPages()
         );
     }
+
+    private void requireActiveAccount() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+    }
+
+    private void requireSystemPolicy(UUID policyId) {
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+        if (policy.getSchoolId() != null) {
+            throw new ForbiddenException("Không thể xem Scoring Rule của Assessment Policy thuộc trường học.");
+        }
+    }
+
 }

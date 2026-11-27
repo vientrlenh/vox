@@ -81,6 +81,17 @@ public class SchoolClassUser {
         this.leftAt = null;
     }
 
+    public static SchoolClassUser joined(UUID userId, UUID schoolClassId, Instant joinedAt, UUID assignedBy) {
+        return builder()
+                .userId(userId)
+                .schoolClassId(schoolClassId)
+                .active(true)
+                .joinedAt(joinedAt)
+                .leftAt(null)
+                .assignedBy(assignedBy)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

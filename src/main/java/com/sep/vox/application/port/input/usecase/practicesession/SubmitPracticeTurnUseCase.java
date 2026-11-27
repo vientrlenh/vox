@@ -71,20 +71,44 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     }
 
     /**
-     * Cho phép gọi với studentId biết trước (không qua UserContextPort) -- dùng bởi endpoint nội
-     * bộ /internal/practice-sessions/{id}/turns (Python gọi, không có SecurityContext đăng nhập).
+     * Allows a call with a known studentId (not through UserContextPort) -- used by the internal endpoint
+     * /internal/practice-sessions/{id}/turns (called by Python, which has no logged-in SecurityContext).
      */
     @Transactional
     public SubmitTurnResult execute(UUID studentId, SubmitPracticeTurn turn) {
         requireOwnedInProgress(turn.getSessionId(), studentId);
-        UUID responseId = practiceItemResponseRepository.upsertResponse(
+        UUID responseId = upsertResponse(turn);
+        PracticeResponseTurnRepository.TurnWrite turnWrite = saveTurn(responseId, turn);
+        UUID turnId = turnWrite.turnId();
+        // A RESUBMITTED turn does NOT write extra correction rows: turn_corrections has no unique
+        // constraint, so every Python retry would double the correction cards the student sees when
+        // reviewing the session. The list is still built for the response -- the retry payload is the
+        // first payload, so filtering it again yields exactly the rows already stored.
+        List<TurnCorrectionDto> corrections = collectCorrections(turnId, turn.getCorrections(), turnWrite.created());
+        // Load the session EVEN when this turn is silent: the client must still see the correct total
+        // "spoken" on the progress bar, not an empty box each time the student taps the mic and says nothing.
+        PracticeSession session = practiceSessionRepository.findById(turn.getSessionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
+        SpokenTurnOutcome outcome = recordSpokenSeconds(studentId, turn, session, turnWrite.created());
+        SubmitTurnResultDto result = buildTurnResult(studentId, turn, session, responseId, turnId, corrections, outcome);
+        if (turnWrite.created() && result.evaluationQueued()) {
+            requestGrading(turn, result);
+        }
+        return PracticeSessionResponseMapper.toResponse(result);
+    }
+
+    private UUID upsertResponse(SubmitPracticeTurn turn) {
+        return practiceItemResponseRepository.upsertResponse(
             turn.getSessionId(),
             turn.getQuestionId(),
             turn.getAudioUrl(),
             turn.getTranscript(),
             turn.isQuestionComplete()
         );
-        PracticeResponseTurnRepository.TurnWrite turnWrite = practiceResponseTurnRepository.save(
+    }
+
+    private PracticeResponseTurnRepository.TurnWrite saveTurn(UUID responseId, SubmitPracticeTurn turn) {
+        return practiceResponseTurnRepository.save(
             responseId,
             turn.getTurnOrder(),
             turn.getTurnType(),
@@ -95,112 +119,146 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             turn.getWordFeedbackJson(),
             turn.getTurnScore()
         );
-        UUID turnId = turnWrite.turnId();
-        // Bản gửi LẠI thì KHÔNG ghi thêm dòng sửa lỗi: turn_corrections không có ràng buộc duy nhất
-        // nào, nên mỗi lần Python retry sẽ nhân đôi số thẻ sửa lỗi học sinh thấy khi xem lại buổi.
-        // Vẫn dựng danh sách để trả về -- payload retry chính là payload lần đầu, nên lọc lại cho ra
-        // đúng những dòng đã lưu.
-        List<TurnCorrectionDto> corrections = collectCorrections(turnId, turn.getCorrections(), turnWrite.created());
-        // Nạp phiên KỂ CẢ khi lượt này im lặng: client vẫn phải thấy đúng tổng "đã nói" trên
-        // thanh tiến độ, chứ không phải một ô trống mỗi lần học sinh bấm mic rồi không nói gì.
-        PracticeSession session = practiceSessionRepository.findById(turn.getSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
+    }
+
+    private record SpokenTurnOutcome(boolean quotaExhausted, int spokenSeconds) {
+    }
+
+    /**
+     * Deducts the cost of a spoken turn and adds its seconds to the session, only for the FIRST submission.
+     *
+     * <p>{@code firstSubmission} (turnWrite.created()) guards the WHOLE block: the turns table de-duplicates
+     * itself (uq_practice_response_turn_order), but the two things done here do not -- charging the school
+     * wallet, and adding the spoken seconds to the session. Before this flag existed, a Python retry after a
+     * lost HTTP response would charge REAL money a second time for the same turn, and the ledger still
+     * balanced (entry and balance were both deducted twice) so the invariant SUM(entries) = balance did not
+     * catch it. The very table being protected is what made this spot look safe.
+     *
+     * <p>Skipping the charge also means not knowing whether the funds ran out, so it reports false: the
+     * session will close on the next REAL turn. This is still within the lag the design already accepted --
+     * the session closes AFTER the turn that exhausts the funds, not before.
+     */
+    private SpokenTurnOutcome recordSpokenSeconds(UUID studentId, SubmitPracticeTurn turn,
+                                                  PracticeSession session, boolean firstSubmission) {
         int spokenSeconds = session.getGradedSeconds();
-        boolean quotaExhausted = false;
-        // turnWrite.created() gác CẢ khối: bảng lượt nói tự chống trùng được (uq_practice_response_turn_order),
-        // nhưng hai việc bên trong đây thì không -- trừ tiền vào ví trường, và cộng giây đã nói vào
-        // phiên. Trước khi có cờ này, một lần Python retry sau khi mất response HTTP sẽ trừ tiền THẬT
-        // lần thứ hai cho cùng một lượt, và sổ cái vẫn cân (bút toán + số dư cùng bị trừ đôi) nên bất
-        // biến SUM(entries) = balance không bắt được. Đúng cái bảng được bảo vệ lại là cái khiến chỗ
-        // này trông như đã an toàn.
-        //
-        // Bỏ qua lần trừ cũng có nghĩa là không biết quỹ đã cạn chưa, nên trả false: phiên sẽ đóng ở
-        // lượt THẬT tiếp theo. Đây vẫn nằm trong đúng khoảng trễ mà thiết kế đã chấp nhận -- phiên
-        // vốn đóng SAU lượt làm cạn quỹ, không phải trước.
-        if (turnWrite.created() && turn.getDurationSeconds() > 0) {
-            // The real AI cost (USD) of this turn, computed by Python synchronously from the realtimeCorrectionGraph
-            // right inside the submit_turn request (it cannot wait for ai_usage_record via Kafka like assessments,
-            // because PRACTICE deducts quota RIGHT in this request) -- see
-            // PracticeAttemptConnection._flush_turn_usage on the Agentic AI side,
-            // AI_USAGE_QUOTA_USD_MIGRATION.md sections 5/7. Falls back to ZERO for an old Python client that does not send it yet.
-            BigDecimal costUsd = turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
-            // Quy sang VND NGAY tại đây vì hạn mức tính bằng VND. Khác đường thi: bên đó cộng
-            // cost_vnd đã chốt sẵn từng dòng ai_usage_records, còn ở đây chi phí do Python gửi
-            // thẳng trong request nên chưa có dòng nào để cộng -- tỷ giá hiện hành là tỷ giá
-            // đúng, vì khoản chi vừa phát sinh xong.
-            BigDecimal fxRateUsed = quotaPricingPort.usdToVndRate();
-            BigDecimal costVnd = costUsd
-                .multiply(fxRateUsed)
-                .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
-            UUID subscriptionId = activeSubscriptionId(studentId);
-            // ConsumeQuotaService is also @Transactional (REQUIRED by default) -- called directly, it
-            // would join the SAME transaction as the response/turn/corrections saved above. If it
-            // throws (now only real failures such as quota/plan not found, no longer
-            // BusinessRuleViolationException for an exhausted quota), the transaction interceptor of that call marks the SHARED
-            // transaction rollback-only immediately, BEFORE the exception reaches the place that
-            // catches it -- by the time this method commits, Spring still throws
-            // UnexpectedRollbackException (500), dragging along the response/turn/corrections
-            // already saved. Wrapping it in its OWN transaction (REQUIRES_NEW) means only that
-            // isolated transaction is rolled back. See
-            // QuestionStatusTransition/PracticeSessionClosedHandler for other places in the repo
-            // that have fallen into exactly this trap.
-            //
-            // consumePracticeAllowingDebt and NOT a hard block: by the time we get here Azure has
-            // already billed (costUsd is the REAL cost of the turn just spoken), so refusing
-            // would not keep a single cent and would only make the expense vanish from the books.
-            // Whether funds are exhausted is now read from the fundsExhausted flag of the
-            // result, no longer through an exception.
-            ConsumeQuotaResponse consumeResult = requiresNewTransactionPort.callInNewTransaction(
-                () -> consumeQuotaService.consumePracticeAllowingDebt(
-                    subscriptionId,
-                    turn.getSessionId(),
-                    costVnd,
-                    costUsd,
-                    fxRateUsed,
-                    studentId
-                ));
-            quotaExhausted = consumeResult != null && consumeResult.fundsExhausted();
-            if (quotaExhausted) {
-                // Đã nói thì phải được ghi. Hết tiền chỉ có nghĩa là phiên dừng SAU lượt này.
-                log.info(
-                    "Hết hạn mức lẫn số dư PRACTICE ở phiên {} -- vẫn ghi lượt {} rồi đóng phiên.",
-                    turn.getSessionId(),
-                    turn.getTurnOrder()
-                );
-            }
-            spokenSeconds += turn.getDurationSeconds();
-            practiceSessionRepository.save(
-                session.withGradedSecondsAndHeartbeat(spokenSeconds, Instant.now())
+        if (!firstSubmission || turn.getDurationSeconds() <= 0) {
+            return new SpokenTurnOutcome(false, spokenSeconds);
+        }
+        boolean quotaExhausted = deductTurnCost(studentId, turn);
+        spokenSeconds += turn.getDurationSeconds();
+        practiceSessionRepository.save(
+            session.withGradedSecondsAndHeartbeat(spokenSeconds, Instant.now())
+        );
+        return new SpokenTurnOutcome(quotaExhausted, spokenSeconds);
+    }
+
+    /**
+     * Converts the turn cost to VND RIGHT here because quota is counted in VND. Unlike the assessment path,
+     * where the already-fixed cost_vnd of each ai_usage_records row is summed, here the cost is sent by
+     * Python straight in the request so there is no row to sum yet -- the current exchange rate is the
+     * right one, since the expense has just been incurred.
+     *
+     * @return whether the funds are exhausted after this deduction
+     */
+    private boolean deductTurnCost(UUID studentId, SubmitPracticeTurn turn) {
+        BigDecimal costUsd = turnCostUsd(turn);
+        BigDecimal fxRateUsed = quotaPricingPort.usdToVndRate();
+        BigDecimal costVnd = costUsd
+            .multiply(fxRateUsed)
+            .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
+        UUID subscriptionId = activeSubscriptionId(studentId);
+        ConsumeQuotaResponse consumeResult = consumeInNewTransaction(
+            studentId, turn.getSessionId(), subscriptionId, costVnd, costUsd, fxRateUsed);
+        boolean quotaExhausted = consumeResult != null && consumeResult.fundsExhausted();
+        if (quotaExhausted) {
+            // What was spoken must be recorded. Running out of money only means the session stops AFTER this turn.
+            log.info(
+                "Hết hạn mức lẫn số dư PRACTICE ở phiên {} -- vẫn ghi lượt {} rồi đóng phiên.",
+                turn.getSessionId(),
+                turn.getTurnOrder()
             );
         }
-        SubmitTurnResultDto result = new SubmitTurnResultDto(
+        return quotaExhausted;
+    }
+
+    /**
+     * The real AI cost (USD) of this turn, computed by Python synchronously from the realtimeCorrectionGraph
+     * right inside the submit_turn request (it cannot wait for ai_usage_record via Kafka like assessments,
+     * because PRACTICE deducts quota RIGHT in this request) -- see
+     * PracticeAttemptConnection._flush_turn_usage on the Agentic AI side,
+     * AI_USAGE_QUOTA_USD_MIGRATION.md sections 5/7. Falls back to ZERO for an old Python client that does not send it yet.
+     */
+    private BigDecimal turnCostUsd(SubmitPracticeTurn turn) {
+        return turn.getTurnCostUsd() != null ? turn.getTurnCostUsd() : BigDecimal.ZERO;
+    }
+
+    /**
+     * ConsumeQuotaService is also @Transactional (REQUIRED by default) -- called directly, it
+     * would join the SAME transaction as the response/turn/corrections saved earlier. If it
+     * throws (now only real failures such as quota/plan not found, no longer
+     * BusinessRuleViolationException for an exhausted quota), the transaction interceptor of that call marks the SHARED
+     * transaction rollback-only immediately, BEFORE the exception reaches the place that
+     * catches it -- by the time the caller commits, Spring still throws
+     * UnexpectedRollbackException (500), dragging along the response/turn/corrections
+     * already saved. Wrapping it in its OWN transaction (REQUIRES_NEW) means only that
+     * isolated transaction is rolled back. See
+     * QuestionStatusTransition/PracticeSessionClosedHandler for other places in the repo
+     * that have fallen into exactly this trap.
+     *
+     * <p>consumePracticeAllowingDebt and NOT a hard block: by the time we get here Azure has
+     * already billed (costUsd is the REAL cost of the turn just spoken), so refusing
+     * would not keep a single cent and would only make the expense vanish from the books.
+     * Whether funds are exhausted is now read from the fundsExhausted flag of the
+     * result, no longer through an exception.
+     */
+    private ConsumeQuotaResponse consumeInNewTransaction(UUID studentId, UUID sessionId, UUID subscriptionId,
+                                                         BigDecimal costVnd, BigDecimal costUsd,
+                                                         BigDecimal fxRateUsed) {
+        return requiresNewTransactionPort.callInNewTransaction(
+            () -> consumeQuotaService.consumePracticeAllowingDebt(
+                subscriptionId,
+                sessionId,
+                costVnd,
+                costUsd,
+                fxRateUsed,
+                studentId
+            ));
+    }
+
+    private SubmitTurnResultDto buildTurnResult(UUID studentId, SubmitPracticeTurn turn, PracticeSession session,
+                                                UUID responseId, UUID turnId, List<TurnCorrectionDto> corrections,
+                                                SpokenTurnOutcome outcome) {
+        return new SubmitTurnResultDto(
             responseId,
             turnId,
             practiceResponseTurnRepository.findRemainingQuestionSeconds(turn.getSessionId(), turn.getQuestionId()),
             turn.isQuestionComplete(),
             corrections,
-            quotaExhausted,
-            spokenSeconds,
+            outcome.quotaExhausted(),
+            outcome.spokenSeconds(),
             enrichmentService.sessionBudgetSeconds(
                 studentId, enrichmentService.bandOrder(session.getTargetFrameworkBandId())
             )
         );
-        // Cũng gác bằng created(): lần gửi đầu đã đẩy yêu cầu chấm đi rồi (ExternalEventPublisherPort
-        // bắn thẳng Kafka, không qua outbox), nên bắn lại là một lượt chấm AI thứ hai cho đúng một
-        // câu trả lời -- lại tốn tiền thật, đúng như lần trừ quota vừa bỏ qua ở trên. Cờ trả về cho
-        // client vẫn để nguyên: câu này ĐÃ được xếp hàng chấm, chỉ là từ lần gửi trước.
-        if (turnWrite.created() && result.evaluationQueued()) {
-            eventPublisher.publish(evaluationRequestFactory.build(
-                turn.getSessionId(),
-                result.responseId(),
-                turn.getQuestionId()
-            ));
-            // Đóng dấu ở CẢ đường này, không riêng đường xả chấm: cột grading_requested_at phải
-            // đúng nghĩa "đã hỏi chấm lúc nào" cho mọi câu, nếu không nó nói dối về đa số dữ
-            // liệu -- phần lớn câu đi qua đây chứ không qua flush.
-            practiceItemResponseRepository.markGradingRequested(result.responseId(), Instant.now());
-        }
-        return PracticeSessionResponseMapper.toResponse(result);
+    }
+
+    /**
+     * Also guarded by created() at the call site: the first submission already pushed the grading request
+     * (ExternalEventPublisherPort fires straight to Kafka, not through the outbox), so firing again would be
+     * a second AI grading run for one answer -- real money again, just like the quota deduction skipped above.
+     * The flag returned to the client stays as it is: this answer HAS been queued for grading, just from an
+     * earlier submission.
+     */
+    private void requestGrading(SubmitPracticeTurn turn, SubmitTurnResultDto result) {
+        eventPublisher.publish(evaluationRequestFactory.build(
+            turn.getSessionId(),
+            result.responseId(),
+            turn.getQuestionId()
+        ));
+        // Stamped on THIS path too, not only on the flush path: the grading_requested_at column must really
+        // mean "when grading was requested" for every answer, otherwise it lies about most of the data --
+        // most answers go through here and not through flush.
+        practiceItemResponseRepository.markGradingRequested(result.responseId(), Instant.now());
     }
 
     private void requireOwnedInProgress(UUID sessionId, UUID studentId) {
@@ -233,30 +291,22 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     private static final int MAX_STORED_CORRECTIONS = 8;
 
     /**
-     * Lọc rồi (tùy {@code persist}) ghi các dòng sửa lỗi của một lượt.
+     * Filters, then (depending on {@code persist}) writes the correction rows of one turn.
      *
-     * <p>Lọc và ghi CỐ Ý nằm chung một vòng lặp: danh sách trả về cho client phải là đúng những dòng
-     * đã lưu, nên tách đôi là dựng sẵn hai bộ tiêu chí sẽ lệch nhau. {@code persist=false} (bản gửi
-     * lại) đi qua đúng bộ lọc đó nhưng bỏ lời gọi save, nên client vẫn nhận lại y hệt lần đầu.
+     * <p>Filtering and writing are DELIBERATELY in one loop: the list returned to the client must be exactly
+     * the rows that were stored, so splitting them would set up two criteria that drift apart.
+     * {@code persist=false} (a resubmission) goes through the same filter but skips the save call, so the
+     * client receives exactly what it got the first time.
      */
     private List<TurnCorrectionDto> collectCorrections(UUID turnId,
             List<TurnCorrectionSubmission> inputs, boolean persist) {
         List<TurnCorrectionDto> result = new ArrayList<TurnCorrectionDto>();
         for (TurnCorrectionSubmission correction : inputs == null ? List.<TurnCorrectionSubmission>of() : inputs) {
-            boolean measured = MEASURED_CATEGORY.equalsIgnoreCase(correction.getCategory());
-            if (result.size() >= MAX_STORED_CORRECTIONS
-                    || (!measured && correction.getConfidence() < MIN_JUDGED_CONFIDENCE)) {
+            if (!isWorthStoring(correction, result.size())) {
                 continue;
             }
             if (persist) {
-                turnCorrectionRepository.save(
-                    turnId,
-                    correction.getCategory(),
-                    correction.getOriginalText(),
-                    correction.getCorrectedText(),
-                    correction.getExplanation(),
-                    correction.getCorrectAudioUrl()
-                );
+                saveCorrection(turnId, correction);
             }
             result.add(new TurnCorrectionDto(
                 correction.getCategory(),
@@ -267,6 +317,23 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
             ));
         }
         return result;
+    }
+
+    private boolean isWorthStoring(TurnCorrectionSubmission correction, int alreadyKept) {
+        boolean measured = MEASURED_CATEGORY.equalsIgnoreCase(correction.getCategory());
+        return alreadyKept < MAX_STORED_CORRECTIONS
+            && (measured || correction.getConfidence() >= MIN_JUDGED_CONFIDENCE);
+    }
+
+    private void saveCorrection(UUID turnId, TurnCorrectionSubmission correction) {
+        turnCorrectionRepository.save(
+            turnId,
+            correction.getCategory(),
+            correction.getOriginalText(),
+            correction.getCorrectedText(),
+            correction.getExplanation(),
+            correction.getCorrectAudioUrl()
+        );
     }
 
 }

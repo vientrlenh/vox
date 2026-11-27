@@ -29,10 +29,8 @@ import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
 import com.sep.vox.domain.model.question.QuestionBank;
 import com.sep.vox.domain.model.question.QuestionBankOwnerType;
-import com.sep.vox.domain.model.question.QuestionConfidentiality;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
 import com.sep.vox.domain.model.question.QuestionSharing;
-import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.model.question.QuestionTopic;
 import com.sep.vox.domain.model.question.QuestionTopicStatus;
 import com.sep.vox.domain.model.question.QuestionType;
@@ -98,90 +96,127 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             return new ImportCommitResult(0L, 0L, 0L, 0L);
         }
 
-        // Luồng cũ chỉ áp dụng khi bước xem trước ghim ĐỦ CẢ HAI: cả tệp vào đúng một chủ đề.
-        // Thiếu bất kỳ cái nào -> đi đường giải theo mã, ở đó ngân hàng và chủ đề được giải ĐỘC LẬP
-        // (cái nào đã ghim thì dùng luôn, cái nào chưa thì lấy mã trong file). Nhờ vậy phủ được cả
-        // ba tổ hợp còn lại, không riêng "để trống cả hai".
-        //
-        // Xét cả hai chứ không mỗi questionBankId: ghim ngân hàng mà bỏ trống chủ đề sẽ rơi vào
-        // nhánh cũ rồi ném ngay ở parseUuid(questionTopicId).
-        Map<String, String> firstRowRaw = jsonSerializationPort.toStringMap(rows.get(0).getRawDataJson());
-        boolean bulkMode = !isPresent(firstRowRaw.get("questionBankId"))
-            || !isPresent(firstRowRaw.get("questionTopicId"));
-        ImportContext sharedContext = bulkMode ? null : resolveContext(rows.get(0));
-        BulkScope bulkScope = bulkMode ? buildBulkScope(session) : null;
-        Map<String, String> confirmedMapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
+        CommitRun run = buildCommitRun(session, rows.get(0), isBulkMode(rows.get(0)));
         long createdRows = 0L;
         long skippedRows = 0L;
         long invalidRows = 0L;
-        Set<String> seenCodes = new HashSet<String>();
 
         for (ImportRow row : rows) {
-            Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
-            Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
-            Map<String, String> normalized = normalize(mappedData);
-            row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
-
-            List<Map<String, String>> errors = validateRow(normalized, sharedContext, seenCodes);
-            final ImportContext importContext = bulkMode
-                ? resolveContextFromCodes(normalized, bulkScope, errors)
-                : sharedContext;
-            if (!errors.isEmpty() || importContext == null) {
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidRows++;
-                continue;
-            }
-
-            if (!bulkMode && hasDifferentContext(normalized, importContext)) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("questionTopicId", "dữ liệu row không thuộc cùng question bank và question topic với phiên import")
-                )));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidRows++;
-                continue;
-            }
-
-            String code = normalized.get("code");
-            String questionText = normalized.get("questionText");
-            if (isPresent(code) && questionRepository.existsByQuestionBankIdAndCode(importContext.questionBank().getId(), code)) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("code", "Đã tồn tại câu hỏi cùng mã trong question bank này")
-                )));
-                row.setStatus(ImportRowStatus.SKIPPED);
-                skippedRows++;
-                continue;
-            }
-            if (!isPresent(code)
-                    && questionRepository.existsByQuestionBankIdAndQuestionTopicIdAndQuestionText(
-                        importContext.questionBank().getId(),
-                        importContext.questionTopic().getId(),
-                        questionText)) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("questionText", "Đã tồn tại câu hỏi cùng nội dung trong chủ đề này")
-                )));
-                row.setStatus(ImportRowStatus.SKIPPED);
-                skippedRows++;
-                continue;
-            }
-
-            try {
-                requiresNewTransactionPort.runInNewTransaction(() ->
-                    createQuestion(normalized, importContext, session.createdByUserId().orElseThrow())
-                );
-                row.setErrorsJson(null);
-                row.setStatus(ImportRowStatus.IMPORTED);
+            ImportRowStatus outcome = commitRow(row, run);
+            if (outcome == ImportRowStatus.IMPORTED) {
                 createdRows++;
-            } catch (DataConflictException | IllegalArgumentException exception) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(
-                    error("questionText", "Không thể tạo câu hỏi từ dữ liệu import")
-                )));
-                row.setStatus(ImportRowStatus.FAILED);
+            } else if (outcome == ImportRowStatus.SKIPPED) {
+                skippedRows++;
+            } else {
                 invalidRows++;
             }
         }
 
         return new ImportCommitResult(createdRows, 0L, skippedRows, invalidRows);
+    }
+
+    // The single-target flow applies only when the preview pinned BOTH: the whole file goes into
+    // exactly one topic. If either is missing, rows go through code resolution, where the bank and
+    // the topic are resolved INDEPENDENTLY (whichever is pinned is used, whichever is not is read
+    // from the code in the file). That covers the other three combinations, not only "both blank".
+    //
+    // Both are checked, not just questionBankId: pinning the bank but leaving the topic blank
+    // would fall into the single-target branch and throw right away at parseUuid(questionTopicId).
+    private boolean isBulkMode(ImportRow firstRow) {
+        Map<String, String> firstRowRaw = jsonSerializationPort.toStringMap(firstRow.getRawDataJson());
+        return !isPresent(firstRowRaw.get("questionBankId"))
+            || !isPresent(firstRowRaw.get("questionTopicId"));
+    }
+
+    private CommitRun buildCommitRun(ImportSession session, ImportRow firstRow, boolean bulkMode) {
+        return new CommitRun(
+            session,
+            bulkMode,
+            bulkMode ? null : resolveContext(firstRow),
+            bulkMode ? buildBulkScope(session) : null,
+            jsonSerializationPort.toStringMap(session.getConfirmedMappingJson()),
+            new HashSet<String>());
+    }
+
+    private record CommitRun(
+        ImportSession session,
+        boolean bulkMode,
+        ImportContext sharedContext,
+        BulkScope bulkScope,
+        Map<String, String> confirmedMapping,
+        Set<String> seenCodes
+    ) {
+    }
+
+    private ImportRowStatus commitRow(ImportRow row, CommitRun run) {
+        Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
+        Map<String, String> mappedData = mapRawData(rawData, run.confirmedMapping());
+        Map<String, String> normalized = normalize(mappedData);
+        row.setMappedDataJson(jsonSerializationPort.toJson(normalized));
+
+        List<Map<String, String>> errors = validateRow(normalized, run.sharedContext(), run.seenCodes());
+        final ImportContext importContext = run.bulkMode()
+            ? resolveContextFromCodes(normalized, run.bulkScope(), errors)
+            : run.sharedContext();
+        if (!errors.isEmpty() || importContext == null) {
+            return rejectRow(row, errors, ImportRowStatus.INVALID);
+        }
+        if (!run.bulkMode() && hasDifferentContext(normalized, importContext)) {
+            return rejectRow(row, List.of(
+                error("questionTopicId", "dữ liệu row không thuộc cùng question bank và question topic với phiên import")
+            ), ImportRowStatus.INVALID);
+        }
+        ImportRowStatus skipped = skipIfDuplicate(row, normalized, importContext);
+        if (skipped != null) {
+            return skipped;
+        }
+        return createRowQuestion(row, normalized, importContext, run.session());
+    }
+
+    private ImportRowStatus rejectRow(ImportRow row, List<Map<String, String>> errors, ImportRowStatus status) {
+        row.setErrorsJson(jsonSerializationPort.toJson(errors));
+        row.setStatus(status);
+        return status;
+    }
+
+    /** Returns {@link ImportRowStatus#SKIPPED} after marking the row when the question already exists, otherwise null. */
+    private ImportRowStatus skipIfDuplicate(ImportRow row, Map<String, String> normalized, ImportContext importContext) {
+        String code = normalized.get("code");
+        String questionText = normalized.get("questionText");
+        if (isPresent(code) && questionRepository.existsByQuestionBankIdAndCode(importContext.questionBank().getId(), code)) {
+            return rejectRow(row, List.of(
+                error("code", "Đã tồn tại câu hỏi cùng mã trong question bank này")
+            ), ImportRowStatus.SKIPPED);
+        }
+        if (!isPresent(code)
+                && questionRepository.existsByQuestionBankIdAndQuestionTopicIdAndQuestionText(
+                    importContext.questionBank().getId(),
+                    importContext.questionTopic().getId(),
+                    questionText)) {
+            return rejectRow(row, List.of(
+                error("questionText", "Đã tồn tại câu hỏi cùng nội dung trong chủ đề này")
+            ), ImportRowStatus.SKIPPED);
+        }
+        return null;
+    }
+
+    private ImportRowStatus createRowQuestion(
+            ImportRow row,
+            Map<String, String> normalized,
+            ImportContext importContext,
+            ImportSession session) {
+        try {
+            requiresNewTransactionPort.runInNewTransaction(() ->
+                createQuestion(normalized, importContext, session.createdByUserId().orElseThrow())
+            );
+            row.setErrorsJson(null);
+            row.setStatus(ImportRowStatus.IMPORTED);
+            return ImportRowStatus.IMPORTED;
+        } catch (DataConflictException | IllegalArgumentException exception) {
+            return rejectRow(row, List.of(
+                error("questionText", "Không thể tạo câu hỏi từ dữ liệu import")
+            ), ImportRowStatus.FAILED);
+        }
     }
 
     private ImportContext resolveContext(ImportRow row) {
@@ -202,49 +237,46 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     /**
-     * Tìm ngân hàng + chủ đề đích của MỘT dòng theo mã ghi trong file (chế độ hàng loạt).
+     * Finds the target bank and topic of ONE row by the codes written in the file (bulk mode).
      *
-     * <p><b>Phạm vi trường không lấy từ file.</b> {@code session.schoolId} đã chốt ở bước xem
-     * trước theo người đăng nhập: có giá trị nghĩa là phiên của một trường (chỉ tìm trong ngân
-     * hàng SCHOOL của trường đó), {@code null} nghĩa là phiên của quản trị hệ thống (ngân hàng
-     * SYSTEM). Cột {@code schoolCode} trong file chỉ dùng để ĐỐI CHIẾU — khớp thì đi tiếp, lệch
-     * thì báo lỗi dòng. Nếu để nó quyết định phạm vi thì bất kỳ ai cũng gõ được mã trường khác
-     * rồi đẩy câu hỏi vào ngân hàng của trường đó.
+     * <p><b>The school scope does not come from the file.</b> {@code session.schoolId} was fixed at
+     * preview time from the logged-in user: a value means a school session (only that school's SCHOOL
+     * banks are searched), {@code null} means a system-admin session (SYSTEM banks). The
+     * {@code schoolCode} column in the file is only used to CROSS-CHECK -- a match continues, a
+     * mismatch reports a row error. If it decided the scope, anyone could type another school's code
+     * and push questions into that school's bank.
      *
-     * <p>Trả về {@code null} kèm lỗi đã ghi vào {@code errors} khi không giải được.
+     * <p>Bank and topic are resolved INDEPENDENTLY: whichever the user already picked is pinned, the
+     * other is read from the code in the file. So "pick a bank, leave the topic blank" only needs
+     * the topic-code column, not the code of the bank just chosen on screen.
+     *
+     * <p>Returns {@code null} with the error already added to {@code errors} when it cannot resolve.
      */
     private ImportContext resolveContextFromCodes(
             Map<String, String> data,
             BulkScope scope,
             List<Map<String, String>> errors) {
-        String bankCode = data.get("questionBankCode");
-        String topicCode = data.get("questionTopicCode");
-
-        // Ngân hàng và chủ đề giải ĐỘC LẬP nhau: người dùng chọn sẵn cái nào thì cái đó được ghim,
-        // cái còn lại lấy theo mã trong file. Nhờ vậy "chọn ngân hàng, để trống chủ đề" chỉ cần cột
-        // Mã chủ đề, không phải khai lại cả mã ngân hàng vừa chọn trên màn hình.
         UUID pinnedBankId = parseUuidOrNull(data.get("questionBankId"));
         UUID pinnedTopicId = parseUuidOrNull(data.get("questionTopicId"));
 
-        if (pinnedBankId == null && !isPresent(bankCode)) {
-            errors.add(error("questionBankCode", "Thiếu mã ngân hàng câu hỏi"));
-        }
-        if (pinnedTopicId == null && !isPresent(topicCode)) {
-            errors.add(error("questionTopicCode", "Thiếu mã chủ đề câu hỏi"));
-        }
-
-        String schoolCode = data.get("schoolCode");
-        if (isPresent(schoolCode) && !schoolCode.equalsIgnoreCase(scope.schoolCode())) {
-            errors.add(error(
-                "schoolCode",
-                "Mã trường '" + schoolCode + "' không khớp phạm vi của phiên import"
-                    + (scope.schoolCode() == null ? " (ngân hàng hệ thống)" : " ('" + scope.schoolCode() + "')")
-            ));
-        }
+        addMissingTargetCodeErrors(data, pinnedBankId, pinnedTopicId, errors);
+        addSchoolCodeMismatchError(data.get("schoolCode"), scope, errors);
         if (!errors.isEmpty()) {
             return null;
         }
 
+        String bankCode = data.get("questionBankCode");
+        QuestionBank questionBank = findTargetBank(pinnedBankId, scope, bankCode, errors);
+        if (questionBank == null) {
+            return null;
+        }
+        if (pinnedTopicId != null) {
+            return resolvePinnedTopic(pinnedTopicId, questionBank, errors);
+        }
+        return resolveTopicByCode(scope, questionBank, bankCode, data.get("questionTopicCode"), errors);
+    }
+
+    private QuestionBank findTargetBank(UUID pinnedBankId, BulkScope scope, String bankCode, List<Map<String, String>> errors) {
         QuestionBank questionBank = pinnedBankId != null
             ? questionBankRepository.findById(pinnedBankId).orElse(null)
             : scope.banksByCode().get(normalizeLookupKey(bankCode));
@@ -254,35 +286,62 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
                 pinnedBankId != null
                     ? "Không tìm thấy ngân hàng câu hỏi đã chọn ở màn nhập"
                     : "Không tìm thấy ngân hàng câu hỏi có mã '" + bankCode + "'"));
+        }
+        return questionBank;
+    }
+
+    private void addMissingTargetCodeErrors(
+            Map<String, String> data,
+            UUID pinnedBankId,
+            UUID pinnedTopicId,
+            List<Map<String, String>> errors) {
+        if (pinnedBankId == null && !isPresent(data.get("questionBankCode"))) {
+            errors.add(error("questionBankCode", "Thiếu mã ngân hàng câu hỏi"));
+        }
+        if (pinnedTopicId == null && !isPresent(data.get("questionTopicCode"))) {
+            errors.add(error("questionTopicCode", "Thiếu mã chủ đề câu hỏi"));
+        }
+    }
+
+    private void addSchoolCodeMismatchError(String schoolCode, BulkScope scope, List<Map<String, String>> errors) {
+        if (isPresent(schoolCode) && !schoolCode.equalsIgnoreCase(scope.schoolCode())) {
+            errors.add(error(
+                "schoolCode",
+                "Mã trường '" + schoolCode + "' không khớp phạm vi của phiên import"
+                    + (scope.schoolCode() == null ? " (ngân hàng hệ thống)" : " ('" + scope.schoolCode() + "')")
+            ));
+        }
+    }
+
+    private ImportContext resolvePinnedTopic(
+            UUID pinnedTopicId,
+            QuestionBank questionBank,
+            List<Map<String, String>> errors) {
+        QuestionTopic pinnedTopic = questionTopicRepository.findById(pinnedTopicId).orElse(null);
+        if (pinnedTopic == null || !pinnedTopic.getQuestionBankId().equals(questionBank.getId())) {
+            errors.add(error(
+                "questionTopicCode",
+                "Chủ đề đã chọn không thuộc ngân hàng '" + questionBank.getCode() + "'"));
             return null;
         }
-
-        if (pinnedTopicId != null) {
-            QuestionTopic pinnedTopic = questionTopicRepository.findById(pinnedTopicId).orElse(null);
-            if (pinnedTopic == null || !pinnedTopic.getQuestionBankId().equals(questionBank.getId())) {
-                errors.add(error(
-                    "questionTopicCode",
-                    "Chủ đề đã chọn không thuộc ngân hàng '" + questionBank.getCode() + "'"));
-                return null;
-            }
-            if (pinnedTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-                errors.add(error(
-                    "questionTopicCode",
-                    "Chủ đề đã chọn đang ở trạng thái " + pinnedTopic.getStatus()
-                        + ". Chỉ import được vào chủ đề đã PUBLISHED."));
-                return null;
-            }
-            return new ImportContext(questionBank, pinnedTopic);
+        if (pinnedTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
+            errors.add(error(
+                "questionTopicCode",
+                "Chủ đề đã chọn đang ở trạng thái " + pinnedTopic.getStatus()
+                    + ". Chỉ import được vào chủ đề đã PUBLISHED."));
+            return null;
         }
+        return new ImportContext(questionBank, pinnedTopic);
+    }
 
+    private ImportContext resolveTopicByCode(
+            BulkScope scope,
+            QuestionBank questionBank,
+            String bankCode,
+            String topicCode,
+            List<Map<String, String>> errors) {
         QuestionTopic questionTopic = scope.topicsByBankAndCode()
-            .computeIfAbsent(questionBank.getId(), bankId -> {
-                Map<String, QuestionTopic> byCode = new HashMap<String, QuestionTopic>();
-                for (QuestionTopic topic : questionTopicRepository.findByQuestionBankId(bankId)) {
-                    byCode.putIfAbsent(normalizeLookupKey(topic.getCode()), topic);
-                }
-                return byCode;
-            })
+            .computeIfAbsent(questionBank.getId(), this::loadTopicsByCode)
             .get(normalizeLookupKey(topicCode));
         if (questionTopic == null) {
             errors.add(error(
@@ -291,6 +350,14 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
             ));
             return null;
         }
+        return requirePublishedTopic(questionBank, questionTopic, topicCode, errors);
+    }
+
+    private ImportContext requirePublishedTopic(
+            QuestionBank questionBank,
+            QuestionTopic questionTopic,
+            String topicCode,
+            List<Map<String, String>> errors) {
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
             errors.add(error(
                 "questionTopicCode",
@@ -302,9 +369,17 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         return new ImportContext(questionBank, questionTopic);
     }
 
+    private Map<String, QuestionTopic> loadTopicsByCode(UUID bankId) {
+        Map<String, QuestionTopic> byCode = new HashMap<String, QuestionTopic>();
+        for (QuestionTopic topic : questionTopicRepository.findByQuestionBankId(bankId)) {
+            byCode.putIfAbsent(normalizeLookupKey(topic.getCode()), topic);
+        }
+        return byCode;
+    }
+
     /**
-     * Phạm vi tra cứu của cả phiên import hàng loạt, dựng MỘT lần rồi dùng lại cho mọi dòng.
-     * Chủ đề nạp lười theo từng ngân hàng thật sự xuất hiện trong file, không nạp trước tất cả.
+     * Lookup scope of a whole bulk import session, built ONCE and reused for every row.
+     * Topics are loaded lazily per bank that actually appears in the file, not all up front.
      */
     private record BulkScope(
         String schoolCode,
@@ -349,23 +424,34 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
     }
 
     /**
-     * Chép sang map đã chuẩn hoá. Đây là danh sách viết TAY, và mọi trường không có tên ở đây đều
-     * bị bỏ im lặng dù đã nằm trong {@link #SUPPORTED_FIELDS} và đã được ánh xạ đúng cột — thêm
-     * trường mới mà quên chỗ này là dữ liệu biến mất không một lời báo.
+     * Copies into the normalized map. This is a HAND-WRITTEN list, and every field not named here is
+     * silently dropped even when it is in {@link #SUPPORTED_FIELDS} and mapped from the right column --
+     * adding a new field and forgetting this place makes data vanish without a word.
      *
-     * <p>Đã xảy ra đúng vậy hai lần: ba cột mã đích (chế độ hàng loạt luôn báo "Thiếu mã ngân hàng
-     * câu hỏi" dù file có ghi) và bảy cột tài nguyên (asset không bao giờ được tạo, vì
-     * {@code createAssetIfPresent} đọc {@code assetType} từ chính map này).
+     * <p>That has already happened twice: the three target-code columns (bulk mode always reported
+     * "Thiếu mã ngân hàng câu hỏi" even when the file had it) and the seven asset columns (the asset
+     * was never created, because {@code createAssetIfPresent} reads {@code assetType} from this very map).
      */
     private Map<String, String> normalize(Map<String, String> mappedData) {
         Map<String, String> normalized = new LinkedHashMap<String, String>();
+        normalizeTargetFields(mappedData, normalized);
+        normalizeQuestionFields(mappedData, normalized);
+        normalizeEvaluationFields(mappedData, normalized);
+        normalizeAssetFields(mappedData, normalized);
+        return normalized;
+    }
+
+    private void normalizeTargetFields(Map<String, String> mappedData, Map<String, String> normalized) {
         normalized.put("questionBankId", trimOrNull(mappedData.get("questionBankId")));
         normalized.put("questionTopicId", trimOrNull(mappedData.get("questionTopicId")));
-        // Mã đích của từng dòng ở chế độ hàng loạt. normalizeCode viết hoa -- khớp với cách tra cứu
-        // ngân hàng/chủ đề theo mã, và schoolCode thì đối chiếu bằng equalsIgnoreCase nên vô hại.
+        // Per-row target codes in bulk mode. normalizeCode upper-cases -- matching how banks/topics are
+        // looked up by code, and schoolCode is compared with equalsIgnoreCase so it is harmless.
         normalized.put("schoolCode", StringNormalization.normalizeCode(mappedData.get("schoolCode")));
         normalized.put("questionBankCode", StringNormalization.normalizeCode(mappedData.get("questionBankCode")));
         normalized.put("questionTopicCode", StringNormalization.normalizeCode(mappedData.get("questionTopicCode")));
+    }
+
+    private void normalizeQuestionFields(Map<String, String> mappedData, Map<String, String> normalized) {
         normalized.put("code", StringNormalization.normalizeCode(mappedData.get("code")));
         normalized.put("type", StringNormalization.normalizeCode(mappedData.get("type")));
         normalized.put("questionText", StringNormalization.trimAndCollapseSpaces(mappedData.get("questionText")));
@@ -376,17 +462,22 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         normalized.put("minResponseSeconds", trimOrNull(mappedData.get("minResponseSeconds")));
         normalized.put("maxResponseSeconds", trimOrNull(mappedData.get("maxResponseSeconds")));
         normalized.put("sharing", mappedData.get("sharing") == null ? null : StringNormalization.normalizeCode(mappedData.get("sharing")));
+    }
+
+    private void normalizeEvaluationFields(Map<String, String> mappedData, Map<String, String> normalized) {
         normalized.put("evaluationExpectedContent", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationExpectedContent")));
         normalized.put("evaluationKeyPoints", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationKeyPoints")));
         normalized.put("evaluationAcceptableResponses", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationAcceptableResponses")));
         normalized.put("evaluationOffTopicExamples", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationOffTopicExamples")));
         normalized.put("evaluationScoringHints", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationScoringHints")));
         normalized.put("evaluationCommonMistakes", StringNormalization.trimAndCollapseSpaces(mappedData.get("evaluationCommonMistakes")));
+    }
 
-        // Tài nguyên. Chỉ trimOrNull cho url, bản chép lời và mô tả -- KHÔNG trimAndCollapseSpaces:
-        // url phân biệt hoa thường và khoảng trắng không được đụng tới, còn bản chép lời/mô tả có
-        // ngắt đoạn (\n\n) mà gộp khoảng trắng sẽ dính liền thành một khối. Tiêu đề và văn bản thay
-        // thế là nhãn ngắn nên gộp được.
+    // Assets. Only trimOrNull for url, transcript and description -- NOT trimAndCollapseSpaces:
+    // a url is case- and whitespace-sensitive and must not be touched, and a transcript/description
+    // has paragraph breaks (\n\n) that collapsing whitespace would glue into one block. Title and
+    // alt text are short labels, so collapsing is fine.
+    private void normalizeAssetFields(Map<String, String> mappedData, Map<String, String> normalized) {
         normalized.put("assetType", StringNormalization.normalizeCode(mappedData.get("assetType")));
         normalized.put("assetUrl", trimOrNull(mappedData.get("assetUrl")));
         normalized.put("assetTitle", StringNormalization.trimAndCollapseSpaces(mappedData.get("assetTitle")));
@@ -394,103 +485,108 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
         normalized.put("assetTranscript", trimOrNull(mappedData.get("assetTranscript")));
         normalized.put("assetDescription", trimOrNull(mappedData.get("assetDescription")));
         normalized.put("assetDurationSeconds", trimOrNull(mappedData.get("assetDurationSeconds")));
-        return normalized;
     }
 
     /**
-     * @param importContext {@code null} ở chế độ hàng loạt — lúc đó đích của dòng chưa xác định
-     *                      và được giải riêng bằng mã, nên phần đối chiếu id ở cuối hàm bỏ qua.
+     * @param importContext {@code null} in bulk mode -- the row's target is not known yet and is
+     *                      resolved separately by code, so the id cross-check is skipped.
      */
     private List<Map<String, String>> validateRow(
             Map<String, String> data,
             ImportContext importContext,
             Set<String> seenCodes) {
         List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
-
-        addMissingError(errors, data, "type", "Loại câu hỏi không được để trống");
-        addMissingError(errors, data, "questionText", "Nội dung câu hỏi không được để trống");
-        addMissingError(errors, data, "preparationTimeSeconds", "Thời gian chuẩn bị không được để trống");
-        addMissingError(errors, data, "minResponseSeconds", "Thời gian trả lời tối thiểu không được để trống");
-        addMissingError(errors, data, "maxResponseSeconds", "Thời gian trả lời tối đa không được để trống");
-
-        validateEnumField(errors, data.get("type"), "type", QuestionType.class, "Loại câu hỏi không hợp lệ");
-        validateEnumField(errors, data.get("sharing"), "sharing", QuestionSharing.class, "Chế độ chia sẻ không hợp lệ");
-        validateNumberField(errors, data.get("preparationTimeSeconds"), "preparationTimeSeconds", "Thời gian chuẩn bị phải là số nguyên >= 0");
-        validateNumberField(errors, data.get("minResponseSeconds"), "minResponseSeconds", "Thời gian trả lời tối thiểu phải là số nguyên >= 0");
-        validateNumberField(errors, data.get("maxResponseSeconds"), "maxResponseSeconds", "Thời gian trả lời tối đa phải là số nguyên >= 0");
-
-        Integer minResponse = parseInteger(data.get("minResponseSeconds"));
-        Integer maxResponse = parseInteger(data.get("maxResponseSeconds"));
-        if (minResponse != null && maxResponse != null && minResponse > maxResponse) {
-            errors.add(error("minResponseSeconds", "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa"));
-        }
+        addRequiredFieldErrors(errors, data);
+        addFieldFormatErrors(errors, data);
+        addResponseRangeError(errors, data);
 
         String code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
             errors.add(error("code", "Mã câu hỏi bị trùng trong file import"));
         }
-
-        if (importContext == null) {
-            return errors;
+        if (importContext != null) {
+            addContextIdErrors(errors, data, importContext);
         }
+        return errors;
+    }
+
+    private void addRequiredFieldErrors(List<Map<String, String>> errors, Map<String, String> data) {
+        addMissingError(errors, data, "type", "Loại câu hỏi không được để trống");
+        addMissingError(errors, data, "questionText", "Nội dung câu hỏi không được để trống");
+        addMissingError(errors, data, "preparationTimeSeconds", "Thời gian chuẩn bị không được để trống");
+        addMissingError(errors, data, "minResponseSeconds", "Thời gian trả lời tối thiểu không được để trống");
+        addMissingError(errors, data, "maxResponseSeconds", "Thời gian trả lời tối đa không được để trống");
+    }
+
+    private void addFieldFormatErrors(List<Map<String, String>> errors, Map<String, String> data) {
+        validateEnumField(errors, data.get("type"), "type", QuestionType.class, "Loại câu hỏi không hợp lệ");
+        validateEnumField(errors, data.get("sharing"), "sharing", QuestionSharing.class, "Chế độ chia sẻ không hợp lệ");
+        validateNumberField(errors, data.get("preparationTimeSeconds"), "preparationTimeSeconds", "Thời gian chuẩn bị phải là số nguyên >= 0");
+        validateNumberField(errors, data.get("minResponseSeconds"), "minResponseSeconds", "Thời gian trả lời tối thiểu phải là số nguyên >= 0");
+        validateNumberField(errors, data.get("maxResponseSeconds"), "maxResponseSeconds", "Thời gian trả lời tối đa phải là số nguyên >= 0");
+    }
+
+    private void addResponseRangeError(List<Map<String, String>> errors, Map<String, String> data) {
+        Integer minResponse = parseInteger(data.get("minResponseSeconds"));
+        Integer maxResponse = parseInteger(data.get("maxResponseSeconds"));
+        if (minResponse != null && maxResponse != null && minResponse > maxResponse) {
+            errors.add(error("minResponseSeconds", "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa"));
+        }
+    }
+
+    private void addContextIdErrors(List<Map<String, String>> errors, Map<String, String> data, ImportContext importContext) {
         if (!Objects.equals(data.get("questionBankId"), importContext.questionBank().getId().toString())) {
             errors.add(error("questionBankId", "Question bank của row không hợp lệ"));
         }
         if (!Objects.equals(data.get("questionTopicId"), importContext.questionTopic().getId().toString())) {
             errors.add(error("questionTopicId", "Question topic của row không hợp lệ"));
         }
-
-        return errors;
     }
 
     private void createQuestion(Map<String, String> data, ImportContext importContext, UUID currentUserId) {
-        Question question = Question.builder()
-                .questionBankId(importContext.questionBank().getId())
-                .questionTopicId(importContext.questionTopic().getId())
-                .code(questionCodeOf(data.get("code")))
-                .instructionText(data.get("instructionText"))
-                .questionText(data.get("questionText"))
-                .promptText(data.get("promptText"))
-                .preparationText(data.get("preparationText"))
-                .type(QuestionType.valueOf(data.get("type")))
-                .preparationTimeSeconds(Integer.parseInt(data.get("preparationTimeSeconds")))
-                .minResponseSeconds(Integer.parseInt(data.get("minResponseSeconds")))
-                .maxResponseSeconds(Integer.parseInt(data.get("maxResponseSeconds")))
-                .sharing(data.get("sharing") == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(data.get("sharing")))
-                .sourceQuestionId(null)
-                .locked(false)
-                .confidentiality(QuestionConfidentiality.OPEN)
-                .securePoolId(null)
-                // DRAFT, not SUBMITTED_FOR_REVIEW: bulk-imported questions almost always still need further
-                // edits -- typically uploading the real image/audio for the assets, because media files cannot
-                // be carried in the Excel file. Sending them straight to the review queue would make reviewers
-                // look at an unfinished question. The importer is createdBy, so they can bulk SUBMIT it
-                // themselves once it is complete (QuestionStatusTransition: SUBMIT accepts DRAFT or
-                // REVISION_REQUESTED).
-                .status(QuestionStatus.DRAFT)
-                .build();
-        Question savedQuestion = questionRepository.save(question);
+        Question savedQuestion = questionRepository.save(buildDraftQuestion(data, importContext));
         createAssetIfPresent(data, savedQuestion.getId());
         if (hasEvaluationGuide(data)) {
-            questionEvaluationGuideRepository.save(QuestionEvaluationGuide.builder()
-                    .questionId(savedQuestion.getId())
-                    .expectedContent(data.get("evaluationExpectedContent"))
-                    .keyPoints(data.get("evaluationKeyPoints"))
-                    .acceptableResponses(data.get("evaluationAcceptableResponses"))
-                    .offTopicExamples(data.get("evaluationOffTopicExamples"))
-                    .scoringHints(data.get("evaluationScoringHints"))
-                    .commonMistakes(data.get("evaluationCommonMistakes"))
-                    .build());
+            questionEvaluationGuideRepository.save(QuestionEvaluationGuide.forQuestion(
+                    savedQuestion.getId(),
+                    data.get("evaluationExpectedContent"),
+                    data.get("evaluationKeyPoints"),
+                    data.get("evaluationAcceptableResponses"),
+                    data.get("evaluationOffTopicExamples"),
+                    data.get("evaluationScoringHints"),
+                    data.get("evaluationCommonMistakes")));
         }
     }
 
+    // The question is a DRAFT, not SUBMITTED_FOR_REVIEW: bulk-imported questions almost always still need
+    // further edits -- typically uploading the real image/audio for the assets, because media files cannot
+    // be carried in the Excel file. Sending them straight to the review queue would make reviewers
+    // look at an unfinished question. The importer is createdBy, so they can bulk SUBMIT it
+    // themselves once it is complete (QuestionStatusTransition: SUBMIT accepts DRAFT or
+    // REVISION_REQUESTED).
+    private Question buildDraftQuestion(Map<String, String> data, ImportContext importContext) {
+        return Question.draft(
+                importContext.questionBank().getId(),
+                importContext.questionTopic().getId(),
+                questionCodeOf(data.get("code")),
+                data.get("instructionText"),
+                data.get("questionText"),
+                data.get("promptText"),
+                data.get("preparationText"),
+                QuestionType.valueOf(data.get("type")),
+                Integer.parseInt(data.get("preparationTimeSeconds")),
+                Integer.parseInt(data.get("minResponseSeconds")),
+                Integer.parseInt(data.get("maxResponseSeconds")),
+                data.get("sharing") == null ? QuestionSharing.PRIVATE : QuestionSharing.valueOf(data.get("sharing")));
+    }
+
     /**
-     * Tạo tài nguyên đi kèm câu hỏi khi file có khai {@code assetType}.
+     * Creates the asset that goes with a question when the file declares an {@code assetType}.
      *
-     * <p>Đi qua đúng {@link QuestionAssetContentValidator} như luồng nhập tay: ảnh phải có mô tả,
-     * audio/video phải có bản chép lời. Không nới lỏng cho import — AI chỉ biết tài nguyên qua
-     * mấy dòng chữ đó, nên một file nhập hàng loạt mà bỏ trống chúng sẽ sinh ra cả loạt câu hỏi
-     * mà AI hỏi và chấm chung chung, không ai biết cho tới lúc chấm xong.
+     * <p>It goes through the same {@link QuestionAssetContentValidator} as the manual flow: an image must have
+     * a description, audio/video must have a transcript. The rule is not relaxed for import -- the AI only knows
+     * an asset through those lines of text, so a bulk file that leaves them empty would produce a whole batch of
+     * questions that the AI asks and grades in a generic way, and nobody would notice until grading is finished.
      */
     private void createAssetIfPresent(Map<String, String> data, UUID questionId) {
         String rawType = data.get("assetType");
@@ -508,23 +604,17 @@ public class QuestionImportCommitHandler implements ImportCommitHandler {
 
         QuestionAssetContentValidator.validate(assetType, url, transcript, description, altText);
 
-        Integer durationSeconds = null;
+        questionAssetRepository.save(QuestionAsset.attachedTo(
+                questionId, data.get("assetTitle"), parseAssetDurationSeconds(data), altText, assetType, url,
+                transcript, description, 1));
+    }
+
+    private Integer parseAssetDurationSeconds(Map<String, String> data) {
         String rawDuration = data.get("assetDurationSeconds");
         if (rawDuration != null && !rawDuration.isBlank()) {
-            durationSeconds = Integer.parseInt(rawDuration.strip());
+            return Integer.parseInt(rawDuration.strip());
         }
-
-        questionAssetRepository.save(QuestionAsset.builder()
-                .questionId(questionId)
-                .title(data.get("assetTitle"))
-                .durationSeconds(durationSeconds)
-                .altText(altText)
-                .type(assetType)
-                .url(url)
-                .transcript(transcript)
-                .description(description)
-                .order(1)
-                .build());
+        return null;
     }
 
     private boolean hasDifferentContext(Map<String, String> data, ImportContext importContext) {

@@ -140,30 +140,14 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             int pageNumber, int size) {
         PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessible(
-            currentUserId,
-            currentSchoolId,
-            systemAdmin,
-            schoolAdmin,
-            questionBankId,
-            questionTopicId,
+            currentUserId, currentSchoolId, systemAdmin, schoolAdmin, questionBankId, questionTopicId,
             StringNormalization.toLikePattern(topicName),
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             sharing == null ? null : sharing.name(),
-            assetType,
-            scope,
-            StringNormalization.toLikePattern(keyword),
-            pageable
+            assetType, scope, StringNormalization.toLikePattern(keyword), pageable
         );
-        return new PageResult<>(
-            page.getContent().stream()
-                .map(QuestionMapper::toDomain)
-                .toList(),
-            pageNumber,
-            size,
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
+        return toPageResult(page, pageNumber, size);
     }
 
     @Override
@@ -173,30 +157,14 @@ public class QuestionRepositoryImpl implements QuestionRepository {
             int pageNumber, int size) {
         PageRequest pageable = OneBasedPaging.toPageRequest(pageNumber, size);
         Page<QuestionJpaEntity> page = springDataQuestionRepository.findAccessibleForAssessmentPaper(
-            currentUserId,
-            currentSchoolId,
-            systemAdmin,
-            schoolAdmin,
-            questionBankId,
-            questionTopicId,
+            currentUserId, currentSchoolId, systemAdmin, schoolAdmin, questionBankId, questionTopicId,
             StringNormalization.toLikePattern(topicName),
             status == null ? null : status.name(),
             type == null ? null : type.name(),
             sharing == null ? null : sharing.name(),
-            assetType,
-            scope,
-            StringNormalization.toLikePattern(keyword),
-            pageable
+            assetType, scope, StringNormalization.toLikePattern(keyword), pageable
         );
-        return new PageResult<>(
-            page.getContent().stream()
-                .map(QuestionMapper::toDomain)
-                .toList(),
-            pageNumber,
-            size,
-            page.getTotalElements(),
-            page.getTotalPages()
-        );
+        return toPageResult(page, pageNumber, size);
     }
 
     @Override
@@ -228,5 +196,17 @@ public class QuestionRepositoryImpl implements QuestionRepository {
         log.info("[blueprint-perf] repo QuestionRepositoryImpl.findAccessibleByIdIn ids={} tookMs={}",
             ids.size(), (System.nanoTime() - startedAt) / 1_000_000);
         return result;
+    }
+
+    private PageResult<Question> toPageResult(Page<QuestionJpaEntity> page, int pageNumber, int size) {
+        return new PageResult<>(
+            page.getContent().stream()
+                .map(QuestionMapper::toDomain)
+                .toList(),
+            pageNumber,
+            size,
+            page.getTotalElements(),
+            page.getTotalPages()
+        );
     }
 }

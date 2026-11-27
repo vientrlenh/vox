@@ -65,6 +65,17 @@ public class SchoolSubscriptionQuotaUserAllocation {
         this.usedAmountVnd = usedAmountVnd;
     }
 
+    public static SchoolSubscriptionQuotaUserAllocation unallocated(
+            UUID schoolSubscriptionId, QuotaType quotaType, UUID userId) {
+        return builder()
+                .schoolSubscriptionId(schoolSubscriptionId)
+                .quotaType(quotaType)
+                .userId(userId)
+                .allocatedAmountVnd(BigDecimal.ZERO)
+                .usedAmountVnd(BigDecimal.ZERO)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

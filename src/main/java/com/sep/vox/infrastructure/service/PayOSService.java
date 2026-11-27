@@ -18,6 +18,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -110,16 +111,7 @@ public class PayOSService implements PaymentProcessPort {
 
     @Override
     public PaymentCheckoutResult createPaymentLink(CreatePaymentLinkCommand command) {
-        CreatePaymentLinkRequest paymentLinkRequest = CreatePaymentLinkRequest.builder()
-            .orderCode(Long.parseLong(command.orderRef()))
-            .amount(command.amount().longValueExact())
-            .description(command.description())
-            .returnUrl(returnUrl)
-            .cancelUrl(cancelUrl)
-            // The expiry comes from the ORDER, not from an adapter constant -- see CreatePaymentLinkCommand.expiresAt.
-            .expiredAt(command.expiresAt().getEpochSecond())
-            .build();
-        CreatePaymentLinkResponse response = payOSClient.paymentRequests().create(paymentLinkRequest);
+        CreatePaymentLinkResponse response = payOSClient.paymentRequests().create(toPaymentLinkRequest(command));
 
         // PayOS returns BOTH the VietQR string and the bank transfer details, not only the checkoutUrl.
         // Keep them to show the code right inside the application: the user does not have to leave the page, and we do not lose
@@ -133,6 +125,23 @@ public class PayOSService implements PaymentProcessPort {
             return PaymentCheckoutResult.redirect(response.getCheckoutUrl(), response.getPaymentLinkId());
         }
 
+        return toQrCheckoutResult(command, response);
+    }
+
+    private CreatePaymentLinkRequest toPaymentLinkRequest(CreatePaymentLinkCommand command) {
+        return CreatePaymentLinkRequest.builder()
+            .orderCode(Long.parseLong(command.orderRef()))
+            .amount(command.amount().longValueExact())
+            .description(command.description())
+            .returnUrl(returnUrl)
+            .cancelUrl(cancelUrl)
+            // The expiry comes from the ORDER, not from an adapter constant -- see CreatePaymentLinkCommand.expiresAt.
+            .expiredAt(command.expiresAt().getEpochSecond())
+            .build();
+    }
+
+    private PaymentCheckoutResult toQrCheckoutResult(
+            CreatePaymentLinkCommand command, CreatePaymentLinkResponse response) {
         BankTransferDetails transfer = new BankTransferDetails(
             response.getBin(),
             response.getAccountNumber(),
@@ -191,19 +200,8 @@ public class PayOSService implements PaymentProcessPort {
             return CallbackVerificationResult.invalid();
         }
 
-        // PayOS puts the signature in the body (not a header), computed over the "data" part.
-        if (!(body.get("data") instanceof Map<?, ?> rawData) || !(body.get("signature") instanceof String signature)) {
-            return CallbackVerificationResult.invalid();
-        }
-
-        Map<String, Object> data = new HashMap<String, Object>(rawData.size());
-        for (Map.Entry<?, ?> entry : rawData.entrySet()) {
-            if (entry.getKey() instanceof String key) {
-                data.put(key, entry.getValue());
-            }
-        }
-
-        if (!verifySignature(data, signature)) {
+        Map<String, Object> data = signedDataOf(body);
+        if (data == null) {
             return CallbackVerificationResult.invalid();
         }
 
@@ -212,17 +210,39 @@ public class PayOSService implements PaymentProcessPort {
             return CallbackVerificationResult.invalid();
         }
 
-        // The PayOS webhook only reports success/failure through the code, without distinguishing the specific reason for failure.
-        PaymentLinkRemoteStatus status = SUCCESS_CODE.equals(data.get("code"))
-            ? PaymentLinkRemoteStatus.PAID
-            : PaymentLinkRemoteStatus.FAILED;
-
         return new CallbackVerificationResult(
             true,
             String.valueOf(orderCode.longValue()),
-            status,
+            callbackStatusOf(data),
             data.get("amount") instanceof Number amount ? BigDecimal.valueOf(amount.longValue()) : null
         );
+    }
+
+    // PayOS puts the signature in the body (not a header), computed over the "data" part. Returns null when the body has
+    // no data/signature or the signature does not match.
+    private @Nullable Map<String, Object> signedDataOf(Map<String, Object> body) {
+        if (!(body.get("data") instanceof Map<?, ?> rawData) || !(body.get("signature") instanceof String signature)) {
+            return null;
+        }
+        Map<String, Object> data = copyStringKeyedEntries(rawData);
+        return verifySignature(data, signature) ? data : null;
+    }
+
+    private Map<String, Object> copyStringKeyedEntries(Map<?, ?> rawData) {
+        Map<String, Object> data = new HashMap<String, Object>(rawData.size());
+        for (Map.Entry<?, ?> entry : rawData.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                data.put(key, entry.getValue());
+            }
+        }
+        return data;
+    }
+
+    // The PayOS webhook only reports success/failure through the code, without distinguishing the specific reason for failure.
+    private PaymentLinkRemoteStatus callbackStatusOf(Map<String, Object> data) {
+        return SUCCESS_CODE.equals(data.get("code"))
+            ? PaymentLinkRemoteStatus.PAID
+            : PaymentLinkRemoteStatus.FAILED;
     }
 
     // Decode UTF-8 kiểu lenient (thay ký tự lỗi thay vì crash) vì payload test/webhook của PayOS

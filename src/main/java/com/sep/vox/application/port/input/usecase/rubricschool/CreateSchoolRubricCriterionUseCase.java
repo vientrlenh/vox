@@ -42,12 +42,11 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
     private final UserRepository userRepository;
     private final UserContextPort userContextPort;
     private final SchoolRepository schoolRepository;
-    private final SchoolUserRepository schoolUserRepository; // Added
+    private final SchoolUserRepository schoolUserRepository;
 
     @Override
     @Transactional
     public List<UUID> execute(CreateSchoolRubricCriteriaCommand command) {
-        // 1. Xác thực tài khoản
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
@@ -56,7 +55,39 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
         }
 
-        // 2. Lấy Version và kiểm tra DRAFT
+        RubricVersion version = loadDraftVersionOwnedBySchool(command, currentUserId);
+        requireActiveSchool(command.schoolId());
+
+        Set<String> uniqueCodes = new HashSet<>();
+        Set<UUID> uniqueFrameworkIds = new HashSet<>();
+        Set<Integer> ordersSoFar = collectStoredOrders(command.versionId());
+
+        List<RubricCriterion> criteriaToSave = command.criteria().stream()
+                .map(cCmd -> toCriterion(version, cCmd, uniqueCodes, uniqueFrameworkIds, ordersSoFar))
+                .collect(Collectors.toList());
+
+        saveCriteria(criteriaToSave);
+
+        return criteriaToSave.stream().map(c -> c.getId()).collect(Collectors.toList());
+    }
+
+    // Orders already stored in the version plus the new ones of this batch, to reject duplicate orders.
+    private Set<Integer> collectStoredOrders(UUID versionId) {
+        Set<Integer> ordersSoFar = new HashSet<>();
+        rubricCriterionRepository.findByRubricVersionId(versionId)
+                .forEach(c -> ordersSoFar.add(c.getOrder()));
+        return ordersSoFar;
+    }
+
+    private void saveCriteria(List<RubricCriterion> criteriaToSave) {
+        try {
+            rubricCriterionRepository.saveAll(criteriaToSave);
+        } catch (DataConflictException e) {
+            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn hoặc Thứ tự (order) đã tồn tại trong phiên bản này từ trước.");
+        }
+    }
+
+    private RubricVersion loadDraftVersionOwnedBySchool(CreateSchoolRubricCriteriaCommand command, UUID currentUserId) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
 
@@ -64,7 +95,6 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
             throw new IllegalArgumentException("Chỉ được phép thêm tiêu chí khi Rubric đang ở trạng thái Nháp (DRAFT).");
         }
 
-        // 3. Kiểm tra Rubric gốc & Quyền
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
@@ -74,81 +104,73 @@ public class CreateSchoolRubricCriterionUseCase implements IUseCase<CreateSchool
         if (!rubric.getSchoolId().equals(command.schoolId()) || !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền chỉnh sửa Rubric của trường khác.");
         }
+        return version;
+    }
 
-        // (Bổ sung) Kiểm tra xem trường học có đang hoạt động không
-        School school = schoolRepository.findById(command.schoolId())
+    private void requireActiveSchool(UUID schoolId) {
+        School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
         if (!school.isActive()) {
             throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
         }
+    }
 
-        Set<String> uniqueCodes = new HashSet<>();
-        Set<UUID> uniqueFrameworkIds = new HashSet<>();
+    private RubricCriterion toCriterion(RubricVersion version,
+                                        CreateSchoolRubricCriteriaCommand.CriterionItemCommand cCmd,
+                                        Set<String> uniqueCodes, Set<UUID> uniqueFrameworkIds,
+                                        Set<Integer> ordersSoFar) {
+        String safeCode = StringNormalization.trimAndCollapseSpaces(cCmd.code());
+        String safeName = StringNormalization.trimAndCollapseSpaces(cCmd.name());
 
-        // Tích luỹ order đã có trong version (DB) + order mới trong cùng batch để chống trùng thứ tự
-        Set<Integer> ordersSoFar = new HashSet<>();
-        rubricCriterionRepository.findByRubricVersionId(command.versionId())
-                .forEach(c -> ordersSoFar.add(c.getOrder()));
+        requireUniqueInBatch(cCmd, safeCode, safeName, uniqueCodes, uniqueFrameworkIds);
+        requireValidScoresAndWeight(cCmd, safeCode);
+        RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, cCmd.order(), safeName);
+        ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
+                cCmd.minScore(), cCmd.maxScore(), safeName);
 
-        // 4. Xử lý danh sách tiêu chí
-        List<RubricCriterion> criteriaToSave = command.criteria().stream().map(cCmd -> {
+        return RubricCriterion.create(
+                version.getId(), cCmd.frameworkCriterionId(), safeCode, safeName,
+                cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null,
+                toExamples(cCmd), cCmd.weight(), cCmd.minScore(), cCmd.maxScore(), cCmd.order(), cCmd.isRequired());
+    }
 
-            String safeCode = StringNormalization.trimAndCollapseSpaces(cCmd.code());
-            String safeName = StringNormalization.trimAndCollapseSpaces(cCmd.name());
-
-            if (!uniqueCodes.add(safeCode)) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã tiêu chí (Code): " + safeCode);
-            }
-
-            if (!uniqueFrameworkIds.add(cCmd.frameworkCriterionId())) {
-                throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Framework Criterion cho tiêu chí: " + safeName);
-            }
-
-            if (cCmd.minScore().compareTo(cCmd.maxScore()) > 0) {
-                throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Điểm sàn không được lớn hơn điểm trần.");
-            }
-            // Chặn 2026-08-14: trước đây chỉ kiểm >= 0, nên đường REST nhận thẳng số phần trăm (20)
-            // trong khi đường import file lại chia 100 trước khi lưu (xem
-            // RubricCriterionImportCommitHandler). Cùng một "20%" ra hai giá trị lệch nhau 100 lần,
-            // và chỉ nổ lúc publish khi tổng trọng số không khớp.
-            if (cCmd.weight() != null
-                    && (cCmd.weight().compareTo(BigDecimal.ZERO) < 0
-                            || cCmd.weight().compareTo(BigDecimal.ONE) > 0)) {
-                throw new IllegalArgumentException("Tiêu chí '" + safeCode
-                        + "': Trọng số (weight) phải nằm trong khoảng 0 đến 1 -- lưu dưới dạng phân"
-                        + " số, ví dụ 20% ghi là 0.2 và 100% ghi là 1.");
-            }
-
-            // Check trùng thứ tự (order) với sibling đã có trong version hoặc trong cùng batch
-            RubricOrderValidator.assertNoDuplicateOrder(ordersSoFar, cCmd.order(), safeName);
-
-            // Validate nằm trong thang điểm tổng của RubricVersion
-            ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
-                    cCmd.minScore(), cCmd.maxScore(), safeName);
-
-            // TẠO VALUE OBJECT CHO EXAMPLES (Đã fix lỗi .values())
-            RubricCriterionExamples examplesVO = null;
-            if (cCmd.examples() != null && !cCmd.examples().isEmpty()) {
-                List<RubricCriterionExample> exampleList = cCmd.examples().stream()
-                        .map(exCmd -> new RubricCriterionExample(exCmd.transcript(), exCmd.explanation(), exCmd.expectedScore()))
-                        .toList();
-                examplesVO = new RubricCriterionExamples(exampleList);
-            }
-
-            return RubricCriterion.create(
-                    command.versionId(), cCmd.frameworkCriterionId(), safeCode, safeName,
-                    cCmd.description() != null ? StringNormalization.trimAndCollapseSpaces(cCmd.description()) : null,
-                    examplesVO, cCmd.weight(), cCmd.minScore(), cCmd.maxScore(), cCmd.order(), cCmd.isRequired());
-        }).collect(Collectors.toList());
-
-        // 5. Save to the database
-        try {
-            rubricCriterionRepository.saveAll(criteriaToSave);
-        } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn hoặc Thứ tự (order) đã tồn tại trong phiên bản này từ trước.");
+    private void requireUniqueInBatch(CreateSchoolRubricCriteriaCommand.CriterionItemCommand cCmd,
+                                      String safeCode, String safeName,
+                                      Set<String> uniqueCodes, Set<UUID> uniqueFrameworkIds) {
+        if (!uniqueCodes.add(safeCode)) {
+            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã tiêu chí (Code): " + safeCode);
         }
 
-        return criteriaToSave.stream().map(c -> c.getId()).collect(Collectors.toList());
+        if (!uniqueFrameworkIds.add(cCmd.frameworkCriterionId())) {
+            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Framework Criterion cho tiêu chí: " + safeName);
+        }
+    }
+
+    private void requireValidScoresAndWeight(CreateSchoolRubricCriteriaCommand.CriterionItemCommand cCmd, String safeCode) {
+        if (cCmd.minScore().compareTo(cCmd.maxScore()) > 0) {
+            throw new IllegalArgumentException("Tiêu chí '" + safeCode + "': Điểm sàn không được lớn hơn điểm trần.");
+        }
+        // Guard added 2026-08-14: it used to check only >= 0, so the REST path took a percentage (20)
+        // directly while the file import path divides by 100 before saving (see
+        // RubricCriterionImportCommitHandler). The same "20%" produced two values 100 times apart, and
+        // it only blew up at publish time when the weights did not add up.
+        if (cCmd.weight() != null
+                && (cCmd.weight().compareTo(BigDecimal.ZERO) < 0
+                        || cCmd.weight().compareTo(BigDecimal.ONE) > 0)) {
+            throw new IllegalArgumentException("Tiêu chí '" + safeCode
+                    + "': Trọng số (weight) phải nằm trong khoảng 0 đến 1 -- lưu dưới dạng phân"
+                    + " số, ví dụ 20% ghi là 0.2 và 100% ghi là 1.");
+        }
+    }
+
+    private RubricCriterionExamples toExamples(CreateSchoolRubricCriteriaCommand.CriterionItemCommand cCmd) {
+        if (cCmd.examples() == null || cCmd.examples().isEmpty()) {
+            return null;
+        }
+        List<RubricCriterionExample> exampleList = cCmd.examples().stream()
+                .map(exCmd -> new RubricCriterionExample(exCmd.transcript(), exCmd.explanation(), exCmd.expectedScore()))
+                .toList();
+        return new RubricCriterionExamples(exampleList);
     }
 }

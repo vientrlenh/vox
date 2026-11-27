@@ -41,10 +41,39 @@ public class AcceptSystemRubricCriterionImportUseCase implements IUseCase<Accept
     @Override
     @Transactional
     public AcceptRubricCriterionImportResponse execute(AcceptRubricCriterionImportCommand command) {
+        requireActiveCurrentUser();
+        ImportSession session = loadPreviewedSession(command);
+        requireSystemOwnedRubric(session);
+
+        queueForAsyncProcessing(session, command);
+
+        return new AcceptRubricCriterionImportResponse(
+                session.getId(),
+                session.getTotalRows(),
+                0, 0, 0,
+                session.getStatus().name()
+        );
+    }
+
+    private void queueForAsyncProcessing(ImportSession session, AcceptRubricCriterionImportCommand command) {
+        if (command.confirmedMapping() != null) {
+            String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
+            session.setConfirmedMappingJson(mappingJson);
+        }
+
+        // Hand over to the async worker: the scheduler picks up QUEUED sessions with zero attempts.
+        session.setStatus(ImportSessionStatus.QUEUED);
+        session.setAttempts(0);
+        importSessionRepository.save(session);
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+    }
 
+    private ImportSession loadPreviewedSession(AcceptRubricCriterionImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
 
@@ -54,8 +83,11 @@ public class AcceptSystemRubricCriterionImportUseCase implements IUseCase<Accept
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
             throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
         }
+        return session;
+    }
 
-        // Kiểm tra quyền sở hữu hệ thống của Rubric
+    // Security: the target rubric version must belong to a SYSTEM rubric.
+    private void requireSystemOwnedRubric(ImportSession session) {
         UUID versionId = session.getImportedEntityId();
         RubricVersion version = rubricVersionRepository.findById(versionId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric."));
         Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
@@ -63,23 +95,5 @@ public class AcceptSystemRubricCriterionImportUseCase implements IUseCase<Accept
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc trường học. System Admin không được phép can thiệp.");
         }
-
-        if (command.confirmedMapping() != null) {
-            String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
-            session.setConfirmedMappingJson(mappingJson);
-        }
-
-        // CHUYỂN TRẠNG THÁI THÀNH QUEUED ĐỂ ĐẨY VÀO HÀNG ĐỢI NGẦM
-        session.setStatus(ImportSessionStatus.QUEUED);
-        session.setAttempts(0);
-        importSessionRepository.save(session);
-
-        // Trả kết quả tức thì về cho Client, các số liệu đếm dòng tạm thời trả về 0 vì Worker chưa xử lý
-        return new AcceptRubricCriterionImportResponse(
-                session.getId(),
-                session.getTotalRows(),
-                0, 0, 0,
-                session.getStatus().name()
-        );
     }
 }

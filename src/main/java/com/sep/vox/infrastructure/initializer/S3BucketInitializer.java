@@ -94,17 +94,10 @@ public class S3BucketInitializer implements ApplicationRunner {
     }
 
     private void createBucket(String bucket) {
-        CreateBucketRequest.Builder request = CreateBucketRequest.builder().bucket(bucket);
         String region = properties.getRegion();
-        // us-east-1 la region mac dinh cua S3 va se bao loi neu gui kem LocationConstraint.
-        if (hasText(region) && !US_EAST_1.equalsIgnoreCase(region)) {
-            request.createBucketConfiguration(CreateBucketConfiguration.builder()
-                .locationConstraint(BucketLocationConstraint.fromValue(region))
-                .build());
-        }
 
         try {
-            s3Client.createBucket(request.build());
+            s3Client.createBucket(buildCreateBucketRequest(bucket, region));
         } catch (BucketAlreadyOwnedByYouException e) {
             log.info("Bucket S3 '{}' vua duoc tao boi mot tien trinh khac", bucket);
             return;
@@ -118,6 +111,17 @@ public class S3BucketInitializer implements ApplicationRunner {
 
         s3Client.waiter().waitUntilBucketExists(HeadBucketRequest.builder().bucket(bucket).build());
         log.info("Da tao bucket S3 '{}' tai region '{}'", bucket, region);
+    }
+
+    private CreateBucketRequest buildCreateBucketRequest(String bucket, String region) {
+        CreateBucketRequest.Builder request = CreateBucketRequest.builder().bucket(bucket);
+        // us-east-1 is the default S3 region and fails if a LocationConstraint is sent with it.
+        if (hasText(region) && !US_EAST_1.equalsIgnoreCase(region)) {
+            request.createBucketConfiguration(CreateBucketConfiguration.builder()
+                .locationConstraint(BucketLocationConstraint.fromValue(region))
+                .build());
+        }
+        return request.build();
     }
 
     private void relaxPublicAccessBlock(String bucket) {
@@ -143,28 +147,7 @@ public class S3BucketInitializer implements ApplicationRunner {
     }
 
     private void applyBucketPolicy(String bucket) {
-        String resource = "arn:aws:s3:::" + bucket + "/*";
-        ArrayNode statements = jsonMapper.createArrayNode();
-
-        if (properties.isPublicRead()) {
-            ObjectNode statement = jsonMapper.createObjectNode();
-            statement.put("Sid", "PublicReadObjects");
-            statement.put("Effect", "Allow");
-            statement.put("Principal", "*");
-            statement.put("Action", "s3:GetObject");
-            statement.put("Resource", resource);
-            statements.add(statement);
-        }
-
-        if (hasText(properties.getUploaderPrincipalArn())) {
-            ObjectNode statement = jsonMapper.createObjectNode();
-            statement.put("Sid", "AllowUploaderPutObject");
-            statement.put("Effect", "Allow");
-            statement.putObject("Principal").put("AWS", properties.getUploaderPrincipalArn().strip());
-            statement.put("Action", "s3:PutObject");
-            statement.put("Resource", resource);
-            statements.add(statement);
-        }
+        ArrayNode statements = buildPolicyStatements(bucket);
 
         if (statements.isEmpty()) {
             log.info("Khong co statement nao can ap dung cho bucket S3 '{}'. Bo qua bucket policy", bucket);
@@ -179,6 +162,40 @@ public class S3BucketInitializer implements ApplicationRunner {
             .bucket(bucket)
             .policy(policy.toString())
             .build());
+    }
+
+    private ArrayNode buildPolicyStatements(String bucket) {
+        String resource = "arn:aws:s3:::" + bucket + "/*";
+        ArrayNode statements = jsonMapper.createArrayNode();
+
+        if (properties.isPublicRead()) {
+            statements.add(publicReadStatement(resource));
+        }
+
+        if (hasText(properties.getUploaderPrincipalArn())) {
+            statements.add(uploaderPutStatement(resource));
+        }
+        return statements;
+    }
+
+    private ObjectNode publicReadStatement(String resource) {
+        ObjectNode statement = jsonMapper.createObjectNode();
+        statement.put("Sid", "PublicReadObjects");
+        statement.put("Effect", "Allow");
+        statement.put("Principal", "*");
+        statement.put("Action", "s3:GetObject");
+        statement.put("Resource", resource);
+        return statement;
+    }
+
+    private ObjectNode uploaderPutStatement(String resource) {
+        ObjectNode statement = jsonMapper.createObjectNode();
+        statement.put("Sid", "AllowUploaderPutObject");
+        statement.put("Effect", "Allow");
+        statement.putObject("Principal").put("AWS", properties.getUploaderPrincipalArn().strip());
+        statement.put("Action", "s3:PutObject");
+        statement.put("Resource", resource);
+        return statement;
     }
 
     private void applyCorsConfiguration(String bucket) {

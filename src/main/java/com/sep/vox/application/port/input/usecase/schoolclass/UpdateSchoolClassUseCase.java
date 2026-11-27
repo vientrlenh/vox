@@ -47,7 +47,16 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
         UUID schoolId = getSchoolId(currentUser);
         validateSchool(schoolId);
 
-        int updatedRows = schoolClassRepository.updateMutableFields(
+        int updatedRows = updateMutableFields(command, schoolId, status);
+        if (updatedRows == 0) {
+            throw new ResourceNotFoundException("Không tìm thấy lớp học");
+        }
+
+        return new UpdateSchoolClassResponse(command.id());
+    }
+
+    private int updateMutableFields(UpdateSchoolClassCommand command, UUID schoolId, SchoolClassStatus status) {
+        return schoolClassRepository.updateMutableFields(
             command.id(),
             schoolId,
             command.name(),
@@ -57,11 +66,6 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
             status,
             command.statusProvided()
         );
-        if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Không tìm thấy lớp học");
-        }
-
-        return new UpdateSchoolClassResponse(command.id());
     }
 
     private UpdateSchoolClassCommand normalize(UpdateSchoolClassCommand input) {

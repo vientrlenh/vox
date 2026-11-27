@@ -21,18 +21,15 @@ public class QuestionDtoMapper {
             question.getPreparationText(),
             question.getType().name(),
             question.getPreparationTimeSeconds(),
-            question.getMinResponseSeconds(),
-            question.getMaxResponseSeconds(),
+            question.getMinResponseSeconds(), question.getMaxResponseSeconds(),
             valueOf(question.getSharing()),
             question.getSourceQuestionId(),
             question.isLocked(),
             question.getStatus().name(),
             question.getConfidentiality().name(),
             question.getSecurePoolId(),
-            question.getCreatedAt(),
-            question.getUpdatedAt(),
-            question.createdByUserId().orElse(null),
-            question.updatedByUserId().orElse(null)
+            question.getCreatedAt(), question.getUpdatedAt(),
+            question.createdByUserId().orElse(null), question.updatedByUserId().orElse(null)
         );
     }
 

@@ -65,9 +65,39 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
         UUID currentUserId = assessmentAppealAccessService.requireActiveUserId();
         AssessmentAppealAccessService.AppealContext context = assessmentAppealAccessService.load(command.appealId());
         assessmentAppealAccessService.authorizeSchoolAdminOrClassTestChair(context, currentUserId);
-
         AssessmentResultAppeal appeal = context.appeal();
-        if (appeal.getStatus() != AssessmentAppealStatus.APPROVED) {
+        requireAssignableReviewer(command, context);
+        AssessmentCandidateResult candidateResult = context.candidateResult();
+        requireNoOpenAssignment(candidateResult);
+        String overrideReason = normalize(command.overrideReason());
+        applyConflictOfInterestRule(command, appeal, candidateResult, overrideReason);
+
+        Instant now = Instant.now();
+        Instant deadlineAt = requireFutureDeadline(command, appeal, now);
+
+        AssessmentGradingAssignment assignment = openAppealAssignment(
+            command, appeal, candidateResult, currentUserId, deadlineAt, now);
+
+        appeal.setStatus(AssessmentAppealStatus.GRADING);
+        assessmentResultAppealRepository.save(appeal);
+        moveResultToReGrading(candidateResult, currentUserId, overrideReason);
+        saveAppealApprovedOutbox(appeal, context, deadlineAt, now);
+
+        return assignment.getId();
+    }
+
+    private Instant requireFutureDeadline(
+        AssignAssessmentAppealReviewerCommand command, AssessmentResultAppeal appeal, Instant now) {
+        Instant deadlineAt = command.deadlineAt() == null ? appeal.getDeadline() : command.deadlineAt();
+        if (deadlineAt != null && deadlineAt.isBefore(now)) {
+            throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
+        }
+        return deadlineAt;
+    }
+
+    private void requireAssignableReviewer(
+        AssignAssessmentAppealReviewerCommand command, AssessmentAppealAccessService.AppealContext context) {
+        if (context.appeal().getStatus() != AssessmentAppealStatus.APPROVED) {
             throw new IllegalArgumentException("Chỉ có thể phân công người chấm cho đơn phúc khảo đã được duyệt.");
         }
         if (command.reviewerId() == null) {
@@ -79,36 +109,48 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
         if (!assessmentAppealAccessService.isTeacherOfSchool(command.reviewerId(), context.schoolId())) {
             throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
         }
+    }
 
-        AssessmentCandidateResult candidateResult = context.candidateResult();
-        // Bài đang có phân công khác chưa đóng thì không mở thêm được — unique index
-        // trên active_result_id sẽ chặn, nhưng báo lỗi ở đây mới đọc được.
+    /**
+     * A result that already has another open assignment cannot get a second one. The unique index on
+     * active_result_id would block it too, but failing here gives a readable error.
+     */
+    private void requireNoOpenAssignment(AssessmentCandidateResult candidateResult) {
         if (assessmentGradingAssignmentRepository.findOpenByCandidateResultId(candidateResult.getId()).isPresent()) {
             throw new ResourceDuplicatedException("Bài thi này đang được một giáo viên chấm ở vòng khác.");
         }
+    }
 
-        // Bài kiểm tra trên lớp: chính chủ bài tự nhận, nên luật xung đột lợi ích dưới
-        // đây gần như chắc chắn bắn — và đó là chủ ý. Chỉ khi họ ĐÃ chấm tay bài này
-        // (REGRADED sinh evaluation HUMAN) mới cần lý do; chỉ UPHELD thì không sinh
-        // evaluation nên không có gì để xung đột.
-        String overrideReason = normalize(command.overrideReason());
+    /**
+     * For a class test the owner of the test assigns themselves, so the conflict-of-interest rule below almost
+     * always fires, and that is intended. A reason is needed only when they ALREADY graded this attempt by hand
+     * (REGRADED produces a HUMAN evaluation); UPHELD produces no evaluation, so there is nothing to conflict with.
+     */
+    private void applyConflictOfInterestRule(
+        AssignAssessmentAppealReviewerCommand command,
+        AssessmentResultAppeal appeal,
+        AssessmentCandidateResult candidateResult,
+        String overrideReason) {
         Set<UUID> conflicted = assessmentGradingQueryRepository.findTeacherIdsWithHumanEvaluation(candidateResult.getId());
-        if (conflicted.contains(command.reviewerId())) {
-            if (overrideReason == null) {
-                throw new IllegalArgumentException(
-                    "Giáo viên này đã từng chấm bài thi này. Chọn người khác, "
-                        + "hoặc nhập lý do nếu vẫn muốn phân công.");
-            }
-            appeal.setReviewerOverrideReason(overrideReason);
+        if (!conflicted.contains(command.reviewerId())) {
+            return;
         }
-
-        Instant now = Instant.now();
-        Instant deadlineAt = command.deadlineAt() == null ? appeal.getDeadline() : command.deadlineAt();
-        if (deadlineAt != null && deadlineAt.isBefore(now)) {
-            throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
+        if (overrideReason == null) {
+            throw new IllegalArgumentException(
+                "Giáo viên này đã từng chấm bài thi này. Chọn người khác, "
+                    + "hoặc nhập lý do nếu vẫn muốn phân công.");
         }
+        appeal.setReviewerOverrideReason(overrideReason);
+    }
 
-        AssessmentGradingAssignment assignment = assessmentGradingAssignmentRepository.save(AssessmentGradingAssignment.open(
+    private AssessmentGradingAssignment openAppealAssignment(
+        AssignAssessmentAppealReviewerCommand command,
+        AssessmentResultAppeal appeal,
+        AssessmentCandidateResult candidateResult,
+        UUID currentUserId,
+        Instant deadlineAt,
+        Instant now) {
+        return assessmentGradingAssignmentRepository.save(AssessmentGradingAssignment.open(
             candidateResult.getId(),
             command.reviewerId(),
             GradingRoundType.APPEAL,
@@ -118,19 +160,27 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
             currentUserId,
             deadlineAt
         ));
+    }
 
-        appeal.setStatus(AssessmentAppealStatus.GRADING);
-        assessmentResultAppealRepository.save(appeal);
-
+    private void moveResultToReGrading(
+        AssessmentCandidateResult candidateResult, UUID currentUserId, String overrideReason) {
         ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
         candidateResult.setStatus(AssessmentCandidateResultStatus.RE_GRADING);
         assessmentCandidateResultRepository.save(candidateResult);
         resultStatusHistoryRecorder.record(
             before, candidateResult, ResultStatusChangeSource.TEACHER_APPEAL, currentUserId, overrideReason);
+    }
 
-        // Học sinh biết đơn đã được nhận và đang được chấm lại — mốc thông tin quan
-        // trọng nhất giữa lúc nộp đơn và lúc có kết quả. Ghi outbox trong chính
-        // transaction phân công để mail và phân công cùng sống hoặc cùng chết.
+    /**
+     * The student learns that the appeal was accepted and is being re-graded, the most important signal between
+     * filing and the result. The outbox row is written inside the assignment transaction so the mail and the
+     * assignment live or die together.
+     */
+    private void saveAppealApprovedOutbox(
+        AssessmentResultAppeal appeal,
+        AssessmentAppealAccessService.AppealContext context,
+        Instant deadlineAt,
+        Instant now) {
         AssessmentAppealApprovedPayloadV1 payload = new AssessmentAppealApprovedPayloadV1(
             appeal.getId(), context.studentId(), context.assessmentName(), deadlineAt);
         outboxRepository.save(Outbox.create(
@@ -140,8 +190,6 @@ public class AssignAssessmentAppealReviewerUseCase implements IUseCase<AssignAss
             jsonSerializationPort.toJson(payload),
             now
         ));
-
-        return assignment.getId();
     }
 
     private String normalize(String value) {

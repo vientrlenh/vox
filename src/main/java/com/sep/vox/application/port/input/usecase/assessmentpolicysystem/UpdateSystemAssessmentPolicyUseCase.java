@@ -34,36 +34,51 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
     @Override
     @Transactional
     public UUID execute(UpdateAssessmentPolicyCommand command) {
-        // 1. Check the System Admin account
+        requireActiveUser();
+        AssessmentPolicy policy = loadSystemPolicy(command);
+
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
+        }
+
+        requireTargetBandOfPolicyFramework(command, policy);
+        Instant effectiveTo = effectiveToAfterValidation(command, policy);
+        applyChanges(policy, command, effectiveTo);
+
+        AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
+        return saved.getId();
+    }
+
+    private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
+    }
 
-        // 2. Load the Assessment Policy
+    private AssessmentPolicy loadSystemPolicy(UpdateAssessmentPolicyCommand command) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
 
-        // 3. Check the SYSTEM permission
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
         }
+        return policy;
+    }
 
-        // 4. It can only be edited while it is DRAFT
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể cập nhật Assessment Policy khi đang ở trạng thái DRAFT.");
-        }
-
-        // 5. Check the target Band (frameworkVersionId stays the same and cannot be changed)
+    private void requireTargetBandOfPolicyFramework(UpdateAssessmentPolicyCommand command, AssessmentPolicy policy) {
+        // frameworkVersionId stays the same and cannot be changed
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu (targetFrameworkBandId)."));
         if (!targetBand.getFrameworkVersionId().equals(policy.getFrameworkVersionId())) {
             throw new IllegalArgumentException("Band mục tiêu phải thuộc đúng Phiên bản Khung tiêu chuẩn của Policy này.");
         }
+    }
 
-        // 6. Validate the effective period against the end date that will be stored (omitted keeps the stored one)
+    /** Validates the effective period against the end date that will be stored (omitted keeps the stored one). */
+    private Instant effectiveToAfterValidation(UpdateAssessmentPolicyCommand command, AssessmentPolicy policy) {
         if (command.effectiveFrom() == null) {
             throw new IllegalArgumentException("Ngày bắt đầu hiệu lực (effectiveFrom) không được để trống.");
         }
@@ -71,9 +86,14 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         if (effectiveTo != null && command.effectiveFrom().isAfter(effectiveTo)) {
             throw new IllegalArgumentException("Ngày bắt đầu hiệu lực không được sau ngày kết thúc hiệu lực.");
         }
+        return effectiveTo;
+    }
 
-        // 7. Update the business fields (frameworkVersionId/rubricVersionId/languageId/scope do not change)
-        // An omitted passingScore/strictness keeps the stored value; an explicit null clears passingScore and stores STANDARD.
+    /**
+     * Updates the business fields (frameworkVersionId/rubricVersionId/languageId/scope do not change).
+     * An omitted passingScore/strictness keeps the stored value; an explicit null clears passingScore and stores STANDARD.
+     */
+    private void applyChanges(AssessmentPolicy policy, UpdateAssessmentPolicyCommand command, Instant effectiveTo) {
         policy.setTargetFrameworkBandId(command.targetFrameworkBandId());
         if (command.passingScoreProvided()) {
             policy.setPassingScore(command.passingScore());
@@ -83,8 +103,5 @@ public class UpdateSystemAssessmentPolicyUseCase implements IUseCase<UpdateAsses
         }
         policy.setEffectiveFrom(command.effectiveFrom());
         policy.setEffectiveTo(effectiveTo);
-
-        AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
-        return saved.getId();
     }
 }

@@ -68,6 +68,11 @@ public class PreviewSchoolRoomImportFromFileUseCase
         ImportSession savedSession = importSessionRepository.save(createSession(input, parsed, schoolId, currentUserId, now, expiresAt));
         saveRows(savedSession.getId(), parsed);
 
+        return toPreviewResponse(savedSession, input, parsed, expiresAt);
+    }
+
+    private PreviewSchoolRoomImportResponse toPreviewResponse(
+            ImportSession savedSession, PreviewSchoolRoomImportFromFileCommand input, ParseImportFileResult parsed, Instant expiresAt) {
         return new PreviewSchoolRoomImportResponse(
             savedSession.getId(),
             safeFileName(input.file().fileName()),

@@ -165,6 +165,31 @@ public class AiUsageRecord {
     
     
 
+    public static AiUsageRecord recorded(
+            UUID assessmentSessionId, UUID turnId, UUID usageEventId, AiUsageType usageType, String provider,
+            String modelName, Integer inputTokens, Integer outputTokens, Integer cacheCreationInputTokens,
+            Integer cacheReadInputTokens, Long durationMs, String unitPriceJson, BigDecimal costUsd,
+            BigDecimal costVnd, BigDecimal fxRateUsed, Instant occurredAt) {
+        return builder()
+                .assessmentSessionId(assessmentSessionId)
+                .turnId(turnId)
+                .usageEventId(usageEventId)
+                .usageType(usageType)
+                .provider(provider)
+                .modelName(modelName)
+                .inputTokens(inputTokens)
+                .outputTokens(outputTokens)
+                .cacheCreationInputTokens(cacheCreationInputTokens)
+                .cacheReadInputTokens(cacheReadInputTokens)
+                .durationMs(durationMs)
+                .unitPriceJson(unitPriceJson)
+                .costUsd(costUsd)
+                .costVnd(costVnd)
+                .fxRateUsed(fxRateUsed)
+                .occurredAt(occurredAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

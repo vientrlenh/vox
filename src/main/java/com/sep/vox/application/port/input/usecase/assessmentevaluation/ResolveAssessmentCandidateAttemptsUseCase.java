@@ -41,25 +41,33 @@ public class ResolveAssessmentCandidateAttemptsUseCase {
         // reason. The score of a deleted attempt MUST NOT be picked as the official score -- see countsTowardOfficialScore.
         List<AssessmentAttemptSummary> rows = assessmentCandidateAttemptsQueryRepository.findByCandidateIdsIncludingDeleted(candidateIds);
         Map<UUID, List<AssessmentAttemptSummary>> rowsByCandidateId = rows.stream().collect(Collectors.groupingBy((AssessmentAttemptSummary row) -> row.candidateId()));
-
-        List<UUID> assessmentIds = rows.stream().map(row -> row.assessmentId()).distinct().toList();
-        Map<UUID, Assessment> assessmentsById = assessmentRepository.findByIdIn(assessmentIds).stream()
-            .collect(Collectors.toMap(assessment -> assessment.getId(), Function.identity(), (left, right) -> left));
+        Map<UUID, Assessment> assessmentsById = assessmentsById(rows);
 
         Map<UUID, AssessmentCandidateAttempts> out = new HashMap<UUID, AssessmentCandidateAttempts>();
         for (UUID candidateId : candidateIds) {
             List<AssessmentAttemptSummary> candidateRows = rowsByCandidateId.getOrDefault(candidateId, List.of());
-            List<AssessmentAttemptSummary> attempts = candidateRows.stream()
-                .sorted(Comparator.comparing((AssessmentAttemptSummary row) -> row.startedAt(), Comparator.nullsLast(Comparator.naturalOrder())).reversed())
-                .toList();
-
-            Assessment assessment = candidateRows.isEmpty() ? null : assessmentsById.get(candidateRows.get(0).assessmentId());
-            ResultDecisionMethod method = assessment == null || assessment.getResultDecisionMethod() == null
-                ? ResultDecisionMethod.LATEST
-                : assessment.getResultDecisionMethod();
-            out.put(candidateId, resolveOfficial(attempts, method));
+            out.put(candidateId, resolveCandidate(candidateRows, assessmentsById));
         }
         return out;
+    }
+
+    private Map<UUID, Assessment> assessmentsById(List<AssessmentAttemptSummary> rows) {
+        List<UUID> assessmentIds = rows.stream().map(row -> row.assessmentId()).distinct().toList();
+        return assessmentRepository.findByIdIn(assessmentIds).stream()
+            .collect(Collectors.toMap(assessment -> assessment.getId(), Function.identity(), (left, right) -> left));
+    }
+
+    private AssessmentCandidateAttempts resolveCandidate(
+            List<AssessmentAttemptSummary> candidateRows, Map<UUID, Assessment> assessmentsById) {
+        List<AssessmentAttemptSummary> attempts = candidateRows.stream()
+            .sorted(Comparator.comparing((AssessmentAttemptSummary row) -> row.startedAt(), Comparator.nullsLast(Comparator.naturalOrder())).reversed())
+            .toList();
+
+        Assessment assessment = candidateRows.isEmpty() ? null : assessmentsById.get(candidateRows.get(0).assessmentId());
+        ResultDecisionMethod method = assessment == null || assessment.getResultDecisionMethod() == null
+            ? ResultDecisionMethod.LATEST
+            : assessment.getResultDecisionMethod();
+        return resolveOfficial(attempts, method);
     }
 
     private AssessmentCandidateAttempts resolveOfficial(List<AssessmentAttemptSummary> attempts, ResultDecisionMethod method) {
@@ -68,16 +76,31 @@ public class ResolveAssessmentCandidateAttemptsUseCase {
             .toList();
 
         if (method == ResultDecisionMethod.AVERAGE) {
-            if (eligible.isEmpty()) {
-                return new AssessmentCandidateAttempts(attempts, null, null);
-            }
-            BigDecimal average = eligible.stream()
-                .map(attempt -> attempt.totalScore())
-                .reduce(BigDecimal.ZERO, (left, right) -> left.add(right))
-                .divide(BigDecimal.valueOf(eligible.size()), 2, RoundingMode.HALF_UP);
-            return new AssessmentCandidateAttempts(attempts, eligible.get(0), average);
+            return resolveAverage(attempts, eligible);
         }
 
+        AssessmentAttemptSummary official = pickOfficialAttempt(eligible, method);
+        return new AssessmentCandidateAttempts(
+            attempts,
+            official,
+            official == null ? null : official.totalScore()
+        );
+    }
+
+    private AssessmentCandidateAttempts resolveAverage(
+            List<AssessmentAttemptSummary> attempts, List<AssessmentAttemptSummary> eligible) {
+        if (eligible.isEmpty()) {
+            return new AssessmentCandidateAttempts(attempts, null, null);
+        }
+        BigDecimal average = eligible.stream()
+            .map(attempt -> attempt.totalScore())
+            .reduce(BigDecimal.ZERO, (left, right) -> left.add(right))
+            .divide(BigDecimal.valueOf(eligible.size()), 2, RoundingMode.HALF_UP);
+        return new AssessmentCandidateAttempts(attempts, eligible.get(0), average);
+    }
+
+    private AssessmentAttemptSummary pickOfficialAttempt(
+            List<AssessmentAttemptSummary> eligible, ResultDecisionMethod method) {
         AssessmentAttemptSummary official;
         switch (method) {
             case HIGHEST -> official = eligible.stream()
@@ -90,12 +113,7 @@ public class ResolveAssessmentCandidateAttemptsUseCase {
             case LATEST -> official = eligible.isEmpty() ? null : eligible.get(0);
             default -> official = eligible.isEmpty() ? null : eligible.get(0);
         }
-
-        return new AssessmentCandidateAttempts(
-            attempts,
-            official,
-            official == null ? null : official.totalScore()
-        );
+        return official;
     }
 
     private boolean countsTowardOfficialScore(AssessmentAttemptSummary attempt) {
@@ -108,7 +126,7 @@ public class ResolveAssessmentCandidateAttemptsUseCase {
         return switch (attempt.resultStatus()) {
             case FINAL, RELEASED, PASSED, FAILED -> true;
             case PENDING_REVIEW -> !attempt.flagged();
-            // DELETED: phiên đã xoá mềm tuyệt đối không được chọn làm điểm chính thức.
+            // DELETED: a soft-deleted session must never be chosen as the official score.
             case INVALID, RETAKE_REQUIRED, APPEALED, RE_GRADING, DELETED -> false;
         };
     }

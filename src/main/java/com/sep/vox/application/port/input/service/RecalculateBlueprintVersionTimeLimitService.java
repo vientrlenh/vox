@@ -36,17 +36,7 @@ public class RecalculateBlueprintVersionTimeLimitService {
     public AssessmentBlueprintVersion recalculate(UUID blueprintVersionId) {
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(blueprintVersionId).orElseThrow();
 
-        // Chỉ slot FIXED mới có câu hỏi cụ thể để tính; slot RANDOM đóng góp 0 vì chưa biết sẽ bốc
-        // câu nào.
-        List<Question> fixedQuestions = new ArrayList<Question>();
-        for (AssessmentBlueprintSection section : assessmentBlueprintSectionRepository.findByBlueprintVersionId(blueprintVersionId)) {
-            for (AssessmentBlueprintSlot slot : assessmentBlueprintSlotRepository.findBySectionId(section.getId())) {
-                if (slot.getSlotType() != AssessmentBlueprintSlotType.FIXED || slot.getFixedQuestionId() == null) {
-                    continue;
-                }
-                questionRepository.findById(slot.getFixedQuestionId()).ifPresent(fixedQuestions::add);
-            }
-        }
+        List<Question> fixedQuestions = findFixedQuestions(blueprintVersionId);
 
         // Includes the AUDIO/VIDEO playback duration: this number flows into requireWithinPlan in 5 places
         // (AttachAssessmentBlueprint, ChangeClassTestBlueprint, Create/UpdateAssessmentBlueprintVersion,
@@ -60,5 +50,22 @@ public class RecalculateBlueprintVersionTimeLimitService {
             return assessmentBlueprintVersionRepository.save(version);
         }
         return version;
+    }
+
+    /**
+     * Only FIXED slots have a concrete question to measure; RANDOM slots contribute 0 because it is not yet known
+     * which question will be drawn.
+     */
+    private List<Question> findFixedQuestions(UUID blueprintVersionId) {
+        List<Question> fixedQuestions = new ArrayList<Question>();
+        for (AssessmentBlueprintSection section : assessmentBlueprintSectionRepository.findByBlueprintVersionId(blueprintVersionId)) {
+            for (AssessmentBlueprintSlot slot : assessmentBlueprintSlotRepository.findBySectionId(section.getId())) {
+                if (slot.getSlotType() != AssessmentBlueprintSlotType.FIXED || slot.getFixedQuestionId() == null) {
+                    continue;
+                }
+                questionRepository.findById(slot.getFixedQuestionId()).ifPresent(fixedQuestions::add);
+            }
+        }
+        return fixedQuestions;
     }
 }

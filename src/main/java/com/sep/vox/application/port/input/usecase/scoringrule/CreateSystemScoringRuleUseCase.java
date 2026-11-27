@@ -48,65 +48,23 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
     @Override
     @Transactional
     public UUID execute(CreateScoringRuleCommand command) {
-        // 1. Kiểm tra tài khoản System Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
-        }
+        requireActiveAccount();
+        AssessmentPolicy policy = requireSystemPolicy(command.policyId());
+        requireDraftPolicy(policy);
 
-        // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
-        if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
-        }
-
-        // 3. Chỉ được thêm Scoring Rule khi Policy còn DRAFT.
-        // Lý do: Policy đã PUBLISHED đang được dùng để chấm điểm bài thi thật, nếu cho thêm luật
-        // ngầm giữa chừng thì các bài thi cùng Policy sẽ bị chấm không nhất quán (bài trước/sau
-        // khi thêm rule chịu luật khác nhau) mà không ai kiểm soát được.
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được thêm Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
-        }
-
-        // 4. Kiểm tra trùng mã Code trong phạm vi Policy này
         String safeCode = command.code().strip();
-        if (scoringRuleRepository.existsByPolicyIdAndCode(command.policyId(), safeCode)) {
-            throw new IllegalArgumentException("Mã Scoring Rule (code) '" + safeCode + "' đã tồn tại trong Assessment Policy này.");
-        }
+        requireCodeUnused(command.policyId(), safeCode);
+        requirePositivePriority(command.priority());
 
-        // 5. Validate priority (khớp với check constraint DB: priority > 0), fail sớm thay vì đợi DB báo lỗi
-        if (command.priority() <= 0) {
-            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
-        }
-
-        // 6. Convert the raw JSON Map -> the concrete Value Object matching the chosen conditionType/actionType
+        // Convert the raw JSON Map -> the concrete Value Object matching the chosen conditionType/actionType
         // (if the params do not match the expected structure, ScoringRuleParamsMapper throws IllegalArgumentException)
         ScoringRuleConditionParams conditionParams = scoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
         ScoringRuleActionParams actionParams = scoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
-        // 6b. Check that criterionCode/bandCode (if present) really exist in the Policy's Rubric Version
+        // Check that criterionCode/bandCode (if present) really exist in the Policy's Rubric Version
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
-        // 7. Create and save
-        ScoringRule rule = ScoringRule.builder()
-            .policyId(command.policyId())
-            .code(safeCode)
-            .name(command.name().strip())
-            .description(command.description())
-            .conditionType(command.conditionType())
-            .conditionParams(conditionParams)
-            .actionType(command.actionType())
-            .actionParams(actionParams)
-            .priority(command.priority())
-            .severity(command.severity())
-            .stopProcessing(command.stopProcessing())
-            .active(command.isActive())
-            .build();
-
-        return scoringRuleRepository.save(rule).getId();
+        return scoringRuleRepository.save(toNewRule(command, safeCode, conditionParams, actionParams)).getId();
     }
 
     // Kiểm tra criterionCode/bandCode (điền dạng code, không phải UUID) trong conditionParams/actionParams
@@ -145,4 +103,61 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
                     "Framework Result Band '" + frameworkResultBandId + "' không thuộc Framework Version của Assessment Policy này.");
         }
     }
+
+    private void requireActiveAccount() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+    }
+
+    private AssessmentPolicy requireSystemPolicy(UUID policyId) {
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+        if (policy.getSchoolId() != null) {
+            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
+        }
+        return policy;
+    }
+
+    private void requireDraftPolicy(AssessmentPolicy policy) {
+        // A Scoring Rule can only be added while the Policy is still DRAFT. Reason: a PUBLISHED Policy is
+        // already grading real exams; adding a rule silently midway would make exams of the same Policy
+        // be graded inconsistently (before/after the rule was added) with nobody able to control it.
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ được thêm Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+        }
+    }
+
+    private void requireCodeUnused(UUID policyId, String safeCode) {
+        if (scoringRuleRepository.existsByPolicyIdAndCode(policyId, safeCode)) {
+            throw new IllegalArgumentException("Mã Scoring Rule (code) '" + safeCode + "' đã tồn tại trong Assessment Policy này.");
+        }
+    }
+
+    private void requirePositivePriority(int priority) {
+        if (priority <= 0) {
+            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
+        }
+    }
+
+    private ScoringRule toNewRule(CreateScoringRuleCommand command, String safeCode,
+            ScoringRuleConditionParams conditionParams, ScoringRuleActionParams actionParams) {
+        return ScoringRule.forPolicy(
+            command.policyId(),
+            safeCode,
+            command.name().strip(),
+            command.description(),
+            command.conditionType(),
+            conditionParams,
+            command.actionType(),
+            actionParams,
+            command.priority(),
+            command.severity(),
+            command.stopProcessing(),
+            command.isActive());
+    }
+
 }

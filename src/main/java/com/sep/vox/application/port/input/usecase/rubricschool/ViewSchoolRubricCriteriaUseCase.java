@@ -38,45 +38,44 @@ public class ViewSchoolRubricCriteriaUseCase implements IUseCase<ViewSchoolRubri
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricCriterionDto> execute(ViewSchoolRubricCriteriaQuery query) {
-        // 1. Xác thực User
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
-        }
+        requireActiveSchoolMember(query.schoolId());
+        requireSchoolOwnedVersion(query);
 
-        // 2. Chốt chặn an ninh bằng SchoolUser
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
-        if (!schoolUser.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
-        }
-
-        School school = schoolRepository.findById(query.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
-        }
-
-        // 3. Lấy Version và kiểm tra tồn tại
-        RubricVersion version = rubricVersionRepository.findById(query.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version."));
-
-        // 4. Lấy Rubric gốc và kiểm tra quyền SCHOOL (Version này phải nằm trong Rubric của trường)
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("Hành động bị từ chối: Phiên bản này không thuộc về trường học của bạn.");
-        }
-
-        // 5. Query danh sách phân trang (Tận dụng lại hàm đã viết ở phần System)
+        // Reuses the paging function written for the System side.
         PageResult<RubricCriterion> criteriaPage = rubricCriterionRepository.findAllByRubricVersionId(
                 query.versionId(),
                 query.page(),
                 query.size()
         );
-
-        // 6. Map and return
         return rubricCriterionDtoMapper.toPage(criteriaPage);
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
+        }
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
+        }
+    }
+
+    // The version must sit inside a Rubric owned by the school.
+    private void requireSchoolOwnedVersion(ViewSchoolRubricCriteriaQuery query) {
+        RubricVersion version = rubricVersionRepository.findById(query.versionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(query.schoolId())) {
+            throw new ForbiddenException("Hành động bị từ chối: Phiên bản này không thuộc về trường học của bạn.");
+        }
     }
 }

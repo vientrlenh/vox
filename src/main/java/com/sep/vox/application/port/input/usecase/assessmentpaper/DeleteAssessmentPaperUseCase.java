@@ -55,9 +55,17 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
         // builds for the paper assignment step. Previously this use case only checked the status of the paper variant, so REOPENing a
         // locked paper variant and then deleting it in the middle of the session still slipped through.
         AssessmentEditingGuard.requireAssessmentEditable(assessment);
-        // Người ra đề chỉ xoá được đề của chính mình. Chủ tịch hội đồng và quản trị trường xoá được mọi
-        // mã đề: đổi khung đề bắt buộc phải xoá sạch mã đề hiện có, mà người ra đề cũ có thể đã rời hội
-        // đồng — không có nhánh này thì kỳ thi kẹt vĩnh viễn với khung đề cũ.
+        requireDeletable(paper, actor, currentUserId);
+        unassignCandidates(paper, currentUserId);
+        deletePaperRows(paper);
+        recalculateAssessmentTimeDurationService.recalculate(paper.getAssessmentId());
+        return null;
+    }
+
+    private void requireDeletable(AssessmentPaper paper, AssessmentPaperAuthoringAccessService.PaperActor actor, UUID currentUserId) {
+        // The paper author may only delete their own paper. The council chair and the school admin may delete any
+        // paper variant: changing the blueprint requires wiping every existing paper variant, and the original author may
+        // have left the council already -- without this branch the assessment would be stuck forever on the old blueprint.
         if (!actor.canDecide() && !paper.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Chỉ người đã tạo đề thi này mới được xoá");
         }
@@ -65,12 +73,14 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
             throw new IllegalArgumentException("Chỉ xoá được đề thi khi còn ở trạng thái DRAFT");
         }
 
-        // Phiên thi trỏ vào mã đề qua paper_id NOT NULL: đã có học sinh làm bài thì không có cách nào
-        // dọn con trỏ, chỉ còn cách không cho xoá.
+        // An exam session points at the paper variant through paper_id NOT NULL: once a student has taken it there is
+        // no way to clean the pointer up, so the only option is to refuse the delete.
         if (assessmentSessionRepository.existsByPaperId(paper.getId())) {
             throw new IllegalArgumentException("Không thể xoá mã đề đã có học sinh làm bài");
         }
+    }
 
+    private void unassignCandidates(AssessmentPaper paper, UUID currentUserId) {
         // Candidates also point at a paper variant through assigned_paper_id, and no FK cleans that up either. Return them to
         // "no paper assigned" instead of leaving a pointer to a row that has disappeared: UpdateAssessmentStatusUseCase
         // counts exactly the candidates without a paper variant to block scheduling, so an orphan pointer would pass through that
@@ -81,14 +91,14 @@ public class DeleteAssessmentPaperUseCase implements IUseCase<DeleteAssessmentPa
             affectedCandidates.forEach(candidate -> candidate.unassignPaper(now, currentUserId));
             assessmentCandidateRepository.saveAll(affectedCandidates);
         }
+    }
 
-        // Phần thi và câu trong đề treo trên paper_id mà không có FK nào dọn hộ: xoá mỗi dòng đề là
-        // để lại section/item mồ côi. Con trước cha.
+    private void deletePaperRows(AssessmentPaper paper) {
+        // The paper's sections and items hang off paper_id and no FK cleans them up: deleting only the paper row
+        // would leave orphaned sections/items. Children first, then the parent.
         List<UUID> paperIds = List.of(paper.getId());
         assessmentPaperItemRepository.deleteByPaperIdIn(paperIds);
         assessmentPaperSectionRepository.deleteByPaperIdIn(paperIds);
         assessmentPaperRepository.deleteById(paper.getId());
-        recalculateAssessmentTimeDurationService.recalculate(paper.getAssessmentId());
-        return null;
     }
 }

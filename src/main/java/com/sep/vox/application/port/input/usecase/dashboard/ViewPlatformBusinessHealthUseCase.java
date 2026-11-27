@@ -43,8 +43,9 @@ public class ViewPlatformBusinessHealthUseCase
         ZoneId zone = ZoneConstant.BUSINESS_ZONE;
         Instant now = Instant.now();
 
-        // Ngưỡng trượt theo mốc hiện tại, KHÔNG neo vào ngày lịch: hai cột end_date/start_date là
-        // timestamptz, nên "30 ngày nữa" tính bằng instant là phép so duy nhất không phải đoán múi giờ.
+        // The threshold slides with the current instant and is NOT anchored to a calendar day: end_date/start_date
+        // are timestamptz columns, so "30 days from now" computed as an instant is the only comparison that does
+        // not have to guess a time zone.
         SchoolSubscriptionHealthDto health = platformBusinessHealthQueryRepository.countSchoolSubscriptionHealth(
             now, now.plus(BusinessConstant.DASHBOARD_EXPIRING_SOON_DAYS, ChronoUnit.DAYS));
         long schoolsInDebt = platformBusinessHealthQueryRepository.countSchoolsInDebt();
@@ -55,26 +56,37 @@ public class ViewPlatformBusinessHealthUseCase
             : input.dateFrom();
 
         if (!from.isBefore(to)) {
-            // Khoảng rỗng/ngược: phần đếm trường vẫn đúng vì nó không phụ thuộc cửa sổ, phần tiền về 0.
-            return new PlatformBusinessHealthResponse(
-                health.subscribedSchools(), health.expiringSoonSchools(), health.lapsedSchools(),
-                health.suspendedSchools(), schoolsInDebt,
-                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null);
+            return responseWithoutMoney(health, schoolsInDebt);
         }
 
+        return responseWithMoney(health, schoolsInDebt, from, to);
+    }
+
+    // Empty or reversed range: the school counts are still right because they do not depend on the window; the
+    // money part falls back to 0.
+    private PlatformBusinessHealthResponse responseWithoutMoney(SchoolSubscriptionHealthDto health, long schoolsInDebt) {
+        return new PlatformBusinessHealthResponse(
+            health.subscribedSchools(), health.expiringSoonSchools(), health.lapsedSchools(),
+            health.suspendedSchools(), schoolsInDebt,
+            BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, null);
+    }
+
+    private PlatformBusinessHealthResponse responseWithMoney(
+            SchoolSubscriptionHealthDto health, long schoolsInDebt, Instant from, Instant to) {
         BigDecimal revenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(OrderStatus.SUCCESS, from, to));
         BigDecimal aiCost = zeroIfNull(platformBusinessHealthQueryRepository.sumAiCostVnd(from, to));
 
-        // Kỳ so sánh là một khoảng CÙNG ĐỘ DÀI ngay trước đó, không phải tháng lịch trước. Mặc định
-        // của màn hình là "từ đầu tháng tới giờ"; đem 10 ngày đầu tháng so với trọn tháng trước thì
-        // tháng này luôn trông như sụp đổ, và đó là lỗi của phép so chứ không phải của việc kinh doanh.
+        // The comparison period is a window of the SAME LENGTH right before, not the previous calendar month. The
+        // screen default is "from the start of the month until now"; comparing the first 10 days of a month with
+        // the whole previous month would always make this month look like it collapsed, and that is a fault of
+        // the comparison, not of the business.
         Duration windowLength = Duration.between(from, to);
         Instant previousFrom = from.minus(windowLength);
         BigDecimal previousRevenue = zeroIfNull(orderRepository.sumTotalAmountByStatusInRange(
             OrderStatus.SUCCESS, previousFrom, from));
 
-        // Giá vốn của kỳ trước chỉ để dựng ra BIÊN của kỳ trước, nên không trả nó ra ngoài: màn hình
-        // hỏi "biên tháng này hơn kém tháng trước mấy điểm", không hỏi chi phí kỳ trước là bao nhiêu.
+        // The previous period cost only builds the previous MARGIN, so it is not returned: the screen asks "how many
+        // points is this month margin above or below last month", not how much the previous period cost.
         BigDecimal previousAiCost = zeroIfNull(platformBusinessHealthQueryRepository.sumAiCostVnd(previousFrom, from));
 
         return new PlatformBusinessHealthResponse(

@@ -40,48 +40,58 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
     @Transactional
     public UUID execute(ReassignGradingCommand command) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
-        // Khoá: nếu không, giáo viên nộp xong đúng lúc admin bấm đổi người thì bản ghi
-        // đè lên sẽ mang ảnh chụp cũ (ASSIGNED, chưa có outcome) và làm bài đã chấm
-        // sống lại thành chưa chấm.
+        // Lock: otherwise, if the teacher submits just as the admin clicks reassign, the overwriting row
+        // would carry an old snapshot (ASSIGNED, no outcome) and bring a graded attempt back to ungraded.
         AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.loadForUpdate(command.assignmentId());
         assessmentGradingAccessService.authorizeSchoolAdmin(context.schoolId(), currentUserId);
 
         AssessmentGradingAssignment assignment = context.assignment();
-        if (assignment.isCompleted()) {
-            throw new IllegalArgumentException("Không thể đổi giáo viên cho bài đã chấm xong.");
-        }
-        if (command.teacherId() == null) {
-            throw new IllegalArgumentException("Thiếu giáo viên cần phân công.");
-        }
-        assessmentGradingAccessService.rejectClassTestCoordination(assignment.getCandidateResultId());
-        if (!assessmentGradingAccessService.isTeacherOfSchool(command.teacherId(), context.schoolId())) {
-            throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
-        }
-        if (assignment.getRoundType() == GradingRoundType.APPEAL) {
-            Set<UUID> conflicted = assessmentGradingQueryRepository
-                .findTeacherIdsWithHumanEvaluation(assignment.getCandidateResultId());
-            if (conflicted.contains(command.teacherId())) {
-                throw new IllegalArgumentException(
-                    "Giáo viên này đã từng chấm bài thi này nên không được chấm phúc khảo. "
-                        + "Đổi người chấm ở màn đơn phúc khảo nếu cần ghi lý do ngoại lệ.");
-            }
-        }
+        requireReassignable(assignment, command.teacherId(), context.schoolId());
+        handOver(assignment, command.teacherId(), currentUserId);
 
-        // assignedAt chạy lại theo người mới: với người nhận, việc này bắt đầu từ
-        // bây giờ, và hàng đợi của họ sắp theo mốc đó.
-        assignment.setTeacherId(command.teacherId());
-        assignment.setAssignedBy(currentUserId);
-        assignment.setAssignedAt(Instant.now());
-        // Hạn cũ nhưng người mới: nếu không xoá dấu đã-nhắc thì findDueForReminder
-        // (lọc reminded_at IS NULL) bỏ qua dòng này mãi mãi và người mới không bao giờ
-        // nhận mail nhắc hạn. Cùng lý lẽ với SetGradingDeadlineUseCase khi đổi hạn.
-        assignment.setRemindedAt(null);
-        assessmentGradingAssignmentRepository.save(assignment);
-
-        // Chỉ báo cho người MỚI. Người cũ mất việc là chuyện của điều phối viên, và một
-        // thông báo "việc đã bị lấy đi" không giúp họ làm gì cả.
+        // Only notify the NEW person. The old one losing the work is a matter for the coordinator, and a
+        // "the work was taken away" notification does not help them do anything.
         gradingAssignmentNotificationService.publishAssigned(List.of(assignment), Instant.now());
 
         return assignment.getId();
+    }
+
+    private void requireReassignable(AssessmentGradingAssignment assignment, UUID teacherId, UUID schoolId) {
+        if (assignment.isCompleted()) {
+            throw new IllegalArgumentException("Không thể đổi giáo viên cho bài đã chấm xong.");
+        }
+        if (teacherId == null) {
+            throw new IllegalArgumentException("Thiếu giáo viên cần phân công.");
+        }
+        assessmentGradingAccessService.rejectClassTestCoordination(assignment.getCandidateResultId());
+        if (!assessmentGradingAccessService.isTeacherOfSchool(teacherId, schoolId)) {
+            throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
+        }
+        if (assignment.getRoundType() == GradingRoundType.APPEAL) {
+            rejectPreviousGrader(assignment, teacherId);
+        }
+    }
+
+    private void rejectPreviousGrader(AssessmentGradingAssignment assignment, UUID teacherId) {
+        Set<UUID> conflicted = assessmentGradingQueryRepository
+            .findTeacherIdsWithHumanEvaluation(assignment.getCandidateResultId());
+        if (conflicted.contains(teacherId)) {
+            throw new IllegalArgumentException(
+                "Giáo viên này đã từng chấm bài thi này nên không được chấm phúc khảo. "
+                    + "Đổi người chấm ở màn đơn phúc khảo nếu cần ghi lý do ngoại lệ.");
+        }
+    }
+
+    private void handOver(AssessmentGradingAssignment assignment, UUID teacherId, UUID currentUserId) {
+        // assignedAt restarts for the new person: for the recipient the work starts now,
+        // and their queue is ordered by that timestamp.
+        assignment.setTeacherId(teacherId);
+        assignment.setAssignedBy(currentUserId);
+        assignment.setAssignedAt(Instant.now());
+        // Old deadline but new person: if the reminded mark is not cleared, findDueForReminder
+        // (which filters reminded_at IS NULL) skips this row forever and the new person never
+        // receives the deadline reminder email. Same reasoning as SetGradingDeadlineUseCase when the deadline changes.
+        assignment.setRemindedAt(null);
+        assessmentGradingAssignmentRepository.save(assignment);
     }
 }

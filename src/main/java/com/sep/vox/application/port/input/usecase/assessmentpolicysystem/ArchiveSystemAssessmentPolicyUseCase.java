@@ -33,49 +33,57 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
     @Override
     @Transactional
     public UUID execute(ArchiveSystemAssessmentPolicyCommand command) {
-        // 1. Kiểm tra tài khoản System Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
-        }
+        requireActiveUser();
+        AssessmentPolicy policy = loadSystemPolicy(command);
 
-        // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
-        if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
-        }
-
-        // 3. Chỉ được lưu trữ (ARCHIVE) khi đang PUBLISHED
         if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
             throw new IllegalArgumentException("Chỉ có thể lưu trữ (ARCHIVE) Assessment Policy đang ở trạng thái PUBLISHED.");
         }
 
-        // 4. Lưu trạng thái mới
         Instant now = Instant.now();
         policy.setStatus(AssessmentPolicyStatus.ARCHIVED);
         // Do not let effectiveTo move back before effectiveFrom when the policy's effective date has not been reached yet
         policy.setEffectiveTo(now.isBefore(policy.getEffectiveFrom()) ? policy.getEffectiveFrom() : now);
 
         AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
-
-        // 5. Archiving a Policy also archives the linked Rubric Version -- BUT only when no other
-        // Policy is still using it. See ArchiveSchoolAssessmentPolicyUseCase for the full reason:
-        // the 1-1 model that the old comment described belonged to V38, and V44 let several Policies
-        // share one version.
-        if (!assessmentPolicyRepository.existsOtherActiveByRubricVersionId(policy.getRubricVersionId(), policy.getId())) {
-            rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
-                if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
-                    rubricVersion.setStatus(RubricStatus.ARCHIVED);
-                    rubricVersion.setEffectiveTo(
-                            now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
-                    rubricVersionRepository.save(rubricVersion);
-                }
-            });
-        }
-
+        archiveRubricVersionIfUnused(policy, now);
         return saved.getId();
+    }
+
+    private void requireActiveUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+    }
+
+    private AssessmentPolicy loadSystemPolicy(ArchiveSystemAssessmentPolicyCommand command) {
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+        if (policy.getSchoolId() != null) {
+            throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
+        }
+        return policy;
+    }
+
+    /**
+     * Archiving a Policy also archives the linked Rubric Version -- BUT only when no other Policy is still using it.
+     * See ArchiveSchoolAssessmentPolicyUseCase for the full reason: the 1-1 model that the old comment described
+     * belonged to V38, and V44 let several Policies share one version.
+     */
+    private void archiveRubricVersionIfUnused(AssessmentPolicy policy, Instant now) {
+        if (assessmentPolicyRepository.existsOtherActiveByRubricVersionId(policy.getRubricVersionId(), policy.getId())) {
+            return;
+        }
+        rubricVersionRepository.findById(policy.getRubricVersionId()).ifPresent(rubricVersion -> {
+            if (rubricVersion.getStatus() == RubricStatus.PUBLISHED) {
+                rubricVersion.setStatus(RubricStatus.ARCHIVED);
+                rubricVersion.setEffectiveTo(
+                        now.isBefore(rubricVersion.getEffectiveFrom()) ? rubricVersion.getEffectiveFrom() : now);
+                rubricVersionRepository.save(rubricVersion);
+            }
+        });
     }
 }

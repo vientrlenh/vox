@@ -1,6 +1,7 @@
 package com.sep.vox.application.port.input.service;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,7 +43,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         UUID schoolId = session.getSchoolId();
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
-        return processRows(rows, mapping, schoolId);
+        return commitRowsAndCountOutcomes(rows, mapping, schoolId);
     }
 
     private void validateMappingKeys(List<ImportRow> rows, Map<String, String> confirmedMapping) {
@@ -65,14 +66,30 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
         }
     }
 
-    private ImportCommitResult processRows(List<ImportRow> rows, Map<String, String> confirmedMapping, UUID schoolId) {
-        long createdRows = 0L;
-        long updatedRows = 0L;
-        long invalidRows = 0L;
-        Set<String> seenCodes = new HashSet<String>();
-        List<RowContext> rowContexts = new ArrayList<RowContext>();
+    private ImportCommitResult commitRowsAndCountOutcomes(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            UUID schoolId) {
         Set<String> codes = new HashSet<String>();
+        List<RowContext> rowContexts = prepareRowContexts(rows, confirmedMapping, codes);
+        Map<String, SchoolRoom> existingByCode = findExistingByCode(schoolId, codes);
+        Set<String> seenCodes = new HashSet<String>();
+        Map<RowOutcome, Long> outcomeCounts = new EnumMap<RowOutcome, Long>(RowOutcome.class);
+        for (RowContext rowContext : rowContexts) {
+            outcomeCounts.merge(commitRow(rowContext, schoolId, existingByCode, seenCodes), 1L, (a, b) -> Long.sum(a, b));
+        }
+        return toResult(outcomeCounts);
+    }
 
+    private ImportCommitResult toResult(Map<RowOutcome, Long> outcomeCounts) {
+        return new ImportCommitResult(
+                outcomeCounts.getOrDefault(RowOutcome.CREATED, 0L),
+                outcomeCounts.getOrDefault(RowOutcome.UPDATED, 0L),
+                0L,
+                outcomeCounts.getOrDefault(RowOutcome.INVALID, 0L));
+    }
+
+    private List<RowContext> prepareRowContexts(List<ImportRow> rows, Map<String, String> confirmedMapping,
+            Set<String> codes) {
+        List<RowContext> rowContexts = new ArrayList<RowContext>();
         for (ImportRow row : rows) {
             Map<String, String> rawData = jsonSerializationPort.toStringMap(row.getRawDataJson());
             Map<String, String> mappedData = mapRawData(rawData, confirmedMapping);
@@ -81,58 +98,51 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
             rowContexts.add(new RowContext(row, normalized));
             addIfPresent(codes, normalized.get("code"));
         }
+        return rowContexts;
+    }
 
-        Map<String, SchoolRoom> existingByCode = findExistingByCode(schoolId, codes);
+    private RowOutcome commitRow(RowContext rowContext, UUID schoolId, Map<String, SchoolRoom> existingByCode,
+            Set<String> seenCodes) {
+        ImportRow row = rowContext.row();
+        Map<String, String> normalized = rowContext.normalized();
+        List<Map<String, String>> errors = validateRow(normalized, seenCodes);
 
-        for (RowContext rowContext : rowContexts) {
-            ImportRow row = rowContext.row();
-            Map<String, String> normalized = rowContext.normalized();
-            List<Map<String, String>> errors = validateRow(normalized, seenCodes);
-
-            if (!errors.isEmpty()) {
-                row.setErrorsJson(jsonSerializationPort.toJson(errors));
-                row.setStatus(ImportRowStatus.INVALID);
-                invalidRows++;
-                continue;
-            }
-
-            SchoolRoom existing = existingByCode.get(normalized.get("code"));
-
-            try {
-                if (existing != null) {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            updateRoom(existing, normalized));
-                    updatedRows++;
-                } else {
-                    requiresNewTransactionPort.runInNewTransaction(() ->
-                            createRoom(normalized, schoolId));
-                    createdRows++;
-                }
-            } catch (DataConflictException | IllegalArgumentException exception) {
-                row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã phòng đã tồn tại"))));
-                row.setStatus(ImportRowStatus.FAILED);
-                invalidRows++;
-                continue;
-            }
-
-            row.setErrorsJson(null);
-            row.setStatus(ImportRowStatus.IMPORTED);
+        if (!errors.isEmpty()) {
+            row.setErrorsJson(jsonSerializationPort.toJson(errors));
+            row.setStatus(ImportRowStatus.INVALID);
+            return RowOutcome.INVALID;
         }
 
-        return new ImportCommitResult(createdRows, updatedRows, 0L, invalidRows);
+        SchoolRoom existing = existingByCode.get(normalized.get("code"));
+        try {
+            RowOutcome outcome = saveInNewTransaction(existing, normalized, schoolId);
+            row.setErrorsJson(null);
+            row.setStatus(ImportRowStatus.IMPORTED);
+            return outcome;
+        } catch (DataConflictException | IllegalArgumentException exception) {
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã phòng đã tồn tại"))));
+            row.setStatus(ImportRowStatus.FAILED);
+            return RowOutcome.INVALID;
+        }
+    }
+
+    private RowOutcome saveInNewTransaction(SchoolRoom existing, Map<String, String> normalized, UUID schoolId) {
+        if (existing != null) {
+            requiresNewTransactionPort.runInNewTransaction(() ->
+                    updateRoom(existing, normalized));
+            return RowOutcome.UPDATED;
+        }
+        requiresNewTransactionPort.runInNewTransaction(() ->
+                createRoom(normalized, schoolId));
+        return RowOutcome.CREATED;
     }
 
     private void createRoom(Map<String, String> data, UUID schoolId) {
-        schoolRoomRepository.save(SchoolRoom.builder()
-            .schoolId(schoolId)
-            .code(data.get("code"))
-            .name(data.get("name"))
-            .description(data.get("description"))
-            // Same status as manual creation (AddSchoolRoomUseCase): isActive=false is the soft-delete flag,
-            // DeleteSchoolRoomUseCase refuses to delete an inactive room and no API can re-activate it,
-            // so an imported room would be stuck forever in the "deleted" state.
-            .active(true)
-            .build());
+        // SchoolRoom.registered sets the same active flag as manual creation (AddSchoolRoomUseCase): isActive=false is
+        // the soft-delete flag, DeleteSchoolRoomUseCase refuses to delete an inactive room and no API can
+        // re-activate it, so an imported room would be stuck forever in the "deleted" state.
+        schoolRoomRepository.save(SchoolRoom.registered(schoolId, data.get("code"), data.get("name"),
+            data.get("description")));
     }
 
     private void updateRoom(SchoolRoom existing, Map<String, String> data) {
@@ -206,6 +216,8 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     private Map<String, String> error(String field, String message) {
         return Map.of("field", field, "message", message);
     }
+
+    private enum RowOutcome { CREATED, UPDATED, INVALID }
 
     private record RowContext(ImportRow row, Map<String, String> normalized) {}
 }

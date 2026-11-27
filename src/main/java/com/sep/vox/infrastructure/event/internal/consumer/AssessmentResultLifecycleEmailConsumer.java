@@ -86,66 +86,91 @@ public class AssessmentResultLifecycleEmailConsumer {
         String eventType = KafkaEventHeaders.readEventType(record);
         Mail mail = renderMail(eventType, eventId, record.value());
 
-        // If the student has been deleted, resending any number of times will never find a recipient: mark
-        // it processed and skip, do not let the message run the whole retry cycle and end up in the DLT.
         if (mail == null) {
-            markProcessed(eventId);
-            log.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
-            ack.acknowledge();
+            skipMissingRecipient(eventId, eventType, ack);
             return;
         }
 
+        deliverMail(mail, eventId, eventType);
+        ack.acknowledge();
+    }
+
+    /**
+     * If the student has been deleted, resending any number of times will never find a recipient: mark
+     * it processed and skip, do not let the message run the whole retry cycle and end up in the DLT.
+     */
+    private void skipMissingRecipient(UUID eventId, String eventType, Acknowledgment ack) {
+        markProcessed(eventId);
+        log.warn("Skip mail, recipient not found: eventId={}, eventType={}", eventId, eventType);
+        ack.acknowledge();
+    }
+
+    private void deliverMail(Mail mail, UUID eventId, String eventType) {
+        sendMail(mail, eventId);
+        markProcessed(eventId);
+
+        log.info("Assessment result lifecycle mail sent: eventId={}, eventType={}, to={}",
+            eventId, eventType, mail.to());
+    }
+
+    private void sendMail(Mail mail, UUID eventId) {
         try {
             mailSendingPort.sendHtml(mail.to(), mail.subject(), mail.html());
         } catch (Exception e) {
             log.error("Send mail error: eventId={}, to={}", eventId, mail.to(), e);
             throw new IllegalStateException("Gửi mail vòng đời điểm thất bại: eventId=" + eventId, e);
         }
-
-        markProcessed(eventId);
-
-        log.info("Assessment result lifecycle mail sent: eventId={}, eventType={}, to={}",
-            eventId, eventType, mail.to());
-        ack.acknowledge();
     }
 
     /** @return {@code null} when no recipient can be found */
     private Mail renderMail(String eventType, UUID eventId, String value) {
         return switch (eventType) {
-            case EventTypeConstant.ASSESSMENT_RESULT_RELEASED -> {
-                AssessmentResultReleasedPayloadV1 payload = parse(value, AssessmentResultReleasedPayloadV1.class, eventType, eventId);
-                yield mail(payload.studentId(), SUBJECT_RELEASED, () -> mailTemplatePort.renderResultReleasedEmail(
-                    payload.assessmentName(), formatScore(payload.totalScore())));
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_REGRADED -> {
-                AssessmentResultRegradedPayloadV1 payload = parse(value, AssessmentResultRegradedPayloadV1.class, eventType, eventId);
-                yield mail(payload.studentId(), SUBJECT_REGRADED, () -> mailTemplatePort.renderResultRegradedEmail(
-                    payload.assessmentName(),
-                    roundLabel(payload.roundType()),
-                    formatScore(payload.scoreBefore()),
-                    formatScore(payload.scoreAfter())));
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED -> {
-                AssessmentResultInvalidatedPayloadV1 payload = parse(value, AssessmentResultInvalidatedPayloadV1.class, eventType, eventId);
-                yield mail(payload.studentId(), SUBJECT_INVALIDATED,
-                    () -> mailTemplatePort.renderResultInvalidatedEmail(payload.assessmentName(), payload.reason()));
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED -> {
-                AssessmentResultInvalidClearedPayloadV1 payload = parse(value, AssessmentResultInvalidClearedPayloadV1.class, eventType, eventId);
-                yield mail(payload.studentId(), SUBJECT_INVALID_CLEARED,
-                    () -> mailTemplatePort.renderResultInvalidClearedEmail(payload.assessmentName(), payload.reason()));
-            }
-            case EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED -> {
-                AssessmentResultOutcomeDecidedPayloadV1 payload = parse(value, AssessmentResultOutcomeDecidedPayloadV1.class, eventType, eventId);
-                yield mail(payload.studentId(), SUBJECT_OUTCOME_DECIDED,
-                    () -> mailTemplatePort.renderResultOutcomeDecidedEmail(
-                        payload.assessmentName(),
-                        outcomeLabel(payload.outcome()),
-                        formatScore(payload.totalScore())));
-            }
+            case EventTypeConstant.ASSESSMENT_RESULT_RELEASED -> renderReleasedMail(value, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_REGRADED -> renderRegradedMail(value, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_INVALIDATED -> renderInvalidatedMail(value, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_INVALID_CLEARED ->
+                renderInvalidClearedMail(value, eventType, eventId);
+            case EventTypeConstant.ASSESSMENT_RESULT_OUTCOME_DECIDED ->
+                renderOutcomeDecidedMail(value, eventType, eventId);
             default -> throw new IllegalStateException(
                 "eventType không hợp lệ: " + eventType + ", eventId=" + eventId);
         };
+    }
+
+    private Mail renderReleasedMail(String value, String eventType, UUID eventId) {
+        AssessmentResultReleasedPayloadV1 payload = parse(value, AssessmentResultReleasedPayloadV1.class, eventType, eventId);
+        return mail(payload.studentId(), SUBJECT_RELEASED, () -> mailTemplatePort.renderResultReleasedEmail(
+            payload.assessmentName(), formatScore(payload.totalScore())));
+    }
+
+    private Mail renderRegradedMail(String value, String eventType, UUID eventId) {
+        AssessmentResultRegradedPayloadV1 payload = parse(value, AssessmentResultRegradedPayloadV1.class, eventType, eventId);
+        return mail(payload.studentId(), SUBJECT_REGRADED, () -> mailTemplatePort.renderResultRegradedEmail(
+            payload.assessmentName(),
+            roundLabel(payload.roundType()),
+            formatScore(payload.scoreBefore()),
+            formatScore(payload.scoreAfter())));
+    }
+
+    private Mail renderInvalidatedMail(String value, String eventType, UUID eventId) {
+        AssessmentResultInvalidatedPayloadV1 payload = parse(value, AssessmentResultInvalidatedPayloadV1.class, eventType, eventId);
+        return mail(payload.studentId(), SUBJECT_INVALIDATED,
+            () -> mailTemplatePort.renderResultInvalidatedEmail(payload.assessmentName(), payload.reason()));
+    }
+
+    private Mail renderInvalidClearedMail(String value, String eventType, UUID eventId) {
+        AssessmentResultInvalidClearedPayloadV1 payload = parse(value, AssessmentResultInvalidClearedPayloadV1.class, eventType, eventId);
+        return mail(payload.studentId(), SUBJECT_INVALID_CLEARED,
+            () -> mailTemplatePort.renderResultInvalidClearedEmail(payload.assessmentName(), payload.reason()));
+    }
+
+    private Mail renderOutcomeDecidedMail(String value, String eventType, UUID eventId) {
+        AssessmentResultOutcomeDecidedPayloadV1 payload = parse(value, AssessmentResultOutcomeDecidedPayloadV1.class, eventType, eventId);
+        return mail(payload.studentId(), SUBJECT_OUTCOME_DECIDED,
+            () -> mailTemplatePort.renderResultOutcomeDecidedEmail(
+                payload.assessmentName(),
+                outcomeLabel(payload.outcome()),
+                formatScore(payload.totalScore())));
     }
 
     /** Defer rendering until a recipient is certain, so we do not build HTML just to throw it away. */
@@ -205,7 +230,7 @@ public class AssessmentResultLifecycleEmailConsumer {
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error(
             "assessment-result-lifecycle event sent to DLT: eventId={}, topic={}, partition={}, offset={}, payload={}",

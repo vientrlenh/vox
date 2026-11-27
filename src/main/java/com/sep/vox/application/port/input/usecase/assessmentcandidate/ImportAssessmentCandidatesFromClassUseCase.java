@@ -55,29 +55,51 @@ public class ImportAssessmentCandidatesFromClassUseCase
         UUID currentUserId = scope.callerId();
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
-        SchoolClass schoolClass = schoolClassRepository.findById(input.schoolClassId())
+        SchoolClass schoolClass = requireImportableClass(assessment, scope, input.schoolClassId());
+
+        Instant now = Instant.now();
+        List<UUID> activeUserIds = findActiveRosterUserIds(schoolClass);
+        List<AssessmentCandidate> newCandidates = buildNewStudentCandidates(
+            assessment, activeUserIds, currentUserId, now);
+
+        if (newCandidates.isEmpty()) {
+            return List.of();
+        }
+        List<AssessmentCandidate> saved = assessmentCandidateRepository.saveAll(newCandidates);
+        requireTokenQuotaWhenScheduled(assessment);
+        return AssessmentCandidateDtoMapper.toDtoList(saved);
+    }
+
+    private SchoolClass requireImportableClass(
+        Assessment assessment, AssessmentDirectoryAccessService.AssessmentDirectoryScope scope, UUID schoolClassId) {
+        SchoolClass schoolClass = schoolClassRepository.findById(schoolClassId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
         if (!schoolClass.getSchoolId().equals(assessment.getSchoolId())) {
             throw new ForbiddenException("Lớp học không thuộc trường của bài kiểm tra");
         }
         // The chair of a class test can only import the class they are in charge of -- exactly matching the scope
-        // that `ViewAssessmentDirectoryClassesUseCase` lets them see.
+        // that ViewAssessmentDirectoryClassesUseCase lets them see.
         if (!scope.schoolWide()
                 && !assessmentDirectoryAccessService.callerClassIds(scope).contains(schoolClass.getId())) {
             throw new ForbiddenException("Bạn không phụ trách lớp học này");
         }
+        return schoolClass;
+    }
 
-        Instant now = Instant.now();
-        // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
+    private List<UUID> findActiveRosterUserIds(SchoolClass schoolClass) {
+        // findBySchoolClassId is 1-based (PageRequest.of(page - 1, size)), so the first page is 1, NOT 0.
         List<SchoolClassUser> roster = schoolClassUserRepository.findBySchoolClassId(
             schoolClass.getId(), 1, MAX_CLASS_ROSTER_SIZE).content();
 
-        List<UUID> activeUserIds = roster.stream()
+        return roster.stream()
             .filter(user -> user.isActive())
             .map(user -> user.getUserId())
             .distinct()
             .toList();
+    }
 
+    private List<AssessmentCandidate> buildNewStudentCandidates(
+        Assessment assessment, List<UUID> activeUserIds, UUID currentUserId, Instant now) {
         Set<UUID> studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
         Set<UUID> existingStudentIds = assessmentCandidateRepository.findStudentIdsByAssessmentId(assessment.getId());
 
@@ -91,16 +113,17 @@ public class ImportAssessmentCandidatesFromClassUseCase
             }
             newCandidates.add(AssessmentCandidate.createFresh(assessment.getId(), userId, currentUserId, now));
         }
+        return newCandidates;
+    }
 
-        if (newCandidates.isEmpty()) {
-            return List.of();
-        }
-        List<AssessmentCandidate> saved = assessmentCandidateRepository.saveAll(newCandidates);
-        // See AddAssessmentCandidateUseCase: adding a whole batch of candidates to a published assessment makes it even more necessary to re-check
-        // the token quota immediately, not only for CLASS_TEST, rather than waiting until grading finishes for it to blow up.
+    /**
+     * See AddAssessmentCandidateUseCase: adding a whole batch of candidates to a published assessment makes it even
+     * more necessary to re-check the token quota immediately, not only for CLASS_TEST, rather than waiting until
+     * grading finishes for it to blow up.
+     */
+    private void requireTokenQuotaWhenScheduled(Assessment assessment) {
         if (assessment.getStatus() == AssessmentStatus.SCHEDULED) {
             classTestTokenQuotaGuardService.requireWithinTokenQuota(assessment);
         }
-        return AssessmentCandidateDtoMapper.toDtoList(saved);
     }
 }

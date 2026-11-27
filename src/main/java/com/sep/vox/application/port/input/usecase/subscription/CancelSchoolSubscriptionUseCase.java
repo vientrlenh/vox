@@ -46,9 +46,9 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
     @Override
     @Transactional
     public UUID execute(Void input) {
-        // KHÔNG nhận subscriptionId: trường chỉ có đúng một kỳ đang hiệu lực, và nhận id từ ngoài thì
-        // hasRole('SCHOOL_ADMIN') không trả lời được "kỳ này có thuộc trường đó không" -- lại phải
-        // dựng thêm một lớp kiểm quyền sở hữu. Không nhận id thì không có gì để kiểm.
+        // Does NOT accept subscriptionId: a school has exactly one period in force, and accepting an id from outside means
+        // hasRole('SCHOOL_ADMIN') cannot answer "does this period belong to that school" -- yet another ownership-check
+        // layer would have to be built. With no id there is nothing to check.
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
@@ -59,20 +59,22 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         }
 
         Instant now = Instant.now();
+        requireNoQueuedPeriod(schoolId, now, subscription.getId());
 
-        // Có kỳ đã trả tiền đang xếp hàng chờ thì từ chối. Đánh dấu "sẽ không gia hạn" trong khi một
-        // lần gia hạn ĐÃ được trả tiền và đang chờ chạy là một trạng thái tự mâu thuẫn: gói mang cờ
-        // đã hủy rồi vẫn lặng lẽ mở ra một kỳ mới. Hệ thống chưa có luồng hoàn tiền nên cũng không
-        // thể tự hủy kỳ đó thay trường.
-        SchoolSubscription queued = queuedPeriod(schoolId, now, subscription.getId());
+        subscription.setCancelledAt(now);
+        return schoolSubscriptionRepository.save(subscription).getId();
+    }
+
+    // Refuse when a paid period is queued. Marking "will not renew" while a renewal HAS been paid and is waiting to run is
+    // a self-contradicting state: a subscription carrying the cancelled flag would still quietly open a new period. The
+    // system has no refund flow either, so it cannot cancel that period on the school's behalf.
+    private void requireNoQueuedPeriod(UUID schoolId, Instant now, UUID inForceId) {
+        SchoolSubscription queued = queuedPeriod(schoolId, now, inForceId);
         if (queued != null) {
             throw new IllegalArgumentException(
                 "Trường đã thanh toán cho một kỳ tiếp theo (chạy tới " + DISPLAY_DATE.format(queued.getEndDate())
                     + "), không thể đánh dấu hủy. Vui lòng liên hệ hỗ trợ nếu muốn dừng sớm.");
         }
-
-        subscription.setCancelledAt(now);
-        return schoolSubscriptionRepository.save(subscription).getId();
     }
 
     /** Kỳ chưa kết thúc mà KHÔNG phải kỳ đang chạy -- tức kỳ đã trả tiền và đang chờ tới ngày. */

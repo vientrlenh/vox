@@ -77,65 +77,30 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
     @Transactional
     public UUID execute(CloneSystemRubricToSchoolCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
-        }
-
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-            .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sao chép về trường khác.");
-        }
+        requireActiveMemberOfSchool(currentUserId, command.schoolId());
 
         RubricVersion sourceVersion = rubricVersionRepository.findById(command.sourceRubricVersionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric mẫu."));
         Rubric sourceRubric = rubricRepository.findById(sourceVersion.getRubricId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của bản mẫu."));
+        requireClonableTemplate(sourceRubric, sourceVersion);
 
-        if (sourceRubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Chỉ được sao chép từ bộ tiêu chí mẫu của hệ thống.");
-        }
-        // Chỉ nhận bản đã ban hành: bản nháp của hệ thống là việc đang làm dở, chưa được rà soát, và
-        // không nên lọt ra ngoài phạm vi system admin.
-        if (sourceVersion.getStatus() != RubricStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được sao chép từ phiên bản mẫu đã được ban hành (PUBLISHED).");
-        }
-        // Sao một bản rỗng sẽ tạo ra phiên bản mà trường không bao giờ ban hành được (cửa "phải có
-        // tiêu chí" chặn lại), và họ chỉ phát hiện ra ở bước cuối cùng.
-        if (rubricCriterionRepository.findByRubricVersionId(sourceVersion.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Bản mẫu này chưa có tiêu chí nào nên không sao chép được.");
-        }
-
-        // Cùng cách chuẩn hoá với CreateSchoolRubricUseCase: hai đường cùng ghi vào một ràng buộc
-        // unique, nên chúng phải hiểu "mã trùng nhau" theo đúng một nghĩa.
+        // Same normalisation as CreateSchoolRubricUseCase: both paths write to one unique constraint, so
+        // they must agree on what "the same code" means.
         String safeCode = StringNormalization.trimAndCollapseSpaces(command.code());
         String safeName = StringNormalization.trimAndCollapseSpaces(command.name());
         String safeDescription = command.description() == null
             ? null
             : StringNormalization.trimAndCollapseSpaces(command.description());
-        if (safeCode == null || safeCode.isBlank()) {
-            throw new IllegalArgumentException("Mã bộ tiêu chí không được để trống.");
-        }
-        if (safeName == null || safeName.isBlank()) {
-            throw new IllegalArgumentException("Tên bộ tiêu chí không được để trống.");
-        }
+        requireCodeAndName(safeCode, safeName);
+        requireCodeNotTaken(command.schoolId(), sourceRubric, safeCode);
 
-        // Kiểm sớm để báo lỗi đọc được, thay vì để ràng buộc unique của DB ném ra một thông báo mà
-        // người dùng không hiểu phải sửa gì.
-        boolean isCodeTaken = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
-            RubricOwnerType.SCHOOL.toString(),
-            command.schoolId(),
-            sourceRubric.getLanguageId(),
-            sourceRubric.getFrameworkId(),
-            safeCode);
-        if (isCodeTaken) {
-            throw new ResourceDuplicatedException("Trường của bạn đã có một bộ tiêu chí mang mã '" + safeCode
-                + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác (ví dụ đặt theo khối:"
-                + " ENG-K10, ENG-K11).");
-        }
+        return cloneWithPolicies(command, sourceRubric, sourceVersion, safeCode, safeName, safeDescription, currentUserId);
+    }
 
+    private UUID cloneWithPolicies(CloneSystemRubricToSchoolCommand command, Rubric sourceRubric,
+                                   RubricVersion sourceVersion, String safeCode, String safeName,
+                                   String safeDescription, UUID currentUserId) {
         RubricTotalScoreMethod targetMethod = command.totalScoreMethod() == null
             ? sourceVersion.getTotalScoreMethod()
             : command.totalScoreMethod();
@@ -153,6 +118,60 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         createPoliciesFromTemplates(command, sourceVersion.getId(), clonedVersion.getId());
 
         return clonedVersion.getId();
+    }
+
+    private void requireActiveMemberOfSchool(UUID currentUserId, UUID schoolId) {
+        User currentUser = userRepository.findById(currentUserId)
+            .orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+            .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sao chép về trường khác.");
+        }
+    }
+
+    private void requireClonableTemplate(Rubric sourceRubric, RubricVersion sourceVersion) {
+        if (sourceRubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new ForbiddenException("Chỉ được sao chép từ bộ tiêu chí mẫu của hệ thống.");
+        }
+        // Only published versions are accepted: a system draft is unfinished, unreviewed work and must not
+        // leak outside the system admin's scope.
+        if (sourceVersion.getStatus() != RubricStatus.PUBLISHED) {
+            throw new IllegalArgumentException("Chỉ được sao chép từ phiên bản mẫu đã được ban hành (PUBLISHED).");
+        }
+        // Cloning an empty template would create a version the school can never publish (the "must have
+        // criteria" gate blocks it), and they would only find out at the last step.
+        if (rubricCriterionRepository.findByRubricVersionId(sourceVersion.getId()).isEmpty()) {
+            throw new IllegalArgumentException("Bản mẫu này chưa có tiêu chí nào nên không sao chép được.");
+        }
+    }
+
+    private void requireCodeAndName(String safeCode, String safeName) {
+        if (safeCode == null || safeCode.isBlank()) {
+            throw new IllegalArgumentException("Mã bộ tiêu chí không được để trống.");
+        }
+        if (safeName == null || safeName.isBlank()) {
+            throw new IllegalArgumentException("Tên bộ tiêu chí không được để trống.");
+        }
+    }
+
+    // Checked early to give a readable error instead of a DB unique-constraint message the user cannot act on.
+    private void requireCodeNotTaken(UUID schoolId, Rubric sourceRubric, String safeCode) {
+        boolean isCodeTaken = rubricRepository.existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
+            RubricOwnerType.SCHOOL.toString(),
+            schoolId,
+            sourceRubric.getLanguageId(),
+            sourceRubric.getFrameworkId(),
+            safeCode);
+        if (isCodeTaken) {
+            throw new ResourceDuplicatedException("Trường của bạn đã có một bộ tiêu chí mang mã '" + safeCode
+                + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác (ví dụ đặt theo khối:"
+                + " ENG-K10, ENG-K11).");
+        }
     }
 
     /**
@@ -192,20 +211,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             List<AssessmentPolicy> templates,
             UUID clonedVersionId) {
 
-        if (choice.sourcePolicyId() == null) {
-            throw new IllegalArgumentException("Thiếu id chính sách mẫu cần sao.");
-        }
-
-        // Tra trong danh sách của ĐÚNG phiên bản đang sao, nên tự nó đã chặn việc gửi lên id của một
-        // chính sách mẫu thuộc phiên bản khác -- bản sao sẽ mang thông số soạn cho bộ tiêu chí khác.
-        AssessmentPolicy template = templates.stream()
-                .filter(candidate -> candidate.getId().equals(choice.sourcePolicyId()))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Không tìm thấy chính sách mẫu đã ban hành nào thuộc phiên bản bộ tiêu chí này."));
-        if (template.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");
-        }
+        AssessmentPolicy template = findPublishedTemplate(templates, choice);
 
         TargetScope scope = resolveScope(template, choice);
 
@@ -222,6 +228,26 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
                 template.getStrictness(),
                 choice.effectiveFrom(),
                 choice.effectiveTo());
+    }
+
+    private AssessmentPolicy findPublishedTemplate(
+            List<AssessmentPolicy> templates, CloneSystemRubricToSchoolCommand.PolicyToClone choice) {
+
+        if (choice.sourcePolicyId() == null) {
+            throw new IllegalArgumentException("Thiếu id chính sách mẫu cần sao.");
+        }
+
+        // Looking only in the list of the exact version being cloned already rejects the id of a template
+        // policy that belongs to another version -- the copy would carry parameters written for another rubric.
+        AssessmentPolicy template = templates.stream()
+                .filter(candidate -> candidate.getId().equals(choice.sourcePolicyId()))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy chính sách mẫu đã ban hành nào thuộc phiên bản bộ tiêu chí này."));
+        if (template.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
+            throw new IllegalArgumentException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");
+        }
+        return template;
     }
 
     /**

@@ -2,6 +2,7 @@ package com.sep.vox.application.mapper.assessmentevaluation;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 import com.sep.vox.application.port.input.command.assessmentevaluation.ConfidenceCaseSignalsInput;
 import com.sep.vox.application.port.input.command.assessmentevaluation.EvaluationSignalsInput;
@@ -15,29 +16,36 @@ public final class AssessmentEvaluationSignalMapper {
 
     public static EvaluationSignals toDomain(EvaluationSignalsInput dto) {
         if (dto == null) {
-            return new EvaluationSignals(
-                0,
-                0,
-                null,
-                null,
-                null,
-                clamp01(null),
-                clamp01(null),
-                clamp01(null),
-                clamp01(null),
-                clamp01(null),
-                clamp01(null),
-                clampNonNegative(null),
-                "SUFFICIENT",
-                java.util.List.of(),
-                "NONE",
-                null,
-                "UNKNOWN",
-                java.util.List.of(),
-                null
-            );
+            return emptySignals();
         }
+        return fromInput(dto);
+    }
 
+    private static EvaluationSignals emptySignals() {
+        return new EvaluationSignals(
+            0,
+            0,
+            null,
+            null,
+            null,
+            clamp01(null),
+            clamp01(null),
+            clamp01(null),
+            clamp01(null),
+            clamp01(null),
+            clamp01(null),
+            clampNonNegative(null),
+            "SUFFICIENT",
+            List.of(),
+            "NONE",
+            null,
+            "UNKNOWN",
+            List.of(),
+            null
+        );
+    }
+
+    private static EvaluationSignals fromInput(EvaluationSignalsInput dto) {
         return new EvaluationSignals(
             dto.durationSeconds() == null ? 0 : dto.durationSeconds(),
             dto.wordCount() == null ? 0 : dto.wordCount(),
@@ -56,7 +64,7 @@ public final class AssessmentEvaluationSignalMapper {
             "NONE",
             null,
             "UNKNOWN",
-            java.util.List.of(),
+            List.of(),
             toConfidenceCase(dto.confidenceCase())
         );
     }

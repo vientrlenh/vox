@@ -81,6 +81,20 @@ public class SchoolGrade extends BaseModel {
         this.status = status;
     }
 
+    public static SchoolGrade opened(UUID schoolId, UUID gradeLevelId, String code, String name, String description,
+                                     LocalDate startDate, LocalDate endDate) {
+        return builder()
+                .schoolId(schoolId)
+                .gradeLevelId(gradeLevelId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .startDate(startDate)
+                .endDate(endDate)
+                .status(SchoolGradeStatus.ACTIVE)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

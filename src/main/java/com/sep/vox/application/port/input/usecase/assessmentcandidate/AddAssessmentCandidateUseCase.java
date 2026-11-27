@@ -48,21 +48,7 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
         AssessmentDirectoryAccessService.AssessmentDirectoryScope scope = assessmentDirectoryAccessService.resolve(assessment);
         UUID currentUserId = scope.callerId();
         AssessmentEditingGuard.requireScheduleEditable(assessment);
-
-        // Thí sinh phải là school_user vai trò STUDENT cùng trường với bài kiểm tra.
-        if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), input.studentId())) {
-            throw new IllegalArgumentException("Học sinh không thuộc trường của bài kiểm tra");
-        }
-        // The chair of a class test can only add students of the class they are in charge of -- exactly matching
-        // the scope that `ViewAssessmentDirectoryStudentsUseCase` lets them see.
-        if (!scope.schoolWide() && !isInCallerClasses(scope, input.studentId())) {
-            throw new ForbiddenException("Học sinh không thuộc lớp bạn phụ trách");
-        }
-        boolean isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(input.studentId()).stream()
-            .anyMatch(role -> SchoolRoleCodes.STUDENT.equals(role.roleCode()));
-        if (!isStudent) {
-            throw new IllegalArgumentException("Người dùng không phải là học sinh");
-        }
+        requireAddableStudent(assessment, scope, input.studentId());
 
         if (assessmentCandidateRepository.existsByAssessmentIdAndStudentId(assessment.getId(), input.studentId())) {
             throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
@@ -71,13 +57,37 @@ public class AddAssessmentCandidateUseCase implements IUseCase<AddAssessmentCand
         AssessmentCandidate candidate = AssessmentCandidate.createFresh(assessment.getId(), input.studentId(), currentUserId,
             Instant.now());
         AssessmentCandidate saved = assessmentCandidateRepository.save(candidate);
-        // Bài đã publish (SCHEDULED) mà thêm học sinh thì số thí sinh -- một input của ước lượng
-        // token đã soi lúc publish -- tăng lên; soi lại ngay, không riêng CLASS_TEST, không để tới
-        // lúc chấm xong mới vỡ quota (xem ClassTestTokenQuotaGuardService).
+        requireTokenQuotaWhenScheduled(assessment);
+        return AssessmentCandidateDtoMapper.toDto(saved);
+    }
+
+    private void requireAddableStudent(
+        Assessment assessment, AssessmentDirectoryAccessService.AssessmentDirectoryScope scope, UUID studentId) {
+        // The candidate must be a school_user with the STUDENT role in the same school as the assessment.
+        if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), studentId)) {
+            throw new IllegalArgumentException("Học sinh không thuộc trường của bài kiểm tra");
+        }
+        // The chair of a class test can only add students of the class they are in charge of -- exactly matching
+        // the scope that `ViewAssessmentDirectoryStudentsUseCase` lets them see.
+        if (!scope.schoolWide() && !isInCallerClasses(scope, studentId)) {
+            throw new ForbiddenException("Học sinh không thuộc lớp bạn phụ trách");
+        }
+        boolean isStudent = userRoleQueryRepository.findByUserIdWithRoleInfo(studentId).stream()
+            .anyMatch(role -> SchoolRoleCodes.STUDENT.equals(role.roleCode()));
+        if (!isStudent) {
+            throw new IllegalArgumentException("Người dùng không phải là học sinh");
+        }
+    }
+
+    /**
+     * Adding a student to a published (SCHEDULED) assessment raises the number of candidates, one input of the token
+     * estimate checked at publish time. It is checked again at once, not only for CLASS_TEST, so the quota does not
+     * break only when grading finishes (see ClassTestTokenQuotaGuardService).
+     */
+    private void requireTokenQuotaWhenScheduled(Assessment assessment) {
         if (assessment.getStatus() == AssessmentStatus.SCHEDULED) {
             classTestTokenQuotaGuardService.requireWithinTokenQuota(assessment);
         }
-        return AssessmentCandidateDtoMapper.toDto(saved);
     }
 
     private boolean isInCallerClasses(AssessmentDirectoryAccessService.AssessmentDirectoryScope scope, UUID studentId) {

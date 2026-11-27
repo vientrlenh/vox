@@ -37,42 +37,40 @@ public class ViewSchoolRubricResultBandDetailsUseCase implements IUseCase<ViewSc
     @Override
     @Transactional(readOnly = true)
     public RubricResultBandDto execute(ViewSchoolRubricResultBandDetailsQuery query) {
-        // 1. Xác thực User
+        requireActiveSchoolMember(query.schoolId());
+
+        RubricResultBand resultBand = rubricResultBandRepository.findById(query.resultBandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
+        requireSchoolOwnedResultBand(resultBand, query.schoolId());
+
+        return RubricResultBandDtoMapper.toDto(resultBand);
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
 
-        // 2. Chốt chặn an ninh bằng SchoolUser
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
-        if (!schoolUser.getSchoolId().equals(query.schoolId())) {
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("BẢO MẬT: Bạn không có quyền truy cập dữ liệu của trường khác.");
         }
-
-        School school = schoolRepository.findById(query.schoolId())
+        School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
         if (!school.isActive()) {
             throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
         }
+    }
 
-        // 3. Lấy Result Band
-        RubricResultBand resultBand = rubricResultBandRepository.findById(query.resultBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
-
-        // 4. Lấy Version
+    private void requireSchoolOwnedResultBand(RubricResultBand resultBand, UUID schoolId) {
         RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version."));
-
-        // 5. Lấy Rubric gốc và kiểm tra quyền SCHOOL
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(query.schoolId())) {
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Hành động bị từ chối: Dải điểm Kết quả này không thuộc về trường học của bạn.");
         }
-
-        // 6. Map sang DTO và trả về (Đã kèm đầy đủ 4 trường Audit)
-        return RubricResultBandDtoMapper.toDto(resultBand);
     }
 }

@@ -9,6 +9,9 @@ import com.sep.vox.domain.model.framework.FrameworkResultBand;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.rubric.RubricResultBand;
 import com.sep.vox.domain.model.rubric.RubricVersion;
+import com.sep.vox.application.port.input.usecase.assessmentevaluation.AssessmentSessionResultCalculator.CalculatedAssessmentSessionResult;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,19 +84,14 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
      * {@link AssessmentSessionResultCalculator} has already sorted -- the client numbers "Question 1, Question 2" by position
      * in this array so do not stream it through a Map again and shuffle the order.
      */
-    private java.util.List<AssessmentCandidateResultItemResponse> itemResponses(
-            java.util.List<AssessmentSessionResultCalculator.ItemScore> items) {
+    private List<AssessmentCandidateResultItemResponse> itemResponses(
+            List<AssessmentSessionResultCalculator.ItemScore> items) {
         List<UUID> questionIds = items.stream()
             .map(item -> item.questionId())
             .filter(id -> id != null)
             .distinct()
             .toList();
-        Map<UUID, String> texts = new java.util.HashMap<java.util.UUID, String>();
-        if (!questionIds.isEmpty()) {
-            for (Question question : questionRepository.findByIdIn(questionIds)) {
-                texts.put(question.getId(), question.getQuestionText());
-            }
-        }
+        Map<UUID, String> texts = questionTextsById(questionIds);
         Map<UUID, QuestionAssetDto> assets = assetsByQuestionId(questionIds);
         return items.stream()
             .map(item -> new AssessmentCandidateResultItemResponse(
@@ -121,35 +119,15 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
      * to see them. The grading screen already shows them from the start (JpaAssessmentGradingQueryRepository
      * LEFT JOINs to the evaluation); this pulls the result page onto the same assumption.
      */
-    private java.util.List<AssessmentCandidateResultItemResponse> itemResponsesWithoutScores(
-            java.util.UUID sessionId, java.util.UUID paperId) {
-        Map<UUID, UUID> responseByPaperItemId = new java.util.HashMap<java.util.UUID, java.util.UUID>();
-        for (AssessmentItemResponse response : assessmentItemResponseRepository.findBySessionId(sessionId)) {
-            if (response.getPaperItemId() != null) {
-                responseByPaperItemId.putIfAbsent(response.getPaperItemId(), response.getId());
-            }
-        }
+    private List<AssessmentCandidateResultItemResponse> itemResponsesWithoutScores(UUID sessionId, UUID paperId) {
+        Map<UUID, UUID> responseByPaperItemId = firstResponseIdByPaperItemId(sessionId);
         if (responseByPaperItemId.isEmpty() || paperId == null) {
-            return java.util.List.of();
+            return List.of();
         }
 
-        // Đi theo ĐỀ chứ không theo response: giữ đúng thứ tự (section, order) mà calculator dùng,
-        // nên số "Câu 1, Câu 2" trên client không nhảy khi bài chuyển từ chưa chấm sang đã chấm.
-        List<AssessmentPaperItem> paperItems = assessmentPaperItemRepository.findByPaperId(paperId).stream()
-            .filter(paperItem -> responseByPaperItemId.containsKey(paperItem.getId()))
-            .sorted(java.util.Comparator.comparingInt(paperItem -> paperItem.getOrder()))
-            .toList();
-        List<UUID> questionIds = paperItems.stream()
-            .map(paperItem -> paperItem.getQuestionId())
-            .filter(id -> id != null)
-            .distinct()
-            .toList();
-        Map<UUID, String> texts = new java.util.HashMap<java.util.UUID, String>();
-        if (!questionIds.isEmpty()) {
-            for (Question question : questionRepository.findByIdIn(questionIds)) {
-                texts.put(question.getId(), question.getQuestionText());
-            }
-        }
+        List<AssessmentPaperItem> paperItems = paperItemsInPaperOrder(paperId, responseByPaperItemId);
+        List<UUID> questionIds = distinctQuestionIds(paperItems);
+        Map<UUID, String> texts = questionTextsById(questionIds);
         Map<UUID, QuestionAssetDto> assets = assetsByQuestionId(questionIds);
         return paperItems.stream()
             .map(paperItem -> new AssessmentCandidateResultItemResponse(
@@ -164,6 +142,45 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
             .toList();
     }
 
+    private List<UUID> distinctQuestionIds(List<AssessmentPaperItem> paperItems) {
+        return paperItems.stream()
+            .map(paperItem -> paperItem.getQuestionId())
+            .filter(id -> id != null)
+            .distinct()
+            .toList();
+    }
+
+    private Map<UUID, UUID> firstResponseIdByPaperItemId(UUID sessionId) {
+        Map<UUID, UUID> responseByPaperItemId = new HashMap<UUID, UUID>();
+        for (AssessmentItemResponse response : assessmentItemResponseRepository.findBySessionId(sessionId)) {
+            if (response.getPaperItemId() != null) {
+                responseByPaperItemId.putIfAbsent(response.getPaperItemId(), response.getId());
+            }
+        }
+        return responseByPaperItemId;
+    }
+
+    /**
+     * Follows the PAPER, not the responses: it keeps the (section, order) order that the calculator uses, so the
+     * numbers "Question 1, Question 2" on the client do not jump when an attempt moves from ungraded to graded.
+     */
+    private List<AssessmentPaperItem> paperItemsInPaperOrder(UUID paperId, Map<UUID, UUID> responseByPaperItemId) {
+        return assessmentPaperItemRepository.findByPaperId(paperId).stream()
+            .filter(paperItem -> responseByPaperItemId.containsKey(paperItem.getId()))
+            .sorted(Comparator.comparingInt(paperItem -> paperItem.getOrder()))
+            .toList();
+    }
+
+    private Map<UUID, String> questionTextsById(List<UUID> questionIds) {
+        Map<UUID, String> texts = new HashMap<UUID, String>();
+        if (!questionIds.isEmpty()) {
+            for (Question question : questionRepository.findByIdIn(questionIds)) {
+                texts.put(question.getId(), question.getQuestionText());
+            }
+        }
+        return texts;
+    }
+
     @Override
     @Transactional(readOnly = true)
     public AssessmentCandidateResultResponse execute(ViewAssessmentSessionResultQuery input) {
@@ -171,13 +188,18 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
         AssessmentSession session = access.session();
         AssessmentCandidateResult result = assessmentCandidateResultRepository.findBySessionId(session.getId())
             .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay ket qua phien thi"));
-        // Chính chủ chỉ xem được bài đã có kết luận; giáo viên/admin thì luôn xem được.
-        // Trang vẫn trả về bản ghi kèm status — che field chứ không chặn, để học sinh còn
-        // biết bài mình đang ở đâu thay vì gặp màn "không tìm thấy".
+        // The owner can only see an attempt that has a conclusion; teachers/admins can always see it.
+        // The page still returns the record with its status -- the fields are hidden rather than blocked, so the
+        // student knows where their attempt stands instead of meeting a "not found" screen.
         boolean scoreVisible = !access.candidateOwner()
             || AssessmentCandidateResultStatus.isVisibleToCandidate(result.getStatus());
         boolean includeBreakdown = scoreVisible && shouldIncludeBreakdown(result.getStatus(), session.getId());
-        AssessmentSessionResultCalculator.CalculatedAssessmentSessionResult calculated = includeBreakdown ? assessmentSessionResultCalculator.calculate(session.getId()) : null;
+        CalculatedAssessmentSessionResult calculated = includeBreakdown ? assessmentSessionResultCalculator.calculate(session.getId()) : null;
+        ResultBands bands = loadResultBands(result, scoreVisible);
+        return buildResultResponse(session, result, scoreVisible, calculated, bands);
+    }
+
+    private ResultBands loadResultBands(AssessmentCandidateResult result, boolean scoreVisible) {
         FrameworkResultBand targetBand = result.getTargetFrameworkBandId() == null
             ? null
             : frameworkResultBandRepository.findById(result.getTargetFrameworkBandId()).orElse(null);
@@ -189,7 +211,11 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
         RubricVersion rubricVersion = !scoreVisible || result.getRubricVersionId() == null
             ? null
             : rubricVersionRepository.findById(result.getRubricVersionId()).orElse(null);
+        return new ResultBands(targetBand, rubricBand, rubricVersion);
+    }
 
+    private AssessmentCandidateResultResponse buildResultResponse(
+            AssessmentSession session, AssessmentCandidateResult result, boolean scoreVisible, CalculatedAssessmentSessionResult calculated, ResultBands bands) {
         return new AssessmentCandidateResultResponse(
             result.getId(),
             result.getSessionId(),
@@ -200,27 +226,42 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
             session.getFlagReason(),
             scoreVisible,
             scoreVisible ? result.getTotalScore() : null,
-            rubricVersion == null ? null : rubricVersion.getScoringScaleMin(),
-            rubricVersion == null ? null : rubricVersion.getScoringScaleMax(),
+            bands.rubricVersion() == null ? null : bands.rubricVersion().getScoringScaleMin(),
+            bands.rubricVersion() == null ? null : bands.rubricVersion().getScoringScaleMax(),
             scoreVisible ? result.getTargetFrameworkBandId() : null,
-            scoreVisible && targetBand != null ? targetBand.getCode() : null,
-            scoreVisible && targetBand != null ? targetBand.getLabel() : null,
+            scoreVisible && bands.target() != null ? bands.target().getCode() : null,
+            scoreVisible && bands.target() != null ? bands.target().getLabel() : null,
             scoreVisible ? result.getRubricResultBandId() : null,
-            scoreVisible && rubricBand != null ? rubricBand.getCode() : null,
-            scoreVisible && rubricBand != null ? rubricBand.getName() : null,
+            scoreVisible && bands.rubric() != null ? bands.rubric().getCode() : null,
+            scoreVisible && bands.rubric() != null ? bands.rubric().getName() : null,
             result.getStatus().name(),
-            scoreVisible && calculated != null ? calculated.sections().stream()
-                .map(section -> new AssessmentCandidateResultSectionResponse(section.sectionId(), section.title(), section.score()))
-                .toList() : java.util.List.of(),
-            // Chưa chấm xong (kể cả bài đang INVALID) thì vẫn trả danh sách câu, chỉ khuyết điểm
-            // -- xem itemResponsesWithoutScores. Vẫn nằm sau scoreVisible để giữ nguyên luật cũ:
-            // học sinh chưa được xem kết quả thì không thấy câu nào, y như trước.
-            scoreVisible
-                ? (calculated != null
-                    ? itemResponses(calculated.items())
-                    : itemResponsesWithoutScores(session.getId(), session.getPaperId()))
-                : java.util.List.of()
+            toSectionResponses(calculated, scoreVisible),
+            resolveItemResponses(calculated, scoreVisible, session)
         );
+    }
+
+    private List<AssessmentCandidateResultSectionResponse> toSectionResponses(
+            CalculatedAssessmentSessionResult calculated, boolean scoreVisible) {
+        return scoreVisible && calculated != null ? calculated.sections().stream()
+            .map(section -> new AssessmentCandidateResultSectionResponse(section.sectionId(), section.title(), section.score()))
+            .toList() : List.of();
+    }
+
+    /**
+     * An attempt that is not graded yet (even one that is INVALID) still returns the question list, just without
+     * scores -- see itemResponsesWithoutScores. It still sits behind scoreVisible to keep the old rule: a student
+     * who may not see the result sees no question at all, as before.
+     */
+    private List<AssessmentCandidateResultItemResponse> resolveItemResponses(
+            CalculatedAssessmentSessionResult calculated,
+            boolean scoreVisible,
+            AssessmentSession session) {
+        if (!scoreVisible) {
+            return List.of();
+        }
+        return calculated != null
+            ? itemResponses(calculated.items())
+            : itemResponsesWithoutScores(session.getId(), session.getPaperId());
     }
 
     /**
@@ -253,5 +294,8 @@ public class ViewAssessmentSessionResultUseCase implements IUseCase<ViewAssessme
             .map(evaluation -> evaluation.getResponseId())
             .collect(java.util.stream.Collectors.toSet());
         return evaluatedResponseIds.containsAll(responseIds);
+    }
+
+    private record ResultBands(FrameworkResultBand target, RubricResultBand rubric, RubricVersion rubricVersion) {
     }
 }

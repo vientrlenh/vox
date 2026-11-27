@@ -39,31 +39,10 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
     @Override
     @Transactional(readOnly = true)
     public PageResult<ScoringRuleDto> execute(SearchSchoolScoringRuleQuery query) {
-        // 1. Kiểm tra tài khoản School Admin
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
-        }
+        requireActiveSchoolAdminOf(query.schoolId());
+        requirePolicyOfSchool(query.policyId(), query.schoolId());
 
-        // 2. Kiểm tra tài khoản thuộc đúng trường học yêu cầu
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
-        if (!schoolUser.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
-        }
-
-        // 3. Kiểm tra Assessment Policy tồn tại và thuộc đúng trường học
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
-        if (policy.getSchoolId() == null || !policy.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
-        }
-
-        // Lưu ý: không chặn theo status Policy - cho phép xem lại rule kể cả khi Policy đã PUBLISHED/ARCHIVED
-
-        // 4. Search/paginate
+        // Note: the Policy status is not blocked - the rules may be viewed again even when the Policy is already PUBLISHED/ARCHIVED
         PageResult<ScoringRule> pageResult = scoringRuleRepository.searchByPolicyId(
                 query.policyId(), query.keyword(), query.isActive(), query.page(), query.size());
 
@@ -75,4 +54,28 @@ public class SearchSchoolScoringRuleUseCase implements IUseCase<SearchSchoolScor
                 pageResult.totalPages()
         );
     }
+
+    private void requireActiveSchoolAdminOf(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
+        }
+    }
+
+    private void requirePolicyOfSchool(UUID policyId, UUID schoolId) {
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+        if (policy.getSchoolId() == null || !policy.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Scoring Rule của trường khác.");
+        }
+    }
+
 }

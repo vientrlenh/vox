@@ -54,6 +54,18 @@ public class FrameworkCriterionBand extends BaseModel {
         this.negativeSignals = negativeSignals;
     }
 
+    public static FrameworkCriterionBand forCriterion(UUID frameworkCriterionId, UUID frameworkResultBandId,
+                                                      String descriptor, FrameworkCriterionSignals positiveSignals,
+                                                      FrameworkCriterionSignals negativeSignals) {
+        return builder()
+                .frameworkCriterionId(frameworkCriterionId)
+                .frameworkResultBandId(frameworkResultBandId)
+                .descriptor(descriptor)
+                .positiveSignals(positiveSignals)
+                .negativeSignals(negativeSignals)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

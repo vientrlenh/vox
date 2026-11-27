@@ -43,12 +43,7 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
     @Override
     @Transactional
     public AssessmentDto execute(AttachAssessmentBlueprintCommand input) {
-        if (input.blueprintId() == null && input.blueprintVersionId() == null && input.newBlueprint() == null) {
-            throw new IllegalArgumentException("Phải cung cấp blueprintId, blueprintVersionId hoặc newBlueprint");
-        }
-        if (input.blueprintId() != null && input.newBlueprint() != null) {
-            throw new IllegalArgumentException("Chỉ được cung cấp blueprintId hoặc newBlueprint, không được cung cấp cả hai");
-        }
+        requireValidBlueprintSelection(input);
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
@@ -58,68 +53,96 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
             throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra tập trung");
         }
 
-        // Gắn/đổi khung đề: quản trị trường, người ra đề, hoặc chủ tịch hội đồng (chủ tịch chạy trọn
-        // quy trình nên phải tự chọn được khung đề). Chốt version thì vẫn chỉ quản trị trường/chủ tịch.
+        applyBlueprintSelection(input, assessment, currentUserId);
+
+        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
+    }
+
+    private void applyBlueprintSelection(AttachAssessmentBlueprintCommand input, Assessment assessment, UUID currentUserId) {
+        // Attaching or changing the blueprint: school admin, the question author, or the council chair
+        // (the chair runs the whole process, so the chair must be able to choose the blueprint).
+        // Pinning the version stays limited to the school admin and the chair.
         boolean canAttach = assessmentMemberRepository.canAttachBlueprint(assessment.getId(), currentUserId);
         boolean isChair = assessmentMemberRepository.canApproveBlueprintVersion(assessment.getId(), currentUserId);
 
         if (input.blueprintId() != null) {
-            if (!canAttach) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
+            attachExistingBlueprint(input, assessment, canAttach);
+        }
+        if (input.newBlueprint() != null) {
+            attachNewBlueprint(input, assessment, canAttach);
+        }
+        if (input.blueprintVersionId() != null) {
+            pinBlueprintVersion(input, assessment, isChair);
+        }
+    }
 
-            AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
-            if (!assessment.getSchoolId().equals(blueprint.getSchoolId())) {
-                throw new IllegalArgumentException("Blueprint không thuộc cùng trường với bài kiểm tra");
-            }
+    private void requireValidBlueprintSelection(AttachAssessmentBlueprintCommand input) {
+        if (input.blueprintId() == null && input.blueprintVersionId() == null && input.newBlueprint() == null) {
+            throw new IllegalArgumentException("Phải cung cấp blueprintId, blueprintVersionId hoặc newBlueprint");
+        }
+        if (input.blueprintId() != null && input.newBlueprint() != null) {
+            throw new IllegalArgumentException("Chỉ được cung cấp blueprintId hoặc newBlueprint, không được cung cấp cả hai");
+        }
+    }
 
-            if (!input.blueprintId().equals(assessment.getBlueprintId())) {
-                requireNoExistingPapers(assessment.getId());
-                assessment.setBlueprintVersionId(null);
-            }
-            assessment.setBlueprintId(input.blueprintId());
+    private void attachExistingBlueprint(AttachAssessmentBlueprintCommand input, Assessment assessment, boolean canAttach) {
+        if (!canAttach) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
-        if (input.newBlueprint() != null) {
-            if (!canAttach) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
-            }
+        AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+        if (!assessment.getSchoolId().equals(blueprint.getSchoolId())) {
+            throw new IllegalArgumentException("Blueprint không thuộc cùng trường với bài kiểm tra");
+        }
+
+        if (!input.blueprintId().equals(assessment.getBlueprintId())) {
             requireNoExistingPapers(assessment.getId());
-            AssessmentBlueprint createdBlueprint = createInlineBlueprint(input.newBlueprint(), assessment.getSchoolId(), assessment.getLanguageId());
-            assessment.setBlueprintId(createdBlueprint.getId());
             assessment.setBlueprintVersionId(null);
         }
+        assessment.setBlueprintId(input.blueprintId());
+    }
 
-        if (input.blueprintVersionId() != null) {
-            if (!isChair) {
-                throw new ForbiddenException("Chỉ CHAIR được chốt version blueprint");
-            }
-            if (assessment.getBlueprintId() == null) {
-                throw new IllegalArgumentException("Bài kiểm tra chưa gắn blueprint");
-            }
+    private void attachNewBlueprint(AttachAssessmentBlueprintCommand input, Assessment assessment, boolean canAttach) {
+        if (!canAttach) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+        requireNoExistingPapers(assessment.getId());
+        AssessmentBlueprint createdBlueprint = createInlineBlueprint(input.newBlueprint(), assessment.getSchoolId(), assessment.getLanguageId());
+        assessment.setBlueprintId(createdBlueprint.getId());
+        assessment.setBlueprintVersionId(null);
+    }
 
-            AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
-            if (!version.getBlueprintId().equals(assessment.getBlueprintId())) {
-                throw new IllegalArgumentException("Version không thuộc blueprint đang gắn vào exam");
-            }
-            if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-                throw new IllegalArgumentException("Chỉ được chốt version đã PUBLISHED");
-            }
-            assessmentTimeQuotaGuardService.requireWithinPlan(
-                assessment.getSchoolId(),
-                version.getTotalTimeLimitSeconds(),
-                "Phiên bản blueprint " + version.getCode()
-            );
-
-            if (!input.blueprintVersionId().equals(assessment.getBlueprintVersionId())) {
-                requireNoExistingPapers(assessment.getId());
-            }
-            assessment.setBlueprintVersionId(input.blueprintVersionId());
+    private void pinBlueprintVersion(AttachAssessmentBlueprintCommand input, Assessment assessment, boolean isChair) {
+        if (!isChair) {
+            throw new ForbiddenException("Chỉ CHAIR được chốt version blueprint");
+        }
+        if (assessment.getBlueprintId() == null) {
+            throw new IllegalArgumentException("Bài kiểm tra chưa gắn blueprint");
         }
 
-        return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
+        AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
+        requirePublishedVersionOfAttachedBlueprint(version, assessment);
+        assessmentTimeQuotaGuardService.requireWithinPlan(
+            assessment.getSchoolId(),
+            version.getTotalTimeLimitSeconds(),
+            "Phiên bản blueprint " + version.getCode()
+        );
+
+        if (!input.blueprintVersionId().equals(assessment.getBlueprintVersionId())) {
+            requireNoExistingPapers(assessment.getId());
+        }
+        assessment.setBlueprintVersionId(input.blueprintVersionId());
+    }
+
+    private void requirePublishedVersionOfAttachedBlueprint(AssessmentBlueprintVersion version, Assessment assessment) {
+        if (!version.getBlueprintId().equals(assessment.getBlueprintId())) {
+            throw new IllegalArgumentException("Version không thuộc blueprint đang gắn vào exam");
+        }
+        if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
+            throw new IllegalArgumentException("Chỉ được chốt version đã PUBLISHED");
+        }
     }
 
     private void requireNoExistingPapers(UUID assessmentId) {

@@ -206,6 +206,10 @@ public class SePayPaymentProcessService implements PaymentProcessPort {
             return new PaymentLinkStatusResult(PaymentLinkRemoteStatus.NOT_FOUND);
         }
 
+        return toStatusResult(providerOrderRef, response);
+    }
+
+    private PaymentLinkStatusResult toStatusResult(String providerOrderRef, Map<?, ?> response) {
         String orderStatus = extractOrderStatus(response);
         PaymentLinkRemoteStatus status = toRemoteStatus(orderStatus);
         if (status == null) {

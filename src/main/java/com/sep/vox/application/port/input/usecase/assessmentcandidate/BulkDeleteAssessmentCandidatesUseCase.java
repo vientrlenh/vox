@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -68,13 +69,19 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
             throw new ResourceNotFoundException("Không tìm thấy thí sinh");
         }
 
-        // Một query cho cả lô: phiên đã xoá mềm không tính (findByCandidateIdIn đã loại DELETED),
-        // nên thí sinh chỉ còn lượt thi đã xoá vẫn gỡ được khỏi kỳ thi.
+        requireNoCandidateHasAttempt(candidates);
+        assessmentCandidateRepository.deleteByIdIn(candidateIds);
+        return null;
+    }
+
+    private void requireNoCandidateHasAttempt(List<AssessmentCandidate> candidates) {
+        // One query for the whole batch: soft-deleted sessions do not count (findByCandidateIdIn already excludes
+        // DELETED), so a candidate whose only attempts were deleted can still be removed from the assessment.
         Set<UUID> busyCandidateIds = assessmentSessionRepository
             .findByCandidateIdIn(candidates.stream().map(candidate -> candidate.getId()).toList())
             .stream()
             .map(session -> session.getCandidateId())
-            .collect(java.util.stream.Collectors.toSet());
+            .collect(Collectors.toSet());
 
         if (!busyCandidateIds.isEmpty()) {
             // Only the COUNT is named: at this layer only the studentId (a UUID) is known, and printing it
@@ -85,9 +92,6 @@ public class BulkDeleteAssessmentCandidatesUseCase implements IUseCase<BulkDelet
                 + " thí sinh trong danh sách đã có bài thi nên không thể xóa khỏi kỳ thi."
                 + " Hãy tải lại danh sách và chọn lại.");
         }
-
-        assessmentCandidateRepository.deleteByIdIn(candidateIds);
-        return null;
     }
 
     /** The same rule as {@link DeleteAssessmentCandidateUseCase}: the school administrator of the school or the council chair. */

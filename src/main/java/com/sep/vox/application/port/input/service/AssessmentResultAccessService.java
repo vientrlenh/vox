@@ -107,7 +107,7 @@ public class AssessmentResultAccessService {
         }
     }
 
-    /** @return true khi người gọi chính là thí sinh của bài — mọi nhánh khác đều false. */
+    /** @return true when the caller is the candidate of the assessment -- every other branch returns false. */
     private boolean authorize(UUID assessmentId, UUID candidateId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (userContextPort.isSystemAdmin()) {
@@ -122,23 +122,27 @@ public class AssessmentResultAccessService {
 
         Assessment assessment = assessmentRepository.findById(assessmentId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+        if (isSchoolAdminOfAssessmentSchool(currentUserId, assessment) || isMemberWithAccess(assessmentId, currentUserId)) {
+            return false;
+        }
+
+        throw new ForbiddenException("Quyền truy cập bị từ chối");
+    }
+
+    private boolean isSchoolAdminOfAssessmentSchool(UUID currentUserId, Assessment assessment) {
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         boolean schoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
-        if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId())) {
-            return false;
-        }
-        Boolean isAssessmentMemberWithAccess = assessmentMemberRepository.findByAssessmentIdAndUserId(assessmentId, currentUserId)
+        return schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessment.getSchoolId());
+    }
+
+    private boolean isMemberWithAccess(UUID assessmentId, UUID currentUserId) {
+        return assessmentMemberRepository.findByAssessmentIdAndUserId(assessmentId, currentUserId)
             .map(member -> member.getRole() == AssessmentMemberRole.CHAIR
                 || member.getRole() == AssessmentMemberRole.AUTHOR
                 || member.getRole() == AssessmentMemberRole.REVIEWER)
             .orElse(false);
-        if (isAssessmentMemberWithAccess) {
-            return false;
-        }
-
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
     }
 }

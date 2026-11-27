@@ -55,6 +55,14 @@ public class SubscriptionPlanQuota {
         this.includedAmountVnd = includedAmountVnd;
     }
 
+    public static SubscriptionPlanQuota forPlan(UUID subscriptionPlanId, QuotaType quotaType, BigDecimal includedAmountVnd) {
+        return builder()
+                .subscriptionPlanId(subscriptionPlanId)
+                .quotaType(quotaType)
+                .includedAmountVnd(includedAmountVnd)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

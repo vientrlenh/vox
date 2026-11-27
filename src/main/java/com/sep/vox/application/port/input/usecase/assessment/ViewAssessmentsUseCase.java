@@ -41,6 +41,15 @@ public class ViewAssessmentsUseCase implements IUseCase<ViewAssessmentsQuery, Pa
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
 
+        return findAccessibleAssessments(input, currentUserId, currentSchoolId, systemAdmin, schoolAdmin);
+    }
+
+    private PageResult<AssessmentDto> findAccessibleAssessments(
+            ViewAssessmentsQuery input,
+            UUID currentUserId,
+            UUID currentSchoolId,
+            boolean systemAdmin,
+            boolean schoolAdmin) {
         PageResult<Assessment> result = assessmentRepository.findAccessible(
             currentUserId,
             currentSchoolId,

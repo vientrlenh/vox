@@ -59,16 +59,20 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(candidate.getScheduleId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi của thí sinh"));
         Instant now = Instant.now();
-        Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
-        Instant windowEnd = schedule.getEndDate();
-        if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
-            throw new IllegalArgumentException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");
-        }
+        requireInsideAttendanceWindow(schedule, now);
 
         candidate.setStatus(input.status());
         candidate.setUpdatedAt(now);
         candidate.setUpdatedBy(currentUserId);
         return AssessmentCandidateDtoMapper.toDto(assessmentCandidateRepository.save(candidate));
+    }
+
+    private void requireInsideAttendanceWindow(AssessmentSchedule schedule, Instant now) {
+        Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
+        Instant windowEnd = schedule.getEndDate();
+        if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
+            throw new IllegalArgumentException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");
+        }
     }
 
     private boolean hasAttendanceAccess(Assessment assessment, UUID scheduleId, UUID currentUserId) {

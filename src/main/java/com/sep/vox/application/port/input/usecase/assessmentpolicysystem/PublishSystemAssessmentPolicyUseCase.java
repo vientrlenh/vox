@@ -35,41 +35,48 @@ public class PublishSystemAssessmentPolicyUseCase implements IUseCase<PublishSys
     @Override
     @Transactional
     public UUID execute(PublishSystemAssessmentPolicyCommand command) {
-        // 1. Kiểm tra tài khoản System Admin
+        requireActiveUser();
+        AssessmentPolicy policy = loadSystemPolicy(command);
+
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ có thể xuất bản (PUBLISH) Assessment Policy đang ở trạng thái DRAFT.");
+        }
+
+        requireLinkedVersionsUsable(policy);
+
+        policy.setStatus(AssessmentPolicyStatus.PUBLISHED);
+
+        AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
+        return saved.getId();
+    }
+
+    private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
             throw new UnauthorizedException("Tài khoản đã bị khóa.");
         }
+    }
 
-        // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
+    private AssessmentPolicy loadSystemPolicy(PublishSystemAssessmentPolicyCommand command) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
         if (policy.getSchoolId() != null) {
             throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
         }
+        return policy;
+    }
 
-        // 3. Chỉ được publish khi đang DRAFT
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xuất bản (PUBLISH) Assessment Policy đang ở trạng thái DRAFT.");
-        }
-
-        // 4. Kiểm tra Framework Version liên kết vẫn còn hiệu lực (PUBLISHED)
+    private void requireLinkedVersionsUsable(AssessmentPolicy policy) {
         FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(policy.getFrameworkVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn (Framework Version) liên kết."));
         if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
             throw new IllegalArgumentException("Không thể xuất bản Assessment Policy này vì Phiên bản Khung tiêu chuẩn liên kết không còn ở trạng thái PUBLISHED.");
         }
 
-        // Rubric Version liên kết được publish SAU khi Assessment Policy này Published, nên chỉ cần kiểm tra tồn tại
+        // The linked Rubric Version is published AFTER this Assessment Policy is published, so only its existence is checked
         rubricVersionRepository.findById(policy.getRubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric liên kết."));
-
-        // 5. Save the new status
-        policy.setStatus(AssessmentPolicyStatus.PUBLISHED);
-
-        AssessmentPolicy saved = assessmentPolicyRepository.save(policy);
-        return saved.getId();
     }
 }

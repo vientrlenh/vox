@@ -119,6 +119,28 @@ public class ScoringRule extends BaseModel {
         this.isActive = isActive;
     }
 
+    public static ScoringRule forPolicy(UUID policyId, String code, String name, String description,
+                                        ScoringRuleConditionType conditionType,
+                                        ScoringRuleConditionParams conditionParams,
+                                        ScoringRuleActionType actionType, ScoringRuleActionParams actionParams,
+                                        int priority, ScoringRuleSeverity severity, boolean stopProcessing,
+                                        boolean active) {
+        return builder()
+                .policyId(policyId)
+                .code(code)
+                .name(name)
+                .description(description)
+                .conditionType(conditionType)
+                .conditionParams(conditionParams)
+                .actionType(actionType)
+                .actionParams(actionParams)
+                .priority(priority)
+                .severity(severity)
+                .stopProcessing(stopProcessing)
+                .active(active)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -48,21 +48,7 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
     @Override
     @Transactional
     public PreviewAssessmentPolicyImportResponse execute(PreviewSchoolAssessmentPolicyImportFromFileCommand command) {
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không được quyền nạp file cho một trường học khác.");
-        }
-
-        School school = schoolRepository.findById(command.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
-        }
+        requireActiveSchoolMember(command.schoolId());
 
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.ASSESSMENT_POLICY);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
@@ -72,6 +58,35 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
         Instant now = Instant.now();
         Instant expiresAt = now.plus(1, ChronoUnit.DAYS);
 
+        UUID generatedSessionId = savePreviewedSession(command, parsedResult, expiresAt);
+        savePendingRows(generatedSessionId, parsedResult);
+
+        return new PreviewAssessmentPolicyImportResponse(
+                generatedSessionId, command.file().fileName(), parsedResult.originalHeaders(),
+                parsedResult.suggestedMapping(), parsedResult.sampleRows(), parsedResult.totalRows(), expiresAt
+        );
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không được quyền nạp file cho một trường học khác.");
+        }
+
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+        }
+    }
+
+    private UUID savePreviewedSession(
+            PreviewSchoolAssessmentPolicyImportFromFileCommand command, ParseImportFileResult parsedResult, Instant expiresAt) {
         ImportSession session = ImportSession.previewed(
             command.schoolId(),
             ImportType.ASSESSMENT_POLICY,
@@ -82,8 +97,10 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
             expiresAt);
 
         ImportSession savedSession = importSessionRepository.save(session);
-        UUID generatedSessionId = savedSession.getId();
+        return savedSession.getId();
+    }
 
+    private void savePendingRows(UUID generatedSessionId, ParseImportFileResult parsedResult) {
         List<ImportRow> importRows = IntStream.range(0, parsedResult.rows().size())
                 .mapToObj(i -> ImportRow.pending(
                     generatedSessionId,
@@ -91,10 +108,5 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
                     jsonSerializationPort.toJson(parsedResult.rows().get(i)))).toList();
 
         importRowRepository.saveAll(importRows);
-
-        return new PreviewAssessmentPolicyImportResponse(
-                generatedSessionId, command.file().fileName(), parsedResult.originalHeaders(),
-                parsedResult.suggestedMapping(), parsedResult.sampleRows(), parsedResult.totalRows(), expiresAt
-        );
     }
 }

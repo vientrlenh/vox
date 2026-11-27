@@ -18,7 +18,7 @@ import com.sep.vox.infrastructure.persistence.entity.registerform.RegisterFormJp
 public final class RegisterFormMapper {
     
     public static RegisterForm toDomain(RegisterFormJpaEntity jpa) {
-        return RegisterForm.builder()
+        RegisterForm.Builder builder = RegisterForm.builder()
             .id(jpa.getId())
             .schoolDirectoryId(jpa.getSchoolDirectoryId())
             .schoolName(jpa.getSchoolName())
@@ -34,19 +34,24 @@ public final class RegisterFormMapper {
             .contactAddress(jpa.getContactAddress())
             .postalCode(new PostalCode(jpa.getPostalCode()))
             .position(jpa.getPosition())
-            .studentCount(new StudentCount(jpa.getStudentCount()))
+            .studentCount(new StudentCount(jpa.getStudentCount()));
+        applyVerificationAndAuditFields(builder, jpa);
+        return builder.build();
+    }
+
+    private static void applyVerificationAndAuditFields(RegisterForm.Builder builder, RegisterFormJpaEntity jpa) {
+        builder
             .verificationMethod(verificationMethodFromString(jpa.getVerificationMethod()))
             .verifiedAt(jpa.getVerifiedAt())
             .rejectedReason(jpa.getRejectedReason())
             .status(statusFromString(jpa.getStatus()))
             .createdAt(jpa.getCreatedAt())
             .updatedAt(jpa.getUpdatedAt())
-            .reviewedBy(jpa.getReviewedBy())
-            .build();
+            .reviewedBy(jpa.getReviewedBy());
     }
 
     public static RegisterFormJpaEntity toJpa(RegisterForm registerForm) {
-        return RegisterFormJpaEntity.builder()
+        RegisterFormJpaEntity entity = RegisterFormJpaEntity.builder()
             .id(registerForm.getId())
             .schoolDirectoryId(registerForm.getSchoolDirectoryId())
             .schoolName(registerForm.getSchoolName())
@@ -63,14 +68,19 @@ public final class RegisterFormMapper {
             .postalCode(valueOf(registerForm.getPostalCode()))
             .position(registerForm.getPosition())
             .studentCount(valueOf(registerForm.getStudentCount()))
-            .verificationMethod(valueOf(registerForm.getVerificationMethod()))
-            .verifiedAt(registerForm.getVerifiedAt())
-            .rejectedReason(registerForm.getRejectedReason())
-            .status(valueOf(registerForm.getStatus()))
-            .createdAt(registerForm.getCreatedAt())
-            .updatedAt(registerForm.getUpdatedAt())
-            .reviewedBy(registerForm.getReviewedBy())
-            .build();
+                .build();
+        copyVerificationAndAuditFields(entity, registerForm);
+        return entity;
+    }
+
+    private static void copyVerificationAndAuditFields(RegisterFormJpaEntity entity, RegisterForm registerForm) {
+        entity.setVerificationMethod(valueOf(registerForm.getVerificationMethod()));
+        entity.setVerifiedAt(registerForm.getVerifiedAt());
+        entity.setRejectedReason(registerForm.getRejectedReason());
+        entity.setStatus(valueOf(registerForm.getStatus()));
+        entity.setCreatedAt(registerForm.getCreatedAt());
+        entity.setUpdatedAt(registerForm.getUpdatedAt());
+        entity.setReviewedBy(registerForm.getReviewedBy());
     }
 
     private static String valueOf(FullName fullName) {

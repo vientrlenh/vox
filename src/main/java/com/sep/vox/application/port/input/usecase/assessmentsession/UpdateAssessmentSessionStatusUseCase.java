@@ -35,10 +35,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
 
-        // B.4: race - job hết-ca-thi vừa set EXPIRED ngay trước khi client kịp gửi SUBMITTED.
-        // Coi là no-op thành công, giữ nguyên EXPIRED (việc chấm đã/sẽ diễn ra qua đường EXPIRED),
-        // không throw để học sinh không thấy lỗi ngay lúc tưởng đã nộp bài xong.
-        if (session.getStatus() == AssessmentSessionStatus.EXPIRED && input.status() == AssessmentSessionStatus.SUBMITTED) {
+        if (isSubmittedAfterExpiry(session, input)) {
             return CreateAssessmentSessionUseCase.toResponse(session);
         }
 
@@ -58,6 +55,15 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
         return CreateAssessmentSessionUseCase.toResponse(
             assessmentSessionRepository.findById(session.getId()).orElse(session)
         );
+    }
+
+    /**
+     * B.4: race - the assessment-ended job has just set EXPIRED right before the client managed to send SUBMITTED.
+     * Treated as a successful no-op that keeps EXPIRED (grading has happened or will happen through the EXPIRED path),
+     * without throwing, so the student does not see an error right when they think they have finished submitting.
+     */
+    private boolean isSubmittedAfterExpiry(AssessmentSession session, UpdateAssessmentSessionStatusCommand input) {
+        return session.getStatus() == AssessmentSessionStatus.EXPIRED && input.status() == AssessmentSessionStatus.SUBMITTED;
     }
 
     /**

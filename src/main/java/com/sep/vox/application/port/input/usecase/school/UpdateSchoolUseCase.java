@@ -33,23 +33,27 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
     @Override
     @Transactional
     public UUID execute(UpdateSchoolCommand command) {
-        // 1. Validate that the school exists
         School school = schoolRepository.findById(command.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
 
-        // 2. Validate the user with an exists call for performance
+        // exists call instead of loading the user, for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
         }
         requireSameSchoolForSchoolUser(currentUserId, school);
 
-        // 3. Normalize the data before sending it to the database
-        String phone = normalizedUniquePhone(command);
-        String email = normalizedUniqueEmail(command);
+        int updatedRows = updateAtomically(command, normalizedUniquePhone(command), normalizedUniqueEmail(command));
 
-        // 4. Run the atomic update
-        int updatedRows = schoolRepository.updateSchoolAtomic(
+        if (updatedRows == 0) {
+            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi.");
+        }
+
+        return command.id();
+    }
+
+    private int updateAtomically(UpdateSchoolCommand command, String phone, String email) {
+        return schoolRepository.updateSchoolAtomic(
                 command.id(),
                 normalizedText(command.name()),
                 normalizedText(command.description()),
@@ -61,12 +65,6 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
                 normalizedText(command.address()),
                 command.studentCount()
         );
-
-        if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi.");
-        }
-
-        return command.id();
     }
 
     private void requireSameSchoolForSchoolUser(UUID currentUserId, School school) {

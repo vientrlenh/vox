@@ -96,39 +96,64 @@ public class BulkFinalizeAssessmentResultsUseCase
     @Transactional
     public Integer execute(BulkFinalizeAssessmentResultsCommand command) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
-        Assessment assessment = assessmentRepository.findById(command.assessmentId())
+        Assessment assessment = requireAuthorizedAssessment(command.assessmentId(), currentUserId);
+
+        BulkFinalizePreviewInfo preview = assessmentGradingQueryRepository.previewBulkFinalize(assessment.getSchoolId(), command.assessmentId());
+        requireNoOpenAppeals(preview);
+
+        List<AssessmentCandidateResult> results = assessmentCandidateResultRepository.findByAssessmentId(command.assessmentId());
+        requireReadyToFinalize(results, preview, command.releasePendingWithAiScores());
+
+        Instant now = Instant.now();
+        ReleaseOutcome outcome = releasePendingResults(results, currentUserId, now);
+
+        closeSettledAssignments(outcome.released(), now);
+        resultStatusHistoryRecorder.recordAll(List.copyOf(outcome.histories()));
+        return outcome.released().size();
+    }
+
+    private Assessment requireAuthorizedAssessment(UUID assessmentId, UUID currentUserId) {
+        Assessment assessment = assessmentRepository.findById(assessmentId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
         // A class test: the school does not grade it, so if only the school admin could close the
         // books the teacher would be stuck -- publishing results requires EVERY attempt to be RELEASED
         // or INVALID (UpdateAssessmentStatusUseCase.requirePublishReadiness).
         assessmentGradingAccessService.authorizeSchoolAdminOrClassTestChair(
             assessment.getSchoolId(), assessment.getId(), currentUserId);
+        return assessment;
+    }
 
-        BulkFinalizePreviewInfo preview = assessmentGradingQueryRepository.previewBulkFinalize(assessment.getSchoolId(), command.assessmentId());
-        // Đơn phúc khảo đang mở thì LUÔN chặn, kể cả khi admin đã tick "công bố theo
-        // điểm hiện có": cờ đó chỉ nói "chấp nhận điểm AI cho bài chưa ai chấm", không
-        // nói "nuốt luôn tranh chấp điểm của học sinh". Nuốt đơn còn để lại hai hậu
-        // quả: đơn treo mở vĩnh viễn, và học sinh rút đơn sau đó lại kéo bài về RELEASED
-        // trong khi kỳ thi đã công bố xong.
+    /**
+     * An open appeal ALWAYS blocks, even when the admin has ticked "publish with the existing
+     * scores": that flag only says "accept the AI score for attempts nobody has graded", not
+     * "swallow the students' score disputes as well". Swallowing an appeal also leaves two
+     * consequences: the appeal hangs open forever, and a student who later withdraws it would pull
+     * the attempt back to RELEASED even though the assessment has already been published.
+     */
+    private void requireNoOpenAppeals(BulkFinalizePreviewInfo preview) {
         if (preview.openAppeals() > 0) {
             throw new IllegalArgumentException(
                 "Kỳ thi còn " + preview.openAppeals() + " đơn phúc khảo chưa xong. "
                     + "Hãy xử lý hoặc từ chối các đơn này trước khi chốt sổ.");
         }
+    }
 
-        List<AssessmentCandidateResult> results = assessmentCandidateResultRepository.findByAssessmentId(command.assessmentId());
+    private void requireReadyToFinalize(
+            List<AssessmentCandidateResult> results, BulkFinalizePreviewInfo preview, boolean releasePendingWithAiScores) {
         Map<AssessmentCandidateResultStatus, Integer> blocking = countBlocking(results);
         if (!blocking.isEmpty()) {
             throw new IllegalArgumentException(describeBlocking(blocking));
         }
-        if (!preview.isClean() && !command.releasePendingWithAiScores()) {
+        if (!preview.isClean() && !releasePendingWithAiScores) {
             throw new IllegalArgumentException(
                 "Kỳ thi còn " + preview.pendingUnassigned() + " bài chưa ai chấm và "
                     + preview.pendingAssigned() + " bài đang chấm dở. "
                     + "Hãy xử lý nốt, hoặc xác nhận công bố theo điểm AI hiện có.");
         }
+    }
 
-        Instant now = Instant.now();
+    private ReleaseOutcome releasePendingResults(
+            List<AssessmentCandidateResult> results, UUID currentUserId, Instant now) {
         List<AssessmentResultStatusHistory> histories = new ArrayList<AssessmentResultStatusHistory>();
         List<AssessmentCandidateResult> released = new ArrayList<AssessmentCandidateResult>();
 
@@ -136,31 +161,35 @@ public class BulkFinalizeAssessmentResultsUseCase
             if (result.getStatus() != AssessmentCandidateResultStatus.PENDING_REVIEW) {
                 continue;
             }
-
-            result.setStatus(AssessmentCandidateResultStatus.RELEASED);
-            // Bài từng RELEASED rồi bị kéo về PENDING_REVIEW (gỡ vô hiệu) giữ nguyên mốc
-            // công bố cũ: cửa sổ phúc khảo của học sinh tính từ mốc đó.
-            if (result.getReleasedAt() == null) {
-                result.setReleasedAt(now);
-            }
-            assessmentCandidateResultRepository.save(result);
+            release(result, now);
             released.add(result);
-
-            histories.add(AssessmentResultStatusHistory.transition(
-                    result.getId(),
-                    AssessmentCandidateResultStatus.PENDING_REVIEW,
-                    AssessmentCandidateResultStatus.RELEASED,
-                    result.getTotalScore(),
-                    result.getTotalScore(),
-                    ResultStatusChangeSource.ADMIN_BULK_FINALIZE,
-                    currentUserId,
-                    BULK_AI_REASON,
-                    now));
+            histories.add(releasedHistory(result, currentUserId, now));
         }
+        return new ReleaseOutcome(released, histories);
+    }
 
-        closeSettledAssignments(released, now);
-        resultStatusHistoryRecorder.recordAll(List.copyOf(histories));
-        return released.size();
+    private void release(AssessmentCandidateResult result, Instant now) {
+        result.setStatus(AssessmentCandidateResultStatus.RELEASED);
+        // An attempt that was RELEASED once and then pulled back to PENDING_REVIEW (invalidation lifted)
+        // keeps its old release timestamp: the student's appeal window is counted from that timestamp.
+        if (result.getReleasedAt() == null) {
+            result.setReleasedAt(now);
+        }
+        assessmentCandidateResultRepository.save(result);
+    }
+
+    private AssessmentResultStatusHistory releasedHistory(
+            AssessmentCandidateResult result, UUID currentUserId, Instant now) {
+        return AssessmentResultStatusHistory.transition(
+            result.getId(),
+            AssessmentCandidateResultStatus.PENDING_REVIEW,
+            AssessmentCandidateResultStatus.RELEASED,
+            result.getTotalScore(),
+            result.getTotalScore(),
+            ResultStatusChangeSource.ADMIN_BULK_FINALIZE,
+            currentUserId,
+            BULK_AI_REASON,
+            now);
     }
 
     /**
@@ -211,5 +240,11 @@ public class BulkFinalizeAssessmentResultsUseCase
         }));
         return "Kỳ thi còn " + String.join(", ", parts)
             + ". Chốt sổ không quyết thay tranh chấp điểm — hãy xử lý dứt điểm các bài này trước.";
+    }
+
+    private record ReleaseOutcome(
+        List<AssessmentCandidateResult> released,
+        List<AssessmentResultStatusHistory> histories
+    ) {
     }
 }

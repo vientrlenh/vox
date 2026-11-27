@@ -57,18 +57,13 @@ public class GraphQLPracticePlanningController {
     private final AsyncTaskExecutor practiceGenerationExecutor;
 
     public GraphQLPracticePlanningController(
-            ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase,
-            SearchPracticeTopicsUseCase searchPracticeTopicsUseCase,
+            ViewPracticeTopicOffersUseCase viewPracticeTopicOffersUseCase, SearchPracticeTopicsUseCase searchPracticeTopicsUseCase,
             SearchPracticeTopicsSemanticUseCase searchPracticeTopicsSemanticUseCase,
-            BuildPracticePaperUseCase buildPracticePaperUseCase,
-            PickRandomTopicUseCase pickRandomTopicUseCase,
-            DismissTopicOfferUseCase dismissTopicOfferUseCase,
-            SaveTopicUseCase saveTopicUseCase,
-            UnsaveTopicUseCase unsaveTopicUseCase,
-            ViewMySavedTopicsUseCase viewMySavedTopicsUseCase,
+            BuildPracticePaperUseCase buildPracticePaperUseCase, PickRandomTopicUseCase pickRandomTopicUseCase,
+            DismissTopicOfferUseCase dismissTopicOfferUseCase, SaveTopicUseCase saveTopicUseCase,
+            UnsaveTopicUseCase unsaveTopicUseCase, ViewMySavedTopicsUseCase viewMySavedTopicsUseCase,
             ViewPracticeDashboardStatsUseCase viewPracticeDashboardStatsUseCase,
-            PracticePaperDraftService practicePaperDraftService,
-            UserContextPort userContextPort,
+            PracticePaperDraftService practicePaperDraftService, UserContextPort userContextPort,
             TopicOfferBackfillService topicOfferBackfillService,
             @Qualifier("practiceGenerationExecutor") AsyncTaskExecutor practiceGenerationExecutor) {
         this.practicePaperDraftService = practicePaperDraftService;
@@ -88,10 +83,10 @@ public class GraphQLPracticePlanningController {
     }
 
     /**
-     * Trả {@code CompletableFuture} chứ không chạy thẳng trên thread request: khi kết quả
-     * xếp hạng mỏng (&lt;3), nhánh viewSynchronousTopicOffers sẽ nhờ AI đề xuất chủ đề mới --
-     * một cuộc gọi LLM chậm. Chạy async khiến servlet chuyển sang chế độ bất đồng bộ, lúc đó
-     * OSIV nhả EntityManager + connection DB thay vì giữ tới hết request.
+     * Returns a {@code CompletableFuture} instead of running directly on the request thread: when the
+     * ranked result is thin (&lt;3), the viewSynchronousTopicOffers branch asks the AI to propose new
+     * topics -- a slow LLM call. Running async switches the servlet to asynchronous mode, at which point
+     * OSIV releases the EntityManager + DB connection instead of holding them until the end of the request.
      */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -100,33 +95,35 @@ public class GraphQLPracticePlanningController {
             @Argument("round") Integer round,
             @Argument("bucket") String bucket) {
         return CompletableFuture.supplyAsync(
-            () -> {
-                List<PracticeTopicOffer> offers = new ArrayList<>(viewPracticeTopicOffersUseCase.execute(
-                    new ViewPracticeTopicOffersQuery(
-                        excludeTopicIds,
-                        round == null ? 1 : Math.max(1, Math.min(round, 3)),
-                        bucket == null ? "FOR_YOU" : bucket
-                    )
-                ));
-                // The pool is running low -> top it up in the BACKGROUND, do NOT block the request.
-                //
-                // The previous version called viewSynchronousTopicOffersUseCase directly here, i.e. it waited
-                // for the LLM to propose topics and then indexed the vector store inside the request. With an
-                // empty pool (a new student, or data that was just rebuilt) EVERY call fell into that path, so
-                // the first screen right after finishing the quiz always timed out.
-                //
-                // Return what is available -- even if empty. The client shows "generating, come back in 1-2
-                // minutes"; the generated topics are written straight into the pool, so the next open through
-                // the normal ranking path sees them on its own.
-                if (offers.size() < 3) {
-                    topicOfferBackfillService.backfillAsync(
-                        userContextPort.getCurrentAuthenticatedUserId()
-                    );
-                }
-                return (List<PracticeTopicOffer>) offers;
-            },
+            () -> loadPracticeTopicOffers(excludeTopicIds, round, bucket),
             practiceGenerationExecutor
         );
+    }
+
+    private List<PracticeTopicOffer> loadPracticeTopicOffers(List<UUID> excludeTopicIds, Integer round, String bucket) {
+        List<PracticeTopicOffer> offers = new ArrayList<>(viewPracticeTopicOffersUseCase.execute(
+            new ViewPracticeTopicOffersQuery(
+                excludeTopicIds,
+                round == null ? 1 : Math.max(1, Math.min(round, 3)),
+                bucket == null ? "FOR_YOU" : bucket
+            )
+        ));
+        // The pool is running low -> top it up in the BACKGROUND, do NOT block the request.
+        //
+        // The previous version called viewSynchronousTopicOffersUseCase directly here, i.e. it waited
+        // for the LLM to propose topics and then indexed the vector store inside the request. With an
+        // empty pool (a new student, or data that was just rebuilt) EVERY call fell into that path, so
+        // the first screen right after finishing the quiz always timed out.
+        //
+        // Return what is available -- even if empty. The client shows "generating, come back in 1-2
+        // minutes"; the generated topics are written straight into the pool, so the next open through
+        // the normal ranking path sees them on its own.
+        if (offers.size() < 3) {
+            topicOfferBackfillService.backfillAsync(
+                userContextPort.getCurrentAuthenticatedUserId()
+            );
+        }
+        return offers;
     }
 
     @QueryMapping

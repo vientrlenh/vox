@@ -1,9 +1,11 @@
 package com.sep.vox.application.port.input.usecase.assessment;
 
 import com.sep.vox.domain.dto.QuestionAssetDto;
+import com.sep.vox.domain.dto.QuestionEvaluationGuideDto;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentCandidate;
 import com.sep.vox.domain.model.assessment.AssessmentPaper;
+import com.sep.vox.domain.model.assessment.AssessmentPaperItem;
 import com.sep.vox.domain.model.assessment.AssessmentPaperSection;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;
 import com.sep.vox.domain.model.assessment.AssessmentSession;
@@ -72,63 +74,83 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
         AssessmentPaper paper = assessmentPaperRepository.findById(session.getPaperId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
 
-        List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(session.getPaperId());
+        List<StudentAssessmentPaperQuestionResponse> paperQuestions = loadPaperQuestions(session.getPaperId());
+        return toPaperResponse(assessment, paper, session, candidate, paperQuestions);
+    }
+
+    private List<StudentAssessmentPaperQuestionResponse> loadPaperQuestions(UUID paperId) {
+        List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paperId);
         Map<UUID, AssessmentPaperSection> sectionById = new HashMap<>(sections.stream()
             .collect(java.util.stream.Collectors.toMap(section -> section.getId(), section -> section)));
-        List<StudentAssessmentPaperQuestionResponse> paperQuestions = sections.stream()
+        return sections.stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .flatMap(section -> assessmentPaperItemRepository.findBySectionId(section.getId()).stream()
                 .sorted(Comparator.comparingInt(item -> item.getOrder())))
-            .map(item -> {
-                Question question = questionRepository.findById(item.getQuestionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
-                AssessmentPaperSection section = sectionById.get(item.getSectionId());
-                QuestionAssetDto asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
-                    .findFirst()
-                    .map(QuestionAssetDtoMapper::toDto)
-                    .orElse(null);
-
-                return new StudentAssessmentPaperQuestionResponse(
-                    item.getId(),
-                    orderOf(sectionById, item.getSectionId(), item.getOrder()),
-                    item.getSectionId(),
-                    section == null ? null : section.getTitle(),
-                    section == null ? null : section.getInstruction(),
-                    new StudentQuestionResponse(
-                        question.getId(),
-                        question.getCode(),
-                        question.getInstructionText(),
-                        question.getQuestionText(),
-                        question.getPromptText(),
-                        question.getPreparationText(),
-                        question.getPreparationTimeSeconds(),
-                        question.getMinResponseSeconds(),
-                        question.getMaxResponseSeconds(),
-                        question.getType() == null ? null : question.getType().name(),
-                        "",
-                        asset
-                    ),
-                    asset,
-                    questionEvaluationGuideRepository.findByQuestionId(question.getId()).map(guide -> new com.sep.vox.domain.dto.QuestionEvaluationGuideDto(
-                        guide.getId(),
-                        guide.getQuestionId(),
-                        guide.getExpectedContent(),
-                        guide.getKeyPoints(),
-                        guide.getAcceptableResponses(),
-                        guide.getOffTopicExamples(),
-                        guide.getScoringHints(),
-                        guide.getCommonMistakes()
-                    )).orElse(null)
-                );
-            })
+            .map(item -> toPaperQuestion(item, sectionById))
             .toList();
+    }
 
-        AssessmentSchedule schedule = candidate.getScheduleId() == null
-            ? null
-            : assessmentScheduleRepository.findById(candidate.getScheduleId()).orElse(null);
-        int durationSeconds = paper.getTimeDurationSeconds() == null
-            ? estimateDurationSeconds(session.getPaperId())
-            : paper.getTimeDurationSeconds();
+    private StudentAssessmentPaperQuestionResponse toPaperQuestion(
+            AssessmentPaperItem item,
+            Map<UUID, AssessmentPaperSection> sectionById) {
+        Question question = questionRepository.findById(item.getQuestionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
+        AssessmentPaperSection section = sectionById.get(item.getSectionId());
+        QuestionAssetDto asset = questionAssetRepository.findByQuestionId(question.getId()).stream()
+            .findFirst()
+            .map(QuestionAssetDtoMapper::toDto)
+            .orElse(null);
+
+        return new StudentAssessmentPaperQuestionResponse(
+            item.getId(),
+            orderOf(sectionById, item.getSectionId(), item.getOrder()),
+            item.getSectionId(),
+            section == null ? null : section.getTitle(),
+            section == null ? null : section.getInstruction(),
+            toStudentQuestion(question, asset),
+            asset,
+            evaluationGuideOf(question)
+        );
+    }
+
+    private StudentQuestionResponse toStudentQuestion(Question question, QuestionAssetDto asset) {
+        return new StudentQuestionResponse(
+            question.getId(),
+            question.getCode(),
+            question.getInstructionText(),
+            question.getQuestionText(),
+            question.getPromptText(),
+            question.getPreparationText(),
+            question.getPreparationTimeSeconds(),
+            question.getMinResponseSeconds(),
+            question.getMaxResponseSeconds(),
+            question.getType() == null ? null : question.getType().name(),
+            "",
+            asset
+        );
+    }
+
+    private QuestionEvaluationGuideDto evaluationGuideOf(Question question) {
+        return questionEvaluationGuideRepository.findByQuestionId(question.getId()).map(guide -> new QuestionEvaluationGuideDto(
+            guide.getId(),
+            guide.getQuestionId(),
+            guide.getExpectedContent(),
+            guide.getKeyPoints(),
+            guide.getAcceptableResponses(),
+            guide.getOffTopicExamples(),
+            guide.getScoringHints(),
+            guide.getCommonMistakes()
+        )).orElse(null);
+    }
+
+    private StudentAssessmentPaperResponse toPaperResponse(
+            Assessment assessment,
+            AssessmentPaper paper,
+            AssessmentSession session,
+            AssessmentCandidate candidate,
+            List<StudentAssessmentPaperQuestionResponse> paperQuestions) {
+        AssessmentSchedule schedule = scheduleOf(candidate);
+        int durationSeconds = durationSecondsOf(paper, session);
         return new StudentAssessmentPaperResponse(
             assessment.getId(),
             session.getPaperId(),
@@ -139,13 +161,28 @@ public class GetAssessmentSessionPaperUseCase implements IUseCase<ViewAssessment
             durationMinutesOf(durationSeconds),
             StudentAssessmentViewSupport.assessmentDateOf(schedule, assessment.getOpenAt()),
             StudentAssessmentViewSupport.statusOf(schedule, Instant.now()),
-            schedule == null
-                ? (assessment.getCloseAt() == null ? null : assessment.getCloseAt().toString())
-                : (schedule.getEndDate() == null ? null : schedule.getEndDate().toString()),
+            closeTimeOf(schedule, assessment),
             session.getStartedAt() == null ? null : session.getStartedAt().toString(),
             session.getRemainingSeconds(),
             paperQuestions
         );
+    }
+
+    private AssessmentSchedule scheduleOf(AssessmentCandidate candidate) {
+        return candidate.getScheduleId() == null
+            ? null
+            : assessmentScheduleRepository.findById(candidate.getScheduleId()).orElse(null);
+    }
+
+    private int durationSecondsOf(AssessmentPaper paper, AssessmentSession session) {
+        return paper.getTimeDurationSeconds() == null
+            ? estimateDurationSeconds(session.getPaperId())
+            : paper.getTimeDurationSeconds();
+    }
+
+    private static String closeTimeOf(AssessmentSchedule schedule, Assessment assessment) {
+        Instant closeTime = schedule == null ? assessment.getCloseAt() : schedule.getEndDate();
+        return closeTime == null ? null : closeTime.toString();
     }
 
     private static int orderOf(java.util.Map<java.util.UUID, com.sep.vox.domain.model.assessment.AssessmentPaperSection> sectionsById,

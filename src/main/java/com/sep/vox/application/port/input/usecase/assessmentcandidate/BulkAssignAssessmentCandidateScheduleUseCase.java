@@ -57,41 +57,65 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
-        List<UUID> candidateIds = input.candidateIds() == null ? List.<java.util.UUID>of() : input.candidateIds();
+        List<UUID> candidateIds = input.candidateIds() == null ? List.<UUID>of() : input.candidateIds();
         if (candidateIds.isEmpty()) {
             return List.of();
         }
 
-        // Lock the sessions FIRST, touch the candidates AFTER -- the same order as AutoFillAssessmentCandidatesUseCase so that the two
-        // flows running in parallel do not lock each other crosswise.
         UUID scheduleId = input.scheduleId();
-        AssessmentSchedule schedule = null;
-        if (scheduleId != null) {
-            schedule = assessmentScheduleRepository.findByIdForUpdate(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
-            if (!schedule.getAssessmentId().equals(assessment.getId())) {
-                throw new ResourceNotFoundException("Không tìm thấy ca thi");
-            }
-            if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
-                throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
-            }
-        }
+        AssessmentSchedule schedule = scheduleId == null ? null : lockAssignableSchedule(assessment, scheduleId);
+        List<AssessmentCandidate> candidates = findAllCandidatesOrFail(assessment, candidateIds);
 
+        requireCandidatesFreeInSchedule(candidates, schedule);
+
+        Instant now = Instant.now();
+        List<AssessmentCandidate> assignedToSchedule = applyScheduleChange(candidates, scheduleId, now, currentUserId);
+        // Only candidates just placed into a schedule get a paper; when unassigning from a schedule, the paper they
+        // already have is kept.
+        assessmentPaperAutoAssigner.assignPapersIfNeeded(assessment, assignedToSchedule, now, currentUserId);
+        return AssessmentCandidateDtoMapper.toDtoList(assessmentCandidateRepository.saveAll(candidates));
+    }
+
+    /**
+     * Lock the sessions FIRST, touch the candidates AFTER -- the same order as AutoFillAssessmentCandidatesUseCase
+     * so that the two flows running in parallel do not lock each other crosswise.
+     */
+    private AssessmentSchedule lockAssignableSchedule(Assessment assessment, UUID scheduleId) {
+        AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(scheduleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+        if (!schedule.getAssessmentId().equals(assessment.getId())) {
+            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+        }
+        if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
+            throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
+        }
+        return schedule;
+    }
+
+    /**
+     * The whole batch is checked with ONE query before anyone is touched: a failure at the 25th person after 24
+     * already changed schedule is covered by the rollback, but the message must name everyone so the person
+     * scheduling can remove them in one go.
+     */
+    private void requireCandidatesFreeInSchedule(List<AssessmentCandidate> candidates, AssessmentSchedule schedule) {
+        if (schedule != null) {
+            assessmentScheduleCandidateConflictValidator.requireCandidatesFree(
+                candidates, schedule.getStartDate(), schedule.getEndDate());
+        }
+    }
+
+    private List<AssessmentCandidate> findAllCandidatesOrFail(Assessment assessment, List<UUID> candidateIds) {
         List<AssessmentCandidate> candidates = assessmentCandidateRepository.findByIdInAndAssessmentId(candidateIds, assessment.getId());
         // Looked up by (id, assessmentId) so a missing row means an id that does not exist or belongs to another assessment --
         // the whole batch fails instead of silently placing only part of it.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
             throw new ResourceNotFoundException("Không tìm thấy thí sinh");
         }
+        return candidates;
+    }
 
-        // Soát cả lô bằng MỘT query trước khi đụng vào ai: hỏng ở người thứ 25 mà 24 người trước đã
-        // đổi ca thì rollback lo được, nhưng message phải nêu đủ tên để người xếp lịch gỡ một lần.
-        if (schedule != null) {
-            assessmentScheduleCandidateConflictValidator.requireCandidatesFree(
-                candidates, schedule.getStartDate(), schedule.getEndDate());
-        }
-
-        Instant now = Instant.now();
+    private List<AssessmentCandidate> applyScheduleChange(
+        List<AssessmentCandidate> candidates, UUID scheduleId, Instant now, UUID currentUserId) {
         List<AssessmentCandidate> assignedToSchedule = new ArrayList<AssessmentCandidate>();
         for (AssessmentCandidate candidate : candidates) {
             if (scheduleId == null) {
@@ -101,8 +125,6 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
             candidate.assignToSchedule(scheduleId, now, currentUserId);
             assignedToSchedule.add(candidate);
         }
-        // Chỉ thí sinh vừa được xếp vào ca mới được gán đề; bỏ gán khỏi ca thì giữ nguyên đề đang có.
-        assessmentPaperAutoAssigner.assignPapersIfNeeded(assessment, assignedToSchedule, now, currentUserId);
-        return AssessmentCandidateDtoMapper.toDtoList(assessmentCandidateRepository.saveAll(candidates));
+        return assignedToSchedule;
     }
 }

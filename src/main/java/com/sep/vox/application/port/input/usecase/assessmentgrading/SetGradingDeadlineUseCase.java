@@ -40,29 +40,8 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
             throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
         }
 
-        // Validate hết rồi mới ghi, và phân quyền một lần cho mỗi trường phân biệt —
-        // cùng khuôn với AssignGradingUseCase.
-        //
-        // Khoá theo THỨ TỰ ID đã sắp, không theo thứ tự client gửi lên: đây là khoá
-        // theo lô, nên hai admin gửi hai danh sách giao nhau theo thứ tự ngược nhau sẽ
-        // khoá chéo và deadlock. Sắp trước cho mọi transaction đi cùng một chiều.
-        // Thứ tự đầu vào không ảnh hưởng kết quả trả về nên sắp lại là vô hại.
-        List<UUID> lockOrderedIds = assignmentIds.stream().sorted().toList();
-        List<AssessmentGradingAccessService.GradingContext> contexts = new ArrayList<AssessmentGradingAccessService.GradingContext>();
-        for (UUID assignmentId : lockOrderedIds) {
-            AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.loadForUpdate(assignmentId);
-            if (context.assignment().isCompleted()) {
-                throw new IllegalArgumentException("Không thể đặt hạn cho phân công đã chốt.");
-            }
-            contexts.add(context);
-        }
-        contexts.stream()
-            .map(context -> context.schoolId())
-            .distinct()
-            .forEach(schoolId -> assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId));
-        // Bài trên lớp không có hạn chấm hành chính — nhà trường không đặt hạn hộ giáo viên.
-        assessmentGradingAccessService.rejectClassTestCoordination(
-            contexts.stream().map(context -> context.candidateResult().getId()).toList());
+        List<AssessmentGradingAccessService.GradingContext> contexts = loadLockedContexts(assignmentIds);
+        authorizeContexts(contexts, currentUserId);
 
         List<AssessmentGradingAssignment> updated = contexts.stream()
             .map(context -> {
@@ -75,5 +54,37 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         return assessmentGradingAssignmentRepository.saveAll(updated).stream()
             .map(assignment -> assignment.getId())
             .toList();
+    }
+
+    /**
+     * Validates everything before writing -- the same mold as AssignGradingUseCase.
+     *
+     * <p>Locks in the order of the SORTED ids, not the order the client sent: this is a batch lock, so two
+     * admins sending two overlapping lists in opposite orders would lock crosswise and deadlock. Sorting first
+     * makes every transaction go in the same direction. The input order does not affect the returned
+     * result, so re-sorting is harmless.
+     */
+    private List<AssessmentGradingAccessService.GradingContext> loadLockedContexts(List<UUID> assignmentIds) {
+        List<UUID> lockOrderedIds = assignmentIds.stream().sorted().toList();
+        List<AssessmentGradingAccessService.GradingContext> contexts = new ArrayList<AssessmentGradingAccessService.GradingContext>();
+        for (UUID assignmentId : lockOrderedIds) {
+            AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.loadForUpdate(assignmentId);
+            if (context.assignment().isCompleted()) {
+                throw new IllegalArgumentException("Không thể đặt hạn cho phân công đã chốt.");
+            }
+            contexts.add(context);
+        }
+        return contexts;
+    }
+
+    /** Authorization runs once per distinct school -- the same mold as AssignGradingUseCase. */
+    private void authorizeContexts(List<AssessmentGradingAccessService.GradingContext> contexts, UUID currentUserId) {
+        contexts.stream()
+            .map(context -> context.schoolId())
+            .distinct()
+            .forEach(schoolId -> assessmentGradingAccessService.authorizeSchoolAdmin(schoolId, currentUserId));
+        // A class test has no administrative grading deadline -- the school does not set a deadline on behalf of the teacher.
+        assessmentGradingAccessService.rejectClassTestCoordination(
+            contexts.stream().map(context -> context.candidateResult().getId()).toList());
     }
 }

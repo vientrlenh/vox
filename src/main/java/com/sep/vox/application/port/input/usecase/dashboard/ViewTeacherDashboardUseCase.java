@@ -149,22 +149,31 @@ public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashbo
         Map<UUID, String> classNameById = resolveClassNames(classIdByAssessmentId.values());
 
         return classTests.stream()
-            .map(assessment -> {
-                List<AssessmentCandidate> assessmentCandidates = candidatesByAssessmentId.getOrDefault(assessment.getId(), List.of());
-                List<BigDecimal> scores = officialScoresOf(assessmentCandidates, attemptsByCandidateId);
-                UUID classId = classIdByAssessmentId.get(assessment.getId());
-                String className = classId == null ? UNKNOWN_CLASS_NAME : classNameById.getOrDefault(classId, UNKNOWN_CLASS_NAME);
-                return new SchoolClassScoreStatsResponse(
-                    assessment.getName(),
-                    className,
-                    scores.isEmpty() ? null : average(scores),
-                    scores.isEmpty() ? null : scores.stream().max(Comparator.naturalOrder()).orElseThrow(),
-                    scores.isEmpty() ? null : scores.stream().min(Comparator.naturalOrder()).orElseThrow(),
-                    scores.size(),
-                    assessmentCandidates.size()
-                );
-            })
+            .map(assessment -> toClassScoreStats(
+                assessment,
+                candidatesByAssessmentId.getOrDefault(assessment.getId(), List.of()),
+                attemptsByCandidateId,
+                classNameOf(classIdByAssessmentId.get(assessment.getId()), classNameById)))
             .toList();
+    }
+
+    private String classNameOf(UUID classId, Map<UUID, String> classNameById) {
+        return classId == null ? UNKNOWN_CLASS_NAME : classNameById.getOrDefault(classId, UNKNOWN_CLASS_NAME);
+    }
+
+    private SchoolClassScoreStatsResponse toClassScoreStats(Assessment assessment,
+            List<AssessmentCandidate> assessmentCandidates,
+            Map<UUID, AssessmentCandidateAttempts> attemptsByCandidateId, String className) {
+        List<BigDecimal> scores = officialScoresOf(assessmentCandidates, attemptsByCandidateId);
+        return new SchoolClassScoreStatsResponse(
+            assessment.getName(),
+            className,
+            scores.isEmpty() ? null : average(scores),
+            scores.isEmpty() ? null : scores.stream().max(Comparator.naturalOrder()).orElseThrow(),
+            scores.isEmpty() ? null : scores.stream().min(Comparator.naturalOrder()).orElseThrow(),
+            scores.size(),
+            assessmentCandidates.size()
+        );
     }
 
     private Map<UUID, UUID> resolveActiveClassIdByStudent(List<AssessmentCandidate> candidates) {

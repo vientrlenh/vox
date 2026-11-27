@@ -67,61 +67,13 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
             command.assignmentId(), GradingOutcome.REGRADED, null);
         AssessmentGradingAccessService.GradingContext context = prepared.context();
 
-        // Nộp là chốt COMPLETED, nên bắt buộc phủ đủ mọi phần — nộp thiếu rồi chốt
-        // sẽ khóa cứng phần chưa chấm (bài COMPLETED không gỡ được).
-        List<GradingItemScoreResolver.ResolvedItem> resolvedItems = gradingItemScoreResolver.resolve(context, command, true);
+        List<GradingItemScoreResolver.ResolvedItem> resolvedItems = resolveEveryPart(context, command);
         Instant now = Instant.now();
+        clearSuspicionFlag(context.session());
+        supersedePreviousEvaluations(resolvedItems);
+        saveHumanEvaluations(resolvedItems, prepared.currentUserId(), now);
 
-        // Gỡ cờ nghi vấn: giáo viên đã xem và kết luận không vi phạm.
-        AssessmentSession session = context.session();
-        if (session.isFlagged()) {
-            session.setFlagged(false);
-            assessmentSessionRepository.save(session);
-        }
-
-        // Bản AI và mọi bản chấm cũ của các phần được chấm đều lùi về SUPERSEDED,
-        // để mỗi phần chỉ còn đúng một bản FINALIZED là nguồn điểm. Calculator dựa
-        // vào việc bản cũ bị flip trạng thái, KHÔNG ưu tiên HUMAN theo engineType.
-        List<UUID> responseIds = resolvedItems.stream()
-            .map(item -> item.responseId()).toList();
-        for (AssessmentItemEvaluation evaluation : assessmentItemEvaluationRepository.findByResponseIdIn(responseIds)) {
-            if (evaluation.getStatus() != AssessmentItemEvaluationStatus.SUPERSEDED) {
-                evaluation.setStatus(AssessmentItemEvaluationStatus.SUPERSEDED);
-                assessmentItemEvaluationRepository.save(evaluation);
-            }
-        }
-
-        List<AssessmentItemCriterionScore> criterionScores = new ArrayList<AssessmentItemCriterionScore>();
-        for (GradingItemScoreResolver.ResolvedItem item : resolvedItems) {
-            AssessmentItemEvaluation savedEvaluation = assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.humanGraded(
-                    item.responseId(),
-                    item.paperItemId(),
-                    HUMAN_GRADER,
-                    prepared.currentUserId(),
-                    item.itemScore(),
-                    item.feedbackSummary(),
-                    now));
-            item.criterionScores().forEach(score -> criterionScores.add(AssessmentItemCriterionScore.scoredWithoutBand(
-                    savedEvaluation.getId(),
-                    score.rubricCriterionId(),
-                    score.score(),
-                    score.rationale())));
-        }
-        assessmentItemCriterionScoreRepository.saveAll(criterionScores);
-
-        // Một lần gọi là đủ: calculator quét toàn bộ item nên thấy hết bản mới.
-        // Trạng thái truyền tường minh — xem javadoc lớp.
-        AssessmentCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(
-            prepared.roundType(), GradingOutcome.REGRADED);
-        AssessmentCandidateResult recalculated = upsertAssessmentCandidateResultUseCase.execute(
-            context.candidateResult().getSessionId(),
-            targetStatus == null ? context.candidateResult().getStatus() : targetStatus);
-
-        // KHÔNG còn phát HumanGradingSubmittedEvent để suy nhãn điểm yếu từ feedbackSummary
-        // giáo viên. Cả người nghe (GradingDiagnosticsInferenceJob) lẫn đích đến
-        // (weakness_observation) đã bị gỡ; giữ lại thì mỗi lần giáo viên nộp điểm vẫn phải
-        // dựng danh sách item và gọi một lượt LLM cho một cái hộp không đáy.
-
+        AssessmentCandidateResult recalculated = recalculateResult(prepared);
         gradingActionSupport.finish(prepared, recalculated);
 
         return new GradingActionResponse(
@@ -132,6 +84,77 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
             recalculated.getTotalScore(),
             null
         );
+    }
+
+    /**
+     * Submitting finalizes as COMPLETED, so every part must be covered -- submitting partially and then
+     * finalizing would lock hard the ungraded part (a COMPLETED attempt cannot be undone).
+     */
+    private List<GradingItemScoreResolver.ResolvedItem> resolveEveryPart(
+            AssessmentGradingAccessService.GradingContext context, SubmitGradingCommand command) {
+        return gradingItemScoreResolver.resolve(context, command, true);
+    }
+
+    /** Clears the suspicion flag: the teacher has looked at it and concluded there is no violation. */
+    private void clearSuspicionFlag(AssessmentSession session) {
+        if (session.isFlagged()) {
+            session.setFlagged(false);
+            assessmentSessionRepository.save(session);
+        }
+    }
+
+    /**
+     * The AI version and every older grading of the graded parts all move back to SUPERSEDED, so each part
+     * has exactly one FINALIZED version as its score source. The calculator relies on old versions having
+     * flipped status; it does NOT prefer HUMAN by engineType.
+     */
+    private void supersedePreviousEvaluations(List<GradingItemScoreResolver.ResolvedItem> resolvedItems) {
+        List<UUID> responseIds = resolvedItems.stream()
+            .map(item -> item.responseId()).toList();
+        for (AssessmentItemEvaluation evaluation : assessmentItemEvaluationRepository.findByResponseIdIn(responseIds)) {
+            if (evaluation.getStatus() != AssessmentItemEvaluationStatus.SUPERSEDED) {
+                evaluation.setStatus(AssessmentItemEvaluationStatus.SUPERSEDED);
+                assessmentItemEvaluationRepository.save(evaluation);
+            }
+        }
+    }
+
+    private void saveHumanEvaluations(
+            List<GradingItemScoreResolver.ResolvedItem> resolvedItems, UUID currentUserId, Instant now) {
+        List<AssessmentItemCriterionScore> criterionScores = new ArrayList<AssessmentItemCriterionScore>();
+        for (GradingItemScoreResolver.ResolvedItem item : resolvedItems) {
+            AssessmentItemEvaluation savedEvaluation = assessmentItemEvaluationRepository.save(AssessmentItemEvaluation.humanGraded(
+                    item.responseId(),
+                    item.paperItemId(),
+                    HUMAN_GRADER,
+                    currentUserId,
+                    item.itemScore(),
+                    item.feedbackSummary(),
+                    now));
+            item.criterionScores().forEach(score -> criterionScores.add(AssessmentItemCriterionScore.scoredWithoutBand(
+                    savedEvaluation.getId(),
+                    score.rubricCriterionId(),
+                    score.score(),
+                    score.rationale())));
+        }
+        assessmentItemCriterionScoreRepository.saveAll(criterionScores);
+    }
+
+    /**
+     * One call is enough: the calculator scans every item so it sees all the new versions. The status is
+     * passed explicitly -- see the class javadoc.
+     *
+     * <p>It NO LONGER publishes HumanGradingSubmittedEvent to infer weakness labels from the teacher's
+     * feedbackSummary. Both the listener (GradingDiagnosticsInferenceJob) and the destination
+     * (weakness_observation) have been removed; keeping it would still make every teacher submission build an
+     * item list and call an LLM for a bottomless box.
+     */
+    private AssessmentCandidateResult recalculateResult(GradingActionSupport.PreparedAction prepared) {
+        AssessmentCandidateResultStatus targetStatus = GradingRoundPolicy.resultStatusAfter(
+            prepared.roundType(), GradingOutcome.REGRADED);
+        return upsertAssessmentCandidateResultUseCase.execute(
+            prepared.context().candidateResult().getSessionId(),
+            targetStatus == null ? prepared.context().candidateResult().getStatus() : targetStatus);
     }
 
     /** Vòng nào cho phép chấm lại — dùng ở tài liệu và test, giữ cạnh luật cho dễ tra. */

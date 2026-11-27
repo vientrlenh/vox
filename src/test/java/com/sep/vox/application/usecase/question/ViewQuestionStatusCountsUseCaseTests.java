@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.port.input.query.question.ViewQuestionStatusCountsQuery;
+import com.sep.vox.application.port.input.service.QuestionStatusActorResolver;
 import com.sep.vox.application.port.input.usecase.question.ViewQuestionStatusCountsUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.QuestionStatusCountInfo;
@@ -44,7 +45,8 @@ class ViewQuestionStatusCountsUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         useCase = new ViewQuestionStatusCountsUseCase(
-            questionQueryRepository, userContextPort, schoolUserRepository, userRoleQueryRepository);
+            questionQueryRepository,
+            new QuestionStatusActorResolver(userContextPort, schoolUserRepository, userRoleQueryRepository));
 
         userId = UUID.randomUUID();
         schoolId = UUID.randomUUID();

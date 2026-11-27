@@ -45,37 +45,52 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
     @Override
     @Transactional
     public UUID execute(UpdateSystemRubricCriterionCommand command) {
-        // 1. Authenticate the account
+        requireActiveCurrentUser();
+
+        RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+        RubricVersion version = loadDraftVersionOfSystemRubric(criterion);
+
+        // The code must not change after creation, so it is never updated.
+        String safeName = (command.name() != null && !command.name().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
+        // A blank description keeps the stored one; an explicit null clears it.
+        boolean descriptionBlank = command.description() != null && command.description().isBlank();
+        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
+        String safeDesc = (command.description() != null && !descriptionBlank) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
+        requireValidWeightAndOrder(command);
+        requireValidScoresAndOrder(command, criterion, version, safeName);
+
+        // Validate the examples JSON (guarded by the RubricCriterionExamples value object) and rewrite it in
+        // the {"values": [...]} shape before saving to the database.
+        String examplesJsonToPersist = examplesNormalizer.normalize(command.examplesJson());
+        updateCriterionAtomically(command, safeName, safeDesc, descriptionProvided, examplesJsonToPersist);
+
+        return command.criterionId();
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
+    }
 
-        // 2. Load the Criterion
-        RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
-
-        // 3. Load the Version and check it is DRAFT
+    private RubricVersion loadDraftVersionOfSystemRubric(RubricCriterion criterion) {
         RubricVersion version = rubricVersionRepository.findById(criterion.getRubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa tiêu chí này."));
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ có thể sửa tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
         }
 
-        // 4. Load the original Rubric and check the SYSTEM permission
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Tiêu chí này thuộc về Trường học.");
         }
+        return version;
+    }
 
-        // 5. Normalize & validate the logic (the code must not change after creation and always stays as it is)
-        String safeName = (command.name() != null && !command.name().isBlank()) ? StringNormalization.trimAndCollapseSpaces(command.name()) : null;
-        // A blank description keeps the stored one; an explicit null clears it.
-        boolean descriptionBlank = command.description() != null && command.description().isBlank();
-        boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
-        String safeDesc = (command.description() != null && !descriptionBlank) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
-
+    private void requireValidWeightAndOrder(UpdateSystemRubricCriterionCommand command) {
         // Guard added 2026-08-14: see the reason in CreateSchoolRubricCriterionUseCase -- the REST path and the
         // file-import path read "20%" in two ways that differ by a factor of 100.
         if (command.weight() != null
@@ -88,7 +103,10 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         if (command.order() != null && command.order() <= 0) {
             throw new IllegalArgumentException("Thứ tự (order) phải lớn hơn 0.");
         }
+    }
 
+    private void requireValidScoresAndOrder(UpdateSystemRubricCriterionCommand command, RubricCriterion criterion,
+                                            RubricVersion version, String safeName) {
         BigDecimal finalMinScore = command.minScore() != null ? command.minScore() : criterion.getMinScore();
         BigDecimal finalMaxScore = command.maxScore() != null ? command.maxScore() : criterion.getMaxScore();
 
@@ -96,12 +114,10 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
             throw new IllegalArgumentException("Điểm tối thiểu (minScore) không được lớn hơn điểm tối đa (maxScore).");
         }
 
-        // Validate that it lies within the total score scale of the RubricVersion
         String nameForError = safeName != null ? safeName : criterion.getName();
         ScoreRangeValidator.assertWithinScale(version.getScoringScaleMin(), version.getScoringScaleMax(),
                 finalMinScore, finalMaxScore, nameForError);
 
-        // Validate that the order does not clash with another sibling in the same version
         if (command.order() != null) {
             Set<Integer> siblingOrders = rubricCriterionRepository.findByRubricVersionId(criterion.getRubricVersionId())
                     .stream()
@@ -110,12 +126,10 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
                     .collect(Collectors.toCollection(HashSet::new));
             RubricOrderValidator.assertNoDuplicateOrder(siblingOrders, command.order(), nameForError);
         }
+    }
 
-        // =========================================================
-        // Validate the examples JSON (guarded by the RubricCriterionExamples value object) and rewrite it in the {"values": [...]} shape before saving to the DB
-        String examplesJsonToPersist = examplesNormalizer.normalize(command.examplesJson());
-
-        // 6. Fire the atomic SQL update
+    private void updateCriterionAtomically(UpdateSystemRubricCriterionCommand command, String safeName, String safeDesc,
+                                           boolean descriptionProvided, String examplesJsonToPersist) {
         try {
             rubricCriterionRepository.updateCriterionAtomic(
                     command.criterionId(),
@@ -134,7 +148,5 @@ public class UpdateSystemRubricCriterionUseCase implements IUseCase<UpdateSystem
         } catch (DataConflictException e) {
             throw new IllegalArgumentException("Không thể cập nhật Tiêu chí do dữ liệu bị trùng hoặc không hợp lệ.");
         }
-
-        return command.criterionId();
     }
 }

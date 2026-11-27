@@ -30,31 +30,10 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
     @Override
     @Transactional
     public UUID execute(UpdateSystemRubricCommand command) {
-        // 1. Authenticate the System Admin account
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+        requireActiveCurrentUser();
+        loadSystemOwnedRubric(command.rubricId());
 
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
-        }
-
-        // 2. Load the original Rubric (to check that it exists and the permission)
-        Rubric rubric = rubricRepository.findById(command.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
-
-        // 3. Security checkpoint
-        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
-        }
-
-        String finalName = null;
-        if (command.name() != null) {
-            finalName = StringNormalization.trimAndCollapseSpaces(command.name());
-            if (finalName.isBlank()) {
-                throw new IllegalArgumentException("Tên Rubric không hợp lệ hoặc bị để trống.");
-            }
-        }
+        String finalName = normalizeNameWhenProvided(command.name());
 
         // A blank description means keep the stored one (the SQL leaves it untouched); an explicit null clears it.
         // Same rule as UpdateSystemRubricCriterionUseCase/UpdateSystemRubricResultBandUseCase.
@@ -64,7 +43,7 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
                 ? StringNormalization.trimAndCollapseSpaces(command.description())
                 : null;
 
-        // 5. ATOMIC UPDATE WITH PLAIN SQL (using COALESCE)
+        // Atomic update with plain SQL (using COALESCE).
         rubricRepository.updateRubricAtomic(
                 command.rubricId(),
                 finalName,
@@ -72,7 +51,36 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
                 descriptionProvided
         );
 
-        // 6. Return the UUID
         return command.rubricId();
+    }
+
+    private String normalizeNameWhenProvided(String name) {
+        if (name == null) {
+            return null;
+        }
+        String finalName = StringNormalization.trimAndCollapseSpaces(name);
+        if (finalName.isBlank()) {
+            throw new IllegalArgumentException("Tên Rubric không hợp lệ hoặc bị để trống.");
+        }
+        return finalName;
+    }
+
+    private void requireActiveCurrentUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản bị khóa.");
+        }
+    }
+
+    private void loadSystemOwnedRubric(UUID rubricId) {
+        Rubric rubric = rubricRepository.findById(rubricId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
+
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
+        }
     }
 }

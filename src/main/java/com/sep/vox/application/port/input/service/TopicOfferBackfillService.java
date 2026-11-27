@@ -87,57 +87,68 @@ public class TopicOfferBackfillService {
         practiceGenerationExecutorPort.runAsync(() -> backfill(studentId));
     }
 
+    /**
+     * Each run gets its OWN token: releasing the lock must prove ownership, otherwise a run that
+     * overran its deadline could delete the lock of the next run by mistake.
+     *
+     * <p>If some pod (including this one) is already running, this run is skipped, exactly as in the old version.
+     *
+     * <p>The error is swallowed on purpose: this is background work that enriches the bank. If it fails the topic
+     * selection screen still shows what it has, and the next open will try again.
+     */
     private void backfill(UUID studentId) {
         if (studentId == null) {
             return;
         }
-        // If the interest quiz has not been submitted, generate NOTHING -- this is the other half of the gate placed in
-        // ViewPracticeTopicOffersUseCase, and it is the MORE IMPORTANT half.
-        //
-        // Blocking only on the use case side is not enough: it returns an empty list, and an empty list makes
-        // GraphQLPracticePlanningController see `offers.size() < 3` and call straight into here. The result is
-        // even worse than before -- the offer batch is blocked but the pool still gets filled.
-        //
-        // The generation run at that point sends an EMPTY `interestScores` to the LLM (see
-        // TopicSuggestionService.synchronousOffers), so the topics that come back are generic and
-        // tied to nobody. But practice_topics is a pool SHARED by the whole system and those rows stay
-        // there permanently: one login by an account that has not done the quiz is enough to shape
-        // the pool for every student afterwards.
-        //
-        // The call path from PracticeSessionClosedHandler in theory always has a quiz already (a session
-        // must be practised to the end before reaching it), so for it this condition is harmless.
         if (!hasCompletedInterestQuiz(studentId)) {
             log.debug("Bỏ lượt bổ sung chủ đề: học sinh {} chưa nộp quiz sở thích.", studentId);
             return;
         }
         String key = IN_FLIGHT_KEY_PREFIX + studentId;
-        // Token riêng cho mỗi lượt: nhả khoá phải chứng minh được mình là chủ, không thì một lượt
-        // chạy quá hạn có thể xoá nhầm khoá của lượt sau.
         String token = UUID.randomUUID().toString();
         if (!token.equals(cacheManagerPort.saveIfAbsentAndGet(key, token, IN_FLIGHT_TTL))) {
-            // Pod nào đó (kể cả chính pod này) đang chạy rồi -- bỏ lượt, đúng như bản cũ.
             return;
         }
         try {
-            // Đếm TRƯỚC mỗi lượt chứ không cache: kho là của chung, nhiều học sinh cùng đẩy nó
-            // lên, nên một giá trị đọc lúc khởi động sẽ sai ngay sau vài phiên.
-            long pool = practiceTopicRepository.countOfferablePool();
-            int requested = pool < POOL_TARGET ? BACKFILL_COUNT_BUILDING : BACKFILL_COUNT_STEADY;
-            List<PracticePlanningResponses.PracticeTopicOffer> created = topicSuggestionService.synchronousOffers(studentId, requested);
-            log.info(
-                "Đã bổ sung {}/{} chủ đề cho học sinh {} (kho hiện có {}).",
-                created.size(), requested, studentId, pool
-            );
+            backfillOffers(studentId);
         } catch (RuntimeException exception) {
-            // Nuốt lỗi có chủ đích: đây là việc nền làm giàu kho. Hỏng thì màn chọn chủ đề vẫn
-            // hiện được những gì đang có, và lần mở sau sẽ thử lại.
             log.warn("Bổ sung chủ đề thất bại cho học sinh {}", studentId, exception);
         } finally {
             cacheManagerPort.deleteIfValueMatches(key, token);
         }
     }
 
-    /** See the comment at the call site in {@link #backfill(UUID)}. */
+    /**
+     * The pool is counted BEFORE every run, not cached: the bank is shared and many students push it
+     * up, so a value read at startup would be wrong after a few sessions.
+     */
+    private void backfillOffers(UUID studentId) {
+        long pool = practiceTopicRepository.countOfferablePool();
+        int requested = pool < POOL_TARGET ? BACKFILL_COUNT_BUILDING : BACKFILL_COUNT_STEADY;
+        List<PracticePlanningResponses.PracticeTopicOffer> created = topicSuggestionService.synchronousOffers(studentId, requested);
+        log.info(
+            "Đã bổ sung {}/{} chủ đề cho học sinh {} (kho hiện có {}).",
+            created.size(), requested, studentId, pool
+        );
+    }
+
+    /**
+     * If the interest quiz has not been submitted, generate NOTHING -- this is the other half of the gate placed in
+     * ViewPracticeTopicOffersUseCase, and it is the MORE IMPORTANT half.
+     *
+     * <p>Blocking only on the use case side is not enough: it returns an empty list, and an empty list makes
+     * GraphQLPracticePlanningController see `offers.size() < 3` and call straight into {@link #backfill(UUID)}. The
+     * result is even worse than before -- the offer batch is blocked but the pool still gets filled.
+     *
+     * <p>The generation run at that point sends an EMPTY `interestScores` to the LLM (see
+     * TopicSuggestionService.synchronousOffers), so the topics that come back are generic and
+     * tied to nobody. But practice_topics is a pool SHARED by the whole system and those rows stay
+     * there permanently: one login by an account that has not done the quiz is enough to shape
+     * the pool for every student afterwards.
+     *
+     * <p>The call path from PracticeSessionClosedHandler in theory always has a quiz already (a session
+     * must be practised to the end before reaching it), so for it this condition is harmless.
+     */
     private boolean hasCompletedInterestQuiz(UUID studentId) {
         return learnerProfileRepository.findCurrent(studentId)
             .map(profile -> profile.getQuizCompletedAt() != null)

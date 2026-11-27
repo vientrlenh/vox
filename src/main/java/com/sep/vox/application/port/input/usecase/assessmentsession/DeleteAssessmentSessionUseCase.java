@@ -83,34 +83,47 @@ public class DeleteAssessmentSessionUseCase implements IUseCase<DeleteAssessment
         if (assessment.isResultsFinalized()) {
             throw new IllegalArgumentException("Không thể xóa bài thi khi kỳ thi đã đóng hoặc đã công bố kết quả");
         }
-        // Đơn phúc khảo đang mở là tranh chấp điểm mà học sinh đã chính thức nêu: xoá mềm kết quả
-        // sẽ rút mất chính bài đang bị khiếu nại và để đơn treo trỏ vào một dòng đã ẩn.
-        //
-        // Chốt kỳ thi ở trên hiện đã chặn gần hết đường tới đây (đơn chỉ sinh ra sau khi điểm được
-        // trả), nhưng nó canh vòng đời của KỲ THI còn đơn thì bám vào TỪNG bài — hai vòng đời khác
-        // nhau, đừng để cái này ngầm suy ra cái kia. Nhánh chủ tịch vừa mở rộng làm số người bấm
-        // được nút này đông hơn, nên chốt tường minh rẻ hơn là đi chứng minh nó bất khả thi.
+        requireNoOpenAppeal(sessionId);
+
+        softDeleteSessionAndResult(sessionId, requireReason(input.reason()));
+        return null;
+    }
+
+    private String requireReason(String rawReason) {
+        String reason = rawReason == null ? "" : rawReason.strip();
+        if (reason.isEmpty()) {
+            throw new IllegalArgumentException("Phải nhập lý do xóa bài thi");
+        }
+        return reason;
+    }
+
+    private void softDeleteSessionAndResult(UUID sessionId, String reason) {
+        Instant now = Instant.now();
+        // Idempotent: when two people press delete together, the later one gets 0 rows, and the reason and timestamp
+        // of the first call -- which must be kept intact for accountability -- are not overwritten.
+        if (assessmentSessionRepository.softDelete(sessionId, now, reason) == 0) {
+            return;
+        }
+        // The score must disappear from the results table, the grading queue and the appeals AT THE SAME TIME as the session.
+        assessmentCandidateResultRepository.softDeleteBySessionId(sessionId, now, reason);
+    }
+
+    /**
+     * An open appeal is a score dispute the student has formally raised: soft-deleting the result would withdraw the
+     * very attempt under complaint and leave the appeal hanging on a hidden row.
+     *
+     * <p>The assessment-closed check in execute now blocks almost every path here (an appeal only exists after the
+     * score is returned), but it guards the lifecycle of the ASSESSMENT while the appeal attaches to each INDIVIDUAL
+     * attempt -- two different lifecycles, so do not let one silently imply the other. The chair branch just made
+     * more people able to press this button, so an explicit guard is cheaper than proving it impossible.
+     */
+    private void requireNoOpenAppeal(UUID sessionId) {
         AssessmentCandidateResult candidateResult = assessmentCandidateResultRepository.findBySessionId(sessionId).orElse(null);
         if (candidateResult != null
                 && assessmentResultAppealRepository.existsOpenByCandidateResultId(candidateResult.getId())) {
             throw new IllegalArgumentException(
                 "Bài thi này đang có đơn phúc khảo chưa xử lý xong. Hãy xử lý hoặc từ chối đơn trước khi xoá.");
         }
-
-        String reason = input.reason() == null ? "" : input.reason().strip();
-        if (reason.isEmpty()) {
-            throw new IllegalArgumentException("Phải nhập lý do xóa bài thi");
-        }
-
-        Instant now = Instant.now();
-        // Idempotent: hai người cùng bấm xoá thì lần sau nhận 0 dòng, và lý do/mốc thời gian của lần
-        // đầu — thứ phải giữ nguyên để giải trình — không bị ghi đè.
-        if (assessmentSessionRepository.softDelete(sessionId, now, reason) == 0) {
-            return null;
-        }
-        // Điểm phải biến mất khỏi bảng kết quả, hàng đợi chấm và phúc khảo CÙNG LÚC với phiên thi.
-        assessmentCandidateResultRepository.softDeleteBySessionId(sessionId, now, reason);
-        return null;
     }
 
     private void authorizeDelete(UUID assessmentId, UUID assessmentSchoolId) {

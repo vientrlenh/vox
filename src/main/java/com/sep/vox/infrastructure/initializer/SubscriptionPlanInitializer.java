@@ -3,6 +3,7 @@ package com.sep.vox.infrastructure.initializer;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -159,7 +160,21 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     private void createPlan(PlanSeed seed) {
         BigDecimal includedAmountVnd = seed.includedAmountVnd();
 
-        SubscriptionPlan plan = subscriptionPlanRepository.save(SubscriptionPlan.builder()
+        SubscriptionPlan plan = saveActivePlan(seed);
+        saveEqualQuotas(plan.getId(), includedAmountVnd);
+
+        log.info(
+            "Subscription plan created: {} ({} {}, gia {}d, han muc {}d moi loai)",
+            seed.name(),
+            seed.periodCount(),
+            seed.periodType(),
+            seed.priceVnd().toPlainString(),
+            includedAmountVnd.toPlainString()
+        );
+    }
+
+    private SubscriptionPlan saveActivePlan(PlanSeed seed) {
+        return subscriptionPlanRepository.save(SubscriptionPlan.builder()
             .name(seed.name())
             .tagline(seed.tagline())
             .priceVnd(seed.priceVnd())
@@ -172,26 +187,19 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
             .status(SubscriptionPlanStatus.ACTIVE)
             .version(1L)
             .build());
+    }
 
-        // Grant EQUAL amounts to both types: no real data says which way the school's spending leans, and
-        // guessing the ratio wrong would drain one wallet early while the other stays untouched -- and the two wallets cannot
-        // be spent across each other.
+    // Grant EQUAL amounts to both types: no real data says which way the school's spending leans, and
+    // guessing the ratio wrong would drain one wallet early while the other stays untouched -- and the two wallets cannot
+    // be spent across each other.
+    private void saveEqualQuotas(UUID planId, BigDecimal includedAmountVnd) {
         for (QuotaType quotaType : QUOTA_TYPES) {
             subscriptionPlanQuotaRepository.save(SubscriptionPlanQuota.builder()
-                .subscriptionPlanId(plan.getId())
+                .subscriptionPlanId(planId)
                 .quotaType(quotaType)
                 .includedAmountVnd(includedAmountVnd)
                 .build());
         }
-
-        log.info(
-            "Subscription plan created: {} ({} {}, gia {}d, han muc {}d moi loai)",
-            seed.name(),
-            seed.periodCount(),
-            seed.periodType(),
-            seed.priceVnd().toPlainString(),
-            includedAmountVnd.toPlainString()
-        );
     }
 
     /**

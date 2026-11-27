@@ -55,9 +55,9 @@ public class GradingAssignmentNotificationService {
     private final JsonSerializationPort jsonSerializationPort;
 
     /**
-     * {@code REQUIRED}: cả ba nơi gọi đều đã ở trong transaction của use case, nên outbox và
-     * dòng phân công cùng sống hoặc cùng chết -- giao việc xong mà mất thông báo thì giáo viên
-     * không biết mình có việc cho tới lần mở app kế tiếp.
+     * {@code REQUIRED}: all three callers are already inside the use case's transaction, so the outbox row and
+     * the assignment row live or die together -- if the assignment is made and the notification is lost, the teacher
+     * does not know they have work until the next time they open the app.
      */
     @Transactional
     public void publishAssigned(List<AssessmentGradingAssignment> assignments, Instant now) {
@@ -65,22 +65,8 @@ public class GradingAssignmentNotificationService {
             return;
         }
 
-        Map<UUID, AssessmentCandidateResult> resultsById = byId(
-            assessmentCandidateResultRepository.findByIdIn(assignments.stream()
-                .map(assignment -> assignment.getCandidateResultId())
-                .filter(id -> id != null)
-                .distinct()
-                .toList()),
-            result -> result.getId());
-
-        Map<UUID, Assessment> assessmentsById = byId(
-            assessmentRepository.findByIdIn(resultsById.values().stream()
-                .map(result -> result.getAssessmentId())
-                .filter(id -> id != null)
-                .distinct()
-                .toList()),
-            assessment -> assessment.getId());
-
+        Map<UUID, AssessmentCandidateResult> resultsById = loadResultsById(assignments);
+        Map<UUID, Assessment> assessmentsById = loadAssessmentsById(resultsById.values());
         Map<UUID, String> studentNamesByResultId = studentNames(resultsById.values(), assessmentsById);
 
         for (AssessmentGradingAssignment assignment : assignments) {
@@ -90,25 +76,50 @@ public class GradingAssignmentNotificationService {
                 log.warn("Bỏ qua thông báo giao chấm, thiếu dữ liệu: assignmentId={}", assignment.getId());
                 continue;
             }
-
-            String payload = jsonSerializationPort.toJson(new GradingAssignmentOpenedPayloadV1(
-                assignment.getId(),
-                assignment.getTeacherId(),
-                assessment.getId(),
-                assessment.getName(),
-                assessment.getKind(),
-                assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
-                candidateLabel(assessment, result, studentNamesByResultId),
-                assignment.getDeadlineAt()
-            ));
-
-            outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT, assignment.getId(),
-                EventTypeConstant.GRADING_ASSIGNMENT_OPENED, payload, now
-            ));
+            saveAssignmentOpenedEvent(
+                assignment, assessment, candidateLabel(assessment, result, studentNamesByResultId), now);
         }
 
         log.info("Đã báo giao chấm cho {} phân công", assignments.size());
+    }
+
+    private Map<UUID, AssessmentCandidateResult> loadResultsById(List<AssessmentGradingAssignment> assignments) {
+        return byId(
+            assessmentCandidateResultRepository.findByIdIn(assignments.stream()
+                .map(assignment -> assignment.getCandidateResultId())
+                .filter(id -> id != null)
+                .distinct()
+                .toList()),
+            result -> result.getId());
+    }
+
+    private Map<UUID, Assessment> loadAssessmentsById(Collection<AssessmentCandidateResult> results) {
+        return byId(
+            assessmentRepository.findByIdIn(results.stream()
+                .map(result -> result.getAssessmentId())
+                .filter(id -> id != null)
+                .distinct()
+                .toList()),
+            assessment -> assessment.getId());
+    }
+
+    private void saveAssignmentOpenedEvent(
+            AssessmentGradingAssignment assignment, Assessment assessment, String candidateLabel, Instant now) {
+        String payload = jsonSerializationPort.toJson(new GradingAssignmentOpenedPayloadV1(
+            assignment.getId(),
+            assignment.getTeacherId(),
+            assessment.getId(),
+            assessment.getName(),
+            assessment.getKind(),
+            assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
+            candidateLabel,
+            assignment.getDeadlineAt()
+        ));
+
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT, assignment.getId(),
+            EventTypeConstant.GRADING_ASSIGNMENT_OPENED, payload, now
+        ));
     }
 
     /**
@@ -128,9 +139,9 @@ public class GradingAssignmentNotificationService {
     }
 
     /**
-     * Chỉ tra tên cho bài kiểm tra trên lớp. Không phải để tiết kiệm truy vấn mà để KHÔNG bao
-     * giờ nạp tên của bài thi tập trung vào bộ nhớ ở luồng này -- thứ không được nạp thì không
-     * lọt vào payload được, dù ai đó sửa nhầm {@link #candidateLabel} về sau.
+     * Looks names up only for class tests. Not to save queries but to NEVER load the names of a centralized
+     * assessment into memory in this flow -- what is never loaded cannot leak into the payload, even if
+     * someone later edits {@link #candidateLabel} by mistake.
      */
     private Map<UUID, String> studentNames(
             Collection<AssessmentCandidateResult> results, Map<UUID, Assessment> assessmentsById) {
@@ -145,7 +156,10 @@ public class GradingAssignmentNotificationService {
         if (classTestResults.isEmpty()) {
             return Map.of();
         }
+        return studentNamesOfClassTestResults(classTestResults);
+    }
 
+    private Map<UUID, String> studentNamesOfClassTestResults(List<AssessmentCandidateResult> classTestResults) {
         Map<UUID, AssessmentCandidate> candidatesById = byId(
             assessmentCandidateRepository.findByIdIn(classTestResults.stream()
                 .map(result -> result.getCandidateId())
@@ -161,6 +175,13 @@ public class GradingAssignmentNotificationService {
                 .toList()),
             user -> user.getId());
 
+        return namesByResultId(classTestResults, candidatesById, usersById);
+    }
+
+    private Map<UUID, String> namesByResultId(
+            List<AssessmentCandidateResult> classTestResults,
+            Map<UUID, AssessmentCandidate> candidatesById,
+            Map<UUID, User> usersById) {
         Map<UUID, String> names = new java.util.HashMap<UUID, String>();
         for (AssessmentCandidateResult result : classTestResults) {
             AssessmentCandidate candidate = candidatesById.get(result.getCandidateId());

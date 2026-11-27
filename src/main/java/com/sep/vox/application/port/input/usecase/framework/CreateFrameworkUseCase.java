@@ -29,13 +29,8 @@ public class CreateFrameworkUseCase implements IUseCase<CreateFrameworkCommand, 
         String name = StringNormalization.trimAndCollapseSpaces(input.name());
         String description = StringNormalization.trimAndCollapseSpaces(input.description());
 
-        Framework framework = Framework.builder()
-            .code(new FrameworkCode(code))
-            .name(name)
-            .description(description)
-            .active(false)
-            .build();
-        
+        Framework framework = Framework.registered(new FrameworkCode(code), name, description);
+
         try {
             return frameworkRepository.save(framework).getId();
         } catch (DataConflictException e) {

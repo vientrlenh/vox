@@ -43,6 +43,14 @@ public class UserRole {
         this.createdAt = createdAt;
     }
 
+    public static UserRole assigned(UUID userId, UUID roleId, Instant createdAt) {
+        return builder()
+                .userId(userId)
+                .roleId(roleId)
+                .createdAt(createdAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -44,6 +44,10 @@ public final class RubricItemScoreFormula {
             return clampToScale(scaleMin == null ? BigDecimal.ZERO : scaleMin, scaleMin, scaleMax);
         }
 
+        return clampToScale(weightedOrPlainAverage(scored), scaleMin, scaleMax);
+    }
+
+    private static BigDecimal weightedOrPlainAverage(List<ScoredCriterion> scored) {
         BigDecimal plainSum = BigDecimal.ZERO;
         BigDecimal weightedSum = BigDecimal.ZERO;
         BigDecimal weightSum = BigDecimal.ZERO;
@@ -57,16 +61,12 @@ public final class RubricItemScoreFormula {
                 weightSum = weightSum.add(item.weight());
             }
         }
-
-        BigDecimal resolved;
         if (weightSum.compareTo(BigDecimal.ZERO) > 0) {
-            resolved = weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
-        } else {
-            // No criterion declares a weight -> plain average. Safety net for legacy data that
-            // predates the publish-time constraint; it still yields a score inside the scale.
-            resolved = plainSum.divide(BigDecimal.valueOf(scored.size()), 2, RoundingMode.HALF_UP);
+            return weightedSum.divide(weightSum, 2, RoundingMode.HALF_UP);
         }
-        return clampToScale(resolved, scaleMin, scaleMax);
+        // No criterion declares a weight -> plain average. Safety net for legacy data that
+        // predates the publish-time constraint; it still yields a score inside the scale.
+        return plainSum.divide(BigDecimal.valueOf(scored.size()), 2, RoundingMode.HALF_UP);
     }
 
     private static BigDecimal clampToScale(BigDecimal score, BigDecimal scaleMin, BigDecimal scaleMax) {

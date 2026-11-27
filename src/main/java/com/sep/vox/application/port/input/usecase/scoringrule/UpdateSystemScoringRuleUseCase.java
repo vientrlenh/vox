@@ -48,62 +48,21 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
     @Override
     @Transactional
     public UUID execute(UpdateScoringRuleCommand command) {
-        // 1. Check the System Admin account
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
-        }
+        requireActiveAccount();
+        ScoringRule rule = requireRuleOfPolicy(command.ruleId(), command.policyId());
+        AssessmentPolicy policy = requireSystemPolicy(rule.getPolicyId());
+        requireDraftPolicy(policy);
+        requirePositivePriority(command.priority());
 
-        // 2. Check that the Scoring Rule exists
-        ScoringRule rule = scoringRuleRepository.findById(command.ruleId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
-
-        // 3. SECURITY: the policyId on the path must match the rule's real policyId
-        // (prevents a Client from sending the wrong or a forged policyId in the URL in order to edit a rule of another Policy)
-        if (!rule.getPolicyId().equals(command.policyId())) {
-            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
-        }
-
-        // 4. Check that the Assessment Policy exists and is in the system-wide scope
-        AssessmentPolicy policy = assessmentPolicyRepository.findById(rule.getPolicyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
-        if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
-        }
-
-        // 5. A Scoring Rule can only be edited while its Policy is still DRAFT (exactly the same reason as when creating one:
-        // avoid silently changing the scoring rules under a PUBLISHED Policy that is grading real exams)
-        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được sửa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
-        }
-
-        // 6. Validate priority
-        if (command.priority() <= 0) {
-            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
-        }
-
-        // 7. Convert the raw JSON Map -> the concrete Value Object matching the NEW conditionType/actionType (the type may change)
+        // Convert the raw JSON Map -> the concrete Value Object matching the NEW conditionType/actionType (the type may change)
         ScoringRuleConditionParams conditionParams = scoringRuleParamsMapper.toConditionParams(command.conditionType(), command.conditionParams());
         ScoringRuleActionParams actionParams = scoringRuleParamsMapper.toActionParams(command.actionType(), command.actionParams());
 
-        // 7b. Check that criterionCode/bandCode (if present) really exist in the Rubric Version of the Policy
+        // Check that criterionCode/bandCode (if present) really exist in the Rubric Version of the Policy
         validateCriterionReferences(policy.getRubricVersionId(), policy.getFrameworkVersionId(), conditionParams, actionParams);
 
-        // 8. Update the fields that may be edited (code and policyId are immutable and are left alone)
-        rule.setName(command.name().strip());
-        if (command.descriptionProvided()) {
-            rule.setDescription(command.description());
-        }
-        rule.setConditionType(command.conditionType());
-        rule.setConditionParams(conditionParams);
-        rule.setActionType(command.actionType());
-        rule.setActionParams(actionParams);
-        rule.setPriority(command.priority());
-        rule.setSeverity(command.severity());
-        rule.setStopProcessing(command.stopProcessing());
-        rule.setActive(command.isActive());
+        // code and policyId are immutable and are left alone
+        applyEdits(rule, command, conditionParams, actionParams);
 
         return scoringRuleRepository.save(rule).getId();
     }
@@ -144,4 +103,64 @@ public class UpdateSystemScoringRuleUseCase implements IUseCase<UpdateScoringRul
                     "Framework Result Band '" + frameworkResultBandId + "' không thuộc Framework Version của Assessment Policy này.");
         }
     }
+
+    private void requireActiveAccount() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        }
+    }
+
+    private ScoringRule requireRuleOfPolicy(UUID ruleId, UUID policyId) {
+        ScoringRule rule = scoringRuleRepository.findById(ruleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Scoring Rule."));
+        // SECURITY: the policyId on the path must match the rule's real policyId (prevents a Client from
+        // sending the wrong or a forged policyId in the URL in order to edit a rule of another Policy)
+        if (!rule.getPolicyId().equals(policyId)) {
+            throw new ForbiddenException("BẢO MẬT: Scoring Rule này không thuộc Assessment Policy đã chỉ định.");
+        }
+        return rule;
+    }
+
+    private AssessmentPolicy requireSystemPolicy(UUID policyId) {
+        AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+        if (policy.getSchoolId() != null) {
+            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
+        }
+        return policy;
+    }
+
+    private void requireDraftPolicy(AssessmentPolicy policy) {
+        // A Scoring Rule can only be edited while its Policy is still DRAFT (exactly the same reason as when creating one:
+        // avoid silently changing the scoring rules under a PUBLISHED Policy that is grading real exams)
+        if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
+            throw new IllegalArgumentException("Chỉ được sửa Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+        }
+    }
+
+    private void requirePositivePriority(int priority) {
+        if (priority <= 0) {
+            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
+        }
+    }
+
+    private void applyEdits(ScoringRule rule, UpdateScoringRuleCommand command,
+            ScoringRuleConditionParams conditionParams, ScoringRuleActionParams actionParams) {
+        rule.setName(command.name().strip());
+        if (command.descriptionProvided()) {
+            rule.setDescription(command.description());
+        }
+        rule.setConditionType(command.conditionType());
+        rule.setConditionParams(conditionParams);
+        rule.setActionType(command.actionType());
+        rule.setActionParams(actionParams);
+        rule.setPriority(command.priority());
+        rule.setSeverity(command.severity());
+        rule.setStopProcessing(command.stopProcessing());
+        rule.setActive(command.isActive());
+    }
+
 }

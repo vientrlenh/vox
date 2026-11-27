@@ -52,6 +52,17 @@ public class FrameworkResultBand extends BaseModel {
         this.order = order;
     }
 
+    public static FrameworkResultBand forVersion(UUID frameworkVersionId, String code, String label,
+                                                 String description, int order) {
+        return builder()
+                .frameworkVersionId(frameworkVersionId)
+                .code(code)
+                .label(label)
+                .description(description)
+                .order(order)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

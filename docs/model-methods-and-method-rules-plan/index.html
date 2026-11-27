@@ -79,7 +79,7 @@
 <h1>Model methods, audit-stamp parameters and method rules plan</h1>
 <div class="meta">
   Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-24 &middot;
-  Plan status: <span class="status progress" id="plan-status" data-plan-status="in-progress">In progress</span>
+  Plan status: <span class="status progress" id="plan-status" data-plan-status="done">In progress</span>
 </div>
 
 <p>Three changes. <strong>(1)</strong> Application code stops calling <code>Model.builder()</code>: 162 calls on 59 models in 103 files become named factory and behaviour methods on the models. <strong>(2)</strong> 17 repository methods stop receiving <code>Instant</code>, <code>UUID</code> or <code>String</code> values whose only job is to write <code>updated_at</code> or <code>updated_by</code>. <strong>(3)</strong> Methods that break the coding rules are migrated: 586 methods are longer than 25 lines, 19 have vague names, and comments that only restate code are removed from every method the plan edits. Worth doing because the same builder blocks are copied across 17 import use cases, because AGENTS.md says use cases never pass a user id or <code>now</code> only to stamp a row while 15 repository methods still do, and because 270 use case <code>execute</code> methods alone are over 25 lines. Decisions D2 to D7 are answered (all as recommended); nothing in this plan changes a public contract or a database table.</p>
@@ -287,6 +287,12 @@
   <div class="answer"><strong>Answer (2026-11-24):</strong> A &ndash; Mechanical extraction; new tests only where a job changes behaviour-relevant code; untested files listed as a known gap.</div>
 </div>
 
+<div class="decision" id="a1" data-decision-state="answered" data-scope="plan" data-topic="long-explicit-constructor">
+  <h3>A1. How is an explicit constructor over 25 lines (only assigns fields, has a @Qualifier parameter) shortened? <span class="status answered">Answered</span></h3>
+  <p class="meta">Asked while implementing job 27.1 (GraphQLPracticePlanningController, 14 parameters, 30 lines). Scope: whole plan. Reused by: none yet.</p>
+  <div class="answer"><strong>Answer (2026-11-25):</strong> Several params per line &ndash; keep the constructor and its assignments verbatim, put 2 parameters on each signature line (formatting only).</div>
+</div>
+
 <h2 id="phases">3. Phases</h2>
 <p>Each phase is independently reviewable and leaves the build green. Phase 1 adds the guards, phase 2 removes stamp parameters, phases 3 to 12 add model methods and replace call sites, phases 13 to 28 split methods by feature area, phase 29 closes out. Every job also removes the imports, locals and private methods its change orphaned, and translates the Vietnamese comments in the lines it edits.</p>
 <p><strong>Procedure of a method-rule job (phases 13 to 28).</strong> Every method over 25 lines is split into private methods of at most 25 lines, named for what they do (D1, D7). A block that already exists in two or more methods is extracted once into a shared method in <code>application/port/input/service/</code> (the AGENTS.md "one place" rule) and named in the Implementation notes. Statements move verbatim: same order, same conditions. Comments that only restate the code are deleted; those that record a reason are kept and translated to English; the school-scope and role checks are never rewritten. The done condition is always the same: the job's entries leave <code>method-size-exemptions.txt</code> and <code>MethodSizeConventionTests</code> passes.</p>
@@ -488,540 +494,540 @@
   <ul class="status-log"><li>2026-11-24 &middot; Done &middot; Both jobs done and verify passes. Evidence: `./gradlew compileJava compileTestJava` clean; full `./gradlew test` BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-8" data-status="todo">
+<div class="phase" id="phase-8" data-status="done">
   <h3><span class="title">Phase 8 &ndash; Model methods: Questions, topics and suggestions</span>
     <span class="tag">medium · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (16 calls in 10 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-8-1" data-status="todo">
-      <span class="title">8.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-1" data-status="done">
+      <span class="title">8.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>Question</code> (3), <code>QuestionEvaluationGuide</code> (4), <code>QuestionAsset</code> (4), <code>QuestionTopic</code> (2), <code>QuestionBankGrade</code> (1), <code>TopicSuggestion</code> (2) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Added Question.draft/draftCopyWithCode, QuestionAsset.attachedTo/copyTo (shared by import, manual create, system create and clone), QuestionEvaluationGuide.forQuestion/emptyFor/copyTo, QuestionTopic.draft, QuestionBankGrade.attached, TopicSuggestion.keywordRequested (the 17 call sites are 17 not 16; same 10 files). Applies D4. Evidence: QuestionTests, QuestionAssetTests, QuestionEvaluationGuideTests, QuestionTopicTests, QuestionBankGradeTests, TopicSuggestionTests; LayeredArchitectureTests and MethodSizeConventionTests pass.</li></ul>
     </li>
-    <li class="job" id="job-8-2" data-status="todo">
-      <span class="title">8.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-8-2" data-status="done">
+      <span class="title">8.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 16 calls in these 10 files use the new methods; <code>grep -rnE '(Question|QuestionEvaluationGuide|QuestionAsset|QuestionTopic|QuestionBankGrade|TopicSuggestion)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>CreateQuestionAssetUseCase</code>, <code>CreateQuestionBankGradeUseCase</code>, <code>CreateQuestionTopicUseCase</code>, <code>CreateSystemQuestionBankQuestionUseCase</code>, <code>KeywordTopicPersistenceService</code>, <code>QuestionCloneService</code>, <code>QuestionImportCommitHandler</code>, <code>QuestionTopicImportCommitHandler</code>, <code>TopicSuggestionService</code>, <code>UpsertQuestionEvaluationGuideUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 17 builder calls in 10 files replaced (QuestionImportCommitHandler 3, CreateSystemQuestionBankQuestionUseCase 3, QuestionCloneService 3, others 1 each); orphaned imports removed; Vietnamese comments in edited methods translated (CreateQuestionAssetUseCase, QuestionImportCommitHandler). 8 files left model-creation-exemptions.txt; KeywordTopicPersistenceService and TopicSuggestionService stay because they still call PracticeTopic.builder() (phase 9). 4 methods that became 25 lines or fewer left method-size-exemptions.txt (KeywordTopicPersistenceService.createTopicAndRecordRequest, QuestionCloneService.cloneAsDraftWithDetails, CreateQuestionBankGradeUseCase.execute, CreateQuestionTopicUseCase.execute). Evidence: grep for builder() of the 6 models in application prints nothing; ./gradlew test BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Question*' --tests '*Topic*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Both jobs done and verify passes. Evidence: `./gradlew compileJava` clean; full `./gradlew test` BUILD SUCCESSFUL (includes ModelCreation, LayeredArchitecture, MethodSize, ModelAndEntity convention tests).</li></ul>
 </div>
 
-<div class="phase" id="phase-9" data-status="todo">
+<div class="phase" id="phase-9" data-status="done">
   <h3><span class="title">Phase 9 &ndash; Model methods: Practice and interest</span>
     <span class="tag">small · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 7 models (11 calls in 9 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-9-1" data-status="todo">
-      <span class="title">9.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-1" data-status="done">
+      <span class="title">9.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>PracticeTopic</code> (3), <code>PracticePaper</code> (1), <code>PracticePaperItem</code> (2), <code>PracticeQuestion</code> (1), <code>PracticeSession</code> (1), <code>TopicInterestScoreEntry</code> (1), <code>InterestDimension</code> (2) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 7 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Added PracticeTopic.generatedFromName/fromAssessmentQuestionTopic, PracticePaper.reserved, PracticePaperItem.forSlot (shared by 2 call sites), PracticeQuestion.generated, PracticeSession.started, TopicInterestScoreEntry.scored, InterestDimension.defined/withEditableFields. Applies D4. CHANGED: PracticeTopic 2 methods instead of 3 (the keyword and suggestion call sites have one shape). Evidence: PracticeTopicTests, PracticePaperTests, PracticePaperItemTests, PracticeQuestionTests, PracticeSessionTests, TopicInterestScoreEntryTests, InterestDimensionTests pass.</li></ul>
     </li>
-    <li class="job" id="job-9-2" data-status="todo">
-      <span class="title">9.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-9-2" data-status="done">
+      <span class="title">9.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 11 calls in these 9 files use the new methods; <code>grep -rnE '(PracticeTopic|PracticePaper|PracticePaperItem|PracticeQuestion|PracticeSession|TopicInterestScoreEntry|InterestDimension)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>InterestVectorService</code>, <code>KeywordTopicPersistenceService</code>, <code>ManageInterestDimensionUseCase</code>, <code>PracticePaperPersistenceService</code>, <code>PracticeQuestionGenerationService</code>, <code>ResolveNextPracticeQuestionPersistenceService</code>, <code>StartPracticeSessionPersistenceService</code>, <code>TopicSuggestionService</code>, <code>ViewPracticeTopicOffersUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 11 builder calls in 9 files replaced; orphaned TensePolicy imports removed; Vietnamese comment in ManageInterestDimensionUseCase.create translated. 9 files left model-creation-exemptions.txt; PracticePaperPersistenceService.createPaper left method-size-exemptions.txt. Evidence: grep for builder() of the 7 models in application prints nothing; ./gradlew test BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Practice*' --tests '*Interest*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Both jobs done and verify passes. Evidence: ./gradlew compileJava clean; full ./gradlew test BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-10" data-status="todo">
+<div class="phase" id="phase-10" data-status="done">
   <h3><span class="title">Phase 10 &ndash; Model methods: Frameworks and scoring rules</span>
     <span class="tag">small · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (8 calls in 8 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-10-1" data-status="todo">
-      <span class="title">10.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-1" data-status="done">
+      <span class="title">10.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>Framework</code> (1), <code>FrameworkVersion</code> (2), <code>FrameworkCriterion</code> (1), <code>FrameworkCriterionBand</code> (1), <code>FrameworkResultBand</code> (1), <code>ScoringRule</code> (2) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Added Framework.registered, FrameworkVersion.draft and withEditableFields, FrameworkCriterion.forVersion, FrameworkCriterionBand.forCriterion, FrameworkResultBand.forVersion, ScoringRule.forPolicy (one method per distinct call shape, names per D4 / applies D4). Evidence: 6 new *Tests in src/test/java/com/sep/vox/domain/model/{framework,scoringrule}; ./gradlew compileJava clean; LayeredArchitectureTests pass.</li></ul>
     </li>
-    <li class="job" id="job-10-2" data-status="todo">
-      <span class="title">10.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-10-2" data-status="done">
+      <span class="title">10.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 8 calls in these 8 files use the new methods; <code>grep -rnE '(Framework|FrameworkVersion|FrameworkCriterion|FrameworkCriterionBand|FrameworkResultBand|ScoringRule)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>CreateFrameworkCriteriaUseCase</code>, <code>CreateFrameworkCriterionBandsUseCase</code>, <code>CreateFrameworkResultBandsUseCase</code>, <code>CreateFrameworkUseCase</code>, <code>CreateFrameworkVersionUseCase</code>, <code>CreateSchoolScoringRuleUseCase</code>, <code>CreateSystemScoringRuleUseCase</code>, <code>UpdateFrameworkVersionUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 8 calls replaced; grep for the 6 builders in application prints nothing; 8 files removed from model-creation-exemptions.txt; CreateFrameworkVersionUseCase.execute fell to 25 lines or less, so its entry left method-size-exemptions.txt. Existing use case tests pass unchanged. Evidence: ./gradlew test --tests *Framework* *ScoringRule* *ModelCreationConventionTests *LayeredArchitectureTests *MethodSizeConventionTests BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Framework*' --tests '*ScoringRule*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Both jobs done and the verify command passes: compileJava clean, 144 tests green.</li></ul>
 </div>
 
-<div class="phase" id="phase-11" data-status="todo">
+<div class="phase" id="phase-11" data-status="done">
   <h3><span class="title">Phase 11 &ndash; Model methods: Schools, users and catalogs</span>
     <span class="tag">small · needs D4</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (12 calls in 12 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-11-1" data-status="todo">
-      <span class="title">11.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-1" data-status="done">
+      <span class="title">11.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>SchoolRoom</code> (2), <code>SchoolGrade</code> (2), <code>SchoolClassUser</code> (3), <code>UserRole</code> (3), <code>GradeLevel</code> (1), <code>SupportedLanguage</code> (1) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Added SchoolRoom.registered, SchoolGrade.opened, SchoolClassUser.joined, UserRole.assigned, GradeLevel.registered, SupportedLanguage.defined. CHANGED: one method per model, because every call site of a model has the same shape (the plan counted 2, 2, 3, 3 per model). Applies D4. Evidence: SchoolRoomTests, SchoolGradeTests, SchoolClassUserTests, UserRoleTests, GradeLevelTests, SupportedLanguageTests pass; compileJava clean.</li></ul>
     </li>
-    <li class="job" id="job-11-2" data-status="todo">
-      <span class="title">11.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-11-2" data-status="done">
+      <span class="title">11.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 12 calls in these 12 files use the new methods; <code>grep -rnE '(SchoolRoom|SchoolGrade|SchoolClassUser|UserRole|GradeLevel|SupportedLanguage)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>AddSchoolRoomUseCase</code>, <code>BulkCreateSchoolClassUsersUseCase</code>, <code>CreateGradeLevelUseCase</code>, <code>CreateSchoolClassUserUseCase</code>, <code>CreateSchoolGradeUseCase</code>, <code>CreateSchoolUserUseCase</code>, <code>CreateSupportedLanguageUseCase</code>, <code>ProvisionSchoolService</code>, <code>SchoolClassUserImportCommitHandler</code>, <code>SchoolGradeImportCommitHandler</code>, <code>SchoolRoomImportCommitHandler</code>, <code>SchoolUserImportCommitHandler</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 12 builder calls in 12 files replaced; orphaned SchoolGradeStatus and GradeLevelStatus imports removed; Vietnamese comments in edited code were already English. All 12 files left model-creation-exemptions.txt. Evidence: grep for the 6 builders in application prints nothing; ./gradlew test with *SchoolRoom* *SchoolGrade* *SchoolClassUser* *UserRole* *GradeLevel* *SupportedLanguage* *ModelCreationConventionTests *LayeredArchitectureTests *MethodSizeConventionTests BUILD SUCCESSFUL.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*SchoolRoom*' --tests '*SchoolGrade*' --tests '*SchoolClassUser*' --tests '*UserRole*' --tests '*GradeLevel*' --tests '*SupportedLanguage*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Both jobs done and verify passes. Evidence: ./gradlew compileJava compileTestJava clean; targeted tests BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-12" data-status="todo">
+<div class="phase" id="phase-12" data-status="done">
   <h3><span class="title">Phase 12 &ndash; Model methods: Money and quota (Ask first)</span>
     <span class="tag">small · needs D4, D6</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> Application code stops calling <code>builder()</code> for 6 models (7 calls in 7 files); the models gain the methods that build them. <strong>Depends on:</strong> Phase 1, D4, D6. Comments in the edited code follow the rule of D1.</p>
   <ul class="jobs">
-    <li class="job" id="job-12-1" data-status="todo">
-      <span class="title">12.1 Add the methods to the models (domain)</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-1" data-status="done">
+      <span class="title">12.1 Add the methods to the models (domain)</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Each of <code>OrderItem</code> (1), <code>SubscriptionPlanQuota</code> (2), <code>SchoolDebtEvent</code> (1), <code>SchoolSubscriptionQuotaUserAllocation</code> (1), <code>QuotaPricingCalibration</code> (1), <code>AiUsageRecord</code> (1) has the public static factories and instance methods its call sites need (names per D4): one method per distinct set of fields among the call sites, defaults (counters, initial status, nulls spelled out by callers) set inside the model, built through the model's own <code>builder()</code>; each method has a unit test in <code>src/test/java/com/sep/vox/domain/model/</code> that asserts the defaults and the arguments it sets; <code>LayeredArchitectureTests</code> still passes (<code>domain</code> stays plain Java).
          <strong>Files:</strong> <code>domain/model/...</code> for the 6 models above, one new <code>*Tests</code> per model in the mirrored test package</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Added OrderItem.forSubscriptionPlan, SubscriptionPlanQuota.forPlan, SchoolDebtEvent.recorded, SchoolSubscriptionQuotaUserAllocation.unallocated, QuotaPricingCalibration.computed, AiUsageRecord.recorded. CHANGED: one method per model, because every call site of a model has the same shape (the plan counted 2 for SubscriptionPlanQuota). Applies D4, D6. Evidence: 6 new *Tests in src/test/java/com/sep/vox/domain/model/{order,subscription,school,metering} pass; compileJava clean.</li></ul>
     </li>
-    <li class="job" id="job-12-2" data-status="todo">
-      <span class="title">12.2 Replace the call sites in application</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-12-2" data-status="done">
+      <span class="title">12.2 Replace the call sites in application</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 7 calls in these 7 files use the new methods; <code>grep -rnE '(OrderItem|SubscriptionPlanQuota|SchoolDebtEvent|SchoolSubscriptionQuotaUserAllocation|QuotaPricingCalibration|AiUsageRecord)\.builder\(\)' src/main/java/com/sep/vox/application</code> prints nothing; a file leaves the <code>ModelCreationConventionTests</code> exemptions when its last builder call is gone; unused imports and locals the change orphaned are removed; Vietnamese comments in the edited lines are in English; the use case tests of these classes are updated and pass.
          <strong>Files:</strong> <code>CreateSubscriptionOrderUseCase</code>, <code>CreateSubscriptionPlanUseCase</code>, <code>DistributeQuotaToUsersService</code>, <code>QuotaPricingCalibrationService</code>, <code>RecordAiUsageUseCase</code>, <code>SchoolDebtNotificationService</code>, <code>UpdateSubscriptionPlanUseCase</code>; their tests; <code>ModelCreationConventionTests</code> exemptions</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 7 builder calls in 7 files replaced; orphaned OrderItemType import removed; edited lines had no Vietnamese comments. All 7 files left model-creation-exemptions.txt. Evidence: grep for the 6 builders in application prints nothing; ModelCreationConventionTests, LayeredArchitectureTests, MethodSizeConventionTests pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*Order*' --tests '*Subscription*' --tests '*Quota*' --tests '*Debt*' --tests '*Metering*' --tests '*ModelCreationConventionTests' --tests '*LayeredArchitectureTests'</code>, and the money-test pass counts equal the counts recorded before the phase (D6)</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Both jobs done and verify passes. Money-test pass counts (D6): before 209 passed / 0 failed / 0 skipped (*Order* *Payment* *Subscription* *Quota* *SchoolBalance* *Debt* *Metering*); after the same filters plus the 6 new model tests and the 3 guard tests, 222 passed / 0 failed / 0 skipped. Diff is pure moves into model factories.</li></ul>
 </div>
 
-<div class="phase" id="phase-13" data-status="todo">
+<div class="phase" id="phase-13" data-status="done">
   <h3><span class="title">Phase 13 &ndash; Method rules: Application services: import commit and queue</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 27 methods in 14 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-13-1" data-status="todo">
-      <span class="title">13.1 Split and clean 14 long methods in 6 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-13-1" data-status="done">
+      <span class="title">13.1 Split and clean 14 long methods in 6 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 14 entries (application services: 14 methods in 6 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AssessmentPolicyImportCommitHandler</code>, <code>ImportCommitService</code>, <code>QuestionBankImportCommitHandler</code>, <code>QuestionImportCommitHandler</code>, <code>QuestionTopicImportCommitHandler</code>, <code>RubricCriterionImportCommitHandler</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; All 14 entries removed from method-size-exemptions.txt (applies D7: mechanical extraction). Evidence: ./gradlew test --tests '*MethodSizeConventionTests' '*Import*' passes; compileJava passes. Shared per-handler records (CommitRun/CommitScope) kept private in each handler.</li></ul>
     </li>
-    <li class="job" id="job-13-2" data-status="todo">
-      <span class="title">13.2 Split and clean 13 long methods in 8 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-13-2" data-status="done">
+      <span class="title">13.2 Split and clean 13 long methods in 8 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 13 entries (application services: 13 methods in 8 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>RubricResultBandImportCommitHandler</code>, <code>RubricVersionImportCommitHandler</code>, <code>SchoolClassImportCommitHandler</code>, <code>SchoolClassUserImportCommitHandler</code>, <code>SchoolDirectoryImportCommitHandler</code>, <code>SchoolGradeImportCommitHandler</code>, <code>SchoolRoomImportCommitHandler</code>, <code>SchoolUserImportCommitHandler</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; Started.</li><li>2026-11-25 &middot; Done &middot; All 13 entries removed from method-size-exemptions.txt (applies D7). Evidence: MethodSizeConventionTests passes; ./gradlew test --tests 'com.sep.vox.application.service.*' '*Import*' '*LayeredArchitectureTests' '*LombokUsageConventionTests' '*ModelCreationConventionTests' BUILD SUCCESSFUL. CHANGED: each handler gets a private RowOutcome enum and an EnumMap tally instead of three counters.</li></ul>
     </li>
-    <li class="job" id="job-13-3" data-status="todo">
-      <span class="title">13.3 Rename the 6 <code>processRows</code> methods</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-13-3" data-status="done">
+      <span class="title">13.3 Rename the 6 <code>processRows</code> methods</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The six private <code>processRows</code> methods in <code>SchoolClassImportCommitHandler</code>, <code>SchoolUserImportCommitHandler</code>, <code>SchoolDirectoryImportCommitHandler</code>, <code>SchoolGradeImportCommitHandler</code>, <code>SchoolRoomImportCommitHandler</code> and <code>SchoolClassUserImportCommitHandler</code> have names that say what they do to the rows (for example <code>commitRowsAndCountOutcomes</code>); <code>grep -rn processRows src</code> prints nothing.
          <strong>Files:</strong> the six handlers above</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Renamed the 6 processRows to commitRowsAndCountOutcomes inside job 13.2. Evidence: grep -rn processRows src prints nothing.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.service.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 13.1-13.3 done; verify passes: compileJava, MethodSizeConventionTests, application.service.* and *Import* tests. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-14" data-status="todo">
+<div class="phase" id="phase-14" data-status="done">
   <h3><span class="title">Phase 14 &ndash; Method rules: Application services: the rest</span>
     <span class="tag">large · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 53 methods in 37 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-14-1" data-status="todo">
-      <span class="title">14.1 Split and clean 18 long methods in 12 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-14-1" data-status="done">
+      <span class="title">14.1 Split and clean 18 long methods in 12 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 entries (application services: 18 methods in 12 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AssessmentHumanGradingNotificationService</code>, <code>AssessmentRecordingAccessService</code>, <code>AssessmentResultAccessService</code>, <code>AssessmentScheduleCandidateConflictValidator</code>, <code>AssessmentSessionModerationAccessService</code>, <code>AssessmentStreamConfigResolver</code>, <code>ClassTestGradingAssignmentService</code>, <code>ConfidenceReviewCalculator</code>, <code>GradeLevelBandScopeGuardService</code>, <code>GradingActionSupport</code>, <code>GradingAssignmentNotificationService</code>, <code>GradingItemScoreResolver</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 18 methods in 12 files split into private methods of at most 25 lines, statements moved verbatim; 18 entries removed from <code>method-size-exemptions.txt</code>. <code>./gradlew test --tests '*MethodSizeConventionTests' --tests 'com.sep.vox.application.service.*' --tests '*ConfidenceReviewCalculatorTests' --tests '*RecordAssessmentAttemptEvaluation*'</code> passes. CHANGED: <code>ConfidenceReviewCalculator</code> got a private nested <code>Findings</code> class that replaces the four collections passed through every helper, and its commented-out Group D code was dropped (reason kept, translated, as javadoc of <code>evaluateAsrAndReferenceSignals</code>).</li></ul>
     </li>
-    <li class="job" id="job-14-2" data-status="todo">
-      <span class="title">14.2 Split and clean 18 long methods in 12 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-14-2" data-status="done">
+      <span class="title">14.2 Split and clean 18 long methods in 12 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 entries (application services: 18 methods in 12 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>InterestQuizBankTopUpService</code>, <code>InterestQuizItemSelector</code>, <code>InterestVectorService</code>, <code>KeywordTopicPersistenceService</code>, <code>LearnerProfileCommandService</code>, <code>MissingResponseBackfillService</code>, <code>PracticeEvaluationRequestFactory</code>, <code>PracticeGradingFlushService</code>, <code>PracticePaperDraftService</code>, <code>PracticePaperPersistenceService</code>, <code>PracticeQuestionGenerationService</code>, <code>PracticeQuestionSelectionService</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 17 exemption entries in 10 files split and removed from <code>method-size-exemptions.txt</code> (all 5 entries of <code>PracticeQuestionSelectionService</code>, which the plan also lists in 14.3, were done here). CHANGED: the plan lists 18 methods in 12 files, but <code>KeywordTopicPersistenceService</code> and <code>PracticePaperPersistenceService</code> had no entry and no method over 25 lines, so they were not touched. <code>./gradlew test --tests '*MethodSizeConventionTests' --tests 'com.sep.vox.application.service.*' --tests '*Practice*' --tests '*Interest*' --tests '*LearnerProfile*'</code> passes.</li></ul>
     </li>
-    <li class="job" id="job-14-3" data-status="todo">
-      <span class="title">14.3 Split and clean 17 long methods in 14 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-14-3" data-status="done">
+      <span class="title">14.3 Split and clean 17 long methods in 14 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 17 entries (application services: 17 methods in 14 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>PracticeQuestionSelectionService</code>, <code>PracticeSessionCleanupService</code>, <code>PracticeSessionClosedHandler</code>, <code>PracticeSessionDetailAssemblyService</code>, <code>ProvisionSchoolService</code>, <code>RecalculateAssessmentTimeDurationService</code>, <code>RecalculateBlueprintVersionTimeLimitService</code>, <code>ResolveNextPracticeQuestionClaimService</code>, <code>RubricCloneService</code>, <code>StartPracticeSessionPersistenceService</code>, <code>TopicOfferBackfillService</code>, <code>TopicSuggestionService</code>, <code>UndeliveredQuestionCleanupService</code>, <code>ZeroScoreAssessmentResultService</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 15 exemption entries in 13 files split and removed from <code>method-size-exemptions.txt</code> (the 5 entries of <code>PracticeQuestionSelectionService</code> were already done in 14.2). CHANGED: <code>ResolveNextPracticeQuestionClaimService</code> got a private <code>Progress</code> record and a single <code>claimOf</code> factory so the three <code>Claim</code> constructions share one place. <code>./gradlew test</code> (full unit suite, includes <code>MethodSizeConventionTests</code> and <code>LayeredArchitectureTests</code>) passes.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.service.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; All three jobs done; 50 entries of 36 files left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava compileTestJava</code> and the full <code>./gradlew test</code> pass.</li></ul>
 </div>
 
-<div class="phase" id="phase-15" data-status="todo">
+<div class="phase" id="phase-15" data-status="done">
   <h3><span class="title">Phase 15 &ndash; Method rules: Use cases: schools, classes, grades, rooms, users, registration, subscriptions (view and catalog)</span>
     <span class="tag">large · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 57 methods in 49 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-15-1" data-status="todo">
-      <span class="title">15.1 Split and clean 19 long methods in 17 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-15-1" data-status="done">
+      <span class="title">15.1 Split and clean 19 long methods in 17 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 19 entries (usecase/dashboard: 8 methods in 7 files; usecase/gradelevel: 2 methods in 2 files; usecase/importfile: 1 method in 1 file; usecase/learnerprofile: 1 method in 1 file; usecase/proctoring: 1 method in 1 file; usecase/recording: 2 methods in 2 files; usecase/registration: 4 methods in 3 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>ApproveRegisterFormUseCase</code>, <code>DeleteGradeLevelUseCase</code>, <code>GetAssessmentRecordingPlaybackUseCase</code>, <code>RecordProctoringAlertUseCase</code>, <code>RecordRecordingPartChangedUseCase</code>, <code>RegisterBySelfDeclaredUseCase</code>, <code>RegisterFromSchoolDirectoryUseCase</code>, <code>UpdateGradeLevelUseCase</code>, <code>ViewImportRowsUseCase</code>, <code>ViewInterestQuizItemsUseCase</code>, <code>ViewPlatformBusinessHealthUseCase</code>, <code>ViewPlatformOperationalHealthUseCase</code>, <code>ViewSchoolAdminDashboardUseCase</code>, <code>ViewSchoolAiCostTimeseriesUseCase</code>, <code>ViewSchoolAiSpendByUserUseCase</code>, <code>ViewSystemAdminDashboardUseCase</code>, <code>ViewTeacherDashboardUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 16 exemption entries in 15 files split into private methods of at most 25 lines, statements moved verbatim, restating Vietnamese comments translated; entries removed from <code>method-size-exemptions.txt</code>. <code>./gradlew test --tests '*MethodSizeConventionTests'</code> and the dashboard, gradelevel, recording, importfile, learnerprofile and registration use case tests pass. CHANGED: <code>RecordProctoringAlertUseCase</code> had no exemption entry and no method over 25 lines, so it was not touched. The identical "pending form or existing user by contact email/phone" block of <code>RegisterBySelfDeclaredUseCase</code> and <code>RegisterFromSchoolDirectoryUseCase</code> moved into the new shared <code>RegistrationContactDuplicateGuardService</code> (with <code>RegistrationContactDuplicateGuardServiceTests</code>).</li></ul>
     </li>
-    <li class="job" id="job-15-2" data-status="todo">
-      <span class="title">15.2 Split and clean 19 long methods in 16 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-15-2" data-status="done">
+      <span class="title">15.2 Split and clean 19 long methods in 16 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 19 entries (usecase/registration: 3 methods in 3 files; usecase/school: 4 methods in 4 files; usecase/schoolclass: 4 methods in 3 files; usecase/schoolclassuser: 4 methods in 3 files; usecase/schooldirectory: 1 method in 1 file; usecase/schoolgrade: 3 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>BulkCreateSchoolClassUsersUseCase</code>, <code>CreateSchoolClassUserUseCase</code>, <code>CreateSchoolUseCase</code>, <code>DeleteSchoolClassUseCase</code>, <code>DeleteSchoolGradeUseCase</code>, <code>DeleteSchoolUseCase</code>, <code>PreviewSchoolClassImportFromFileUseCase</code>, <code>PreviewSchoolClassUserImportFromFileUseCase</code>, <code>PreviewSchoolDirectoryImportFromFileUseCase</code>, <code>PreviewSchoolGradeImportFromFileUseCase</code>, <code>RegisterFromSchoolDirectoryUseCase</code>, <code>RejectRegisterFormUseCase</code>, <code>UpdateSchoolClassUseCase</code>, <code>UpdateSchoolStatusUseCase</code>, <code>UpdateSchoolUseCase</code>, <code>VerifyRegisterFormOtpUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Remaining registration, school, schoolclass, schoolclassuser and schoolgrade methods split into private methods of at most 25 lines, statements moved verbatim, Vietnamese comments in the changed methods translated; entries removed from <code>method-size-exemptions.txt</code>. The five <code>Preview*ImportFromFileUseCase</code> classes got the same private <code>toPreviewResponse</code>. CHANGED: <code>PreviewSchoolDirectoryImportFromFileUseCase</code> had no exemption entry and was not touched; in <code>DeleteSchoolUseCase</code> a commented-out block of dead code was dropped. <code>./gradlew test --tests '*MethodSizeConventionTests'</code> and the usecase tests pass.</li></ul>
     </li>
-    <li class="job" id="job-15-3" data-status="todo">
-      <span class="title">15.3 Split and clean 19 long methods in 17 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-15-3" data-status="done">
+      <span class="title">15.3 Split and clean 19 long methods in 17 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 19 entries (usecase/schoolgrade: 2 methods in 2 files; usecase/schoolroom: 4 methods in 3 files; usecase/schooluser: 8 methods in 7 files; usecase/stream: 2 methods in 2 files; usecase/subscription: 1 method in 1 file; usecase/supportedlanguage: 1 method in 1 file; usecase/user: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AcceptSchoolUserImportUseCase</code>, <code>CreateSchoolUserUseCase</code>, <code>DeleteSchoolRoomUseCase</code>, <code>DeleteSchoolUserUseCase</code>, <code>IssueMonitorTokenUseCase</code>, <code>IssueStudentStreamTokenUseCase</code>, <code>PreviewSchoolRoomImportFromFileUseCase</code>, <code>PreviewSchoolUserImportFromFileUseCase</code>, <code>UpdateProfileUseCase</code>, <code>UpdateSchoolGradeUseCase</code>, <code>UpdateSchoolRoomUseCase</code>, <code>UpdateSchoolUserUseCase</code>, <code>UpdateSupportedLanguageUseCase</code>, <code>ViewSchoolGradesUseCase</code>, <code>ViewSchoolUsersBySchoolUseCase</code>, <code>ViewSchoolUsersForRequesterUseCase</code>, <code>ViewSubscriptionPlansUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Remaining schoolgrade, schoolroom, schooluser, stream, subscription (<code>ViewSubscriptionPlansUseCase</code> only; the money-related subscription use cases stay in the list) and user methods split into private methods of at most 25 lines, statements moved verbatim, comments in changed methods translated; entries removed from <code>method-size-exemptions.txt</code>. <code>UpdateSupportedLanguageUseCase</code> had no entry left. <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.service.*' --tests '*MethodSizeConventionTests' --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests' --tests '*ModelCreationConventionTests'</code> passes.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.dashboard.*' --tests 'com.sep.vox.application.usecase.gradelevel.*' --tests 'com.sep.vox.application.usecase.importfile.*' --tests 'com.sep.vox.application.usecase.recording.*' --tests 'com.sep.vox.application.usecase.school.*' --tests 'com.sep.vox.application.usecase.schoolclass.*' --tests 'com.sep.vox.application.usecase.schoolclassuser.*' --tests 'com.sep.vox.application.usecase.schooldirectory.*' --tests 'com.sep.vox.application.usecase.schoolgrade.*' --tests 'com.sep.vox.application.usecase.schoolroom.*' --tests 'com.sep.vox.application.usecase.schooluser.*' --tests 'com.sep.vox.application.usecase.stream.*' --tests 'com.sep.vox.application.usecase.subscription.*' --tests 'com.sep.vox.application.usecase.supportedlanguage.*' --tests 'com.sep.vox.application.usecase.user.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 15.1-15.3 done; 49 exemption entries of the phase left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava compileTestJava</code> and the verify tests (usecase, service, architecture) pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-16" data-status="todo">
+<div class="phase" id="phase-16" data-status="done">
   <h3><span class="title">Phase 16 &ndash; Method rules: Use cases: school and teacher rubrics</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 36 methods in 35 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-16-1" data-status="todo">
-      <span class="title">16.1 Split and clean 18 long methods in 17 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-16-1" data-status="done">
+      <span class="title">16.1 Split and clean 18 long methods in 17 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 entries (usecase/rubricschool: 18 methods in 17 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AcceptSchoolRubricCriterionImportUseCase</code>, <code>AcceptSchoolRubricResultBandImportUseCase</code>, <code>AcceptSchoolRubricVersionImportUseCase</code>, <code>AddSchoolRubricVersionsUseCase</code>, <code>ArchiveSchoolRubricVersionUseCase</code>, <code>ChangeSchoolRubricVersionStatusUseCase</code>, <code>CloneSystemRubricToSchoolUseCase</code>, <code>CreateSchoolRubricCriterionUseCase</code>, <code>CreateSchoolRubricResultBandsUseCase</code>, <code>CreateSchoolRubricUseCase</code>, <code>DeleteSchoolRubricCriterionUseCase</code>, <code>DeleteSchoolRubricResultBandUseCase</code>, <code>DeleteSchoolRubricUseCase</code>, <code>DeleteSchoolRubricVersionUseCase</code>, <code>PreviewSchoolRubricCriterionImportFromFileUseCase</code>, <code>PreviewSchoolRubricResultBandImportFromFileUseCase</code>, <code>PreviewSchoolRubricVersionImportFromFileUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 18 methods in 17 files split into private methods of at most 25 lines, statements moved verbatim, Vietnamese comments in the changed methods translated (restating ones deleted); 18 entries removed from <code>method-size-exemptions.txt</code>. <code>./gradlew test --tests '*MethodSizeConventionTests' --tests '*Rubric*' --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests' --tests '*ModelCreationConventionTests'</code> passes. CHANGED: the plan counts 18 entries, which include <code>CloneSystemRubricToSchoolUseCase.toCreateCommand</code> (both Clone entries done). The per-class school-membership and active-school guards keep their own private methods because their error messages differ between classes.</li></ul>
     </li>
-    <li class="job" id="job-16-2" data-status="todo">
+    <li class="job" id="job-16-2" data-status="done">
       <span class="title">16.2 Split and clean 18 long methods in 18 files</span> <span class="status todo">Not started</span>
       <p><strong>Done when:</strong> The 18 entries (usecase/rubricschool: 16 methods in 16 files; usecase/rubricteacher: 2 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>SearchSchoolRubricCriteriaUseCase</code>, <code>SearchSchoolRubricResultBandsUseCase</code>, <code>SearchSchoolRubricVersionsUseCase</code>, <code>SearchSchoolRubricsUseCase</code>, <code>SearchTeacherRubricsUseCase</code>, <code>UpdateSchoolRubricCriterionUseCase</code>, <code>UpdateSchoolRubricResultBandUseCase</code>, <code>UpdateSchoolRubricUseCase</code>, <code>UpdateSchoolRubricVersionUseCase</code>, <code>ViewSchoolRubricCriteriaUseCase</code>, <code>ViewSchoolRubricCriterionDetailsUseCase</code>, <code>ViewSchoolRubricDetailsUseCase</code>, <code>ViewSchoolRubricResultBandDetailsUseCase</code>, <code>ViewSchoolRubricResultBandsUseCase</code>, <code>ViewSchoolRubricVersionDetailsUseCase</code>, <code>ViewSchoolRubricVersionsUseCase</code>, <code>ViewSchoolRubricsUseCase</code>, <code>ViewTeacherRubricVersionsUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 18 methods in 18 files split into private methods of at most 25 lines, statements moved verbatim (validation order unchanged), Vietnamese comments in the changed methods translated and restating ones deleted; 18 entries removed from <code>method-size-exemptions.txt</code>. <code>./gradlew test --tests '*MethodSizeConventionTests' --tests 'com.sep.vox.application.usecase.*' --tests '*Rubric*' --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests' --tests '*ModelCreationConventionTests'</code> passes.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.rubricschool.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 16.1 and 16.2 done; 36 exemption entries of the phase left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava</code> and the verify tests (usecase, rubric, architecture) pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-17" data-status="todo">
+<div class="phase" id="phase-17" data-status="done">
   <h3><span class="title">Phase 17 &ndash; Method rules: Use cases: system rubrics</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 26 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-17-1" data-status="todo">
-      <span class="title">17.1 Split and clean 13 long methods in 13 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-17-1" data-status="done">
+      <span class="title">17.1 Split and clean 13 long methods in 13 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 13 entries (usecase/rubricsystem: 13 methods in 13 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AcceptSystemRubricCriterionImportUseCase</code>, <code>AcceptSystemRubricResultBandImportUseCase</code>, <code>AcceptSystemRubricVersionImportUseCase</code>, <code>AddSystemRubricVersionsUseCase</code>, <code>ArchiveSystemRubricVersionUseCase</code>, <code>ChangeSystemRubricVersionStatusUseCase</code>, <code>CreateSystemRubricCriteriaUseCase</code>, <code>CreateSystemRubricResultBandsUseCase</code>, <code>CreateSystemRubricUseCase</code>, <code>DeleteSystemRubricCriterionUseCase</code>, <code>DeleteSystemRubricUseCase</code>, <code>DeleteSystemRubricVersionUseCase</code>, <code>PreviewSystemRubricCriterionImportFromFileUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li></ul>
     </li>
-    <li class="job" id="job-17-2" data-status="todo">
-      <span class="title">17.2 Split and clean 13 long methods in 13 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-17-2" data-status="done">
+      <span class="title">17.2 Split and clean 13 long methods in 13 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 13 entries (usecase/rubricsystem: 13 methods in 13 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>PreviewSystemRubricResultBandImportFromFileUseCase</code>, <code>PreviewSystemRubricVersionImportFromFileUseCase</code>, <code>SearchSystemRubricCriteriaUseCase</code>, <code>SearchSystemRubricVersionsUseCase</code>, <code>UpdateSystemRubricCriterionUseCase</code>, <code>UpdateSystemRubricResultBandUseCase</code>, <code>UpdateSystemRubricUseCase</code>, <code>UpdateSystemRubricVersionUseCase</code>, <code>ViewSystemRubricCriteriaUseCase</code>, <code>ViewSystemRubricCriterionDetailsUseCase</code>, <code>ViewSystemRubricResultBandDetailsUseCase</code>, <code>ViewSystemRubricResultBandsUseCase</code>, <code>ViewSystemRubricVersionsUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.rubricsystem.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 17.1 and 17.2 done; 26 exemption entries of the phase left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava</code> and the verify tests (usecase, rubric, architecture) pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-18" data-status="todo">
+<div class="phase" id="phase-18" data-status="done">
   <h3><span class="title">Phase 18 &ndash; Method rules: Use cases: assessments and schedules</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 36 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-18-1" data-status="todo">
-      <span class="title">18.1 Split and clean 18 long methods in 12 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-18-1" data-status="done">
+      <span class="title">18.1 Split and clean 18 long methods in 12 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 entries (usecase/assessment: 18 methods in 12 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AttachAssessmentBlueprintUseCase</code>, <code>ChangeClassTestBlueprintUseCase</code>, <code>CreateAssessmentUseCase</code>, <code>CreateClassTestSectionUseCase</code>, <code>CreateClassTestUseCase</code>, <code>DeleteAssessmentUseCase</code>, <code>DeleteClassTestSectionUseCase</code>, <code>GetAssessmentSessionPaperUseCase</code>, <code>StartClassTestSessionUseCase</code>, <code>UpdateAssessmentDeliveryModeUseCase</code>, <code>UpdateAssessmentSecurePoolStatusUseCase</code>, <code>UpdateAssessmentStatusUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li></ul>
     </li>
-    <li class="job" id="job-18-2" data-status="todo">
-      <span class="title">18.2 Split and clean 18 long methods in 14 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-18-2" data-status="done">
+      <span class="title">18.2 Split and clean 18 long methods in 14 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 entries (usecase/assessment: 10 methods in 7 files; usecase/assessmentschedule: 8 methods in 7 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AddAssessmentScheduleProctorUseCase</code>, <code>CreateAssessmentScheduleUseCase</code>, <code>DeleteAssessmentScheduleUseCase</code>, <code>UpdateAssessmentScheduleStatusUseCase</code>, <code>UpdateAssessmentScheduleUseCase</code>, <code>UpdateAssessmentUseCase</code>, <code>UpdateClassTestQuestionsUseCase</code>, <code>UpdateClassTestSectionUseCase</code>, <code>VerifyAssessmentScheduleOtpUseCase</code>, <code>ViewAssessmentDetailsUseCase</code>, <code>ViewAssessmentsUseCase</code>, <code>ViewMyAssessmentSchedulesUseCase</code>, <code>ViewMyAssessmentsUseCase</code>, <code>ViewStudentBusySlotsUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 16 exemption entries in 14 files removed from <code>method-size-exemptions.txt</code>; methods split into private methods of at most 25 lines, statements moved verbatim (check order unchanged), Vietnamese comments in the changed methods translated. <code>./gradlew test</code> (full unit suite) passes. CHANGED: the plan counts 18 entries, the list held 16 for these 14 files. <code>UpdateClassTestQuestionsUseCase</code> and <code>UpdateClassTestSectionUseCase</code> now use <code>ClassTestDirectEditGuard</code>, which also gained <code>loadUsableQuestion</code> for the question-access check that was repeated in three class-test use cases.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessment.*' --tests 'com.sep.vox.application.usecase.assessmentschedule.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 18.1 and 18.2 done; 32 exemption entries of the phase left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava</code> and <code>./gradlew test</code> (full unit suite, incl. MethodSizeConventionTests, LayeredArchitectureTests, LombokUsageConventionTests, ModelCreationConventionTests) pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-19" data-status="todo">
+<div class="phase" id="phase-19" data-status="done">
   <h3><span class="title">Phase 19 &ndash; Method rules: Use cases: blueprints, papers and assessment policies</span>
     <span class="tag">large · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 44 methods in 36 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-19-1" data-status="todo">
-      <span class="title">19.1 Split and clean 22 long methods in 14 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-19-1" data-status="done">
+      <span class="title">19.1 Split and clean 22 long methods in 14 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 22 entries (usecase/assessmentblueprint: 18 methods in 12 files; usecase/assessmentpaper: 4 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>CreateAssessmentBlueprintSectionUseCase</code>, <code>CreateAssessmentBlueprintSlotUseCase</code>, <code>CreateAssessmentBlueprintUseCase</code>, <code>CreateAssessmentBlueprintVersionUseCase</code>, <code>CreateAssessmentPaperUseCase</code>, <code>DeleteAssessmentBlueprintSectionUseCase</code>, <code>DeleteAssessmentBlueprintVersionUseCase</code>, <code>DeleteAssessmentPaperUseCase</code>, <code>UpdateAssessmentBlueprintSectionUseCase</code>, <code>UpdateAssessmentBlueprintSlotUseCase</code>, <code>UpdateAssessmentBlueprintUseCase</code>, <code>UpdateAssessmentBlueprintVersionStatusUseCase</code>, <code>UpdateAssessmentBlueprintVersionUseCase</code>, <code>ViewAssessmentBlueprintsUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 21 entries removed from method-size-exemptions.txt (17 blueprint + 4 paper; the plan counted 22). Shared logic extracted to AssessmentBlueprintEditAccessService and AssessmentBlueprintStructureValidator (application/port/input/service). MethodSizeConventionTests, *assessmentpaper*, LayeredArchitectureTests pass.</li></ul>
     </li>
-    <li class="job" id="job-19-2" data-status="todo">
-      <span class="title">19.2 Split and clean 22 long methods in 22 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-19-2" data-status="done">
+      <span class="title">19.2 Split and clean 22 long methods in 22 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 22 entries (usecase/assessmentpaper: 3 methods in 3 files; usecase/assessmentpolicyschool: 10 methods in 10 files; usecase/assessmentpolicysystem: 8 methods in 8 files; usecase/assessmentpolicyteacher: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AcceptSchoolAssessmentPolicyImportUseCase</code>, <code>AcceptSystemAssessmentPolicyImportUseCase</code>, <code>ArchiveSchoolAssessmentPolicyUseCase</code>, <code>ArchiveSystemAssessmentPolicyUseCase</code>, <code>CreateSchoolAssessmentPolicyUseCase</code>, <code>CreateSystemAssessmentPolicyUseCase</code>, <code>DeleteSchoolAssessmentPolicyUseCase</code>, <code>PreviewSchoolAssessmentPolicyImportFromFileUseCase</code>, <code>PreviewSystemAssessmentPolicyImportFromFileUseCase</code>, <code>PublishSchoolAssessmentPoliciesByRubricVersionUseCase</code>, <code>PublishSchoolAssessmentPolicyUseCase</code>, <code>PublishSystemAssessmentPoliciesByRubricVersionUseCase</code>, <code>PublishSystemAssessmentPolicyUseCase</code>, <code>UpdateAssessmentPaperItemUseCase</code>, <code>UpdateAssessmentPaperSectionUseCase</code>, <code>UpdateAssessmentPaperStatusUseCase</code>, <code>UpdateSchoolAssessmentPolicyUseCase</code>, <code>UpdateSystemAssessmentPolicyUseCase</code>, <code>ViewSchoolAssessmentPoliciesUseCase</code>, <code>ViewSchoolAssessmentPolicyDetailsUseCase</code>, <code>ViewSystemAssessmentPoliciesUseCase</code>, <code>ViewTeacherAssessmentPoliciesUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 22 entries removed from method-size-exemptions.txt (3 paper + 10 school + 8 system + 1 teacher). Private extractions only, statements moved verbatim; Vietnamese comments in edited methods translated. MethodSizeConventionTests and com.sep.vox.application.usecase.* pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.assessmentpaper.*' --tests 'com.sep.vox.application.usecase.assessmentpolicyschool.*' --tests 'com.sep.vox.application.usecase.assessmentpolicysystem.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Verify: compileJava OK; test --tests com.sep.vox.application.usecase.*, MethodSizeConventionTests, LayeredArchitectureTests, LombokUsageConventionTests, ModelCreationConventionTests, ModelAndEntityConventionTests, *Blueprint*, *AssessmentPolicy* all pass. integrationTest not run.</li></ul>
 </div>
 
-<div class="phase" id="phase-20" data-status="todo">
+<div class="phase" id="phase-20" data-status="done">
   <h3><span class="title">Phase 20 &ndash; Method rules: Use cases: frameworks, scoring rules and practice</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 29 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-20-1" data-status="todo">
-      <span class="title">20.1 Split and clean 15 long methods in 14 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-20-1" data-status="done">
+      <span class="title">20.1 Split and clean 15 long methods in 14 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 15 entries (usecase/framework: 7 methods in 7 files; usecase/practiceevaluation: 1 method in 1 file; usecase/practiceplanning: 5 methods in 4 files; usecase/practicesession: 2 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>BuildPracticePaperUseCase</code>, <code>CreateFrameworkCriteriaUseCase</code>, <code>CreateFrameworkCriterionBandsUseCase</code>, <code>CreateFrameworkResultBandsUseCase</code>, <code>CreateFrameworkVersionUseCase</code>, <code>EndPracticeSessionUseCase</code>, <code>RecordPracticeAttemptEvaluationUseCase</code>, <code>ResolveNextPracticeQuestionUseCase</code>, <code>SearchPracticeTopicsSemanticUseCase</code>, <code>SearchPracticeTopicsUseCase</code>, <code>UpdateFrameworkCriterionUseCase</code>, <code>UpdateFrameworkResultBandUseCase</code>, <code>UpdateFrameworkVersionStatusUseCase</code>, <code>ViewPracticeTopicOffersUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 15 entries (framework 6, practiceevaluation 1, practiceplanning 5, practicesession: EndPracticeSessionUseCase.execute and ResolveNextPracticeQuestionUseCase doExecute/executeWithClusterLock) removed from <code>method-size-exemptions.txt</code>. Private extractions only, statements moved verbatim; Vietnamese comments in edited methods translated. <code>SubmitPracticeTurnUseCase</code> (20.2) also handles the practice quota deduction (money, D6): moves only, same order, REQUIRES_NEW call unchanged. MethodSizeConventionTests passes.</li></ul>
     </li>
-    <li class="job" id="job-20-2" data-status="todo">
-      <span class="title">20.2 Split and clean 14 long methods in 13 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-20-2" data-status="done">
+      <span class="title">20.2 Split and clean 14 long methods in 13 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 14 entries (usecase/practicesession: 3 methods in 2 files; usecase/scoringrule: 11 methods in 11 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>CreateSchoolScoringRuleUseCase</code>, <code>CreateSystemScoringRuleUseCase</code>, <code>DeleteSchoolScoringRuleUseCase</code>, <code>ResolveNextPracticeQuestionUseCase</code>, <code>SearchSchoolScoringRuleUseCase</code>, <code>SearchSystemScoringRuleUseCase</code>, <code>SubmitPracticeTurnUseCase</code>, <code>UpdateSchoolScoringRuleUseCase</code>, <code>UpdateSystemScoringRuleUseCase</code>, <code>ViewAllSchoolScoringRuleUseCase</code>, <code>ViewAllSystemScoringRuleUseCase</code>, <code>ViewSchoolScoringRuleDetailUseCase</code>, <code>ViewSystemScoringRuleDetailUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 13 entries (SubmitPracticeTurnUseCase 2, scoringrule 11) removed from <code>method-size-exemptions.txt</code>; the plan counts 14, the list held 13 for these files (ResolveNextPracticeQuestionUseCase is counted in 20.1). The 11 scoring-rule use cases keep per-class private helpers (<code>requireActiveAccount</code>, <code>requireActiveSchoolAdminOf</code>, ...) like phase 19 did, so constructors and existing tests stay unchanged. Statements moved verbatim, check order unchanged.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.framework.*' --tests 'com.sep.vox.application.usecase.practiceplanning.*' --tests 'com.sep.vox.application.usecase.practicesession.*' --tests 'com.sep.vox.application.usecase.scoringrule.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 20.1 and 20.2 done; 28 exemption entries of the phase left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava compileTestJava</code> and unit tests <code>*MethodSizeConventionTests, *LayeredArchitectureTests, *LombokUsageConventionTests, *ModelCreationConventionTests, *ModelAndEntityConventionTests, com.sep.vox.application.*, *ScoringRule*, *Practice*, *Framework*, *Quota*</code> pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-21" data-status="todo">
+<div class="phase" id="phase-21" data-status="done">
   <h3><span class="title">Phase 21 &ndash; Method rules: Use cases: candidates, sessions, item responses and appeals</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 30 methods in 26 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-21-1" data-status="todo">
-      <span class="title">21.1 Split and clean 15 long methods in 15 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-21-1" data-status="done">
+      <span class="title">21.1 Split and clean 15 long methods in 15 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 15 entries (usecase/assessmentappeal: 4 methods in 4 files; usecase/assessmentcandidate: 10 methods in 10 files; usecase/assessmentitemresponse: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AddAssessmentCandidateUseCase</code>, <code>AssignAssessmentAppealReviewerUseCase</code>, <code>AssignAssessmentCandidateScheduleUseCase</code>, <code>AssignAssessmentPapersUseCase</code>, <code>AutoFillAssessmentCandidatesUseCase</code>, <code>BulkAssignAssessmentCandidateScheduleUseCase</code>, <code>BulkDeleteAssessmentCandidatesUseCase</code>, <code>CreateAssessmentAppealUseCase</code>, <code>ImportAssessmentCandidatesFromClassUseCase</code>, <code>ImportAssessmentCandidatesFromGradeUseCase</code>, <code>RecordAnswerTurnUseCase</code>, <code>RejectAssessmentAppealUseCase</code>, <code>UpdateAssessmentCandidateStatusUseCase</code>, <code>UpdateAssessmentCandidatesAttendanceUseCase</code>, <code>WithdrawAssessmentAppealUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 15 entries (appeal 4, candidate 10, <code>RecordAnswerTurnUseCase</code>) removed from <code>method-size-exemptions.txt</code>. Private per-class extractions only, statements moved verbatim, check order unchanged; Vietnamese comments in edited methods translated. The class and grade candidate imports keep their own copy of the same helpers (no new shared class, so constructors and existing tests stay unchanged, as in phases 19 and 20). <code>*MethodSizeConventionTests</code> and <code>com.sep.vox.application.usecase.assessmentappeal.*</code>, <code>assessmentcandidate.*</code> pass.</li></ul>
     </li>
-    <li class="job" id="job-21-2" data-status="todo">
-      <span class="title">21.2 Split and clean 15 long methods in 11 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-21-2" data-status="done">
+      <span class="title">21.2 Split and clean 15 long methods in 11 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 15 entries (usecase/assessmentitemresponse: 1 method in 1 file; usecase/assessmentsession: 14 methods in 10 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>CompleteAssessmentSessionGradingUseCase</code>, <code>DecideAssessmentCandidateResultOutcomeUseCase</code>, <code>DeleteAssessmentSessionUseCase</code>, <code>ForceEndAssessmentSessionUseCase</code>, <code>HandOffGradingToHumanUseCase</code>, <code>RetryGradingAssessmentSessionUseCase</code>, <code>SubmitAssessmentSessionUseCase</code>, <code>UpdateAssessmentItemResponseTurnUseCase</code>, <code>UpdateAssessmentSessionStatusUseCase</code>, <code>ViewAssessmentSessionResultUseCase</code>, <code>ViewMyAssessmentResultsUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 15 entries (assessmentsession 14, <code>UpdateAssessmentItemResponseTurnUseCase</code>) removed from <code>method-size-exemptions.txt</code>; <code>UpdateAssessmentItemResponseTurnUseCase</code> was split together with job 21.1 (same package). Private extractions only, statements moved verbatim. Money: <code>CompleteAssessmentSessionGradingUseCase</code> (AI cost charge, quota deduction) only moves code into private methods, same order of claim, mark-charged, sum and consume calls. <code>SubmitAssessmentSessionUseCase</code>: the two identical early exits (not attended, no responses) became one condition with the same body; the 100-line <code>buildCriteriaFrameworks</code> uses a private record <code>CriterionFrameworkLookups</code> and a constant for the ladder keys. <code>ViewMyAssessmentResultsUseCase</code>: the per-row mapper returns <code>Optional</code> instead of <code>null</code> (null-safety rule). <code>ViewAssessmentSessionResultUseCase</code>: the duplicated question-text lookup is one private method. Vietnamese comments in edited methods translated. <code>*MethodSizeConventionTests</code> and <code>com.sep.vox.application.*</code> pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.assessmentappeal.*' --tests 'com.sep.vox.application.usecase.assessmentcandidate.*' --tests 'com.sep.vox.application.usecase.assessmentsession.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 21.1 and 21.2 done; 30 exemption entries of the phase left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava compileTestJava</code> and unit tests <code>*MethodSizeConventionTests, *LayeredArchitectureTests, *LombokUsageConventionTests, *ModelCreationConventionTests, *ModelAndEntityConventionTests, com.sep.vox.application.*</code> pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-22" data-status="todo">
+<div class="phase" id="phase-22" data-status="done">
   <h3><span class="title">Phase 22 &ndash; Method rules: Use cases: grading and evaluation</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 26 methods in 18 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-22-1" data-status="todo">
-      <span class="title">22.1 Split and clean 13 long methods in 7 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-22-1" data-status="done">
+      <span class="title">22.1 Split and clean 13 long methods in 7 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 13 entries (usecase/assessmentevaluation: 10 methods in 4 files; usecase/assessmentgrading: 3 methods in 3 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AssessmentSessionResultCalculator</code>, <code>AssignGradingUseCase</code>, <code>AutoAssignGradingUseCase</code>, <code>BulkFinalizeAssessmentResultsUseCase</code>, <code>RecordAssessmentAttemptEvaluationUseCase</code>, <code>ResolveAssessmentCandidateAttemptsUseCase</code>, <code>ViewAssessmentItemResponseEvaluationUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 13 entries (assessmentevaluation 10, assessmentgrading 3) removed from <code>method-size-exemptions.txt</code>. Private extractions only, statements moved verbatim, same order of repository calls and checks. Shared logic extracted once: <code>AssessmentSessionResultCalculator.itemScoresByResponseId</code> (the calculate and preview loops were the same, calculate passes empty overrides); <code>ViewAssessmentItemResponseEvaluationUseCase.originalTurnsOf</code> (the original-turn mapping existed twice). <code>RecordAssessmentAttemptEvaluationUseCase</code>: the 285-line lambda is now <code>persistEvaluationInNewTransaction</code> plus gradeItem / reviewVerdict / finalizeGradedItem / saveEvaluation / saveCriterionScores / saveTurns; the always-equal flag <code>zeroCriterionScores</code> is read as <code>markedInvalid</code> (same value), the unused <code>zeroedByValidity</code> local is gone. Vietnamese comments in edited methods translated; <code>new java.util.HashMap</code> and two fully qualified type names replaced by imports. <code>*MethodSizeConventionTests</code>, <code>assessmentevaluation.*</code>, <code>assessmentgrading.*</code> pass.</li></ul>
     </li>
-    <li class="job" id="job-22-2" data-status="todo">
-      <span class="title">22.2 Split and clean 13 long methods in 11 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-22-2" data-status="done">
+      <span class="title">22.2 Split and clean 13 long methods in 11 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 13 entries (usecase/assessmentgrading: 13 methods in 11 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>ClaimClassTestGradingUseCase</code>, <code>ClearInvalidResultUseCase</code>, <code>DeclineGradingAssignmentUseCase</code>, <code>InvalidateResultUseCase</code>, <code>ReassignGradingUseCase</code>, <code>ReclaimOverdueAssignmentsUseCase</code>, <code>RegradeResultUseCase</code>, <code>RemoveGradingAssignmentUseCase</code>, <code>SetGradingDeadlineUseCase</code>, <code>UpholdResultUseCase</code>, <code>ViewResultStatusHistoryUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started.</li><li>2026-11-25 &middot; Done &middot; 13 entries (assessmentgrading: 11 files) removed from <code>method-size-exemptions.txt</code>. Private per-class extractions only, statements moved verbatim, check order and repository-call order unchanged; Vietnamese comments in edited methods translated. The 11 classes keep their own helpers like phases 19 to 21, so constructors and existing tests stay unchanged; the appeal-release block exists in <code>ReclaimOverdueAssignmentsUseCase.releaseAppeal</code> and <code>RemoveGradingAssignmentUseCase.releaseAppeal</code> (already duplicated before this job). <code>ViewResultStatusHistoryUseCase</code>: the three early returns became <code>requireHistoryReadAccess</code> followed by the single final <code>findHistory</code> (same outcome on every path). <code>UpholdResultUseCase</code>: the "must be fully graded" comments moved into the javadoc of the new private methods; <code>new java.util.ArrayList</code> in <code>ClaimClassTestGradingUseCase</code> replaced by an import. <code>*MethodSizeConventionTests</code>, <code>assessmentgrading.*</code> pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.assessmentevaluation.*' --tests 'com.sep.vox.application.usecase.assessmentgrading.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Jobs 22.1 and 22.2 done; 26 exemption entries of the phase left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava compileTestJava</code> and unit tests <code>*MethodSizeConventionTests, *LayeredArchitectureTests, *LombokUsageConventionTests, *ModelCreationConventionTests, *ModelAndEntityConventionTests, com.sep.vox.application.*</code> pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-23" data-status="todo">
+<div class="phase" id="phase-23" data-status="done">
   <h3><span class="title">Phase 23 &ndash; Method rules: Use cases: questions, question banks and topics</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 35 methods in 34 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-23-1" data-status="todo">
-      <span class="title">23.1 Split and clean 18 long methods in 17 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-23-1" data-status="done">
+      <span class="title">23.1 Split and clean 18 long methods in 17 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 entries (usecase/question: 18 methods in 17 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AcceptQuestionImportUseCase</code>, <code>BulkUpdateQuestionStatusUseCase</code>, <code>CreateQuestionAssetUseCase</code>, <code>CreateQuestionCollaboratorUseCase</code>, <code>CreateSystemQuestionBankQuestionUseCase</code>, <code>DeleteQuestionAssetUseCase</code>, <code>DeleteQuestionUseCase</code>, <code>PreviewQuestionImportFromFileUseCase</code>, <code>QuestionAssetAnalysisRequestPublisher</code>, <code>QuestionAssetContentValidator</code>, <code>QuestionCloneService</code>, <code>RecordQuestionAssetAnalysisResultUseCase</code>, <code>RegenerateQuestionAssetAnalysisUseCase</code>, <code>UpdateQuestionAssetUseCase</code>, <code>UpdateQuestionStatusUseCase</code>, <code>UpdateQuestionUseCase</code>, <code>UpsertQuestionEvaluationGuideUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started; no open decisions apply (D1, D7 reused).</li><li>2026-11-25 &middot; Done &middot; 18 entries removed from method-size-exemptions.txt (QuestionCloneService had none: already short). `./gradlew test --tests '*MethodSizeConventionTests'` pass; question use case tests, RestQuestionControllerTests, LayeredArchitectureTests, LombokUsageConventionTests pass; new QuestionEditAccessServiceTests (9) pass.</li></ul>
     </li>
-    <li class="job" id="job-23-2" data-status="todo">
-      <span class="title">23.2 Split and clean 17 long methods in 17 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-23-2" data-status="done">
+      <span class="title">23.2 Split and clean 17 long methods in 17 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 17 entries (usecase/question: 3 methods in 3 files; usecase/questionbank: 7 methods in 7 files; usecase/questiontopic: 7 methods in 7 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AcceptQuestionBankImportUseCase</code>, <code>AcceptQuestionTopicImportUseCase</code>, <code>BulkUpdateQuestionBankStatusUseCase</code>, <code>BulkUpdateQuestionTopicStatusUseCase</code>, <code>CreateQuestionBankGradeUseCase</code>, <code>CreateQuestionTopicUseCase</code>, <code>DeleteQuestionBankUseCase</code>, <code>DeleteQuestionTopicUseCase</code>, <code>PreviewQuestionBankImportFromFileUseCase</code>, <code>PreviewQuestionTopicImportFromFileUseCase</code>, <code>UpdateQuestionBankStatusUseCase</code>, <code>UpdateQuestionTopicStatusUseCase</code>, <code>UpdateQuestionTopicUseCase</code>, <code>ViewQuestionBanksUseCase</code>, <code>ViewQuestionStatusCountsUseCase</code>, <code>ViewQuestionsForAssessmentPaperUseCase</code>, <code>ViewQuestionsUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started; D1, D7 reused.</li><li>2026-11-25 &middot; Done &middot; 15 entries removed from method-size-exemptions.txt (CreateQuestionBankGradeUseCase and CreateQuestionTopicUseCase had none: already short). `./gradlew test --tests '*MethodSizeConventionTests'` pass; full `./gradlew test` 2823 tests, 0 failures.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*' --tests 'com.sep.vox.application.usecase.question.*' --tests '*MethodSizeConventionTests'</code></p>
   <ul class="status-log"></ul>
 </div>
 
-<div class="phase" id="phase-24" data-status="todo">
+<div class="phase" id="phase-24" data-status="done">
   <h3><span class="title">Phase 24 &ndash; Method rules: Application mappers and the domain layer</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 16 methods in 13 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-24-1" data-status="todo">
-      <span class="title">24.1 Split and clean 16 long methods in 13 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-24-1" data-status="done">
+      <span class="title">24.1 Split and clean 16 long methods in 13 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 16 entries (application/common: 1 method in 1 file; application/mapper/assessmentevaluation: 1 method in 1 file; application/query/dto: 1 method in 1 file; domain/common: 1 method in 1 file; domain/mapper: 2 methods in 2 files; domain/model/personalization: 1 method in 1 file; domain/model/registerform: 3 methods in 1 file; domain/service/assessment: 1 method in 1 file; domain/service/personalization: 1 method in 1 file; domain/service/question: 1 method in 1 file; domain/service/rubric: 1 method in 1 file; domain/valueobject: 2 methods in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AssessmentAttemptSummary</code>, <code>AssessmentDtoMapper</code>, <code>AssessmentEvaluationSignalMapper</code>, <code>DateMapper</code>, <code>EvaluationSignals</code>, <code>EventTypeConstant</code>, <code>PracticeSession</code>, <code>QuestionDtoMapper</code>, <code>QuestionStatusTransition</code>, <code>RegisterForm</code>, <code>RubricItemScoreFormula</code>, <code>RubricScoringConsistencyValidator</code>, <code>SessionDiagnosisPolicy</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; started; no open decisions apply (D1, D7 reused).</li><li>2026-11-25 &middot; Done &middot; 16 entries (13 files) removed from <code>method-size-exemptions.txt</code>. Private extractions, statements moved verbatim. Shared logic extracted once: <code>DateMapper.parseWithOffset</code> (the offset parse existed in <code>toInstant</code> and <code>toImportedInstant</code>); <code>PracticeSession.copyBuilder</code> (the 17-field copy existed in four methods); <code>RegisterForm.fromDirectory</code>, <code>fillContact</code> and <code>markCreated</code> (shared by the two directory factories and <code>selfDeclared</code>); <code>EvaluationSignals.requireWithinUnitRange</code> / <code>requireNotNegative</code> (six identical range checks). Constructor and record-argument methods (<code>AssessmentAttemptSummary</code>, <code>AssessmentDtoMapper.toDto</code>, <code>QuestionDtoMapper.toQuestionDto</code>, <code>EvaluationSignals.withAssessment</code>) are shortened by putting related arguments on one line; <code>EventTypeConstant.all</code> is two grouped lists joined in the same order. <code>QuestionStatusTransition.rejectionFor</code>: one private method per action plus a private <code>Standing</code> record; the order of checks is unchanged. Vietnamese comments in edited methods translated (moved into javadoc for <code>SessionDiagnosisPolicy</code>); fully qualified <code>java.util.List</code> and <code>java.util.Objects</code> replaced by imports. <code>./gradlew test</code> (full unit suite) passes. Not run: integrationTest (Docker).</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.common.*' --tests 'com.sep.vox.application.mapper.assessmentevaluation.*' --tests 'com.sep.vox.application.query.dto.*' --tests 'com.sep.vox.domain.*' --tests 'com.sep.vox.domain.model.*' --tests 'com.sep.vox.domain.service.*' --tests 'com.sep.vox.domain.service.question.*' --tests 'com.sep.vox.domain.service.rubric.*' --tests 'com.sep.vox.domain.valueobject.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; Job 24.1 done; 16 exemption entries left <code>method-size-exemptions.txt</code>. <code>./gradlew compileJava compileTestJava</code> and the full <code>./gradlew test</code> pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-25" data-status="todo">
+<div class="phase" id="phase-25" data-status="done">
   <h3><span class="title">Phase 25 &ndash; Method rules: Infrastructure: persistence (queries, adapters, mappers)</span>
     <span class="tag">large · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 66 methods in 31 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-25-1" data-status="todo">
-      <span class="title">25.1 Split and clean 22 long methods in 14 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-25-1" data-status="done">
+      <span class="title">25.1 Split and clean 22 long methods in 14 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 22 entries (infrastructure/persistence/adapter: 10 methods in 8 files; infrastructure/persistence/mapper: 9 methods in 5 files; infrastructure/persistence/query: 3 methods in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AssessmentItemEvaluationMapper</code>, <code>AssessmentMapper</code>, <code>DimensionInterestScoreRepositoryImpl</code>, <code>ImportSessionMapper</code>, <code>JpaAssessmentAppealQueryRepository</code>, <code>PracticeItemResponseRepositoryImpl</code>, <code>PracticeResponseTurnRepositoryImpl</code>, <code>QuestionBankRepositoryImpl</code>, <code>QuestionMapper</code>, <code>QuestionRepositoryImpl</code>, <code>RegisterFormMapper</code>, <code>RubricVersionRepositoryImpl</code>, <code>SchoolClassRepositoryImpl</code>, <code>TopicInterestScoreRepositoryImpl</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 22 methods split in 14 files (10 adapter, 9 mapper, 3 in JpaAssessmentAppealQueryRepository); 22 entries removed from method-size-exemptions.txt. <code>./gradlew test --tests *MethodSizeConventionTests --tests com.sep.vox.infrastructure.persistence.*</code> and Layered/ModelAndEntity convention tests pass.</li></ul>
     </li>
-    <li class="job" id="job-25-2" data-status="todo">
-      <span class="title">25.2 Split and clean 22 long methods in 3 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-25-2" data-status="done">
+      <span class="title">25.2 Split and clean 22 long methods in 3 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 22 entries (infrastructure/persistence/query: 22 methods in 3 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>JpaAssessmentAppealQueryRepository</code>, <code>JpaAssessmentDirectoryQueryRepository</code>, <code>JpaAssessmentGradingQueryRepository</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 22 methods split in JpaAssessmentAppealQueryRepository (7), JpaAssessmentDirectoryQueryRepository (2) and JpaAssessmentGradingQueryRepository (the 13 of job 25.2; the remaining 2 of that file fell in the same edit). 22 entries removed from method-size-exemptions.txt. <code>MethodSizeConventionTests</code> and <code>./gradlew integrationTest --tests com.sep.vox.infrastructure.persistence.query.*</code> (206 tests, 0 failures) pass. Shared logic: <code>applyStatsScope</code>, <code>applyTeacherTaskFilters</code>, <code>APPEAL_DETAIL_SELECT</code>, <code>toLikePattern</code> replace duplicated parameter binding and queries.</li></ul>
     </li>
-    <li class="job" id="job-25-3" data-status="todo">
-      <span class="title">25.3 Split and clean 22 long methods in 16 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-25-3" data-status="done">
+      <span class="title">25.3 Split and clean 22 long methods in 16 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 22 entries (infrastructure/persistence/query: 22 methods in 16 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>JpaAssessmentGradingQueryRepository</code>, <code>JpaAssessmentResultAuditQueryRepository</code>, <code>JpaAssessmentStatusCountsQueryRepository</code>, <code>JpaGradingFailureQueryRepository</code>, <code>JpaMonitoredAssessmentQueryRepository</code>, <code>JpaNearestCentralizedAssessmentQueryRepository</code>, <code>JpaPlatformBusinessHealthQueryRepository</code>, <code>JpaProctorScheduleCandidatesQueryRepository</code>, <code>JpaQuestionBankStatsQueryRepository</code>, <code>JpaQuestionQueryRepository</code>, <code>JpaSchoolAiCostQueryRepository</code>, <code>JpaSchoolUserQueryRepository</code>, <code>JpaSchoolWorkloadQueryRepository</code>, <code>JpaSchoolsAtRiskQueryRepository</code>, <code>JpaStudentAssessmentQueryRepository</code>, <code>JpaSubscriptionPlanQueryRepository</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; The 4 JpaAssessmentGradingQueryRepository entries were split together with job 25.2; 18 entries in the other 15 query repositories remain.</li><li>2026-11-25 &middot; Done &middot; The 18 entries in the 15 other query repositories are split; no <code>query/</code> entry is left in method-size-exemptions.txt. <code>./gradlew test</code> (full unit suite) passes; <code>./gradlew integrationTest --tests com.sep.vox.infrastructure.persistence.*</code> 388 tests, 0 failures. CHANGED: the offset (<code>setFirstResult</code>) stays inside the PageResult-returning methods of JpaAssessmentAppealQueryRepository and JpaAssessmentGradingQueryRepository, because PagingConventionTests only counts paged methods that compute the offset themselves.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.infrastructure.persistence.*' --tests 'com.sep.vox.infrastructure.persistence.adapter.*' --tests 'com.sep.vox.infrastructure.persistence.query.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; All 66 entries of phase 25 are gone from method-size-exemptions.txt. <code>./gradlew compileJava</code>, <code>./gradlew test</code> and <code>./gradlew integrationTest --tests com.sep.vox.infrastructure.persistence.*</code> (388 tests) pass. REWORK of job 25.1: SchoolClassRepositoryImpl now keeps <code>OneBasedPaging.toPageRequest</code> inside findBySchoolId/findByUserId (shared <code>NEWEST_FIRST</code> sort constant), because PagingConventionTests failed after the helper extraction.</li></ul>
 </div>
 
-<div class="phase" id="phase-26" data-status="todo">
+<div class="phase" id="phase-26" data-status="done">
   <h3><span class="title">Phase 26 &ndash; Method rules: Infrastructure: events, initializers, services, workers, config</span>
     <span class="tag">large · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 47 methods in 28 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-26-1" data-status="todo">
-      <span class="title">26.1 Split and clean 16 long methods in 12 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-26-1" data-status="done">
+      <span class="title">26.1 Split and clean 16 long methods in 12 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 16 entries (infrastructure/config: 2 methods in 2 files; infrastructure/event/internal: 14 methods in 10 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AssessmentAppealEmailConsumer</code>, <code>AssessmentResultLifecycleEmailConsumer</code>, <code>FirebaseConfig</code>, <code>GradingAssignmentEmailConsumer</code>, <code>InvoiceEmailConsumer</code>, <code>NotificationCategoryMappingValidator</code>, <code>NotificationPushedEventConsumer</code>, <code>RegisterVerificationOtpEmailConsumer</code>, <code>RejectRegisterFormEventConsumer</code>, <code>ResetPasswordOtpEmailConsumer</code>, <code>SchoolDebtEmailConsumer</code>, <code>UserCreatedEventConsumer</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 16 methods split in 12 files (config 2, event/internal 14); 16 entries removed from <code>method-size-exemptions.txt</code>. Per-event private methods in <code>NotificationPushedEventConsumer</code> (new private record <code>IncomingEvent</code>, shared <code>resultNavigation</code>/<code>gradingNavigation</code>); in the mail consumers <code>consume</code> keeps the same order, with <code>skipMissingRecipient</code>/<code>deliverMail</code>/<code>parsePayload</code>/<code>sendOtpMail</code> style helpers. Vietnamese comments in edited methods translated. <code>./gradlew test --tests *MethodSizeConventionTests --tests com.sep.vox.infrastructure.event.internal.consumer.* --tests com.sep.vox.infrastructure.config.*</code> pass.</li></ul>
     </li>
-    <li class="job" id="job-26-2" data-status="todo">
-      <span class="title">26.2 Split and clean 16 long methods in 7 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-26-2" data-status="done">
+      <span class="title">26.2 Split and clean 16 long methods in 7 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 16 entries (infrastructure/initializer: 13 methods in 5 files; infrastructure/service: 3 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AwsS3StorageService</code>, <code>FcmNotificationService</code>, <code>FrameworkInitializer</code>, <code>GradeLevelBandScopeInitializer</code>, <code>S3BucketInitializer</code>, <code>SystemAssessmentPolicyInitializer</code>, <code>SystemRubricTemplateInitializer</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 16 methods split in 7 files (initializer 13, service 3); 16 entries removed from <code>method-size-exemptions.txt</code>. <code>FrameworkInitializer</code>: each of the 30 band descriptors is its own private method (<code>pronunciationBand1()</code> ...); <code>SystemAssessmentPolicyInitializer.createPolicy</code> split around a private record <code>PolicyInputs</code>; <code>SystemRubricTemplateInitializer.createTemplate</code> and the <code>run</code> methods split into steps in the same order. CHANGED (trivial): <code>FrameworkInitializer.saveFrameworkVersion</code> reads <code>Instant.now()</code> itself instead of sharing one <code>now</code> local (the value feeds only <code>effectiveFrom</code>). <code>./gradlew test --tests *MethodSizeConventionTests --tests com.sep.vox.infrastructure.initializer.* --tests com.sep.vox.infrastructure.service.*</code> pass.</li></ul>
     </li>
-    <li class="job" id="job-26-3" data-status="todo">
-      <span class="title">26.3 Split and clean 15 long methods in 9 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-26-3" data-status="done">
+      <span class="title">26.3 Split and clean 15 long methods in 9 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 15 entries (infrastructure/service: 11 methods in 5 files; infrastructure/worker: 4 methods in 4 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AssessmentStatusAutoTransitionJob</code>, <code>FileProcessingService</code>, <code>GradingDeadlineReminderBatch</code>, <code>GradingDeadlineReminderJob</code>, <code>InterestQuizGenerationClient</code>, <code>OutboxEventScheduler</code>, <code>PracticeQuestionGenerationClient</code>, <code>QuestionDiversityClient</code>, <code>TopicGenerationClient</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 15 methods split in 9 files (service 11 in 5 files, worker 4 in 4 files); 15 entries removed from <code>method-size-exemptions.txt</code>. Shared logic extracted once: <code>FileProcessingService.ImportRowCollector</code> (the row/sample/total accumulation existed in <code>parseExcel</code> and <code>parseCsv</code>) and <code>TopicGenerationClient.isSuccessful</code> (the same non-2xx warning existed in <code>propose</code> and <code>searchByVector</code>; log text unchanged). <code>aliasesBySystemField</code> became one private method per import type; Vietnamese comments in those blocks translated; <code>new java.util.HashSet</code> replaced by an import. Multi-line signatures counted by <code>MethodSizeConventionTests</code> were put on fewer lines where a method stayed over 25. <code>./gradlew test --tests *MethodSizeConventionTests --tests com.sep.vox.infrastructure.service.* --tests com.sep.vox.infrastructure.worker.*</code> pass.</li></ul>
     </li>
-    <li class="job" id="job-26-4" data-status="todo">
-      <span class="title">26.4 Rename 13 vague-named methods</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-26-4" data-status="done">
+      <span class="title">26.4 Rename 13 vague-named methods</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>handleDlt</code> (10 Kafka consumers) becomes a name that says it logs a dead-lettered record, <code>handle</code> in <code>NotificationDeviceRevokeListener</code> and <code>RegisterVerificationCleanUpListener</code> say what they remove, and <code>data(String)</code> in <code>NotificationPushedEventConsumer</code> says what it builds; <code>@DltHandler</code>, <code>@TransactionalEventListener</code> and <code>@Transactional</code> stay as they are; <code>grep -rnE "\b(handleDlt|handle)\(" src/main/java/com/sep/vox/infrastructure</code> prints nothing. If the 10 <code>handleDlt</code> bodies are identical they are extracted once (D1 "one place" rule), otherwise each keeps its own body.
          <strong>Files:</strong> 10 consumers under <code>infrastructure/event/internal/consumer</code>, 2 listeners under <code>.../listener</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 13 methods renamed: <code>handleDlt</code> -> <code>logDeadLetteredRecord</code> in the 10 consumers (bodies differ per consumer, so each keeps its own; <code>@DltHandler</code> unchanged); <code>NotificationDeviceRevokeListener.handle</code> -> <code>removeDevicesOfRevokedSession</code>; <code>RegisterVerificationCleanUpListener.handle</code> -> <code>deleteConsumedVerificationEntry</code> (annotations unchanged); <code>NotificationPushedEventConsumer.data(String)</code> -> <code>navigationData(String)</code>. No test or other caller referenced the old names. CHANGED: <code>grep -rnE "\b(handleDlt|handle)\(" src/main/java/com/sep/vox/infrastructure</code> still prints one hit, a Javadoc sentence about <code>CsrfFilter.handle()</code> in <code>SecurityConfig.java</code> (security config, out of scope). <code>./gradlew compileJava compileTestJava</code> pass.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.infrastructure.config.*' --tests 'com.sep.vox.infrastructure.event.internal.consumer.*' --tests 'com.sep.vox.infrastructure.initializer.*' --tests 'com.sep.vox.infrastructure.service.*' --tests 'com.sep.vox.infrastructure.worker.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; All 47 entries of phase 26 are gone from method-size-exemptions.txt (the money/security entries of the same folders stay deferred: <code>SecurityConfig</code>, <code>SubscriptionPlanInitializer</code>, <code>PayOSService</code>, <code>SePayPaymentProcessService</code>, <code>PendingOrderReconciler</code>). <code>./gradlew compileJava compileTestJava</code> and the full <code>./gradlew test</code> pass. Not run: integrationTest (Docker).</li></ul>
 </div>
 
-<div class="phase" id="phase-27" data-status="todo">
+<div class="phase" id="phase-27" data-status="done">
   <h3><span class="title">Phase 27 &ndash; Method rules: Interfaces: GraphQL, gRPC, Kafka, REST DTOs</span>
     <span class="tag">medium · needs D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 15 methods in 13 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-27-1" data-status="todo">
-      <span class="title">27.1 Split and clean 15 long methods in 13 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-27-1" data-status="done">
+      <span class="title">27.1 Split and clean 15 long methods in 13 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 15 entries (interfaces/graphql/controller: 5 methods in 3 files; interfaces/graphql/exception: 1 method in 1 file; interfaces/grpc/exception: 1 method in 1 file; interfaces/kafka/consumer: 5 methods in 5 files; interfaces/kafka/mapper: 1 method in 1 file; interfaces/rest/dto: 2 methods in 2 files) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AnswerTurnsRecordedConsumer</code>, <code>AssessmentAttemptEvaluationCompletedConsumer</code>, <code>CreateSchoolRubricCriteriaRequest</code>, <code>CreateSystemRubricCriteriaRequest</code>, <code>GlobalExceptionResolver</code>, <code>GlobalGrpcExceptionHandler</code>, <code>GraphQLPracticeController</code>, <code>GraphQLPracticePlanningController</code>, <code>GraphQLQuestionController</code>, <code>PracticeAttemptEvaluationCompletedConsumer</code>, <code>ProctoringAlertRaisedConsumer</code>, <code>QuestionAssetAnalysisCompletedConsumer</code>, <code>RecordPracticeAttemptEvaluationCommandMapper</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 15 methods split in 13 files; 15 entries removed from <code>method-size-exemptions.txt</code> (65 to 50). Applies A1 (constructor of <code>GraphQLPracticePlanningController</code> kept verbatim, parameters 2 per line). <code>GlobalExceptionResolver</code> and <code>GlobalGrpcExceptionHandler</code>: the instanceof chains became a pattern <code>switch</code> that maps the exception to an error type or status (same mapping, same order of meaning; the exception classes share no superclass). Shared helpers extracted once: <code>toViewQuestionsQuery</code> (used by <code>questions</code> and <code>questionsForAssessmentPaper</code>). Kafka consumers: per-event private methods, reason comments kept. Rubric request records: the private instance methods are named <code>asCriterionItemCommand</code>/<code>asExampleCommands</code> because <code>InterfacesStructureConventionTests</code> reserves <code>to...Command</code> for static conversions. Evidence: <code>./gradlew test --tests '*MethodSizeConventionTests' --tests '*InterfacesStructureConventionTests' --tests '*LayeredArchitectureTests' --tests '*LombokUsageConventionTests' --tests 'com.sep.vox.interfaces.*'</code> passed.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests 'com.sep.vox.interfaces.*' --tests 'com.sep.vox.interfaces.graphql.controller.*' --tests 'com.sep.vox.interfaces.graphql.exception.*' --tests 'com.sep.vox.interfaces.grpc.exception.*' --tests 'com.sep.vox.interfaces.rest.*' --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; job 27.1 done; <code>./gradlew compileJava</code> and the phase verify tests pass (<code>com.sep.vox.interfaces.*</code>, <code>*MethodSizeConventionTests</code>).</li></ul>
 </div>
 
-<div class="phase" id="phase-28" data-status="todo">
+<div class="phase" id="phase-28" data-status="done">
   <h3><span class="title">Phase 28 &ndash; Method rules: Money and quota code (Ask first)</span>
     <span class="tag">medium · needs D6, D7</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> 37 methods in 25 files are split to at most 25 lines. Procedure in the introduction of section 3. <strong>Depends on:</strong> Phase 1, D6, D7 (best after phases 2 to 12, when the long methods are already shorter).</p>
   <ul class="jobs">
-    <li class="job" id="job-28-1" data-status="todo">
-      <span class="title">28.1 Split and clean 19 long methods in 11 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-28-1" data-status="done">
+      <span class="title">28.1 Split and clean 19 long methods in 11 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 19 entries (application services: 14 methods in 6 files; usecase/metering: 1 method in 1 file; usecase/order: 3 methods in 3 files; usecase/payment: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>CancelOrderUseCase</code>, <code>ClassTestTokenQuotaGuardService</code>, <code>ConsumeQuotaService</code>, <code>CreatePaymentCheckoutUrlUseCase</code>, <code>CreateSubscriptionOrderUseCase</code>, <code>CreateTopUpOrderUseCase</code>, <code>DistributeQuotaToUsersService</code>, <code>OrderSettlementService</code>, <code>QuotaPricingCalibrationService</code>, <code>RecordAiUsageUseCase</code>, <code>SubscriptionPeriodGuardService</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; In progress &middot; Baseline money tests (*Order*, *Payment*, *Subscription*, *Quota*, *SchoolBalance*, *Debt*, *Metering*): 214 tests in 39 classes, all pass. applies D6, D7.</li><li>2026-11-25 &middot; Done &middot; 19 entries of the 11 files left method-size-exemptions.txt (CreatePaymentCheckoutUrlUseCase: both its execute and resolvePendingAttempt were done here, so 28.2 has one entry fewer). `./gradlew test --tests '*MethodSizeConventionTests'` pass; money tests 214 tests in 39 classes, same as baseline. Extra shared classes: private records OverageCharge (ConsumeQuotaService), CalibrationSample (QuotaPricingCalibrationService), PersonalAllocationEstimate (ClassTestTokenQuotaGuardService), all nested and private.</li></ul>
     </li>
-    <li class="job" id="job-28-2" data-status="todo">
-      <span class="title">28.2 Split and clean 18 long methods in 15 files</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-28-2" data-status="done">
+      <span class="title">28.2 Split and clean 18 long methods in 15 files</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The 18 entries (usecase/payment: 2 methods in 2 files; usecase/subscription: 9 methods in 8 files; infrastructure/initializer: 1 method in 1 file; infrastructure/service: 3 methods in 2 files; infrastructure/worker: 2 methods in 1 file; interfaces/kafka/consumer: 1 method in 1 file) are gone from <code>method-size-exemptions.txt</code>; <code>MethodSizeConventionTests</code> and the tests of these classes pass.
          <strong>Files:</strong> <code>AiUsageRecordedConsumer</code>, <code>ArchiveSubscriptionPlanUseCase</code>, <code>CancelSchoolSubscriptionUseCase</code>, <code>CreatePaymentCheckoutUrlUseCase</code>, <code>CreateSubscriptionPlanUseCase</code>, <code>ForceSuspendSubscriptionUseCase</code>, <code>FundQuotaFromBalanceUseCase</code>, <code>PayOSService</code>, <code>PendingOrderReconciler</code>, <code>ProcessPaymentCallbackUseCase</code>, <code>PublishSubscriptionPlanUseCase</code>, <code>SePayPaymentProcessService</code>, <code>SubscriptionPlanInitializer</code>, <code>UnsuspendSubscriptionUseCase</code>, <code>UpdateSubscriptionPlanUseCase</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 17 entries (16 methods in 15 files after the 28.1 overlap: CreatePaymentCheckoutUrlUseCase was finished in 28.1) left method-size-exemptions.txt. `./gradlew test --tests '*MethodSizeConventionTests'` pass. applies D6, D7.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, the money tests (<code>*Order*</code>, <code>*Payment*</code>, <code>*Subscription*</code>, <code>*Quota*</code>, <code>*SchoolBalance*</code>, <code>*Debt*</code>, <code>*Metering*</code>) with pass counts equal to the counts recorded before the phase, <code>./gradlew test --tests '*MethodSizeConventionTests'</code></p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; 37 entries of 25 files left method-size-exemptions.txt (8 security-path entries remain). Verify: `./gradlew compileJava` pass; money tests (*Order*, *Payment*, *Subscription*, *Quota*, *SchoolBalance*, *Debt*, *Metering*) 214 tests in 39 classes, 0 failures, equal to the baseline; `./gradlew test` full unit suite BUILD SUCCESSFUL.</li></ul>
 </div>
 
-<div class="phase" id="phase-29" data-status="todo">
+<div class="phase" id="phase-29" data-status="done">
   <h3><span class="title">Phase 29 &ndash; Close out</span>
     <span class="tag">small · mechanical</span>
-    <span class="status todo">Not started</span></h3>
+    <span class="status done">Done</span></h3>
   <p><strong>Goal:</strong> The guards describe the final state, AGENTS.md matches the code, and the plan is verified. <strong>Depends on:</strong> Every other phase that is not Deferred.</p>
   <ul class="jobs">
-    <li class="job" id="job-29-1" data-status="todo">
-      <span class="title">29.1 Exemption lists hold only what was deferred</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-29-1" data-status="done">
+      <span class="title">29.1 Exemption lists hold only what was deferred</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> The <code>ModelCreationConventionTests</code> and <code>RepositoryAuditParameterConventionTests</code> exemption sets are empty; <code>method-size-exemptions.txt</code> holds only the 6 security-path methods; each remaining entry is explained in the Implementation notes.
          <strong>Files:</strong> <code>src/test/.../architecture/*ConventionTests.java</code>, <code>src/test/resources/architecture/method-size-exemptions.txt</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; model-creation-exemptions.txt has no entries (header only), RepositoryAuditParameterConventionTests EXEMPTIONS = Set.of(), method-size-exemptions.txt holds the 6 security-path methods. <code>./gradlew test --tests ModelCreation*/RepositoryAuditParameter*/MethodSize*/LayeredArchitecture*</code> passed.</li></ul>
     </li>
-    <li class="job" id="job-29-2" data-status="todo">
-      <span class="title">29.2 AGENTS.md matches the final code</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-29-2" data-status="done">
+      <span class="title">29.2 AGENTS.md matches the final code</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> Every statement the plan changed in AGENTS.md is true of the code; no phase marked Done contradicts it. The user confirms the final text (AGENTS.md changes need confirmation).
          <strong>Files:</strong> <code>AGENTS.md</code></p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; AGENTS.md lines 125-146, 185-216, 248 checked against ModelCreation/RepositoryAuditParameter/MethodSize guards (passing). The user confirmed the current text as final, including their two uncommitted rules (imports, null safety). No AGENTS.md edit made.</li></ul>
     </li>
-    <li class="job" id="job-29-3" data-status="todo">
-      <span class="title">29.3 Full verification</span> <span class="status todo">Not started</span>
+    <li class="job" id="job-29-3" data-status="done">
+      <span class="title">29.3 Full verification</span> <span class="status done">Done</span>
       <p><strong>Done when:</strong> <code>./gradlew clean build --no-daemon</code> passes (unit and integration suites); <code>verify-plan</code> has run and its result is in the Implementation notes.
          <strong>Files:</strong> nothing new</p>
-      <ul class="status-log"></ul>
+      <ul class="status-log"><li>2026-11-25 &middot; Done &middot; <code>./gradlew clean build --no-daemon</code> BUILD SUCCESSFUL (15m 4s, unit and integration, Docker up). verify-plan run; see Implementation notes.</li></ul>
     </li>
   </ul>
   <p><strong>Verify:</strong> <code>./gradlew clean build --no-daemon</code> (what CI runs), then the <code>verify-plan</code> skill</p>
-  <ul class="status-log"></ul>
+  <ul class="status-log"><li>2026-11-25 &middot; Done &middot; jobs 29.1 to 29.3 done; clean build passed.</li></ul>
 </div>
 
 <h2 id="risks">4. Risks</h2>
@@ -1047,7 +1053,7 @@
 <h2 id="notes">8. Implementation notes</h2>
 <p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
 problems noticed but not fixed.</p>
-<ul id="notes-list"><li>2026-11-25: paused after phase 7 (since 2026-11-24) behind <code>uuidv7-entity-ids-plan</code>; resumes at phase 8 once that plan is merged. Phase 9 will find the id lines of PracticePaperPersistenceService, ResolveNextPracticeQuestionPersistenceService and StartPracticeSessionPersistenceService already removed.</li><li>Phase 2: the stamp source is infrastructure/persistence/audit/AuditStampProvider (time = Instant.now(), actor = AuditActorProvider); adapters inject it, Spring Data statements keep their updatedAt/updatedBy parameters, so SchoolAreaAtomicUpdateTests and similar still call them directly. RepositoryTest imports AuditStampProvider.</li><li>Phase 2, job 2.5: CHANGED markQueued keeps <code>now</code> (expiry predicate). Behaviour change: updated_by of a claimed import session is now the audit actor ("System" from the scheduler) instead of the worker id; claimed_by still holds the worker.</li><li>Phase 2, job 2.4: UpdateAssessmentScheduleUseCase.authorize now returns void (its result only fed the stamp); AcceptSchoolDirectoryImportUseCase keeps a bare getCurrentAuthenticatedUserId() call because it throws when nobody is authenticated.</li><li>Phase 2: method-size-exemptions.txt shrank by 1 (UpdateSupportedLanguageUseCase.execute) and RubricVersionRepositoryImpl.updateRubricVersionAtomic was re-keyed to its new signature. Added tests: AuditStampProviderTests, RegisterFormReviewTests, ImportSessionRepositoryTests (3), AssessmentScheduleAtomicUpdateTests actor test. Gap: ApproveRegisterFormUseCase and RejectRegisterFormUseCase have no use case tests.</li><li>Phase 1, job 1.3: the 103 exempt files are stored in src/test/resources/architecture/model-creation-exemptions.txt (paths relative to com/sep/vox) instead of a Java set, because 103 entries do not fit a readable literal; the plan listed only the test class as file. Default choice, no behaviour change.</li><li>Phase 1, job 1.5: the JDK-tree measuring code lives in a helper, src/test/java/com/sep/vox/architecture/MethodLengthScanner.java, so the guard test stays small. A repeated exemption line covers a repeated method key (same file, name and parameter types).</li><li>Phase 1: the 102 concrete models found in domain/model by the guard (the plan text said 104) give the same 103 files and 162 calls.</li><li>Known gap (D7): the first run of the guard in the test JVM was slow because a compiler task was created per file; it now parses all files in one task (about 1 s).</li></ul>
+<ul id="notes-list"><li>Phase 29 / verify-plan (2026-11-25): PASS WITH GAPS. Evidence: grep for Model.builder() in application and for updatedAt/updatedBy in domain/repository print nothing; model-creation-exemptions.txt is empty, RepositoryAuditParameterConventionTests EXEMPTIONS is Set.of(), method-size-exemptions.txt holds the 6 security-path methods; git diff HEAD on src/main/resources is empty; clean build passed. Fixed while verifying: 3 fully qualified type names added by the plan (GradingItemScoreResolver, GetAssessmentSessionPaperUseCase, ViewMyAssessmentSchedulesUseCase) now use imports; the two in StartPracticeSessionPersistenceService and EndPracticeSessionUseCase stay qualified because of the PracticeSession name clash (allowed). Gaps: the clean build ran before those 3 import fixes (compileJava and the related tests, LayeredArchitectureTests re-ran green); no IDE null analysis run; unused-import check relied on compile only; D7 gaps of earlier phases stand. AGENTS.md also carries 2 uncommitted rules by the user (imports, null safety), confirmed as final.</li><li>Phase 28: 37 entries removed in 37 methods of 25 files (CreatePaymentCheckoutUrlUseCase.execute and resolvePendingAttempt were both done in job 28.1). Shared logic extracted into application/port/input/service/SubscriptionPlanQuotaAmountValidator (the included-amount checks that CreateSubscriptionPlanUseCase and UpdateSubscriptionPlanUseCase both held; messages and the 999999999999.999999 bound unchanged; both use cases now inject it). New nested private types, all inside one class: ConsumeQuotaService.OverageCharge, QuotaPricingCalibrationService.CalibrationSample, ClassTestTokenQuotaGuardService.PersonalAllocationEstimate, UpdateSubscriptionPlanUseCase.PlanEdits, PendingOrderReconciler.SweepProgress. Null-safety: @Nullable (jspecify) added on the new parameters and returns that can be null. Vietnamese comments and javadocs inside the edited methods were translated to English; string literals were left as they are. Money untouched except by moves: no amount, fee, price or quota rule changed. Files with no test class among these 25 stay a known gap under D7 (the 214-test money suite covers the order, payment, subscription and quota paths).</li><li>Phase 23: 33 entries removed in 33 methods (the plan listed 35: QuestionCloneService, CreateQuestionBankGradeUseCase and CreateQuestionTopicUseCase had no entry or were already short). Shared logic extracted into application/port/input/service (the AGENTS.md "one place" rule), each used by two or more use cases: QuestionEditAccessService (owner / editor collaborator / system-admin check, immutable-or-clone decision, asset-belongs-to-question check, school-bank creation access; used by Create/Update/Delete question asset, Regenerate asset analysis, Upsert evaluation guide, Update question, Create system-bank question, Preview question import), ImportSessionAcceptanceGuard (previewed / unexpired / owned session and required-mapping check; Accept question, bank and topic import), QuestionTopicContentDeletionService (delete the questions of a topic with their assets, guides, collaborators; Delete bank and Delete topic), QuestionBankManageAccessService (system admin on a system bank, member of the owning school otherwise; Create bank grade, Delete bank, Delete topic, Update bank status, Update topic status, Update topic, Preview topic import), QuestionStatusActorResolver.resolveForListing (the four View question / bank use cases) and QuestionCloneService.findClonedAsset (Update/Delete asset, Regenerate). Behaviour kept, with these default choices: read-only school and role lookups now run after the entity load or only when needed (DeleteQuestionUseCase, the bank/topic use cases that use QuestionBankManageAccessService, CreateSystemQuestionBankQuestionUseCase), never before a write; the Preview question import in non-bulk mode now looks up the school and roles once through QuestionEditAccessService.requireCreationAccess. The user-facing literals are unchanged, including the typo "hoac" of AcceptQuestionImportUseCase. Vietnamese class-level Javadoc of files that only had a method split was left as is; comments inside the edited methods were translated. Added QuestionEditAccessServiceTests (9). ViewQuestionStatusCountsUseCaseTests now builds the use case with a QuestionStatusActorResolver over the same mocks. Duplicates noticed, not extracted (files outside this job): validateAccess of DeleteQuestionBankGradeUseCase and UpdateQuestionBankUseCase; the accept-import checks of the six school import use cases; ownership checks in CloneQuestionUseCase and GetQuestionAssetUploadUrlUseCase; query-in-loop in DeleteQuestionBankUseCase.deleteWithContents and QuestionTopicContentDeletionService (existing behaviour). Gap (D7): the use cases of this phase other than the ones named in Added tests have no test class named after them; the split was mechanical only.</li><li>Phase 14: the plan listed 53 methods in 37 files, but KeywordTopicPersistenceService and PracticePaperPersistenceService had no exemption entry (already short), and PracticeQuestionSelectionService appears in both 14.2 and 14.3 (all 5 entries done in 14.2). 50 entries in 36 files were removed. Decisions by default: ConfidenceReviewCalculator got a private nested Findings class instead of passing four collections; its commented-out Group D code was deleted and only the reason (translated) kept as javadoc of evaluateAsrAndReferenceSignals (the code stays in git history); comments of a split method that record a reason moved into the javadoc of the helper they now explain, translated to English. Duplicate noticed, not extracted: isSchoolAdminOfAssessmentSchool and isMemberWithAccess exist in both AssessmentResultAccessService and AssessmentSessionModerationAccessService (sharing needs a constructor change in one of them, so it is left for a decision). Gap (D7): files of this phase that have no test class named after them were split mechanically only; the full unit suite passed.</li><li>Phase 10: UpdateFrameworkVersionUseCase builds a copy of the stored row, so it became the instance method FrameworkVersion.withEditableFields (keeps id, frameworkId, version, status, createdAt, createdBy; updatedAt/updatedBy stay null as before). Gap: that use case&rsquo;s test does not assert the copy, the new FrameworkVersionTests does.</li><li>2026-11-25: paused after phase 7 (since 2026-11-24) behind <code>uuidv7-entity-ids-plan</code>; resumes at phase 8 once that plan is merged. Phase 9 will find the id lines of PracticePaperPersistenceService, ResolveNextPracticeQuestionPersistenceService and StartPracticeSessionPersistenceService already removed.</li><li>Phase 2: the stamp source is infrastructure/persistence/audit/AuditStampProvider (time = Instant.now(), actor = AuditActorProvider); adapters inject it, Spring Data statements keep their updatedAt/updatedBy parameters, so SchoolAreaAtomicUpdateTests and similar still call them directly. RepositoryTest imports AuditStampProvider.</li><li>Phase 2, job 2.5: CHANGED markQueued keeps <code>now</code> (expiry predicate). Behaviour change: updated_by of a claimed import session is now the audit actor ("System" from the scheduler) instead of the worker id; claimed_by still holds the worker.</li><li>Phase 2, job 2.4: UpdateAssessmentScheduleUseCase.authorize now returns void (its result only fed the stamp); AcceptSchoolDirectoryImportUseCase keeps a bare getCurrentAuthenticatedUserId() call because it throws when nobody is authenticated.</li><li>Phase 2: method-size-exemptions.txt shrank by 1 (UpdateSupportedLanguageUseCase.execute) and RubricVersionRepositoryImpl.updateRubricVersionAtomic was re-keyed to its new signature. Added tests: AuditStampProviderTests, RegisterFormReviewTests, ImportSessionRepositoryTests (3), AssessmentScheduleAtomicUpdateTests actor test. Gap: ApproveRegisterFormUseCase and RejectRegisterFormUseCase have no use case tests.</li><li>Phase 1, job 1.3: the 103 exempt files are stored in src/test/resources/architecture/model-creation-exemptions.txt (paths relative to com/sep/vox) instead of a Java set, because 103 entries do not fit a readable literal; the plan listed only the test class as file. Default choice, no behaviour change.</li><li>Phase 1, job 1.5: the JDK-tree measuring code lives in a helper, src/test/java/com/sep/vox/architecture/MethodLengthScanner.java, so the guard test stays small. A repeated exemption line covers a repeated method key (same file, name and parameter types).</li><li>Phase 1: the 102 concrete models found in domain/model by the guard (the plan text said 104) give the same 103 files and 162 calls.</li><li>Known gap (D7): the first run of the guard in the test JVM was slow because a compiler task was created per file; it now parses all files in one task (about 1 s).</li></ul>
 
 </div>
 <script>

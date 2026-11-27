@@ -53,8 +53,8 @@ public class AssessmentScheduleCandidateConflictValidator {
     private final UserRepository userRepository;
 
     /**
-     * Mọi thí sinh trong {@code candidates} phải rảnh trong khoảng [start, end). Ca hiện tại của
-     * chính từng thí sinh được tự loại khỏi phép kiểm tra (xem javadoc lớp).
+     * Every candidate in {@code candidates} must be free in the window [start, end). Each candidate's own current
+     * session is excluded from the check automatically (see the class javadoc).
      */
     public void requireCandidatesFree(Collection<AssessmentCandidate> candidates, Instant start, Instant end) {
         // A session without a time has nothing to compare -- the same way AssessmentScheduleRoomValidator skips when
@@ -72,23 +72,27 @@ public class AssessmentScheduleCandidateConflictValidator {
             return;
         }
 
-        // Giá trị nullable nên phải dùng HashMap.put; Collectors.toMap ném NPE khi value là null.
+        List<UUID> conflictingStudentIds = findConflictingStudentIds(occupying, start, end);
+        if (conflictingStudentIds.isEmpty()) {
+            return;
+        }
+        throw new ResourceDuplicatedException(buildMessage(conflictingStudentIds));
+    }
+
+    private List<UUID> findConflictingStudentIds(List<AssessmentCandidate> occupying, Instant start, Instant end) {
+        // The values are nullable, so HashMap.put is required; Collectors.toMap throws an NPE when a value is null.
         Map<UUID, UUID> currentScheduleByStudent = new HashMap<UUID, UUID>();
         for (AssessmentCandidate candidate : occupying) {
             currentScheduleByStudent.put(candidate.getStudentId(), candidate.getScheduleId());
         }
 
-        List<UUID> conflictingStudentIds = assessmentCandidateRepository
+        return assessmentCandidateRepository
             .findConflictsForStudents(currentScheduleByStudent.keySet(), start, end, null).stream()
             .filter(conflict -> !Objects.equals(
                 conflict.scheduleId(), currentScheduleByStudent.get(conflict.studentId())))
             .map(conflict -> conflict.studentId())
             .distinct()
             .toList();
-        if (conflictingStudentIds.isEmpty()) {
-            return;
-        }
-        throw new ResourceDuplicatedException(buildMessage(conflictingStudentIds));
     }
 
     /**

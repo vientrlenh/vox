@@ -56,23 +56,31 @@ public class AcceptSchoolUserImportUseCase
         User currentUser = findCurrentUser(currentUserId);
         UUID schoolId = getSchoolId(currentUser);
         validateRequestedSchool(input.schoolId(), schoolId);
-        School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
-        if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
-        }
+        validateSchoolIsActive(schoolId);
 
         ImportSession session = findSession(input.importSessionId());
         validateSession(session, schoolId, now);
         validateRequiredMapping(input.confirmedMapping());
 
+        queueImport(input, now);
+        return null;
+    }
+
+    private void validateSchoolIsActive(UUID schoolId) {
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+        if (!school.isActive()) {
+            throw new IllegalArgumentException("Trường học không hoạt động");
+        }
+    }
+
+    private void queueImport(AcceptSchoolUserImportCommand input, Instant now) {
         String confirmedMappingJson = jsonSerializationPort.toJson(input.confirmedMapping());
         int queued = importSessionRepository.markQueued(
                 input.importSessionId(), USER_TYPE, confirmedMappingJson, now);
         if (queued == 0) {
             throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept hoặc đã hết hạn");
         }
-        return null;
     }
 
     private void validateCommand(AcceptSchoolUserImportCommand input) {

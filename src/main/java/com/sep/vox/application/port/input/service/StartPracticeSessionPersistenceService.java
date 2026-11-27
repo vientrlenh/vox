@@ -35,33 +35,34 @@ public class StartPracticeSessionPersistenceService {
             .orElseThrow(() -> new ResourceNotFoundException(
                 "Đề luyện không tồn tại hoặc đã hết thời gian giữ chỗ."
             ));
-        com.sep.vox.domain.model.personalization.PracticeSession savedSession = practiceSessionRepository.save(com.sep.vox.domain.model.personalization.PracticeSession.builder()
-            .studentId(studentId)
-            .practicePaperId(paper.getId())
-            // There is no rubric and no assessment policy lookup: practice is graded on a fixed 0-100 scale.
-            // The policy is chosen by the student's class, and when the school has not configured one the student
-            // could NOT enter the session -- blocking at the door for something practice does not use.
-            //
-            // The band is chosen by the STUDENT on the preparation screen; it is the only thing left from the
-            // assessment framework.
-            .targetFrameworkBandId(requireTargetBand(paper.getTargetFrameworkBandId()))
-            .chosenPracticeTopicId(paper.getPracticeTopicId())
-            .targetSubAttributesJson("[]")
-            .origin(paper.getOrigin())
-            .offeredTopicIdsJson(offerEvidenceJson(paper.getOfferedTopicIdsJson(), paper.getPreviousOfferedTopicIdsJson()))
-            .startedAt(now)
-            .lastHeartbeatAt(now)
-            .gradedSeconds(0)
-            .status("IN_PROGRESS")
-            .helpRequestCount(0)
-            .longPauseCount(0)
-            .build());
+        com.sep.vox.domain.model.personalization.PracticeSession savedSession = startSession(studentId, paper, now);
         practicePaperRepository.save(paper.withStatus("STARTED"));
         return PracticeSessionResponseMapper.toResponse(
             SessionRowMapper.toDto(
                 practiceSessionQueryRepository.findSessionRow(savedSession.getId(), studentId).orElse(null)
             )
         );
+    }
+
+    /**
+     * There is no rubric and no assessment policy lookup: practice is graded on a fixed 0-100 scale.
+     * The policy is chosen by the student's class, and when the school has not configured one the student
+     * could NOT enter the session -- blocking at the door for something practice does not use.
+     *
+     * <p>The band is chosen by the STUDENT on the preparation screen; it is the only thing left from the
+     * assessment framework.
+     */
+    private com.sep.vox.domain.model.personalization.PracticeSession startSession(
+            UUID studentId, PracticePaper paper, Instant now) {
+        return practiceSessionRepository.save(
+            com.sep.vox.domain.model.personalization.PracticeSession.started(
+                studentId,
+                paper.getId(),
+                requireTargetBand(paper.getTargetFrameworkBandId()),
+                paper.getPracticeTopicId(),
+                paper.getOrigin(),
+                offerEvidenceJson(paper.getOfferedTopicIdsJson(), paper.getPreviousOfferedTopicIdsJson()),
+                now));
     }
 
     /**

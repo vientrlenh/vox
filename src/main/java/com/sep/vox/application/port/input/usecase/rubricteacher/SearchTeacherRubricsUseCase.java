@@ -33,21 +33,9 @@ public class SearchTeacherRubricsUseCase implements IUseCase<SearchTeacherRubric
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricDto> execute(SearchTeacherRubricsQuery query) {
+        SchoolUser schoolUser = loadSchoolUserOfCurrentTeacher();
 
-        // 1. Xác thực tài khoản
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-        }
-
-        // 2. Suy ra trường học của Teacher từ SchoolUser (không nhận schoolId từ client)
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-
-        // 3. Gọi DB (Repository xử lý SQL lọc động, chỉ lấy rubric của trường Teacher)
+        // The repository builds the dynamic filter SQL and returns only the rubrics of the teacher's school.
         PageResult<Rubric> pageResult = rubricRepository.searchSchoolRubrics(
                 schoolUser.getSchoolId(),
                 query.keyword(),
@@ -56,8 +44,6 @@ public class SearchTeacherRubricsUseCase implements IUseCase<SearchTeacherRubric
                 query.page(),
                 query.size()
         );
-
-        // 4. Map sang DTO và trả về
         return new PageResult<>(
                 pageResult.content().stream()
                         .map(RubricDtoMapper::toRubricDto)
@@ -67,5 +53,18 @@ public class SearchTeacherRubricsUseCase implements IUseCase<SearchTeacherRubric
                 pageResult.totalElements(),
                 pageResult.totalPages()
         );
+    }
+
+    // The teacher's school comes from SchoolUser; the client never sends a schoolId.
+    private SchoolUser loadSchoolUserOfCurrentTeacher() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+
+        return schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
     }
 }

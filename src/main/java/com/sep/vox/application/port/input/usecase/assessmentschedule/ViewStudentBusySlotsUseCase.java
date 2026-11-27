@@ -45,21 +45,23 @@ public class ViewStudentBusySlotsUseCase
         for (UUID scheduleId : input.scheduleIds()) {
             AssessmentSchedule schedule = assessmentScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
-            // Cùng luật quyền với danh bạ học sinh: người xem được danh sách thì cũng được biết ai
-            // trong số đó đang bận.
+            // The same permission rule as the student directory: whoever can see the list may also know who in it is busy.
             assessmentDirectoryAccessService.resolveByAssessmentId(schedule.getAssessmentId());
-
-            // Loại chính ca đang xét: học sinh đã ở trong ca này thì không phải "bận" dưới góc nhìn
-            // của màn chọn — họ đang ở đúng chỗ.
-            assessmentCandidateRepository.findConflictsForStudents(
-                    input.studentIds(), schedule.getStartDate(), schedule.getEndDate(), schedule.getId())
-                .forEach(conflict -> slots.add(new StudentBusySlotResponse(
-                    conflict.studentId(),
-                    schedule.getId(),
-                    conflict.scheduleId(),
-                    conflict.startDate(),
-                    conflict.endDate())));
+            addBusySlots(slots, schedule, input.studentIds());
         }
         return slots;
+    }
+
+    private void addBusySlots(List<StudentBusySlotResponse> slots, AssessmentSchedule schedule, List<UUID> studentIds) {
+        // Exclude the session under consideration itself: a student who is already in this session is not "busy" from the
+        // point of view of the picker screen -- they are exactly where they should be.
+        assessmentCandidateRepository.findConflictsForStudents(
+                studentIds, schedule.getStartDate(), schedule.getEndDate(), schedule.getId())
+            .forEach(conflict -> slots.add(new StudentBusySlotResponse(
+                conflict.studentId(),
+                schedule.getId(),
+                conflict.scheduleId(),
+                conflict.startDate(),
+                conflict.endDate())));
     }
 }

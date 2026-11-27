@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import com.sep.vox.domain.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,14 +87,41 @@ public class QuotaPricingCalibrationService {
 
         List<SessionCostDto> costs = sessionCostQueryRepository.sumCostUsdGroupedBySessionSince(since);
         if (costs.size() < minSampleSessions) {
-            log.info(
-                "[quota-pricing-calibration] {} bỏ qua: chỉ có {} session phát sinh usage trong {} ngày gần nhất, "
-                    + "cần tối thiểu {}",
-                source, costs.size(), windowDays, minSampleSessions
-            );
+            logTooFewCostSessions(source, costs.size(), windowDays, minSampleSessions);
             return;
         }
 
+        CalibrationSample sample = matchCostsWithDurations(costs, durationLookup);
+        if (sample.matchedCount() < minSampleSessions || sample.totalSeconds() <= 0) {
+            logTooFewMatchedSessions(source, sample.matchedCount(), minSampleSessions);
+            return;
+        }
+
+        saveCalibration(source, defaultRate, windowDays, sample);
+    }
+
+    private void logTooFewCostSessions(QuotaPricingSource source, int costSessionCount, Integer windowDays,
+            Integer minSampleSessions) {
+        log.info(
+            "[quota-pricing-calibration] {} bỏ qua: chỉ có {} session phát sinh usage trong {} ngày gần nhất, "
+                + "cần tối thiểu {}",
+            source, costSessionCount, windowDays, minSampleSessions
+        );
+    }
+
+    private void logTooFewMatchedSessions(QuotaPricingSource source, int matchedCount, Integer minSampleSessions) {
+        log.info(
+            "[quota-pricing-calibration] {} bỏ qua: chỉ khớp được {} session có cả cost lẫn giây trả lời thật, "
+                + "cần tối thiểu {}",
+            source, matchedCount, minSampleSessions
+        );
+    }
+
+    private record CalibrationSample(BigDecimal totalCost, long totalSeconds, int matchedCount) {
+    }
+
+    private CalibrationSample matchCostsWithDurations(
+            List<SessionCostDto> costs, Function<Collection<UUID>, List<SessionDurationAggregate>> durationLookup) {
         List<UUID> sessionIds = costs.stream().map(a -> a.sessionId()).toList();
         Map<UUID, Long> durationsBySession = durationLookup.apply(sessionIds).stream()
             .collect(Collectors.toMap(a -> a.sessionId(), a -> a.totalDurationSeconds()));
@@ -113,51 +141,47 @@ public class QuotaPricingCalibrationService {
             totalSeconds += duration;
             matchedCount++;
         }
+        return new CalibrationSample(totalCost, totalSeconds, matchedCount);
+    }
 
-        if (matchedCount < minSampleSessions || totalSeconds <= 0) {
-            log.info(
-                "[quota-pricing-calibration] {} bỏ qua: chỉ khớp được {} session có cả cost lẫn giây trả lời thật, "
-                    + "cần tối thiểu {}",
-                source, matchedCount, minSampleSessions
-            );
-            return;
-        }
-
-        BigDecimal rawRate = totalCost.divide(BigDecimal.valueOf(totalSeconds), 6, RoundingMode.HALF_UP);
+    private void saveCalibration(QuotaPricingSource source, Supplier<BigDecimal> defaultRate, Integer windowDays,
+            CalibrationSample sample) {
+        BigDecimal rawRate = sample.totalCost().divide(BigDecimal.valueOf(sample.totalSeconds()), 6, RoundingMode.HALF_UP);
 
         BigDecimal previousApplied = quotaPricingCalibrationRepository.findLatest(source)
             .map(c -> c.getAppliedRateUsdPerSecond())
             .orElseGet(defaultRate);
 
         BigDecimal maxChangeRatio = calibrationConfig.maxChangeRatio();
-        BigDecimal lowerSmoothBound = previousApplied.multiply(BigDecimal.ONE.subtract(maxChangeRatio));
-        BigDecimal upperSmoothBound = previousApplied.multiply(BigDecimal.ONE.add(maxChangeRatio));
-        BigDecimal smoothed = clamp(rawRate, lowerSmoothBound, upperSmoothBound);
+        BigDecimal applied = smoothedAndBounded(rawRate, previousApplied, maxChangeRatio);
 
-        BigDecimal applied = clamp(smoothed, calibrationConfig.minRateBound(), calibrationConfig.maxRateBound());
+        String note = adjustmentNote(rawRate, applied, maxChangeRatio, previousApplied);
 
-        String note = applied.compareTo(rawRate) == 0
-            ? null
-            : "raw=%s bị điều chỉnh còn applied=%s (làm mượt tối đa %s%% so với lần trước %s, hoặc chặn biên an toàn)"
-                .formatted(rawRate, applied, maxChangeRatio.multiply(BigDecimal.valueOf(100)), previousApplied);
-
-        QuotaPricingCalibration calibration = QuotaPricingCalibration.builder()
-            .computedAt(Instant.now())
-            .windowDays(windowDays)
-            .sessionCount(matchedCount)
-            .totalCostUsd(totalCost)
-            .totalAnsweredSeconds(totalSeconds)
-            .rawRateUsdPerSecond(rawRate)
-            .appliedRateUsdPerSecond(applied)
-            .note(note)
-            .pricingSource(source)
-            .build();
+        QuotaPricingCalibration calibration = QuotaPricingCalibration.computed(
+            Instant.now(), windowDays, sample.matchedCount(), sample.totalCost(), sample.totalSeconds(), rawRate,
+            applied, note, source);
         quotaPricingCalibrationRepository.save(calibration);
 
         log.info(
             "[quota-pricing-calibration] {} đã tính lại: sessionCount={} rawRate={} appliedRate={} (trước đó {})",
-            source, matchedCount, rawRate, applied, previousApplied
+            source, sample.matchedCount(), rawRate, applied, previousApplied
         );
+    }
+
+    private BigDecimal smoothedAndBounded(BigDecimal rawRate, BigDecimal previousApplied, BigDecimal maxChangeRatio) {
+        BigDecimal lowerSmoothBound = previousApplied.multiply(BigDecimal.ONE.subtract(maxChangeRatio));
+        BigDecimal upperSmoothBound = previousApplied.multiply(BigDecimal.ONE.add(maxChangeRatio));
+        BigDecimal smoothed = clamp(rawRate, lowerSmoothBound, upperSmoothBound);
+
+        return clamp(smoothed, calibrationConfig.minRateBound(), calibrationConfig.maxRateBound());
+    }
+
+    private @Nullable String adjustmentNote(BigDecimal rawRate, BigDecimal applied, BigDecimal maxChangeRatio,
+            BigDecimal previousApplied) {
+        return applied.compareTo(rawRate) == 0
+            ? null
+            : "raw=%s bị điều chỉnh còn applied=%s (làm mượt tối đa %s%% so với lần trước %s, hoặc chặn biên an toàn)"
+                .formatted(rawRate, applied, maxChangeRatio.multiply(BigDecimal.valueOf(100)), previousApplied);
     }
 
     private static BigDecimal clamp(BigDecimal value, BigDecimal min, BigDecimal max) {

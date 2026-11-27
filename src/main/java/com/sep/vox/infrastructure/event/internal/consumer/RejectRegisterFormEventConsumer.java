@@ -59,14 +59,24 @@ public class RejectRegisterFormEventConsumer {
             return;
         }
 
-        RegisterFormRejectedPayloadV1 payload;
+        RegisterFormRejectedPayloadV1 payload = parsePayload(record.value(), eventId);
+        sendRejectionMail(payload, eventId);
+        markProcessed(eventId);
+
+        log.info("Reject register form mail sent: eventId={}, to={}", eventId, payload.to());
+        ack.acknowledge();
+    }
+
+    private RegisterFormRejectedPayloadV1 parsePayload(String value, UUID eventId) {
         try {
-            payload = jsonMapper.readValue(record.value(), RegisterFormRejectedPayloadV1.class);
+            return jsonMapper.readValue(value, RegisterFormRejectedPayloadV1.class);
         } catch (Exception e) {
-            log.error("Invalid payload: eventId={}, value={}", eventId, record.value());
+            log.error("Invalid payload: eventId={}, value={}", eventId, value);
             throw new IllegalStateException("Payload register-form-rejected không hợp lệ, eventId= " + eventId, e);
         }
+    }
 
+    private void sendRejectionMail(RegisterFormRejectedPayloadV1 payload, UUID eventId) {
         try {
             String html = mailTemplatePort.renderRejectRegisterFormEmail(payload.reason());
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
@@ -74,15 +84,10 @@ public class RejectRegisterFormEventConsumer {
             log.error("Send mail error: eventId={}, to={}", eventId, payload.to());
             throw new IllegalStateException("Gửi mail từ chối đơn đăng ký thất bại: eventId=" + eventId, e);
         }
-
-        markProcessed(eventId);
-
-        log.info("Reject register form mail sent: eventId={}, to={}", eventId, payload.to());
-        ack.acknowledge();
     }
 
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error("register-form-reject event sent to DLT: eventId={}, topic={}, payload={}", eventId, record.topic(), record.value());
     }

@@ -36,29 +36,31 @@ public class ViewSystemRubricResultBandDetailsUseCase implements IUseCase<ViewSy
     @Override
     @Transactional(readOnly = true)
     public RubricResultBandDto execute(ViewSystemRubricResultBandDetailsQuery query) {
-        // 1. Xác thực tài khoản
+        requireActiveCurrentUser();
+
+        RubricResultBand resultBand = rubricResultBandRepository.findById(query.resultBandId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
+        requireSystemOwnedResultBand(resultBand);
+
+        return RubricResultBandDtoMapper.toDto(resultBand);
+    }
+
+    private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
         }
+    }
 
-        // 2. Lấy Result Band
-        RubricResultBand resultBand = rubricResultBandRepository.findById(query.resultBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
-
-        // 3. Lấy Version
+    private void requireSystemOwnedResultBand(RubricResultBand resultBand) {
         RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa Dải điểm Kết quả này."));
 
-        // 4. Lấy Rubric gốc và kiểm tra quyền sở hữu SYSTEM
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException("Hành động bị từ chối: Dải điểm Kết quả này thuộc về Trường học, không phải của Hệ thống.");
         }
-
-        // 5. Map sang DTO và trả về
-        return RubricResultBandDtoMapper.toDto(resultBand);
     }
 }

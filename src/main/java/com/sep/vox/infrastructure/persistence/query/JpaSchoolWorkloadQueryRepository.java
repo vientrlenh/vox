@@ -27,25 +27,25 @@ import jakarta.persistence.Query;
 public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepository {
 
     /**
-     * MỘT định nghĩa của "bài chưa có điểm", dùng chung cho cả hai câu bên dưới.
+     * ONE definition of "an attempt without a score", shared by both statements below.
      *
-     * <p>Hai lối vào tập này, và chúng loại trừ nhau theo dựng hình:
+     * <p>Two ways into this set, and they are mutually exclusive by construction:
      *
      * <ul>
-     *   <li>Phiên {@code GRADING_FAILED} CHƯA có dòng kết quả nào — AI hỏng và chưa ai đụng tới.
-     *   <li>Dòng kết quả {@code PENDING_REVIEW} — bài đang ở hàng đợi người chấm, bất kể phiên đã
-     *       {@code GRADED} hay vẫn mang {@code GRADING_FAILED}. Chuyển sang chấm tay CỐ Ý không đổi
-     *       trạng thái phiên (xem {@code HandOffGradingToHumanUseCase}), nên chỉ nhìn trạng thái
-     *       phiên sẽ đếm bài đã có người nhận thành bài chưa ai xử lý.
+     *   <li>A {@code GRADING_FAILED} session with NO result row yet -- the AI failed and nobody has touched it.
+     *   <li>A {@code PENDING_REVIEW} result row -- the attempt is in the grader queue, whether the session is
+     *       {@code GRADED} or still carries {@code GRADING_FAILED}. Handing off to manual grading DELIBERATELY does
+     *       not change the session status (see {@code HandOffGradingToHumanUseCase}), so looking at the session
+     *       status alone would count an attempt someone has already taken as one nobody is handling.
      * </ul>
      *
-     * <p>Kỳ đã {@code RESULTS_PUBLISHED} bị LOẠI: cả chấm lại bằng AI lẫn chuyển người chấm đều bị từ
-     * chối ở trạng thái đó, nên những bài ấy không còn là việc phải làm mà là thiệt hại đã xảy ra —
-     * để chúng trong hàng đợi thì con số có một mức sàn không bao giờ về 0 được. Chúng vẫn hiện ở màn
-     * chi tiết phiên, kèm lý do vì sao không còn nút nào.
+     * <p>Periods that are already {@code RESULTS_PUBLISHED} are EXCLUDED: both AI re-grading and changing the grader
+     * are rejected in that state, so those attempts are no longer work to do but damage that has already happened --
+     * leaving them in the queue would give the number a floor that can never return to 0. They still show on the
+     * session detail screen, with the reason why no button is left.
      *
-     * <p>{@code LEFT JOIN} sang phân công chỉ có thể ra tối đa một dòng: {@code active_result_id} là
-     * cờ "phân công đang mở", và mỗi bài chỉ có tối đa một vòng đang mở.
+     * <p>The {@code LEFT JOIN} to the assignment can produce at most one row: {@code active_result_id} is the
+     * "open assignment" flag, and each attempt has at most one open round.
      */
     private static final String UNSCORED_CTE = """
         WITH unscored AS (
@@ -82,12 +82,37 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
         )
         """;
 
+    private static final String UNHANDLED_AI_FAILURES_SELECT = """
+        SELECT
+            u.session_id,
+            u.assessment_id,
+            e.code,
+            e.name,
+            usr.full_name,
+            (SELECT sc.name
+               FROM school_class_users scu
+               JOIN school_classes sc ON sc.id = scu.school_class_id
+              WHERE scu.user_id = c.student_id AND scu.is_active = TRUE
+              ORDER BY sc.name ASC
+              LIMIT 1),
+            u.submitted_at,
+            s.grading_error,
+            s.grading_retry_count,
+            u.bucket = 'AI_RETRY_LEFT'
+        FROM unscored u
+        JOIN assessment_sessions s ON s.id = u.session_id
+        JOIN assessments e ON e.id = u.assessment_id
+        JOIN assessment_candidates c ON c.id = s.candidate_id
+        LEFT JOIN users usr ON usr.id = c.student_id
+        """;
+
     @PersistenceContext
     private EntityManager em;
 
     /**
-     * {@code MIN(submitted_at)} trả null khi không còn bài nào — và null ở đây phải đi tới tận giao
-     * diện: "hàng đợi rỗng" khác hẳn "có bài, vừa nộp hôm nay", vốn cũng cho ra 0 ngày chờ.
+     * {@code MIN(submitted_at)} returns null when no attempt is left -- and that null must travel all the way to
+     * the UI: "empty queue" is very different from "there is an attempt, just submitted today", which also gives
+     * 0 days of waiting.
      */
     @Override
     public SchoolUnscoredWorkloadDto countUnscored(UUID schoolId, Instant now) {
@@ -113,14 +138,20 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
     }
 
     /**
-     * Chỉ kỳ {@code CLOSED}: đó đúng là tập kỳ mà nút "Công bố điểm" đang bấm được. Kỳ còn
-     * {@code IN_PROGRESS} vẫn đang có người thi nên bài trống là chuyện bình thường, chưa phải cảnh
-     * báo.
+     * Only {@code CLOSED} periods: exactly the set of periods for which the "Publish scores" button is clickable.
+     * A period that is still {@code IN_PROGRESS} still has people taking the test, so empty attempts are normal
+     * and not yet a warning.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public List<AssessmentAwaitingPublishDto> findAssessmentsAwaitingPublish(UUID schoolId, Instant now, int limit) {
-        List<Object[]> rows = em.createNativeQuery(UNSCORED_CTE + """
+        return findAwaitingPublishRows(schoolId, now, limit).stream()
+            .map(JpaSchoolWorkloadQueryRepository::toAwaitingPublish)
+            .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object[]> findAwaitingPublishRows(UUID schoolId, Instant now, int limit) {
+        return em.createNativeQuery(UNSCORED_CTE + """
             SELECT
                 e.id,
                 e.code,
@@ -143,18 +174,18 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
             .setParameter("maxSchoolRegrades", AssessmentSession.MAX_SCHOOL_REGRADES)
             .setParameter("maxAssessments", limit)
             .getResultList();
+    }
 
-        return rows.stream()
-            .map(row -> new AssessmentAwaitingPublishDto(
-                toUuid(row[0]),
-                (String) row[1],
-                (String) row[2],
-                toInstant(row[3]),
-                toInt(row[4]),
-                toInt(row[5]),
-                toInt(row[6]),
-                toInt(row[7])))
-            .toList();
+    private static AssessmentAwaitingPublishDto toAwaitingPublish(Object[] row) {
+        return new AssessmentAwaitingPublishDto(
+            toUuid(row[0]),
+            (String) row[1],
+            (String) row[2],
+            toInstant(row[3]),
+            toInt(row[4]),
+            toInt(row[5]),
+            toInt(row[6]),
+            toInt(row[7]));
     }
 
     /**
@@ -169,16 +200,9 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
      * branch of the other groups, and Hibernate requires every parameter in the statement to be bound.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public PageResult<SchoolGradingFailureDto> findUnhandledAiFailures(
             UUID schoolId, UUID assessmentId, Boolean retryLeft, int page, int size) {
-        // The trailing line break is REQUIRED: the clause may end with a named parameter (:assessmentId), and
-        // concatenating it directly with the following "ORDER BY" would produce the parameter name ":assessmentIdORDER" -- Hibernate reports "no
-        // parameter named" instead of an SQL syntax error.
-        String where = " WHERE u.bucket IN ('AI_RETRY_LEFT', 'AI_NO_RETRY')"
-            + (assessmentId == null ? "" : " AND u.assessment_id = :assessmentId")
-            + allowancePredicate(retryLeft)
-            + "\n";
+        String where = unhandledAiFailureFilter(assessmentId, retryLeft);
 
         long total = toLong(bind(em.createNativeQuery(
             UNSCORED_CTE + "SELECT COUNT(*) FROM unscored u" + where), schoolId, assessmentId)
@@ -188,51 +212,50 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
             return new PageResult<>(List.of(), page, size, 0, 0);
         }
 
-        List<Object[]> rows = bind(em.createNativeQuery(UNSCORED_CTE + """
-            SELECT
-                u.session_id,
-                u.assessment_id,
-                e.code,
-                e.name,
-                usr.full_name,
-                (SELECT sc.name
-                   FROM school_class_users scu
-                   JOIN school_classes sc ON sc.id = scu.school_class_id
-                  WHERE scu.user_id = c.student_id AND scu.is_active = TRUE
-                  ORDER BY sc.name ASC
-                  LIMIT 1),
-                u.submitted_at,
-                s.grading_error,
-                s.grading_retry_count,
-                u.bucket = 'AI_RETRY_LEFT'
-            FROM unscored u
-            JOIN assessment_sessions s ON s.id = u.session_id
-            JOIN assessments e ON e.id = u.assessment_id
-            JOIN assessment_candidates c ON c.id = s.candidate_id
-            LEFT JOIN users usr ON usr.id = c.student_id
-            """ + where + """
+        List<SchoolGradingFailureDto> content =
+            findUnhandledAiFailureRows(schoolId, assessmentId, where, page, size).stream()
+                .map(JpaSchoolWorkloadQueryRepository::toGradingFailure)
+                .toList();
+
+        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+    }
+
+    /**
+     * The trailing line break is REQUIRED: the clause may end with a named parameter (:assessmentId), and
+     * concatenating it directly with the following "ORDER BY" would produce the parameter name ":assessmentIdORDER"
+     * -- Hibernate reports "no parameter named" instead of an SQL syntax error.
+     */
+    private static String unhandledAiFailureFilter(UUID assessmentId, Boolean retryLeft) {
+        return " WHERE u.bucket IN ('AI_RETRY_LEFT', 'AI_NO_RETRY')"
+            + (assessmentId == null ? "" : " AND u.assessment_id = :assessmentId")
+            + allowancePredicate(retryLeft)
+            + "\n";
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object[]> findUnhandledAiFailureRows(
+            UUID schoolId, UUID assessmentId, String where, int page, int size) {
+        return bind(em.createNativeQuery(UNSCORED_CTE + UNHANDLED_AI_FAILURES_SELECT + where + """
             ORDER BY u.submitted_at ASC, u.session_id ASC
             LIMIT :pageSize OFFSET :offset
             """), schoolId, assessmentId)
             .setParameter("pageSize", size)
             .setParameter("offset", OneBasedPaging.toOffset(page, size))
             .getResultList();
+    }
 
-        List<SchoolGradingFailureDto> content = rows.stream()
-            .map(row -> new SchoolGradingFailureDto(
-                toUuid(row[0]),
-                toUuid(row[1]),
-                (String) row[2],
-                (String) row[3],
-                (String) row[4],
-                (String) row[5],
-                toInstant(row[6]),
-                (String) row[7],
-                row[8] == null ? null : ((Number) row[8]).intValue(),
-                Boolean.TRUE.equals(row[9])))
-            .toList();
-
-        return new PageResult<>(content, page, size, total, (int) Math.ceil((double) total / size));
+    private static SchoolGradingFailureDto toGradingFailure(Object[] row) {
+        return new SchoolGradingFailureDto(
+            toUuid(row[0]),
+            toUuid(row[1]),
+            (String) row[2],
+            (String) row[3],
+            (String) row[4],
+            (String) row[5],
+            toInstant(row[6]),
+            (String) row[7],
+            row[8] == null ? null : ((Number) row[8]).intValue(),
+            Boolean.TRUE.equals(row[9]));
     }
 
     @Override
@@ -249,9 +272,9 @@ public class JpaSchoolWorkloadQueryRepository implements SchoolWorkloadQueryRepo
     }
 
     /**
-     * Ghép thẳng vào chuỗi SQL chứ không truyền tham số Boolean nullable: Postgres không suy được kiểu
-     * của một tham số null đứng một mình và sẽ ném "could not determine data type of parameter". Giá
-     * trị ghép vào là hằng do chính lớp này viết ra, không phải dữ liệu người dùng.
+     * Spliced straight into the SQL string rather than passed as a nullable Boolean parameter: Postgres cannot
+     * infer the type of a lone null parameter and throws "could not determine data type of parameter". The spliced
+     * value is a constant written by this class, not user data.
      */
     private static String allowancePredicate(Boolean retryLeft) {
         if (retryLeft == null) {

@@ -92,9 +92,9 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
     }
 
     /**
-     * Ưu tiên danh mục: có schoolDirectoryId thì LẤY TRỌN thông tin trường từ entry đó và bỏ qua
-     * phần tự khai trong yêu cầu -- không trộn hai nguồn, tránh trường mang mã/tên của danh mục
-     * này nhưng domain lại do người gọi tự gõ.
+     * The directory takes priority: with a schoolDirectoryId, ALL school information is TAKEN from that entry and
+     * the self-declared part of the request is ignored -- the two sources are not mixed, so a school never carries
+     * the code/name of this directory entry while its domain was typed by the caller.
      */
     private SchoolInfo resolveSchoolInfo(CreateSchoolCommand command) {
         if (command.schoolDirectoryId() == null) {
@@ -106,17 +106,7 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
             );
         }
 
-        SchoolDirectory directory = schoolDirectoryRepository.findById(command.schoolDirectoryId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
-
-        // KHÔNG chặn khi danh mục chưa xác minh -- API này cố tình bỏ vòng duyệt, và chính việc
-        // SYSTEM_ADMIN tạo trường ở đây đã là hành vi xác minh. Đánh dấu luôn để không còn trạng
-        // thái lệch "School đã tồn tại nhưng danh mục vẫn chưa xác minh" (cùng cách
-        // ApproveRegisterFormUseCase xử lý đơn từ danh mục).
-        if (!directory.isVerified()) {
-            directory.verify();
-            schoolDirectoryRepository.save(directory);
-        }
+        SchoolDirectory directory = verifiedDirectory(command.schoolDirectoryId());
 
         return new SchoolInfo(
             directory.getCode(),
@@ -124,6 +114,21 @@ public class CreateSchoolUseCase implements IUseCase<CreateSchoolCommand, UUID> 
             directory.getAddress(),
             directory.getDomain()
         );
+    }
+
+    private SchoolDirectory verifiedDirectory(UUID schoolDirectoryId) {
+        SchoolDirectory directory = schoolDirectoryRepository.findById(schoolDirectoryId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục trường theo yêu cầu"));
+
+        // Do NOT block when the directory entry is unverified -- this API deliberately skips the approval loop,
+        // and a SYSTEM_ADMIN creating the school here is itself the act of verification. Mark it right away so
+        // there is no mismatched state "the School exists but the directory entry is still unverified" (the same
+        // way ApproveRegisterFormUseCase handles a form from the directory).
+        if (!directory.isVerified()) {
+            directory.verify();
+            schoolDirectoryRepository.save(directory);
+        }
+        return directory;
     }
 
     /** Bốn trường định danh trường, sau khi đã chốt lấy từ danh mục hay từ phần tự khai. */

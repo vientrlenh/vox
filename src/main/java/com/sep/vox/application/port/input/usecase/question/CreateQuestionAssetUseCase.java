@@ -1,28 +1,22 @@
 package com.sep.vox.application.port.input.usecase.question;
 
 import com.sep.vox.domain.model.question.Question;
-import com.sep.vox.domain.model.question.QuestionBank;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.question.CreateQuestionAssetMutationCommand;
+import com.sep.vox.application.port.input.service.QuestionEditAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 import com.sep.vox.domain.mapper.QuestionAssetDtoMapper;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionAssetType;
-import com.sep.vox.domain.model.question.QuestionBankOwnerType;
-import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
-import com.sep.vox.domain.model.question.QuestionStatus;
 import com.sep.vox.domain.repository.QuestionAssetRepository;
-import com.sep.vox.domain.repository.QuestionBankRepository;
-import com.sep.vox.domain.repository.QuestionCollaboratorRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
 
 @Service
@@ -30,9 +24,8 @@ import com.sep.vox.domain.repository.QuestionRepository;
 public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetMutationCommand, QuestionAssetDto> {
 
     private final QuestionRepository questionRepository;
-    private final QuestionBankRepository questionBankRepository;
-    private final QuestionCollaboratorRepository questionCollaboratorRepository;
     private final QuestionAssetRepository questionAssetRepository;
+    private final QuestionEditAccessService questionEditAccessService;
     private final QuestionCloneService questionCloneService;
     private final UserContextPort userContextPort;
 
@@ -44,70 +37,50 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
 
         Question question = questionRepository.findById(command.questionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
-        QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
-
-        boolean owner = question.isCreatedBy(currentUserId);
-        boolean editorCollaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId)
-            .filter(collaborator -> collaborator.getPermission() == QuestionCollaboratorPermission.CAN_EDIT)
-            .isPresent();
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
-            && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
-        if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
-        boolean immutable = question.getStatus() == QuestionStatus.PUBLISHED
-            || question.isLocked()
-            || questionRepository.existsUsedInAssessment(question.getId());
-        if (!systemAdminOnSystemBank
-                && owner
-                && !immutable
-                && question.getStatus() != QuestionStatus.DRAFT
-                && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException("Chỉ được sửa câu hỏi của mình khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
-        }
+        boolean immutable = questionEditAccessService.authorizeEditing(question, currentUserId);
 
         Question targetQuestion = immutable
             ? questionCloneService.cloneAsDraftWithDetails(question, currentUserId)
             : question;
 
-        if (questionAssetRepository.existsByQuestionId(targetQuestion.getId())) {
-            throw new IllegalArgumentException("Câu hỏi Ä‘ã có asset, hãy sửa hoặc xoá asset hiện có trước");
-        }
+        validateNewAsset(targetQuestion.getId(), command);
 
-        validateAssetOrder(targetQuestion.getId(), command.order(), null);
-
-        QuestionAssetType assetType = command.type();
-        QuestionAssetContentValidator.validate(
-            assetType,
-            command.url(),
-            command.transcript(),
-            command.description(),
-            command.altText());
-
-        String transcript = sanitizeTranscript(assetType, command.transcript());
-        String description = command.description();
-        QuestionAsset asset = QuestionAsset.builder()
-                .questionId(targetQuestion.getId())
-                .title(command.title())
-                .durationSeconds(command.durationSeconds())
-                .altText(command.altText())
-                .type(assetType)
-                .url(assetType == QuestionAssetType.TEXT_PASSAGE ? null : command.url())
-                .transcript(transcript)
-                .description(description)
-                .order(command.order())
-                .build();
-
-        QuestionAsset saved = questionAssetRepository.save(asset);
-        // Tạm thời bỏ auto-publish yêu cầu AI phân tích asset để luồng lưu asset
-        // luôn độc lập và ổn định. Sẽ bật lại ở task riêng về AI update asset sau.
+        QuestionAsset saved = questionAssetRepository.save(buildAsset(targetQuestion.getId(), command));
+        // Auto-publishing the AI asset-analysis request is switched off for now so that saving an asset
+        // stays independent and stable. It will be turned back on in a separate task about AI asset updates.
         // questionAssetAnalysisRequestPublisher.publishIfNeeded(targetQuestion, saved);
         return QuestionAssetDtoMapper.toDto(saved);
     }
 
-    private void validateAssetOrder(java.util.UUID questionId, int order, java.util.UUID currentAssetId) {
+    private void validateNewAsset(UUID questionId, CreateQuestionAssetMutationCommand command) {
+        if (questionAssetRepository.existsByQuestionId(questionId)) {
+            throw new IllegalArgumentException("Câu hỏi Ä‘ã có asset, hãy sửa hoặc xoá asset hiện có trước");
+        }
+
+        validateAssetOrder(questionId, command.order(), null);
+        QuestionAssetContentValidator.validate(
+            command.type(),
+            command.url(),
+            command.transcript(),
+            command.description(),
+            command.altText());
+    }
+
+    private QuestionAsset buildAsset(UUID questionId, CreateQuestionAssetMutationCommand command) {
+        QuestionAssetType assetType = command.type();
+        return QuestionAsset.attachedTo(
+            questionId,
+            command.title(),
+            command.durationSeconds(),
+            command.altText(),
+            assetType,
+            assetType == QuestionAssetType.TEXT_PASSAGE ? null : command.url(),
+            sanitizeTranscript(assetType, command.transcript()),
+            command.description(),
+            command.order());
+    }
+
+    private void validateAssetOrder(UUID questionId, int order, UUID currentAssetId) {
         boolean duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
             .anyMatch(asset -> asset.getOrder() == order && !asset.getId().equals(currentAssetId));
         if (duplicated) {

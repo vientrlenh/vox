@@ -36,10 +36,7 @@ public class AssessmentStreamConfigResolver {
         }
 
         if (types.size() == 1) {
-            if (rawPermission != null) {
-                throw new IllegalArgumentException("Quyền stream chỉ áp dụng khi yêu cầu đồng thời cả hai loại stream");
-            }
-            return new StreamConfig(AssessmentRequiredStreamType.valueOf(types.iterator().next()), null);
+            return resolveSingleType(types.iterator().next(), rawPermission);
         }
 
         if (rawPermission == null) {
@@ -49,6 +46,13 @@ public class AssessmentStreamConfigResolver {
             AssessmentRequiredStreamType.CAMERA_AND_SCREEN,
             rawPermission
         );
+    }
+
+    private StreamConfig resolveSingleType(String type, AssessmentStreamTypePermission rawPermission) {
+        if (rawPermission != null) {
+            throw new IllegalArgumentException("Quyền stream chỉ áp dụng khi yêu cầu đồng thời cả hai loại stream");
+        }
+        return new StreamConfig(AssessmentRequiredStreamType.valueOf(type), null);
     }
 
     public record StreamConfig(

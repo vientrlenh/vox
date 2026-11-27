@@ -45,9 +45,26 @@ public class DeclineGradingAssignmentUseCase
         AssessmentCandidateResult result = prepared.context().candidateResult();
         AssessmentGradingAssignment assignment = prepared.context().assignment();
         gradingActionSupport.finish(prepared, result);
+        publishDeclined(prepared, assignment, result);
 
-        // Người cần biết là admin đã giao, không phải học sinh: bài đang nằm chờ
-        // người điều phối xử lý tiếp.
+        return new GradingActionResponse(
+            command.assignmentId(),
+            result.getId(),
+            GradingOutcome.DECLINED.name(),
+            result.getStatus() == null ? null : result.getStatus().name(),
+            result.getTotalScore(),
+            null
+        );
+    }
+
+    /**
+     * The person who needs to know is the admin who assigned, not the student: the attempt is waiting for
+     * the coordinator to handle it next.
+     */
+    private void publishDeclined(
+            GradingActionSupport.PreparedAction prepared,
+            AssessmentGradingAssignment assignment,
+            AssessmentCandidateResult result) {
         GradingAssignmentDeclinedPayloadV1 payload = new GradingAssignmentDeclinedPayloadV1(
             assignment.getId(),
             result.getId(),
@@ -65,14 +82,5 @@ public class DeclineGradingAssignmentUseCase
             jsonSerializationPort.toJson(payload),
             Instant.now()
         ));
-
-        return new GradingActionResponse(
-            command.assignmentId(),
-            result.getId(),
-            GradingOutcome.DECLINED.name(),
-            result.getStatus() == null ? null : result.getStatus().name(),
-            result.getTotalScore(),
-            null
-        );
     }
 }

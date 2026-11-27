@@ -34,39 +34,48 @@ public class LearnerProfileCommandService {
         }
         Map<String, Integer> raw = new HashMap<String, Integer>();
         for (QuizAnswer answer : answers) {
-            if (answer.getMostStatementIndex()
-                    == answer.getLeastStatementIndex()) {
-                throw new IllegalArgumentException(
-                    "Lựa chọn giống nhất và ít giống nhất phải khác nhau"
-                );
-            }
-            InterestQuizSeedItem item = quizItemRepository.findActiveQuizItem(answer.getItemId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                    "Không tìm thấy item quiz sở thích"
-                ));
-            List<String> dimensions = item.getDimensionPerStatement();
-            if (dimensions.size() != 3
-                    || dimensions.stream().distinct().count() != 3) {
-                throw new IllegalStateException(
-                    "Item quiz không có đúng ba chiều khác nhau"
-                );
-            }
-            raw.merge(
-                dimensionAt(dimensions, answer.getMostStatementIndex()),
-                1,
-                (current, delta) -> current + delta
-            );
-            raw.merge(
-                dimensionAt(dimensions, answer.getLeastStatementIndex()),
-                -1,
-                (current, delta) -> current + delta
-            );
+            addAnswerVotes(raw, answer);
         }
         LearnerProfile saved = upsertProfile(studentId, null, null, Instant.now());
         dimensionScoreRepository.replaceScores(
             saved.getId(),
             interestQuizScorer.normalize(raw)
         );
+    }
+
+    private void addAnswerVotes(Map<String, Integer> raw, QuizAnswer answer) {
+        if (answer.getMostStatementIndex()
+                == answer.getLeastStatementIndex()) {
+            throw new IllegalArgumentException(
+                "Lựa chọn giống nhất và ít giống nhất phải khác nhau"
+            );
+        }
+        List<String> dimensions = requireThreeDistinctDimensions(answer);
+        raw.merge(
+            dimensionAt(dimensions, answer.getMostStatementIndex()),
+            1,
+            (current, delta) -> current + delta
+        );
+        raw.merge(
+            dimensionAt(dimensions, answer.getLeastStatementIndex()),
+            -1,
+            (current, delta) -> current + delta
+        );
+    }
+
+    private List<String> requireThreeDistinctDimensions(QuizAnswer answer) {
+        InterestQuizSeedItem item = quizItemRepository.findActiveQuizItem(answer.getItemId())
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "Không tìm thấy item quiz sở thích"
+            ));
+        List<String> dimensions = item.getDimensionPerStatement();
+        if (dimensions.size() != 3
+                || dimensions.stream().distinct().count() != 3) {
+            throw new IllegalStateException(
+                "Item quiz không có đúng ba chiều khác nhau"
+            );
+        }
+        return dimensions;
     }
 
     // GỠ 2026-08-07: submitFlsa -- thang tự đánh giá lo lắng ngoại ngữ (FLSA). Không client nào

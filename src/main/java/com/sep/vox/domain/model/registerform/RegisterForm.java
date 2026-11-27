@@ -227,85 +227,48 @@ public class RegisterForm {
     }
 
     public static RegisterForm fromDirectoryWithDocuments(
-        UUID schoolDirectoryId, 
-        RegisterFormVerificationMethod verificationMethod, 
-        String contactFullName, 
-        String identityNumber, 
-        String contactEmail, 
-        String contactPhone, 
-        LocalDate dateOfBirth, 
-        String contactAddress, 
-        String postalCode, 
-        String position, 
-        int studentCount, 
+        UUID schoolDirectoryId,
+        RegisterFormVerificationMethod verificationMethod,
+        String contactFullName,
+        String identityNumber,
+        String contactEmail,
+        String contactPhone,
+        LocalDate dateOfBirth,
+        String contactAddress,
+        String postalCode,
+        String position,
+        int studentCount,
         Instant now
     ) {
-        RegisterForm form = new RegisterForm();
-        form.schoolDirectoryId = require(schoolDirectoryId);
-        form.verificationMethod = verificationMethod;
-        form.contactFullName = new FullName(contactFullName);
-        form.identityNumber = new IdentityNumber(identityNumber);
-        form.contactEmail = new Email(contactEmail);
-        form.contactPhone = new Phone(contactPhone);
-        form.dateOfBirth = new DateOfBirth(dateOfBirth);
-        form.contactAddress = contactAddress;
-        form.postalCode = new PostalCode(postalCode);
-        form.position = position;
-        form.studentCount = new StudentCount(studentCount);
-        form.status = RegisterFormStatus.PENDING;
-        form.createdAt = now;
-        form.updatedAt = now;
-        return form;
+        return fromDirectory(
+            schoolDirectoryId, verificationMethod, contactFullName, identityNumber, contactEmail, contactPhone,
+            dateOfBirth, contactAddress, postalCode, position, studentCount, RegisterFormStatus.PENDING, now);
     }
 
     public static RegisterForm fromDirectoryWithVerifiedOtp(
-        UUID schoolDirectoryId, 
-        RegisterFormVerificationMethod verificationMethod, 
-        String contactFullName, 
-        String identityNumber, 
-        String contactEmail, 
-        String contactPhone, 
-        LocalDate dateOfBirth, 
-        String contactAddress, 
-        String postalCode, 
-        String position, 
-        int studentCount, 
+        UUID schoolDirectoryId,
+        RegisterFormVerificationMethod verificationMethod,
+        String contactFullName,
+        String identityNumber,
+        String contactEmail,
+        String contactPhone,
+        LocalDate dateOfBirth,
+        String contactAddress,
+        String postalCode,
+        String position,
+        int studentCount,
         Instant now
     ) {
-        RegisterForm form = new RegisterForm();
-        form.schoolDirectoryId = require(schoolDirectoryId);
-        form.verificationMethod = verificationMethod;
-        form.contactFullName = new FullName(contactFullName);
-        form.identityNumber = new IdentityNumber(identityNumber);
-        form.contactEmail = new Email(contactEmail);
-        form.contactPhone = new Phone(contactPhone);
-        form.dateOfBirth = new DateOfBirth(dateOfBirth);
-        form.contactAddress = contactAddress;
-        form.postalCode = new PostalCode(postalCode);
-        form.position = position;
-        form.studentCount = new StudentCount(studentCount);
-        form.status = RegisterFormStatus.AUTO_APPROVED;
-        form.createdAt = now;
-        form.updatedAt = now;
-        return form;
+        return fromDirectory(
+            schoolDirectoryId, verificationMethod, contactFullName, identityNumber, contactEmail, contactPhone,
+            dateOfBirth, contactAddress, postalCode, position, studentCount, RegisterFormStatus.AUTO_APPROVED, now);
     }
 
     public static RegisterForm selfDeclared(
-        String schoolName, 
-        String schoolDomain, 
-        String schoolAddress, 
-        String schoolProvince, 
-        String schoolDistrict, 
-        String contactFullName, 
-        String identityNumber, 
-        String contactEmail, 
-        String contactPhone, 
-        LocalDate dateOfBirth, 
-        String contactAddress, 
-        String postalCode, 
-        String position, 
-        int studentCount, 
-        Instant now
+        String schoolName, String schoolDomain, String schoolAddress, String schoolProvince,
+        String schoolDistrict, String contactFullName, String identityNumber, String contactEmail,
+        String contactPhone, LocalDate dateOfBirth, String contactAddress, String postalCode,
+        String position, int studentCount, Instant now
     ) {
         RegisterForm form = new RegisterForm();
         form.verificationMethod = RegisterFormVerificationMethod.DOCUMENT;
@@ -314,19 +277,48 @@ public class RegisterForm {
         form.schoolAddress = require(schoolAddress);
         form.schoolProvince = require(schoolProvince);
         form.schoolDistrict = require(schoolDistrict);
-        form.contactFullName = new FullName(contactFullName);
-        form.identityNumber = new IdentityNumber(identityNumber);
-        form.contactEmail = new Email(contactEmail);
-        form.contactPhone = new Phone(contactPhone);
-        form.dateOfBirth = new DateOfBirth(dateOfBirth);
-        form.contactAddress = contactAddress;
-        form.postalCode = new PostalCode(postalCode);
-        form.position = position;
-        form.studentCount = new StudentCount(studentCount);
-        form.status = RegisterFormStatus.PENDING;
-        form.createdAt = now;
-        form.updatedAt = now;
+        form.fillContact(
+            contactFullName, identityNumber, contactEmail, contactPhone, dateOfBirth, contactAddress,
+            postalCode, position, studentCount);
+        form.markCreated(RegisterFormStatus.PENDING, now);
         return form;
+    }
+
+    private static RegisterForm fromDirectory(
+        UUID schoolDirectoryId, RegisterFormVerificationMethod verificationMethod, String contactFullName,
+        String identityNumber, String contactEmail, String contactPhone, LocalDate dateOfBirth,
+        String contactAddress, String postalCode, String position, int studentCount,
+        RegisterFormStatus status, Instant now
+    ) {
+        RegisterForm form = new RegisterForm();
+        form.schoolDirectoryId = require(schoolDirectoryId);
+        form.verificationMethod = verificationMethod;
+        form.fillContact(
+            contactFullName, identityNumber, contactEmail, contactPhone, dateOfBirth, contactAddress,
+            postalCode, position, studentCount);
+        form.markCreated(status, now);
+        return form;
+    }
+
+    private void fillContact(
+        String contactFullName, String identityNumber, String contactEmail, String contactPhone,
+        LocalDate dateOfBirth, String contactAddress, String postalCode, String position, int studentCount
+    ) {
+        this.contactFullName = new FullName(contactFullName);
+        this.identityNumber = new IdentityNumber(identityNumber);
+        this.contactEmail = new Email(contactEmail);
+        this.contactPhone = new Phone(contactPhone);
+        this.dateOfBirth = new DateOfBirth(dateOfBirth);
+        this.contactAddress = contactAddress;
+        this.postalCode = new PostalCode(postalCode);
+        this.position = position;
+        this.studentCount = new StudentCount(studentCount);
+    }
+
+    private void markCreated(RegisterFormStatus initialStatus, Instant now) {
+        this.status = initialStatus;
+        this.createdAt = now;
+        this.updatedAt = now;
     }
 
     private static <T> T require(T data) {

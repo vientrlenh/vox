@@ -65,11 +65,15 @@ public class ViewAssessmentDetailsUseCase implements IUseCase<ViewAssessmentDeta
         if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessmentSchoolId)) {
             return true;
         }
-        // Sau khi kỳ thi đã đóng, ai cùng trường cũng xem được — không cần là member nữa.
+        // After the assessment is closed, anyone in the same school can view it -- being a member is no longer needed.
         if ((assessmentStatus == AssessmentStatus.CLOSED || assessmentStatus == AssessmentStatus.RESULTS_PUBLISHED)
                 && currentSchoolId != null && currentSchoolId.equals(assessmentSchoolId)) {
             return true;
         }
+        return isChairAuthorOrReviewer(assessmentId, currentUserId);
+    }
+
+    private boolean isChairAuthorOrReviewer(UUID assessmentId, UUID currentUserId) {
         // A proctor assigned to a session is DELIBERATELY absent here, even though they have a real relationship with the assessment.
         //
         // This is the entry to the assessment management screen, so opening it to proctors would put them straight into the dashboard --

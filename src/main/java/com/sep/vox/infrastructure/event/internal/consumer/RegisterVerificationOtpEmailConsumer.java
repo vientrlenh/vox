@@ -83,39 +83,37 @@ public class RegisterVerificationOtpEmailConsumer {
             return;
         }
 
-        RegisterVerificationOtpRequestedPayloadV1 payload;
-        try {
-            payload = jsonMapper.readValue(record.value(), RegisterVerificationOtpRequestedPayloadV1.class);
-        } catch (Exception e) {
-            log.error("Invalid payload: eventId={}", eventId, e);
-            throw new IllegalStateException(
-                "Payload register-verification-otp không hợp lệ, eventId=" + eventId, e);
-        }
+        RegisterVerificationOtpRequestedPayloadV1 payload = parsePayload(record.value(), eventId);
 
         String key = CacheKey.registerVerificationKey(payload.to());
         CachePayload.RegisterVerificationPayload cached = cacheManagerPort.get(key, CachePayload.RegisterVerificationPayload.class);
         if (cached == null) {
-            log.warn("Bỏ qua OTP đăng ký, hồ sơ trong cache đã hết hạn: eventId={}", eventId);
-            markProcessed(eventId);
-            ack.acknowledge();
+            skipExpiredRegistration(eventId, ack);
             return;
         }
 
+        String otp = issueOtp(key, cached);
+        deliverOtpMail(payload, otp, eventId);
+        ack.acknowledge();
+    }
+
+    private void skipExpiredRegistration(UUID eventId, Acknowledgment ack) {
+        log.warn("Bỏ qua OTP đăng ký, hồ sơ trong cache đã hết hạn: eventId={}", eventId);
+        markProcessed(eventId);
+        ack.acknowledge();
+    }
+
+    private String issueOtp(String key, CachePayload.RegisterVerificationPayload cached) {
         String otp = oneTimePasswordPort.generate(OTP_SIZE);
         cacheManagerPort.save(key, withOtpHash(cached, oneTimePasswordPort.hash(otp)), TTL);
+        return otp;
+    }
 
-        try {
-            String html = mailTemplatePort.renderRegisterVerificationOtpEmail(otp, EXPIRES_IN);
-            mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
-        } catch (Exception e) {
-            log.error("Send mail error: eventId={}", eventId, e);
-            throw new IllegalStateException("Gửi mail OTP đăng ký thất bại: eventId=" + eventId, e);
-        }
-
+    private void deliverOtpMail(RegisterVerificationOtpRequestedPayloadV1 payload, String otp, UUID eventId) {
+        sendOtpMail(payload, otp, eventId);
         markProcessed(eventId);
 
         log.info("Register verification OTP mail sent: eventId={}", eventId);
-        ack.acknowledge();
     }
 
     private CachePayload.RegisterVerificationPayload withOtpHash(
@@ -135,8 +133,28 @@ public class RegisterVerificationOtpEmailConsumer {
         );
     }
 
+    private RegisterVerificationOtpRequestedPayloadV1 parsePayload(String value, UUID eventId) {
+        try {
+            return jsonMapper.readValue(value, RegisterVerificationOtpRequestedPayloadV1.class);
+        } catch (Exception e) {
+            log.error("Invalid payload: eventId={}", eventId, e);
+            throw new IllegalStateException(
+                "Payload register-verification-otp không hợp lệ, eventId=" + eventId, e);
+        }
+    }
+
+    private void sendOtpMail(RegisterVerificationOtpRequestedPayloadV1 payload, String otp, UUID eventId) {
+        try {
+            String html = mailTemplatePort.renderRegisterVerificationOtpEmail(otp, EXPIRES_IN);
+            mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
+        } catch (Exception e) {
+            log.error("Send mail error: eventId={}", eventId, e);
+            throw new IllegalStateException("Gửi mail OTP đăng ký thất bại: eventId=" + eventId, e);
+        }
+    }
+
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error("register-verification-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
             eventId, record.topic(), record.partition(), record.offset());

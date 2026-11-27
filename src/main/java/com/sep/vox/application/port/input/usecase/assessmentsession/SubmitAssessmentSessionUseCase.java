@@ -9,6 +9,7 @@ import com.sep.vox.domain.model.assessment.AssessmentSession;
 import com.sep.vox.domain.model.framework.FrameworkCriterion;
 import com.sep.vox.domain.model.framework.FrameworkCriterionBand;
 import com.sep.vox.domain.model.framework.FrameworkResultBand;
+import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 import com.sep.vox.domain.model.question.Question;
 import com.sep.vox.domain.model.question.QuestionAsset;
 import com.sep.vox.domain.model.question.QuestionEvaluationGuide;
@@ -60,6 +61,8 @@ import com.sep.vox.domain.repository.RubricCriterionRepository;
 @RequiredArgsConstructor
 public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessmentSessionCommand, Void> {
 
+    private static final Set<String> LADDER_CRITERION_KEYS = Set.of("grammar", "vocabulary", "coherence");
+
     private final AssessmentSessionRepository assessmentSessionRepository;
     private final AssessmentRepository assessmentRepository;
     private final AssessmentCandidateRepository assessmentCandidateRepository;
@@ -85,9 +88,34 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
     public Void execute(SubmitAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không thể tìm thấy phiên thi"));
-        // GRADED is accepted here for exactly 1 case: G.4 - a session that was wrongly flagged as a
-        // violation (INVALID, never had any AssessmentItemEvaluation), has been unblocked, and is called back by
-        // RetryGradingAssessmentSessionUseCase for the AI to really grade it for the first time.
+        AssessmentSessionStatus fromStatus = requireGradableStatus(session);
+        if (!assessmentSessionRepository.tryTransitionStatus(
+                session.getId(), fromStatus, AssessmentSessionStatus.GRADING)) {
+            return null;
+        }
+        session.setStatus(AssessmentSessionStatus.GRADING);
+        AssessmentCandidate candidate = findCandidate(session);
+        Assessment assessment = findAssessment(session);
+        List<AssessmentItemResponse> responses = assessmentItemResponseRepository.findBySessionId(session.getId());
+        if (candidate.getBlockedAt() != null) {
+            persistInvalidBlockedResult(session);
+            return null;
+        }
+        if (!AssessmentCandidateStatus.isAttended(candidate.getStatus()) || responses.isEmpty()) {
+            releaseZeroAndMarkGraded(session);
+            return null;
+        }
+
+        publishEvaluationRequests(session, assessment, responses);
+        return null;
+    }
+
+    /**
+     * GRADED is accepted here for exactly 1 case: G.4 - a session that was wrongly flagged as a
+     * violation (INVALID, never had any AssessmentItemEvaluation), has been unblocked, and is called back by
+     * RetryGradingAssessmentSessionUseCase for the AI to really grade it for the first time.
+     */
+    private AssessmentSessionStatus requireGradableStatus(AssessmentSession session) {
         AssessmentSessionStatus fromStatus = session.getStatus();
         if (fromStatus != AssessmentSessionStatus.SUBMITTED
                 && fromStatus != AssessmentSessionStatus.EXPIRED
@@ -95,46 +123,42 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
                 && fromStatus != AssessmentSessionStatus.GRADED) {
             throw new IllegalArgumentException("chỉ được gửi chấm khi phiên thi đã nộp hoặc hết giờ");
         }
+        return fromStatus;
+    }
 
-       
-        boolean claimed = assessmentSessionRepository.tryTransitionStatus(
-            session.getId(), fromStatus, AssessmentSessionStatus.GRADING);
-        if (!claimed) {
-            return null;
-        }
-        session.setStatus(AssessmentSessionStatus.GRADING);
-
-        AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
+    private AssessmentCandidate findCandidate(AssessmentSession session) {
+        return assessmentCandidateRepository.findById(session.getCandidateId())
             .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy thí sinh của phiên thi"));
-        Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra"));
-        List<AssessmentItemResponse> responses = assessmentItemResponseRepository.findBySessionId(session.getId());
-        if (candidate.getBlockedAt() != null) {
-            persistInvalidBlockedResult(session);
-            return null;
-        }
-        // Áp dụng cho mọi loại bài: cổng vào thi đã chặn người chưa điểm danh, đây là lớp chốt thứ hai.
-        if (!AssessmentCandidateStatus.isAttended(candidate.getStatus())) {
-            zeroScoreAssessmentResultService.releaseZeroForEmptySession(session.getId());
-            session.setStatus(AssessmentSessionStatus.GRADED);
-            assessmentSessionRepository.save(session);
-            return null;
-        }
-        if (responses.isEmpty()) {
-            zeroScoreAssessmentResultService.releaseZeroForEmptySession(session.getId());
-            session.setStatus(AssessmentSessionStatus.GRADED);
-            assessmentSessionRepository.save(session);
-            return null;
-        }
+    }
 
-        // Lấp câu KHÔNG có bản ghi (hết giờ, mất kết nối, buộc kết thúc) bằng cặp response rỗng
-        // + bản chấm 0 điểm. Đặt SAU hai nhánh thoát sớm ở trên vì cả hai đã tự xử trọn bài
-        // (releaseZeroForEmptySession), và TRƯỚC vòng bắn sự kiện AI bên dưới -- vòng đó chạy
-        // trên `responses` đọc lúc nãy nên các dòng vừa tạo không lọt vào, đúng ý: không đẩy
-        // transcript rỗng sang LLM. Xem MissingResponseBackfillService.
+    private Assessment findAssessment(AssessmentSession session) {
+        return assessmentRepository.findById(session.getAssessmentId())
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra"));
+    }
+
+    /**
+     * Applies to every kind of assessment: the exam entrance already blocks anyone who has not checked in, this is
+     * the second line of defence.
+     */
+    private void releaseZeroAndMarkGraded(AssessmentSession session) {
+        zeroScoreAssessmentResultService.releaseZeroForEmptySession(session.getId());
+        session.setStatus(AssessmentSessionStatus.GRADED);
+        assessmentSessionRepository.save(session);
+    }
+
+    /**
+     * Fills the questions that have NO record (timeout, lost connection, forced end) with an empty response pair +
+     * a 0-score evaluation. It runs AFTER the two early exits in execute because both already handle the whole
+     * attempt themselves (releaseZeroForEmptySession), and BEFORE the AI event loop -- that loop runs on the
+     * `responses` read earlier so the rows just created do not get in, which is intended: no empty transcript is
+     * pushed to the LLM. See MissingResponseBackfillService.
+     */
+    private void publishEvaluationRequests(
+        AssessmentSession session, Assessment assessment, List<AssessmentItemResponse> responses) {
         missingResponseBackfillService.backfill(session.getId(), session.getPaperId());
 
-        List<AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks = buildCriteriaFrameworks(assessment.getAssessmentPolicyId());
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks =
+            buildCriteriaFrameworks(assessment.getAssessmentPolicyId());
 
         for (AssessmentItemResponse response : responses) {
             if (MissingResponseBackfillService.NO_RECORDING.equals(response.getTerminationReason())) {
@@ -144,104 +168,141 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             if (paperItemId == null) {
                 throw new ResourceNotFoundException("không thể tìm thấy paperItemId cho câu trả lời " + response.getId());
             }
-
-            // Thí sinh ĐƯỢC hỏi nhưng KHÔNG NÓI GÌ: ghi thẳng 0 điểm, không gửi sang LLM.
-            //
-            // Đây là kết cục của chuỗi im lặng -- AI hỏi lại tới trần (3 lượt liên tiếp) rồi cắt
-            // câu, nhưng dòng response vẫn tồn tại với transcript rỗng. Đẩy nó sang LLM là mời
-            // model chấm một bài không có nội dung: nó nhận đề bài đầy đủ, phần trả lời trống,
-            // và vẫn trả về một con điểm suy ra từ hư không -- nhìn không phân biệt được với
-            // điểm thật.
-            //
-            // Vị từ "im lặng" nằm ở MissingResponseBackfillService -- xem javadoc ở đó để biết
-            // vì sao nó phải là một định nghĩa dùng chung thay vì mỗi nơi tự kiểm.
-            if (missingResponseBackfillService.isSilentAnswer(response)) {
-                missingResponseBackfillService.recordSilentAnswer(response.getId(), paperItemId);
+            if (recordedAsSilentAnswer(response, paperItemId)) {
                 continue;
             }
-
-            AssessmentPaperItem paperItem = assessmentPaperItemRepository.findById(paperItemId)
-                .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy paper item " + paperItemId));
-            Question question = questionRepository.findById(paperItem.getQuestionId())
-                .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy câu hỏi " + paperItem.getQuestionId()));
-            QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
-            QuestionAsset asset = questionAssetRepository.findByQuestionId(question.getId()).stream().findFirst().orElse(null);
-            QuestionTopic topic = question.getQuestionTopicId() == null
-                ? null
-                : questionTopicRepository.findById(question.getQuestionTopicId()).orElse(null);
-            List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns = assessmentItemResponseTurnRepository.findByAssessmentItemResponseId(response.getId()).stream()
-                .sorted(Comparator.comparingInt(turn -> turn.getTurnOrder()))
-                .map(turn -> new AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput(
-                    turn.getTurnOrder(),
-                    turn.getTurnType().name(),
-                    turn.getPromptText(),
-                    turn.getAudioUrl(),
-                    turn.getTranscript(),
-                    turn.getDurationSeconds()
-                ))
-                .toList();
-            if (turns.isEmpty()) {
-                turns = List.of(new AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput(
-                    1,
-                    "MAIN",
-                    null,
-                    response.getAudioUrl(),
-                    response.getTranscript(),
-                    response.getDurationSeconds()
-                ));
-            }
-
-            AssessmentAttemptEvaluationRequestedExternalEvent event = new AssessmentAttemptEvaluationRequestedExternalEvent(
-                session.getId().toString(),
-                response.getId().toString(),
-                question.getId().toString(),
-                new AssessmentAttemptEvaluationRequestedExternalEvent.Payload(
-                    question.getQuestionText(),
-                    question.getType() == null ? null : question.getType().name(),
-                    null,
-                    question.getMaxResponseSeconds(),
-                    question.getMinResponseSeconds(),
-                    question.getMaxResponseSeconds(),
-                    asset == null ? null : new AssessmentAttemptEvaluationRequestedExternalEvent.Asset(
-                        asset.getType() == null ? null : asset.getType().name(),
-                        asset.getTranscript(),
-                        asset.getDescription(),
-                        asset.getAltText()
-                    ),
-                    topic == null ? null : topic.getName(),
-                    topic == null ? null : topic.getDescription(),
-                    guide == null ? null : new AssessmentAttemptEvaluationRequestedExternalEvent.EvaluationGuide(
-                        guide.getExpectedContent(),
-                        guide.getKeyPoints(),
-                        guide.getAcceptableResponses(),
-                        guide.getOffTopicExamples(),
-                        guide.getScoringHints(),
-                        guide.getCommonMistakes()
-                    ),
-                    "unscripted",
-                    null,
-                    "en-US",
-                    criteriaFrameworks,
-                    turns
-                )
-            );
-            externalEventPublisherPort.publish(event);
+            externalEventPublisherPort.publish(
+                buildEvaluationRequestedEvent(session, response, paperItemId, criteriaFrameworks));
         }
-
-        return null;
     }
 
     /**
-     * Câu này có nội dung trả lời nào không.
+     * The candidate WAS asked but SAID NOTHING: write 0 directly, do not send it to the LLM.
      *
-     * <p>Xét CẢ HAI nơi transcript có thể nằm: ô tổng của response, và transcript của từng lượt
-     * nói. Hai đường ghi khác nhau điền hai chỗ khác nhau, nên chỉ nhìn một chỗ sẽ kết luận nhầm
-     * là rỗng và ghi 0 cho một bài thí sinh đã làm -- sai theo hướng nguy hiểm nhất.
+     * <p>This is the end of the silence chain -- the AI re-asks up to the cap (3 consecutive turns) and then cuts
+     * the question, but the response row still exists with an empty transcript. Pushing it to the LLM invites the
+     * model to grade an answer with no content: it receives the full question, an empty answer, and still returns
+     * a score inferred from nothing -- indistinguishable from a real score.
      *
-     * <p>KHÔNG xét thời lượng: mic mở nhưng thí sinh im lặng vẫn cho ra vài chục giây audio mà
-     * không có chữ nào. Chỉ có chữ mới chấm được.
+     * <p>The "silent" predicate lives in MissingResponseBackfillService -- see the javadoc there for why it has to
+     * be one shared definition instead of each place checking by itself.
      */
-    private void persistInvalidBlockedResult(com.sep.vox.domain.model.assessment.AssessmentSession session) {
+    private boolean recordedAsSilentAnswer(AssessmentItemResponse response, UUID paperItemId) {
+        if (!missingResponseBackfillService.isSilentAnswer(response)) {
+            return false;
+        }
+        missingResponseBackfillService.recordSilentAnswer(response.getId(), paperItemId);
+        return true;
+    }
+
+    private AssessmentAttemptEvaluationRequestedExternalEvent buildEvaluationRequestedEvent(
+        AssessmentSession session,
+        AssessmentItemResponse response,
+        UUID paperItemId,
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks) {
+        AssessmentPaperItem paperItem = assessmentPaperItemRepository.findById(paperItemId)
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy paper item " + paperItemId));
+        Question question = questionRepository.findById(paperItem.getQuestionId())
+            .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy câu hỏi " + paperItem.getQuestionId()));
+        QuestionEvaluationGuide guide = questionEvaluationGuideRepository.findByQuestionId(question.getId()).orElse(null);
+        QuestionAsset asset = questionAssetRepository.findByQuestionId(question.getId()).stream().findFirst().orElse(null);
+        QuestionTopic topic = question.getQuestionTopicId() == null
+            ? null
+            : questionTopicRepository.findById(question.getQuestionTopicId()).orElse(null);
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns = buildTurnInputs(response);
+
+        return new AssessmentAttemptEvaluationRequestedExternalEvent(
+            session.getId().toString(),
+            response.getId().toString(),
+            question.getId().toString(),
+            buildEvaluationPayload(question, asset, topic, guide, criteriaFrameworks, turns)
+        );
+    }
+
+    private List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> buildTurnInputs(
+        AssessmentItemResponse response) {
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns = assessmentItemResponseTurnRepository.findByAssessmentItemResponseId(response.getId()).stream()
+            .sorted(Comparator.comparingInt(turn -> turn.getTurnOrder()))
+            .map(turn -> new AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput(
+                turn.getTurnOrder(),
+                turn.getTurnType().name(),
+                turn.getPromptText(),
+                turn.getAudioUrl(),
+                turn.getTranscript(),
+                turn.getDurationSeconds()
+            ))
+            .toList();
+        if (turns.isEmpty()) {
+            turns = List.of(new AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput(
+                1,
+                "MAIN",
+                null,
+                response.getAudioUrl(),
+                response.getTranscript(),
+                response.getDurationSeconds()
+            ));
+        }
+        return turns;
+    }
+
+    private AssessmentAttemptEvaluationRequestedExternalEvent.Payload buildEvaluationPayload(
+        Question question,
+        QuestionAsset asset,
+        QuestionTopic topic,
+        QuestionEvaluationGuide guide,
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework> criteriaFrameworks,
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns) {
+        return new AssessmentAttemptEvaluationRequestedExternalEvent.Payload(
+            question.getQuestionText(),
+            question.getType() == null ? null : question.getType().name(),
+            null,
+            question.getMaxResponseSeconds(),
+            question.getMinResponseSeconds(),
+            question.getMaxResponseSeconds(),
+            toEventAsset(asset),
+            topic == null ? null : topic.getName(),
+            topic == null ? null : topic.getDescription(),
+            toEventEvaluationGuide(guide),
+            "unscripted",
+            null,
+            "en-US",
+            criteriaFrameworks,
+            turns
+        );
+    }
+
+    private AssessmentAttemptEvaluationRequestedExternalEvent.Asset toEventAsset(QuestionAsset asset) {
+        return asset == null ? null : new AssessmentAttemptEvaluationRequestedExternalEvent.Asset(
+            asset.getType() == null ? null : asset.getType().name(),
+            asset.getTranscript(),
+            asset.getDescription(),
+            asset.getAltText()
+        );
+    }
+
+    private AssessmentAttemptEvaluationRequestedExternalEvent.EvaluationGuide toEventEvaluationGuide(
+        QuestionEvaluationGuide guide) {
+        return guide == null ? null : new AssessmentAttemptEvaluationRequestedExternalEvent.EvaluationGuide(
+            guide.getExpectedContent(),
+            guide.getKeyPoints(),
+            guide.getAcceptableResponses(),
+            guide.getOffTopicExamples(),
+            guide.getScoringHints(),
+            guide.getCommonMistakes()
+        );
+    }
+
+    /**
+     * Whether a question has any answer content.
+     *
+     * <p>It considers BOTH places a transcript can live: the total field of the response, and the transcript of each
+     * speaking turn. The two write paths fill two different places, so looking at only one would wrongly conclude
+     * "empty" and write 0 for an attempt the candidate did -- wrong in the most dangerous direction.
+     *
+     * <p>It does NOT consider duration: an open mic with a silent candidate still yields dozens of seconds of audio
+     * with no words. Only words can be graded.
+     */
+    private void persistInvalidBlockedResult(AssessmentSession session) {
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
             .orElseThrow(() -> new ResourceNotFoundException("không thể tìm thấy bài kiểm tra"));
         AssessmentPolicy policy = assessment.getAssessmentPolicyId() == null
@@ -251,6 +312,15 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         AssessmentCandidateResult result = existing == null ? new AssessmentCandidateResult() : existing;
         Instant now = Instant.now();
 
+        fillInvalidBlockedResult(result, session, policy, now);
+        assessmentCandidateResultRepository.save(result);
+
+        session.setStatus(AssessmentSessionStatus.GRADED);
+        assessmentSessionRepository.save(session);
+    }
+
+    private void fillInvalidBlockedResult(
+        AssessmentCandidateResult result, AssessmentSession session, AssessmentPolicy policy, Instant now) {
         result.setAssessmentId(session.getAssessmentId());
         result.setCandidateId(session.getCandidateId());
         result.setSessionId(session.getId());
@@ -263,10 +333,6 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         result.setTotalScore(null);
         result.setStatus(AssessmentCandidateResultStatus.INVALID);
         result.setFinalizedAt(now);
-        assessmentCandidateResultRepository.save(result);
-
-        session.setStatus(AssessmentSessionStatus.GRADED);
-        assessmentSessionRepository.save(session);
     }
 
     private List<AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework> buildCriteriaFrameworks(UUID assessmentPolicyId) {
@@ -278,6 +344,20 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         if (policy == null) {
             return List.of();
         }
+        FrameworkResultBand targetBand = requireTargetBand(policy);
+
+        List<RubricCriterion> rubricCriteria = rubricCriterionRepository.findByRubricVersionId(policy.getRubricVersionId());
+        if (rubricCriteria.isEmpty()) {
+            return List.of();
+        }
+
+        CriterionFrameworkLookups lookups = loadCriterionFrameworkLookups(rubricCriteria);
+        return rubricCriteria.stream()
+            .map(criterion -> toCriterionFramework(criterion, policy, targetBand, lookups))
+            .toList();
+    }
+
+    private FrameworkResultBand requireTargetBand(AssessmentPolicy policy) {
         if (policy.getTargetFrameworkBandId() == null) {
             throw new IllegalStateException("Assessment policy chưa cấu hình bậc mục tiêu để AI chấm.");
         }
@@ -286,12 +366,10 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         if (!policy.getFrameworkVersionId().equals(targetBand.getFrameworkVersionId())) {
             throw new IllegalStateException("Bậc mục tiêu không thuộc framework version của assessment policy.");
         }
+        return targetBand;
+    }
 
-        List<RubricCriterion> rubricCriteria = rubricCriterionRepository.findByRubricVersionId(policy.getRubricVersionId());
-        if (rubricCriteria.isEmpty()) {
-            return List.of();
-        }
-
+    private CriterionFrameworkLookups loadCriterionFrameworkLookups(List<RubricCriterion> rubricCriteria) {
         List<UUID> frameworkCriterionIds = rubricCriteria.stream()
             .map(item -> item.getFrameworkCriterionId())
             .filter(id -> id != null)
@@ -307,72 +385,98 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
             .toList();
         Map<UUID, FrameworkResultBand> frameworkResultBandsById = frameworkResultBandRepository.findAllByIds(frameworkResultBandIds).stream()
             .collect(Collectors.toMap(item -> item.getId(), Function.identity()));
-        Set<String> ladderCriterionKeys = Set.of("grammar", "vocabulary", "coherence");
+        return new CriterionFrameworkLookups(frameworkCriteriaById, frameworkBandsByCriterionId, frameworkResultBandsById);
+    }
 
-        return rubricCriteria.stream().map(criterion -> {
-            if (criterion.getMinScore() == null || criterion.getMaxScore() == null
-                    || criterion.getMinScore().compareTo(criterion.getMaxScore()) >= 0) {
-                throw new IllegalArgumentException("Tiêu chí rubric '" + criterion.getName()
-                    + "' phải có minScore nhỏ hơn maxScore trước khi gửi sang AI.");
-            }
-            FrameworkCriterion frameworkCriterion = frameworkCriteriaById.get(criterion.getFrameworkCriterionId());
-            List<FrameworkCriterionBand> criterionBands = frameworkBandsByCriterionId
-                .getOrDefault(criterion.getFrameworkCriterionId(), List.of());
-            FrameworkCriterionBand targetCriterionBand = criterionBands.stream()
-                .filter(item -> policy.getTargetFrameworkBandId().equals(item.getFrameworkResultBandId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                    "Tiêu chí framework chưa có mô tả cho bậc mục tiêu " + targetBand.getLabel() + "."));
-            String criterionKey = agentCriterionKey(criterion.getCode());
-            List<FrameworkCriterionBand> sourceBands = criterionKey != null && ladderCriterionKeys.contains(criterionKey)
-                ? criterionBands
-                : List.of(targetCriterionBand);
-            List<AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand> bands = sourceBands.stream()
-                .map(item -> {
-                    FrameworkResultBand resultBand = frameworkResultBandsById.get(item.getFrameworkResultBandId());
-                    if (resultBand == null) {
-                        throw new IllegalStateException(
-                            "Không tìm thấy bậc framework cho tiêu chí '" + criterion.getName() + "'.");
-                    }
-                    return new AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand(
-                        resultBand.getCode(),
-                        resultBand.getLabel(),
-                        criterion.getMinScore().doubleValue(),
-                        criterion.getMaxScore().doubleValue(),
-                        item.getDescriptor(),
-                        item.getPositiveSignals() == null
-                            ? List.of()
-                            : item.getPositiveSignals().values().stream()
-                                .map(signal -> signal.description())
-                                .toList(),
-                        item.getNegativeSignals() == null
-                            ? List.of()
-                            : item.getNegativeSignals().values().stream()
-                                .map(signal -> signal.description())
-                                .toList(),
-                        resultBand.getOrder()
-                    );
-                })
-                .sorted(Comparator.comparing(
-                    band -> band.order()
-                ))
+    private AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework toCriterionFramework(
+        RubricCriterion criterion,
+        AssessmentPolicy policy,
+        FrameworkResultBand targetBand,
+        CriterionFrameworkLookups lookups) {
+        requireValidScoreRange(criterion);
+        FrameworkCriterion frameworkCriterion = lookups.criteriaById().get(criterion.getFrameworkCriterionId());
+        List<FrameworkCriterionBand> criterionBands = lookups.bandsByCriterionId()
+            .getOrDefault(criterion.getFrameworkCriterionId(), List.of());
+        FrameworkCriterionBand targetCriterionBand = findTargetCriterionBand(criterionBands, policy, targetBand);
+        String criterionKey = agentCriterionKey(criterion.getCode());
+        List<FrameworkCriterionBand> sourceBands = criterionKey != null && LADDER_CRITERION_KEYS.contains(criterionKey)
+            ? criterionBands
+            : List.of(targetCriterionBand);
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand> bands = sourceBands.stream()
+            .map(item -> toFrameworkBand(item, criterion, lookups))
+            .sorted(Comparator.comparing(
+                band -> band.order()
+            ))
+            .toList();
+
+        return assembleCriterionFramework(criterionKey, frameworkCriterion, policy, targetBand, criterion, bands);
+    }
+
+    private void requireValidScoreRange(RubricCriterion criterion) {
+        if (criterion.getMinScore() == null || criterion.getMaxScore() == null
+                || criterion.getMinScore().compareTo(criterion.getMaxScore()) >= 0) {
+            throw new IllegalArgumentException("Tiêu chí rubric '" + criterion.getName()
+                + "' phải có minScore nhỏ hơn maxScore trước khi gửi sang AI.");
+        }
+    }
+
+    private FrameworkCriterionBand findTargetCriterionBand(
+        List<FrameworkCriterionBand> criterionBands, AssessmentPolicy policy, FrameworkResultBand targetBand) {
+        return criterionBands.stream()
+            .filter(item -> policy.getTargetFrameworkBandId().equals(item.getFrameworkResultBandId()))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Tiêu chí framework chưa có mô tả cho bậc mục tiêu " + targetBand.getLabel() + "."));
+    }
+
+    private AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand toFrameworkBand(
+        FrameworkCriterionBand item, RubricCriterion criterion, CriterionFrameworkLookups lookups) {
+        FrameworkResultBand resultBand = lookups.resultBandsById().get(item.getFrameworkResultBandId());
+        if (resultBand == null) {
+            throw new IllegalStateException(
+                "Không tìm thấy bậc framework cho tiêu chí '" + criterion.getName() + "'.");
+        }
+        return new AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand(
+            resultBand.getCode(),
+            resultBand.getLabel(),
+            criterion.getMinScore().doubleValue(),
+            criterion.getMaxScore().doubleValue(),
+            item.getDescriptor(),
+            signalDescriptions(item.getPositiveSignals()),
+            signalDescriptions(item.getNegativeSignals()),
+            resultBand.getOrder()
+        );
+    }
+
+    private List<String> signalDescriptions(FrameworkCriterionSignals signals) {
+        return signals == null
+            ? List.of()
+            : signals.values().stream()
+                .map(signal -> signal.description())
                 .toList();
+    }
 
-            return new AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework(
-                criterionKey,
-                frameworkCriterion == null ? null : frameworkCriterion.getCode(),
-                frameworkCriterion == null ? null : frameworkCriterion.getName(),
-                frameworkCriterion == null ? null : frameworkCriterion.getDescription(),
-                policy.getTargetFrameworkBandId().toString(),
-                targetBand.getCode(),
-                targetBand.getLabel(),
-                true,
-                criterion.getWeight() == null ? null : criterion.getWeight().doubleValue(),
-                criterion.getMinScore().doubleValue(),
-                criterion.getMaxScore().doubleValue(),
-                bands
-            );
-        }).toList();
+    private AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework assembleCriterionFramework(
+        String criterionKey,
+        FrameworkCriterion frameworkCriterion,
+        AssessmentPolicy policy,
+        FrameworkResultBand targetBand,
+        RubricCriterion criterion,
+        List<AssessmentAttemptEvaluationRequestedExternalEvent.FrameworkBand> bands) {
+        return new AssessmentAttemptEvaluationRequestedExternalEvent.CriterionFramework(
+            criterionKey,
+            frameworkCriterion == null ? null : frameworkCriterion.getCode(),
+            frameworkCriterion == null ? null : frameworkCriterion.getName(),
+            frameworkCriterion == null ? null : frameworkCriterion.getDescription(),
+            policy.getTargetFrameworkBandId().toString(),
+            targetBand.getCode(),
+            targetBand.getLabel(),
+            true,
+            criterion.getWeight() == null ? null : criterion.getWeight().doubleValue(),
+            criterion.getMinScore().doubleValue(),
+            criterion.getMaxScore().doubleValue(),
+            bands
+        );
     }
 
     private String agentCriterionKey(String rubricCriterionCode) {
@@ -381,5 +485,11 @@ public class SubmitAssessmentSessionUseCase implements IUseCase<SubmitAssessment
         }
         String normalized = rubricCriterionCode.trim().toLowerCase(Locale.ROOT);
         return "discourse".equals(normalized) ? "coherence" : normalized;
+    }
+
+    private record CriterionFrameworkLookups(
+        Map<UUID, FrameworkCriterion> criteriaById,
+        Map<UUID, List<FrameworkCriterionBand>> bandsByCriterionId,
+        Map<UUID, FrameworkResultBand> resultBandsById) {
     }
 }

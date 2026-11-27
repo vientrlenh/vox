@@ -53,8 +53,9 @@ public class JpaStudentAssessmentQueryRepository implements StudentAssessmentQue
         """;
 
     /**
-     * INNER JOIN sang schedule là cố ý: bản Java loại thẳng thí sinh chưa xếp ca
-     * ({@code scheduleId == null}) hoặc ca đã biến mất, nên join trong đã đúng ngữ nghĩa đó.
+     * The INNER JOIN to the schedule is deliberate: the Java version drops candidates not yet placed into a session
+     * ({@code scheduleId == null}) or whose session has disappeared, so the inner join already has exactly that
+     * semantics.
      */
     private static final String FROM_WHERE = """
         FROM AssessmentCandidateJpaEntity c
@@ -67,6 +68,15 @@ public class JpaStudentAssessmentQueryRepository implements StudentAssessmentQue
           AND (:assessmentKind IS NULL OR e.kind = :assessmentKind)
           AND (:derivedStatus IS NULL OR (""" + DERIVED_STATUS + """
         ) = :derivedStatus)
+        """;
+
+    private static final String MY_ASSESSMENTS_SELECT = """
+        SELECT c.id, c.status, c.blockedAt, c.assignedPaperId,
+               e.id, e.name, e.description, e.kind, e.status, e.requiresOtp, e.maxAttempt,
+               s.id, s.startDate, s.endDate,
+               COALESCE(s.startDate, e.openAt),
+               (""" + DERIVED_STATUS + """
+        )
         """;
 
     @PersistenceContext
@@ -85,63 +95,73 @@ public class JpaStudentAssessmentQueryRepository implements StudentAssessmentQue
         int normalizedPage = Math.max(page, 1);
         int normalizedSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
 
-        Long total = em.createQuery("SELECT COUNT(c.id) " + FROM_WHERE, Long.class)
-            .setParameter("studentId", studentId)
-            .setParameter("assessmentKind", assessmentKind)
-            .setParameter("derivedStatus", derivedStatus)
-            .setParameter("now", now)
-            .getSingleResult();
+        Long total = countMyAssessments(studentId, assessmentKind, derivedStatus, now);
 
         if (total == 0) {
             return new PageResult<>(List.of(), normalizedPage, normalizedSize, 0, 0);
         }
 
-        // Attempts with no assessment date always sort last in BOTH directions -- if reversing the direction pulled them to the top,
-        // the list would open full of blank rows. `c.id` is the secondary key so that two attempts at the same time do not swap places
-        // between pages: without it, pagination can repeat or skip rows.
-        String direction = sortDescending ? "DESC" : "ASC";
-        List<Tuple> rows = em.createQuery("""
-            SELECT c.id, c.status, c.blockedAt, c.assignedPaperId,
-                   e.id, e.name, e.description, e.kind, e.status, e.requiresOtp, e.maxAttempt,
-                   s.id, s.startDate, s.endDate,
-                   COALESCE(s.startDate, e.openAt),
-                   (""" + DERIVED_STATUS + """
-            )
-            """ + FROM_WHERE + """
-            ORDER BY COALESCE(s.startDate, e.openAt) """ + direction + """
-             NULLS LAST, c.id ASC
-            """, Tuple.class)
+        List<Tuple> rows = findMyAssessmentRows(
+            studentId, assessmentKind, derivedStatus, sortDescending, normalizedPage, normalizedSize, now);
+        int totalPages = (int) Math.ceil(total / (double) normalizedSize);
+        return new PageResult<>(toStudentAssessmentRows(rows), normalizedPage, normalizedSize, total, totalPages);
+    }
+
+    private List<StudentAssessmentRowInfo> toStudentAssessmentRows(List<Tuple> rows) {
+        List<StudentAssessmentRowInfo> content = new ArrayList<StudentAssessmentRowInfo>(rows.size());
+        for (Tuple row : rows) {
+            content.add(toStudentAssessmentRow(row));
+        }
+        return content;
+    }
+
+    private Long countMyAssessments(UUID studentId, String assessmentKind, String derivedStatus, Instant now) {
+        return em.createQuery("SELECT COUNT(c.id) " + FROM_WHERE, Long.class)
             .setParameter("studentId", studentId)
             .setParameter("assessmentKind", assessmentKind)
             .setParameter("derivedStatus", derivedStatus)
             .setParameter("now", now)
-            .setFirstResult(OneBasedPaging.toFirstResult(normalizedPage, normalizedSize))
-            .setMaxResults(normalizedSize)
+            .getSingleResult();
+    }
+
+    /**
+     * Attempts with no assessment date always sort last in BOTH directions -- if reversing the direction pulled them
+     * to the top, the list would open full of blank rows. `c.id` is the secondary key so that two attempts at the
+     * same time do not swap places between pages: without it, pagination can repeat or skip rows.
+     */
+    private List<Tuple> findMyAssessmentRows(
+            UUID studentId, String assessmentKind, String derivedStatus, boolean sortDescending,
+            int page, int size, Instant now) {
+        String direction = sortDescending ? "DESC" : "ASC";
+        return em.createQuery(MY_ASSESSMENTS_SELECT + FROM_WHERE
+                + "ORDER BY COALESCE(s.startDate, e.openAt) " + direction + " NULLS LAST, c.id ASC", Tuple.class)
+            .setParameter("studentId", studentId)
+            .setParameter("assessmentKind", assessmentKind)
+            .setParameter("derivedStatus", derivedStatus)
+            .setParameter("now", now)
+            .setFirstResult(OneBasedPaging.toFirstResult(page, size))
+            .setMaxResults(size)
             .getResultList();
+    }
 
-        List<StudentAssessmentRowInfo> content = new ArrayList<StudentAssessmentRowInfo>(rows.size());
-        for (Tuple row : rows) {
-            content.add(new StudentAssessmentRowInfo(
-                row.get(0, UUID.class),
-                candidateStatusOf(row.get(1, String.class)),
-                row.get(2, Instant.class),
-                row.get(3, UUID.class),
-                row.get(4, UUID.class),
-                row.get(5, String.class),
-                row.get(6, String.class),
-                row.get(7, String.class),
-                assessmentStatusOf(row.get(8, String.class)),
-                Boolean.TRUE.equals(row.get(9, Boolean.class)),
-                row.get(10, Integer.class),
-                row.get(11, UUID.class),
-                row.get(12, Instant.class),
-                row.get(13, Instant.class),
-                row.get(14, Instant.class),
-                row.get(15, String.class)));
-        }
-
-        int totalPages = (int) Math.ceil(total / (double) normalizedSize);
-        return new PageResult<>(content, normalizedPage, normalizedSize, total, totalPages);
+    private StudentAssessmentRowInfo toStudentAssessmentRow(Tuple row) {
+        return new StudentAssessmentRowInfo(
+            row.get(0, UUID.class),
+            candidateStatusOf(row.get(1, String.class)),
+            row.get(2, Instant.class),
+            row.get(3, UUID.class),
+            row.get(4, UUID.class),
+            row.get(5, String.class),
+            row.get(6, String.class),
+            row.get(7, String.class),
+            assessmentStatusOf(row.get(8, String.class)),
+            Boolean.TRUE.equals(row.get(9, Boolean.class)),
+            row.get(10, Integer.class),
+            row.get(11, UUID.class),
+            row.get(12, Instant.class),
+            row.get(13, Instant.class),
+            row.get(14, Instant.class),
+            row.get(15, String.class));
     }
 
     /**

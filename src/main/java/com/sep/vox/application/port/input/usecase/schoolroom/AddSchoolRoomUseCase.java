@@ -70,13 +70,11 @@ public class AddSchoolRoomUseCase implements IUseCase<AddSchoolRoomCommand, UUID
     }
 
     private SchoolRoom saveRoom(AddSchoolRoomCommand command, String code, UUID creatorId) {
-        SchoolRoom newRoom = SchoolRoom.builder()
-            .schoolId(command.schoolId())
-            .code(code)
-            .name(StringNormalization.trimAndCollapseSpaces(command.name()))
-            .description(StringNormalization.trimAndCollapseSpaces(command.description()))
-            .active(true)
-            .build();
+        SchoolRoom newRoom = SchoolRoom.registered(
+            command.schoolId(),
+            code,
+            StringNormalization.trimAndCollapseSpaces(command.name()),
+            StringNormalization.trimAndCollapseSpaces(command.description()));
         return schoolRoomRepository.save(newRoom);
     }
 }

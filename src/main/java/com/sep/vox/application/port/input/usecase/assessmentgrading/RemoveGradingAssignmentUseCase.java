@@ -39,15 +39,23 @@ public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAss
         assessmentGradingAccessService.rejectClassTestCoordination(context.candidateResult().getId());
 
         AssessmentGradingAssignment assignment = context.assignment();
-        // Đã chấm xong thì điểm đã ghi và bài đã công bố — xoá dòng phân công lúc
-        // này chỉ xoá mất vết ai chấm, không hoàn tác được gì.
+        // Once grading is finished the score is already written and the attempt published -- deleting the
+        // assignment row now only erases the trace of who graded, and undoes nothing.
         if (assignment.isCompleted()) {
             throw new IllegalArgumentException("Không thể gỡ phân công của bài đã chấm xong.");
         }
+        releaseAppeal(assignment);
 
-        // Xoá dòng là mất luôn con trỏ tới đơn phúc khảo, nên phải nhả đơn TRƯỚC:
-        // đơn kẹt ở GRADING thì không giao lại được (chỉ nhận APPROVED) mà cũng không
-        // duyệt lại được (chỉ nhận PENDING) — chỉ còn đường sửa tay dưới DB.
+        assessmentGradingAssignmentRepository.deleteById(command.assignmentId());
+        return command.assignmentId();
+    }
+
+    /**
+     * Deleting the row also loses the pointer to the appeal, so the appeal must be released BEFORE:
+     * an appeal stuck in GRADING can neither be reassigned (it only accepts APPROVED) nor be reviewed
+     * again (it only accepts PENDING) -- the only way out is a manual fix in the database.
+     */
+    private void releaseAppeal(AssessmentGradingAssignment assignment) {
         if (assignment.getRoundType() == GradingRoundType.APPEAL && assignment.getAppealId() != null) {
             assessmentResultAppealRepository.findById(assignment.getAppealId())
                 .filter(appeal -> appeal.getStatus() == AssessmentAppealStatus.GRADING)
@@ -56,8 +64,5 @@ public class RemoveGradingAssignmentUseCase implements IUseCase<RemoveGradingAss
                     assessmentResultAppealRepository.save(appeal);
                 });
         }
-
-        assessmentGradingAssignmentRepository.deleteById(command.assignmentId());
-        return command.assignmentId();
     }
 }

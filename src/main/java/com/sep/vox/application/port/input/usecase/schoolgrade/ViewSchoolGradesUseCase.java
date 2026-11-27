@@ -42,9 +42,8 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
             throw new ResourceNotFoundException("Không tìm thấy trường học.");
         }
 
-        // 1. Query the database for the paged list (PageResult<SchoolGrade>)
-        //    status null -> by default hides soft-deleted school years (ARCHIVED).
-        //    Pass status=ARCHIVED to get exactly the soft-deleted ones.
+        // status null -> by default hides soft-deleted school years (ARCHIVED).
+        // Pass status=ARCHIVED to get exactly the soft-deleted ones.
         PageResult<SchoolGrade> pageResult = schoolGradeRepository.findBySchoolId(
                 query.schoolId(),
                 query.gradeLevelId(),
@@ -53,7 +52,10 @@ public class ViewSchoolGradesUseCase implements IUseCase<ViewSchoolGradesQuery, 
                 query.size()
         );
 
-        // 2. Convert to DTOs and return
+        return toDtoPage(pageResult);
+    }
+
+    private PageResult<SchoolGradeDto> toDtoPage(PageResult<SchoolGrade> pageResult) {
         return new PageResult<>(
                 pageResult.content().stream()
                         .map(SchoolGradeDto::toDto)

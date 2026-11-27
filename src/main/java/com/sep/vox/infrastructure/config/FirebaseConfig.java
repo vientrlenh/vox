@@ -77,6 +77,11 @@ public class FirebaseConfig {
             );
         }
 
+        return findCredentialsResource(properties, resourceLoader).getInputStream();
+    }
+
+    private Resource findCredentialsResource(FirebaseProperties properties, ResourceLoader resourceLoader)
+            throws IOException {
         String location = resolveLocation(properties.credentials().path());
         Resource resource = resourceLoader.getResource(location);
         if (!resource.exists()) {
@@ -96,7 +101,7 @@ public class FirebaseConfig {
             );
         }
 
-        return resource.getInputStream();
+        return resource;
     }
 
     /**

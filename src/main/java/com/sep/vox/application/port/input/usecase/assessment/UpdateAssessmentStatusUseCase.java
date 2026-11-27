@@ -112,58 +112,72 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
 
         authorizeMutation(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
-        Instant now = Instant.now();
-        switch (command.action()) {
-            case "SCHEDULE" -> {
-                // Trạng thái kiểm TRƯỚC hạn mức gói: bấm SCHEDULE trên bài không còn DRAFT mà báo lỗi
-                // "vượt quá giới hạn gói" thì người dùng đi sửa nhầm chỗ.
-                requireTransition(assessment, AssessmentStatus.DRAFT, AssessmentStatus.SCHEDULED);
-                validatePlanLimits(assessment);
-                if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-                    requireClassTestScheduleReady(assessment);
-                } else {
-                    requireCentralizedScheduleReadiness(assessment);
-                }
-            }
-            case "START" -> {
-                if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-                    requireClassTestCanStart(assessment);
-                }
-                requireTransition(assessment, AssessmentStatus.SCHEDULED, AssessmentStatus.IN_PROGRESS);
-                if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
-                    lockClassTestPapers(assessment.getId());
-                }
-            }
-            case "CLOSE" -> {
-                requireTransition(assessment, AssessmentStatus.IN_PROGRESS, AssessmentStatus.CLOSED);
-                // Kiểm trạng thái trước rồi mới đụng ca thi, giống nhánh CANCEL bên dưới.
-                assessmentScheduleClosureService.requireNoActiveSessionInOngoingSchedule(assessment.getId(), now);
-                assessmentScheduleClosureService.closeSchedulesForAssessment(assessment.getId(), now);
-                assessmentQuestionSecureLockService.releaseIfAutoAfterClose(assessment.getId());
-                zeroScoreAssessmentResultService.ensureZeroResultsForMissingOrEmptyAttempts(assessment.getId());
-                // Quét bù SAU khi đã bù kết quả điểm 0: bài trên lớp không có ai điều phối
-                // chấm, nên đóng bài là chốt cuối để giáo viên chủ bài nhận hết phần còn lại.
-                classTestGradingAssignmentService.ensureAssignmentsForAssessment(assessment.getId());
-                // Sau quét bù: con số "còn bao nhiêu bài chờ chấm" chỉ đúng khi hàng đợi đã
-                // đầy đủ. Áp dụng cho CẢ hai loại bài -- quét bù ở trên chỉ lo bài trên lớp.
-                assessmentHumanGradingNotificationService.publishIfPendingReview(assessment, now);
-            }
-            case "PUBLISH_RESULTS" -> {
-                zeroScoreAssessmentResultService.ensureZeroResultsForMissingOrEmptyAttempts(assessment.getId());
-                requirePublishReadiness(assessment.getId());
-                requireTransition(assessment, AssessmentStatus.CLOSED, AssessmentStatus.RESULTS_PUBLISHED);
-                finalizePassFailForAssessment(assessment);
-                eventPublisherPort.publish(new AssessmentResultsPublishedEvent(assessment.getId()));
-            }
-            case "CANCEL" -> {
-                // Kiểm trạng thái trước rồi mới đụng ca thi: huỷ không hợp lệ thì không được ghi gì.
-                requireTransition(assessment, CANCELLABLE_FROM, AssessmentStatus.CANCELLED);
-                assessmentScheduleClosureService.cancelSchedulesForAssessment(assessment.getId());
-            }
-            default -> throw new IllegalArgumentException("Action không hợp lệ");
-        }
+        applyAction(assessment, command.action());
 
         return AssessmentDtoMapper.toDto(assessmentRepository.save(assessment));
+    }
+
+    private void applyAction(Assessment assessment, String action) {
+        switch (action) {
+            case "SCHEDULE" -> applySchedule(assessment);
+            case "START" -> applyStart(assessment);
+            case "CLOSE" -> applyClose(assessment);
+            case "PUBLISH_RESULTS" -> applyPublishResults(assessment);
+            case "CANCEL" -> applyCancel(assessment);
+            default -> throw new IllegalArgumentException("Action không hợp lệ");
+        }
+    }
+
+    private void applySchedule(Assessment assessment) {
+        // The status is checked BEFORE the plan limit: pressing SCHEDULE on an assessment that is no longer DRAFT and getting
+        // "exceeds the plan limit" would send the user to fix the wrong thing.
+        requireTransition(assessment, AssessmentStatus.DRAFT, AssessmentStatus.SCHEDULED);
+        validatePlanLimits(assessment);
+        if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
+            requireClassTestScheduleReady(assessment);
+        } else {
+            requireCentralizedScheduleReadiness(assessment);
+        }
+    }
+
+    private void applyStart(Assessment assessment) {
+        if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
+            requireClassTestCanStart(assessment);
+        }
+        requireTransition(assessment, AssessmentStatus.SCHEDULED, AssessmentStatus.IN_PROGRESS);
+        if (assessment.getKind() == AssessmentKind.CLASS_TEST) {
+            lockClassTestPapers(assessment.getId());
+        }
+    }
+
+    private void applyClose(Assessment assessment) {
+        Instant now = Instant.now();
+        requireTransition(assessment, AssessmentStatus.IN_PROGRESS, AssessmentStatus.CLOSED);
+        // Check the status first and only then touch the sessions, same as the CANCEL branch.
+        assessmentScheduleClosureService.requireNoActiveSessionInOngoingSchedule(assessment.getId(), now);
+        assessmentScheduleClosureService.closeSchedulesForAssessment(assessment.getId(), now);
+        assessmentQuestionSecureLockService.releaseIfAutoAfterClose(assessment.getId());
+        zeroScoreAssessmentResultService.ensureZeroResultsForMissingOrEmptyAttempts(assessment.getId());
+        // The catch-up sweep runs AFTER the zero results have been filled in: a class test has nobody coordinating grading,
+        // so closing the assessment is the last chance for the owning teacher to receive everything that remains.
+        classTestGradingAssignmentService.ensureAssignmentsForAssessment(assessment.getId());
+        // After the sweep: the "how many are still waiting for grading" number is only right once the queue is complete.
+        // Applies to BOTH kinds -- the sweep above only covers class tests.
+        assessmentHumanGradingNotificationService.publishIfPendingReview(assessment, now);
+    }
+
+    private void applyPublishResults(Assessment assessment) {
+        zeroScoreAssessmentResultService.ensureZeroResultsForMissingOrEmptyAttempts(assessment.getId());
+        requirePublishReadiness(assessment.getId());
+        requireTransition(assessment, AssessmentStatus.CLOSED, AssessmentStatus.RESULTS_PUBLISHED);
+        finalizePassFailForAssessment(assessment);
+        eventPublisherPort.publish(new AssessmentResultsPublishedEvent(assessment.getId()));
+    }
+
+    private void applyCancel(Assessment assessment) {
+        // Check the status first and only then touch the sessions: an invalid cancel must not write anything.
+        requireTransition(assessment, CANCELLABLE_FROM, AssessmentStatus.CANCELLED);
+        assessmentScheduleClosureService.cancelSchedulesForAssessment(assessment.getId());
     }
 
     private void authorizeMutation(
@@ -378,6 +392,11 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
      * really hanging -- the replacement session was graded, only the deleted OLD session stands still.
      */
     private void requirePublishReadiness(UUID assessmentId) {
+        requireEverySessionHasResult(assessmentId);
+        requireEveryResultReady(assessmentId);
+    }
+
+    private void requireEverySessionHasResult(UUID assessmentId) {
         long missingResultCount = assessmentCandidateRepository.findByAssessmentId(assessmentId).stream()
             .filter(candidate -> !AssessmentCandidateStatus.isNonScorable(candidate.getStatus()))
             .flatMap(candidate -> assessmentSessionRepository.findByCandidateId(candidate.getId()).stream())
@@ -394,7 +413,9 @@ public class UpdateAssessmentStatusUseCase implements IUseCase<UpdateAssessmentS
             throw new IllegalArgumentException(
                 "Còn " + missingResultCount + " phiên thi chưa có kết quả, không thể công bố kết quả");
         }
+    }
 
+    private void requireEveryResultReady(UUID assessmentId) {
         long notReadyCount = assessmentCandidateResultRepository.findByAssessmentId(assessmentId).stream()
             .filter(result -> result.getStatus() != AssessmentCandidateResultStatus.RELEASED
                 && result.getStatus() != AssessmentCandidateResultStatus.INVALID

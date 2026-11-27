@@ -85,29 +85,9 @@ public class ResetPasswordOtpEmailConsumer {
             return;
         }
 
-        ResetPasswordOtpRequestedPayloadV1 payload;
-        try {
-            payload = jsonMapper.readValue(record.value(), ResetPasswordOtpRequestedPayloadV1.class);
-        } catch (Exception e) {
-            // Not logging record.value() here loses nothing -- the payload only has the email.
-            log.error("Invalid payload: eventId={}", eventId, e);
-            throw new IllegalStateException("Payload reset-password-otp không hợp lệ, eventId=" + eventId, e);
-        }
-
-        String otp = oneTimePasswordPort.generate(OTP_SIZE);
-        cacheManagerPort.save(
-            CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + payload.to(),
-            oneTimePasswordPort.hash(otp),
-            TTL);
-
-        try {
-            String html = mailTemplatePort.renderResetPasswordOtpEmail(otp, EXPIRES_IN);
-            mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
-        } catch (Exception e) {
-            log.error("Send mail error: eventId={}", eventId, e);
-            throw new IllegalStateException("Gửi mail OTP đặt lại mật khẩu thất bại: eventId=" + eventId, e);
-        }
-
+        ResetPasswordOtpRequestedPayloadV1 payload = parsePayload(record.value(), eventId);
+        String otp = issueOtp(payload);
+        sendOtpMail(payload, otp, eventId);
         markProcessed(eventId);
 
         // Never log the OTP or the recipient address at INFO level.
@@ -115,8 +95,37 @@ public class ResetPasswordOtpEmailConsumer {
         ack.acknowledge();
     }
 
+    private String issueOtp(ResetPasswordOtpRequestedPayloadV1 payload) {
+        String otp = oneTimePasswordPort.generate(OTP_SIZE);
+        cacheManagerPort.save(
+            CacheKey.RESET_PASSWORD_PREFIX + CacheKey.OTP_PREFIX + payload.to(),
+            oneTimePasswordPort.hash(otp),
+            TTL);
+        return otp;
+    }
+
+    private ResetPasswordOtpRequestedPayloadV1 parsePayload(String value, UUID eventId) {
+        try {
+            return jsonMapper.readValue(value, ResetPasswordOtpRequestedPayloadV1.class);
+        } catch (Exception e) {
+            // Not logging the record value here loses nothing -- the payload only has the email.
+            log.error("Invalid payload: eventId={}", eventId, e);
+            throw new IllegalStateException("Payload reset-password-otp không hợp lệ, eventId=" + eventId, e);
+        }
+    }
+
+    private void sendOtpMail(ResetPasswordOtpRequestedPayloadV1 payload, String otp, UUID eventId) {
+        try {
+            String html = mailTemplatePort.renderResetPasswordOtpEmail(otp, EXPIRES_IN);
+            mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
+        } catch (Exception e) {
+            log.error("Send mail error: eventId={}", eventId, e);
+            throw new IllegalStateException("Gửi mail OTP đặt lại mật khẩu thất bại: eventId=" + eventId, e);
+        }
+    }
+
     @DltHandler
-    public void handleDlt(ConsumerRecord<String, String> record) {
+    public void logDeadLetteredRecord(ConsumerRecord<String, String> record) {
         UUID eventId = KafkaEventHeaders.readEventIdOrNull(record);
         log.error("reset-password-otp event sent to DLT: eventId={}, topic={}, partition={}, offset={}",
             eventId, record.topic(), record.partition(), record.offset());

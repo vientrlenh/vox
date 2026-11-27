@@ -14,7 +14,6 @@ import com.sep.vox.application.port.input.command.framework.CreateFrameworkVersi
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.framework.CreateFrameworkVersionResponse;
 import com.sep.vox.domain.model.framework.FrameworkVersion;
-import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
@@ -36,16 +35,14 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
         frameworkRepository.findById(command.frameworkId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
 
-        FrameworkVersion version = FrameworkVersion.builder()
-            .frameworkId(command.frameworkId())
-            .code(command.code())
-            .name(command.name())
-            .description(command.description())
-            .version(command.version())
-            .effectiveFrom(command.effectiveFrom())
-            .effectiveTo(command.effectiveTo())
-            .status(FrameworkVersionStatus.DRAFT)
-            .build();
+        FrameworkVersion version = FrameworkVersion.draft(
+            command.frameworkId(),
+            command.code(),
+            command.name(),
+            command.description(),
+            command.version(),
+            command.effectiveFrom(),
+            command.effectiveTo());
 
         try {
             FrameworkVersion saved = frameworkVersionRepository.save(version);

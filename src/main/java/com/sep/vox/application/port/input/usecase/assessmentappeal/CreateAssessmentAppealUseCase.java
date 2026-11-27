@@ -56,8 +56,23 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
         UUID currentUserId = assessmentAppealAccessService.requireActiveUserId();
         AssessmentAppealAccessService.AppealContext context = assessmentAppealAccessService.loadByCandidateResultId(command.candidateResultId());
         assessmentAppealAccessService.authorizeOwningStudent(context, currentUserId);
-
         AssessmentCandidateResult candidateResult = context.candidateResult();
+        requireAppealable(command, candidateResult);
+        LinkedHashSet<UUID> selected = requireDistinctPaperItems(command.paperItemIds());
+        Map<UUID, AssessmentItemResponse> responsesByPaperItem = responsesByPaperItem(candidateResult);
+        LinkedHashSet<UUID> distinctPaperItemIds = resolveAppealedPaperItemIds(selected, responsesByPaperItem);
+
+        Instant now = Instant.now();
+        AssessmentResultAppeal appeal = AssessmentResultAppeal.requested(command.candidateResultId(), currentUserId,
+                command.reason(), now, candidateResult.getTotalScore(), command.notes());
+        AssessmentResultAppeal saved = assessmentResultAppealRepository.save(appeal);
+        saveAppealItems(saved, distinctPaperItemIds, responsesByPaperItem);
+        closeOpenGradingAssignment(command.candidateResultId(), now);
+        moveResultToAppealed(candidateResult, currentUserId);
+        return saved.getId();
+    }
+
+    private void requireAppealable(CreateAssessmentAppealCommand command, AssessmentCandidateResult candidateResult) {
         if (candidateResult.getStatus() != AssessmentCandidateResultStatus.RELEASED) {
             throw new IllegalArgumentException("Chỉ có thể phúc khảo kết quả đã được công bố.");
         }
@@ -69,72 +84,83 @@ public class CreateAssessmentAppealUseCase implements IUseCase<CreateAssessmentA
             throw new IllegalArgumentException(
                 "Mỗi kết quả chỉ được phúc khảo tối đa " + MAX_APPEAL_ROUNDS + " lần.");
         }
-        // Trùng phần thi là lỗi của client, phát hiện trước khi chạm DB.
-        List<UUID> requested = command.paperItemIds();
-        LinkedHashSet<UUID> selected = null;
-        if (requested != null) {
-            selected = new LinkedHashSet<>(requested);
-            if (selected.size() != requested.size()) {
-                throw new IllegalArgumentException("Không được chọn trùng phần thi.");
-            }
-        }
+    }
 
-        // Điểm chấm lại được ghi theo response, nên phải chốt response ngay từ đầu.
-        // MỘT lượt duyệt response của phiên thi, tránh N lần gọi repository.
-        Map<UUID, AssessmentItemResponse> responsesByPaperItem = assessmentItemResponseRepository.findBySessionId(candidateResult.getSessionId())
+    /** A duplicated paper item is a client error, detected before touching the database. */
+    private LinkedHashSet<UUID> requireDistinctPaperItems(List<UUID> requested) {
+        if (requested == null) {
+            return new LinkedHashSet<>();
+        }
+        LinkedHashSet<UUID> selected = new LinkedHashSet<>(requested);
+        if (selected.size() != requested.size()) {
+            throw new IllegalArgumentException("Không được chọn trùng phần thi.");
+        }
+        return selected;
+    }
+
+    /**
+     * The re-grading score is written per response, so the responses are fixed up front. One pass over the
+     * responses of the session avoids N repository calls.
+     */
+    private Map<UUID, AssessmentItemResponse> responsesByPaperItem(AssessmentCandidateResult candidateResult) {
+        return assessmentItemResponseRepository.findBySessionId(candidateResult.getSessionId())
             .stream()
             .filter(item -> item.getPaperItemId() != null)
             .collect(Collectors.toMap(
                 item -> item.getPaperItemId(), Function.identity(), (left, right) -> left,
-                LinkedHashMap::new));   // giữ thứ tự response cho phần tự điền
+                LinkedHashMap::new));   // keeps the response order for the free-form part
+    }
 
-        final LinkedHashSet<UUID> distinctPaperItemIds;
-        if (selected == null || selected.isEmpty()) {
+    private LinkedHashSet<UUID> resolveAppealedPaperItemIds(
+        LinkedHashSet<UUID> selected, Map<UUID, AssessmentItemResponse> responsesByPaperItem) {
+        if (selected.isEmpty()) {
             // Selecting no question = appeal the whole attempt. It still writes assessment_result_appeal_items for
             // each question: the comparison screen of the school administrator takes baselineScores + turns from exactly
             // those rows, and dropping them would lose the comparison data.
             if (responsesByPaperItem.isEmpty()) {
                 throw new ResourceNotFoundException("Bài thi này không có câu trả lời nào để phúc khảo.");
             }
-            distinctPaperItemIds = new LinkedHashSet<>(responsesByPaperItem.keySet());
-        } else {
-            distinctPaperItemIds = selected;
-            if (!responsesByPaperItem.keySet().containsAll(distinctPaperItemIds)) {
-                throw new ResourceNotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
-            }
+            return new LinkedHashSet<>(responsesByPaperItem.keySet());
         }
+        if (!responsesByPaperItem.keySet().containsAll(selected)) {
+            throw new ResourceNotFoundException("Không tìm thấy câu trả lời của phần thi cần phúc khảo.");
+        }
+        return selected;
+    }
 
-        Instant now = Instant.now();
-        AssessmentResultAppeal appeal = AssessmentResultAppeal.requested(command.candidateResultId(), currentUserId,
-                command.reason(), now, candidateResult.getTotalScore(), command.notes());
-        AssessmentResultAppeal saved = assessmentResultAppealRepository.save(appeal);
-
-        // The appeal id exists only after the INSERT returns, so the appealed paper items have to be saved in a later step.
+    /** The appeal id exists only after the INSERT returns, so the appealed paper items are saved in a later step. */
+    private void saveAppealItems(
+        AssessmentResultAppeal saved,
+        LinkedHashSet<UUID> distinctPaperItemIds,
+        Map<UUID, AssessmentItemResponse> responsesByPaperItem) {
         assessmentResultAppealItemRepository.saveAll(distinctPaperItemIds.stream()
             .map(paperItemId -> AssessmentResultAppealItem.forResponse(
                 saved.getId(), paperItemId, responsesByPaperItem.get(paperItemId).getId()))
             .toList());
+    }
 
-        // Đóng vòng chấm đang mở (thường là hậu kiểm) trước khi kéo bài sang APPEALED.
-        // Bỏ qua bước này chính là review BE-4: bài rời khỏi trạng thái mà vòng đó xử
-        // lý được, phân công treo vĩnh viễn trong hàng đợi của giáo viên và
-        // active_result_id vẫn giữ chỗ nên không giao được người chấm phúc khảo.
-        //
-        // Đóng bằng DECLINED chứ không phải UPHELD: giáo viên chưa ra quyết định nào,
-        // ghi UPHELD là bịa ra một phán quyết mà họ không hề đưa.
-        assessmentGradingAssignmentRepository.findOpenByCandidateResultId(command.candidateResultId())
+    /**
+     * Closes the open grading round (usually a post-check) before the result moves to APPEALED. Skipping this was
+     * review BE-4: the result leaves the status that round can handle, the assignment hangs forever in the
+     * teacher's queue and active_result_id keeps its slot, so no appeal reviewer can be assigned.
+     *
+     * <p>It is closed as DECLINED, not UPHELD: the teacher made no decision, and recording UPHELD would invent a
+     * verdict they never gave.
+     */
+    private void closeOpenGradingAssignment(UUID candidateResultId, Instant now) {
+        assessmentGradingAssignmentRepository.findOpenByCandidateResultId(candidateResultId)
             .ifPresent(open -> {
                 open.complete(GradingOutcome.DECLINED,
                     "Bài chuyển sang phúc khảo theo đơn của học sinh.", now);
                 assessmentGradingAssignmentRepository.save(open);
             });
+    }
 
+    private void moveResultToAppealed(AssessmentCandidateResult candidateResult, UUID currentUserId) {
         ResultStatusHistoryRecorder.Snapshot before = resultStatusHistoryRecorder.snapshot(candidateResult);
         candidateResult.setStatus(AssessmentCandidateResultStatus.APPEALED);
         assessmentCandidateResultRepository.save(candidateResult);
         resultStatusHistoryRecorder.record(before, candidateResult,
             ResultStatusChangeSource.SYSTEM, currentUserId, "Học sinh nộp đơn phúc khảo.");
-
-        return saved.getId();
     }
 }

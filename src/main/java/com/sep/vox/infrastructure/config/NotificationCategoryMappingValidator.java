@@ -25,58 +25,69 @@ import com.sep.vox.domain.model.notification.NotificationTarget;
 @Slf4j
 public class NotificationCategoryMappingValidator {
 
-    // Tên bean phải khác tên class đã decapitalize ("notificationCategoryMappingValidator"),
-    // nếu không sẽ đụng với chính bean của @Configuration này khi component scan.
+    // The bean name must differ from the decapitalized class name ("notificationCategoryMappingValidator"),
+    // otherwise it collides with the bean of this @Configuration itself during component scan.
     @Bean
     InitializingBean notificationCategoryMappingChecker() {
-        return () -> {
-            List<String> knownEventTypes = EventTypeConstant.all();
+        return this::checkNotificationMappings;
+    }
 
-            // The mapping points at an eventType that no longer exists: usually the trace of a
-            // constant rename where this side was forgotten. A notification of that kind will never
-            // be created, and nothing reports an error unless it is checked here.
-            List<String> unknown = NotificationCategory.mappedEventTypes().stream()
-                .filter(eventType -> !knownEventTypes.contains(eventType))
-                .sorted()
-                .toList();
+    private void checkNotificationMappings() {
+        List<String> knownEventTypes = EventTypeConstant.all();
+        requireKnownEventTypes(knownEventTypes);
+        requireTargetForEveryCategory();
+        requireCategoryForEveryTarget();
 
-            if (!unknown.isEmpty()) {
-                throw new IllegalStateException(
-                    "NotificationCategory ánh xạ eventType không tồn tại trong EventTypeConstant: " + unknown);
-            }
+        log.info("Notification mapping: {} eventType đã khai báo (dẫn về {} target), "
+            + "{} eventType không tạo notification",
+            NotificationCategory.mappedEventTypes().size(),
+            NotificationTarget.mappedEventTypes().stream().map(NotificationTarget::of).distinct().count(),
+            knownEventTypes.size() - NotificationCategory.mappedEventTypes().size());
+    }
 
-            // Without a target renderDrafts throws IllegalArgumentException midway. Since it
-            // sits on the Kafka branch, the message runs the whole retry cycle and falls into the DLT: the
-            // notification never reaches the recipient, and the only place that says so is the error log.
-            List<String> missingTarget = NotificationCategory.mappedEventTypes().stream()
-                .filter(eventType -> !NotificationTarget.isMapped(eventType))
-                .sorted()
-                .toList();
+    // The mapping points at an eventType that no longer exists: usually the trace of a
+    // constant rename where this side was forgotten. A notification of that kind will never
+    // be created, and nothing reports an error unless it is checked here.
+    private void requireKnownEventTypes(List<String> knownEventTypes) {
+        List<String> unknown = NotificationCategory.mappedEventTypes().stream()
+            .filter(eventType -> !knownEventTypes.contains(eventType))
+            .sorted()
+            .toList();
 
-            if (!missingTarget.isEmpty()) {
-                throw new IllegalStateException(
-                    "eventType có NotificationCategory nhưng thiếu NotificationTarget: " + missingTarget);
-            }
+        if (!unknown.isEmpty()) {
+            throw new IllegalStateException(
+                "NotificationCategory ánh xạ eventType không tồn tại trong EventTypeConstant: " + unknown);
+        }
+    }
 
-            // The opposite direction is harmless at runtime but is always a sign of half-finished work: someone
-            // declared a target for a new event and forgot the category, and that event produces no
-            // notification at all -- silent, exactly as if nothing had been done.
-            List<String> targetWithoutCategory = NotificationTarget.mappedEventTypes().stream()
-                .filter(eventType -> !NotificationCategory.isMapped(eventType))
-                .sorted()
-                .toList();
+    // Without a target renderDrafts throws IllegalArgumentException midway. Since it
+    // sits on the Kafka branch, the message runs the whole retry cycle and falls into the DLT: the
+    // notification never reaches the recipient, and the only place that says so is the error log.
+    private void requireTargetForEveryCategory() {
+        List<String> missingTarget = NotificationCategory.mappedEventTypes().stream()
+            .filter(eventType -> !NotificationTarget.isMapped(eventType))
+            .sorted()
+            .toList();
 
-            if (!targetWithoutCategory.isEmpty()) {
-                throw new IllegalStateException(
-                    "eventType có NotificationTarget nhưng thiếu NotificationCategory, sẽ không bao giờ sinh "
-                        + "notification: " + targetWithoutCategory);
-            }
+        if (!missingTarget.isEmpty()) {
+            throw new IllegalStateException(
+                "eventType có NotificationCategory nhưng thiếu NotificationTarget: " + missingTarget);
+        }
+    }
 
-            log.info("Notification mapping: {} eventType đã khai báo (dẫn về {} target), "
-                + "{} eventType không tạo notification",
-                NotificationCategory.mappedEventTypes().size(),
-                NotificationTarget.mappedEventTypes().stream().map(NotificationTarget::of).distinct().count(),
-                knownEventTypes.size() - NotificationCategory.mappedEventTypes().size());
-        };
+    // The opposite direction is harmless at runtime but is always a sign of half-finished work: someone
+    // declared a target for a new event and forgot the category, and that event produces no
+    // notification at all -- silent, exactly as if nothing had been done.
+    private void requireCategoryForEveryTarget() {
+        List<String> targetWithoutCategory = NotificationTarget.mappedEventTypes().stream()
+            .filter(eventType -> !NotificationCategory.isMapped(eventType))
+            .sorted()
+            .toList();
+
+        if (!targetWithoutCategory.isEmpty()) {
+            throw new IllegalStateException(
+                "eventType có NotificationTarget nhưng thiếu NotificationCategory, sẽ không bao giờ sinh "
+                    + "notification: " + targetWithoutCategory);
+        }
     }
 }

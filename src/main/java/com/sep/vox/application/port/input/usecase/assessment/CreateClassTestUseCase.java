@@ -77,19 +77,10 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         CreateClassTestCommand command = normalize(input);
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
-        if (userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .noneMatch(role -> "TEACHER".equals(role.roleCode()))) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
+        requireTeacher(currentUserId);
         SchoolClass schoolClass = schoolClassRepository.findById(command.schoolClassId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
-
-        SchoolClassUser membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
-        if (!membership.isActive()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
+        requireActiveClassMember(currentUserId, schoolClass);
 
         schoolSubscriptionActiveGuardService.requireActiveForSchool(schoolClass.getSchoolId(), "tạo Class Test");
 
@@ -101,6 +92,21 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         Assessment assessment = createAssessment(schoolClass, command, currentUserId, now);
         AssessmentSchedule schedule = createDraftSchedule(assessment, command.schoolRoomId());
         return finishSetup(assessment, schedule, schoolClass, currentUserId, now);
+    }
+
+    private void requireTeacher(UUID currentUserId) {
+        if (userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+                .noneMatch(role -> "TEACHER".equals(role.roleCode()))) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
+    }
+
+    private void requireActiveClassMember(UUID currentUserId, SchoolClass schoolClass) {
+        SchoolClassUser membership = schoolClassUserRepository.findByUserIdAndSchoolClassId(currentUserId, schoolClass.getId())
+            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+        if (!membership.isActive()) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
     }
 
     /**
@@ -198,16 +204,26 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
     }
 
     /**
-     * Nạp toàn bộ học sinh active của lớp vào danh sách dự thi, CHƯA xếp ca và CHƯA gán đề — giống
-     * hệt kỳ thi tập trung. Chọn lớp chỉ là bước "đưa vào tab học sinh"; xếp ca (và đề đi kèm) là
-     * bước riêng qua endpoint assign-schedule / auto-fill.
+     * Loads every active student of the class into the candidate list, with NO session slot and NO paper assigned yet,
+     * exactly like a centralized assessment. Choosing a class is only the "put into the students tab" step;
+     * placing students into a session (and the paper that goes with it) is a separate step through the
+     * assign-schedule / auto-fill endpoints.
      */
     private int assignCandidates(
             Assessment assessment,
             UUID schoolClassId,
             UUID currentUserId,
             Instant now) {
-        // findBySchoolClassId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
+        List<UUID> activeStudentIds = activeStudentIdsOf(schoolClassId);
+        List<AssessmentCandidate> candidates = new ArrayList<AssessmentCandidate>();
+        for (UUID userId : activeStudentIds) {
+            candidates.add(AssessmentCandidate.createFresh(assessment.getId(), userId, currentUserId, now));
+        }
+        return assessmentCandidateRepository.saveAll(candidates).size();
+    }
+
+    private List<UUID> activeStudentIdsOf(UUID schoolClassId) {
+        // findBySchoolClassId is 1-based (PageRequest.of(page - 1, size)): the first page is 1, NOT 0.
         List<SchoolClassUser> roster = schoolClassUserRepository.findBySchoolClassId(schoolClassId, 1, MAX_CLASS_ROSTER_SIZE).content();
 
         List<UUID> activeUserIds = roster.stream()
@@ -219,15 +235,7 @@ public class CreateClassTestUseCase implements IUseCase<CreateClassTestCommand, 
         // ONE query for the whole class instead of asking each student's role -- a class of 40 would be 40 queries, and the
         // roster cap is 2000. Exactly the same as ImportAssessmentCandidatesFromClassUseCase.
         Set<UUID> studentIds = userRoleQueryRepository.findUserIdsByRoleCode(activeUserIds, SchoolRoleCodes.STUDENT);
-
-        List<AssessmentCandidate> candidates = new ArrayList<AssessmentCandidate>();
-        for (UUID userId : activeUserIds) {
-            if (!studentIds.contains(userId)) {
-                continue;
-            }
-            candidates.add(AssessmentCandidate.createFresh(assessment.getId(), userId, currentUserId, now));
-        }
-        return assessmentCandidateRepository.saveAll(candidates).size();
+        return activeUserIds.stream().filter(studentIds::contains).toList();
     }
 
     private void validateOpenClose(Instant open, Instant close, UUID schoolId) {

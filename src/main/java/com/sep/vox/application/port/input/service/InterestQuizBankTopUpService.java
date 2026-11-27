@@ -59,15 +59,7 @@ public class InterestQuizBankTopUpService {
             return 0;
         }
         List<InterestQuizSeedItem> pool = quizItemRepository.findAllActiveQuizItems();
-        Map<String, Integer> coverage = new HashMap<String, Integer>();
-        for (InterestQuizSeedItem item : pool) {
-            for (String dimension : item.getDimensionPerStatement()) {
-                coverage.merge(dimension, 1, (current, delta) -> current + delta);
-            }
-        }
-        List<String> underCovered = dimensions.stream()
-            .filter(dimension -> coverage.getOrDefault(dimension, 0) < MIN_COVERAGE_PER_DIMENSION)
-            .toList();
+        List<String> underCovered = findUnderCoveredDimensions(dimensions, pool);
         if (underCovered.isEmpty()) {
             return 0;
         }
@@ -76,24 +68,41 @@ public class InterestQuizBankTopUpService {
             "Kho quiz sở thích thiếu phủ cho {} -- sinh bổ sung",
             underCovered
         );
-        List<String> existingStatements = pool.stream()
-            .flatMap(item -> item.getStatements().stream())
-            .toList();
-        // Vẫn gửi TOÀN BỘ danh mục chứ không chỉ chiều thiếu: mỗi triplet bắt buộc dùng 3
-        // chiều KHÁC NHAU, nên nếu chỉ đưa 1 chiều thiếu thì không dựng nổi triplet nào.
-        List<InterestQuizSeedItem> generated = quizGenerationPort.generate(
-            MAX_ITEMS_PER_RUN,
-            existingStatements,
-            dimensions
-        );
-        List<InterestQuizSeedItem> usable = generated.stream()
-            .filter(item -> item.getDimensionPerStatement().stream().anyMatch(underCovered::contains))
-            .toList();
+        List<InterestQuizSeedItem> usable = generateUsableItems(pool, dimensions, underCovered);
         if (usable.isEmpty()) {
             return 0;
         }
         saveShared(usable);
         return usable.size();
+    }
+
+    private List<String> findUnderCoveredDimensions(List<String> dimensions, List<InterestQuizSeedItem> pool) {
+        Map<String, Integer> coverage = new HashMap<String, Integer>();
+        for (InterestQuizSeedItem item : pool) {
+            for (String dimension : item.getDimensionPerStatement()) {
+                coverage.merge(dimension, 1, (current, delta) -> current + delta);
+            }
+        }
+        return dimensions.stream()
+            .filter(dimension -> coverage.getOrDefault(dimension, 0) < MIN_COVERAGE_PER_DIMENSION)
+            .toList();
+    }
+
+    private List<InterestQuizSeedItem> generateUsableItems(
+            List<InterestQuizSeedItem> pool, List<String> dimensions, List<String> underCovered) {
+        List<String> existingStatements = pool.stream()
+            .flatMap(item -> item.getStatements().stream())
+            .toList();
+        // Still send the WHOLE catalog, not only the under-covered dimensions: every triplet must use 3
+        // DIFFERENT dimensions, so passing just one missing dimension could not build a single triplet.
+        List<InterestQuizSeedItem> generated = quizGenerationPort.generate(
+            MAX_ITEMS_PER_RUN,
+            existingStatements,
+            dimensions
+        );
+        return generated.stream()
+            .filter(item -> item.getDimensionPerStatement().stream().anyMatch(underCovered::contains))
+            .toList();
     }
 
     /** Lưu vào kho DÙNG CHUNG (student_id = null) chứ không gắn cho học sinh nào. */

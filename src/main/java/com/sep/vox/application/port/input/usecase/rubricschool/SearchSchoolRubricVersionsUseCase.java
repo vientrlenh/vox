@@ -41,39 +41,10 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricVersionDto> execute(SearchSchoolRubricVersionsQuery query) {
-        // 1. Authenticate the account
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        requireActiveSchoolMember(query.schoolId());
+        requireSchoolOwnedRubric(query);
 
-        if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
-        }
-
-        // 2. Security checkpoint 1: check that the School Admin belongs to this school
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
-
-        if (!schoolUser.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tìm kiếm Rubric của trường học khác.");
-        }
-
-        // 3. Security checkpoint 2: check that the school is active
-        School school = schoolRepository.findById(query.schoolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
-        if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
-        }
-
-        // 4. Security checkpoint 3: does this Rubric belong to the school?
-        Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(query.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Rubric này không thuộc về trường học của bạn.");
-        }
-
-        // 5. Call the database to fetch the Version list (SHARED REPO FUNCTION)
+        // Shared repository function fetches the version list.
         PageResult<RubricVersion> pageResult = rubricVersionRepository.searchRubricVersions(
                 query.rubricId(),
                 query.keyword(),
@@ -81,8 +52,6 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
                 query.page(),
                 query.size()
         );
-
-        // 6. Map sang DTO
         return new PageResult<>(
                 pageResult.content().stream()
                         .map(RubricVersionDtoMapper::toRubricVersionDto)
@@ -92,5 +61,37 @@ public class SearchSchoolRubricVersionsUseCase implements IUseCase<SearchSchoolR
                 pageResult.totalElements(),
                 pageResult.totalPages()
         );
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) {
+            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        }
+
+        // Security checkpoint 1: the School Admin must belong to this school.
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
+                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) {
+            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tìm kiếm Rubric của trường học khác.");
+        }
+
+        // Security checkpoint 2: the school must be active.
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+        if (!school.isActive()) {
+            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
+        }
+    }
+
+    // Security checkpoint 3: the Rubric must belong to the school.
+    private void requireSchoolOwnedRubric(SearchSchoolRubricVersionsQuery query) {
+        Rubric rubric = rubricRepository.findById(query.rubricId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(query.schoolId())) {
+            throw new ForbiddenException("BẢO MẬT: Rubric này không thuộc về trường học của bạn.");
+        }
     }
 }

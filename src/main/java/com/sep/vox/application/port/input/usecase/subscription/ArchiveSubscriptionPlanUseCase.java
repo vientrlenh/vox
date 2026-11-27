@@ -4,6 +4,7 @@ import com.sep.vox.domain.model.subscription.SubscriptionPlan;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,23 +30,35 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
 
+        requireArchivable(plan);
+        requireReplacementWhenPlanInUse(plan, input.replacedByPlanId());
+        assignReplacementIfGiven(plan, input.replacedByPlanId());
+        plan.setStatus(SubscriptionPlanStatus.ARCHIVED);
+        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
+
+        return savedPlan.getId();
+    }
+
+    private void requireArchivable(SubscriptionPlan plan) {
         if (plan.getStatus() == SubscriptionPlanStatus.DRAFT) {
             throw new IllegalArgumentException("Gói đang ở trạng thái nháp thì phải xóa cứng, không lưu trữ.");
         }
         if (plan.getStatus() == SubscriptionPlanStatus.ARCHIVED) {
             throw new IllegalArgumentException("Gói đã được lưu trữ trước đó.");
         }
+    }
 
-        // existsActiveByPlanId already existed but was never called -- a real gap: archiving unconditionally while an ACTIVE
-        // school still uses this plan would leave that school stuck, unable to renew until someone creates a replacement plan
-        // (SubscriptionPlanResolver.resolveActivePlan throws on renewal). Choosing a replacement plan is mandatory AT THE TIME OF
-        // archiving if any school is using it.
-        //
-        // The second clause (existsByReplacedByPlanId) patches the same hole ONE STEP FURTHER AWAY: plan A already points to B as
-        // its replacement, and now B is archived without naming a next plan. No school is ACTIVE on B, so the first clause lets
-        // it through, but the schools on A would walk the whole chain and stop at an ARCHIVED plan with no way out -- still stuck,
-        // just harder to see.
-        if (input.replacedByPlanId() == null) {
+    // existsActiveByPlanId already existed but was never called -- a real gap: archiving unconditionally while an ACTIVE
+    // school still uses this plan would leave that school stuck, unable to renew until someone creates a replacement plan
+    // (SubscriptionPlanResolver.resolveActivePlan throws on renewal). Choosing a replacement plan is mandatory AT THE TIME OF
+    // archiving if any school is using it.
+    //
+    // The second clause (existsByReplacedByPlanId) patches the same hole ONE STEP FURTHER AWAY: plan A already points to B as
+    // its replacement, and now B is archived without naming a next plan. No school is ACTIVE on B, so the first clause lets
+    // it through, but the schools on A would walk the whole chain and stop at an ARCHIVED plan with no way out -- still stuck,
+    // just harder to see.
+    private void requireReplacementWhenPlanInUse(SubscriptionPlan plan, @Nullable UUID replacedByPlanId) {
+        if (replacedByPlanId == null) {
             if (schoolSubscriptionRepository.existsActiveByPlanId(plan.getId())) {
                 throw new IllegalArgumentException(
                     "Gói đang có trường sử dụng, phải chọn gói thay thế hoặc đợi tới khi không còn trường nào dùng gói này trước khi lưu trữ.");
@@ -55,19 +68,17 @@ public class ArchiveSubscriptionPlanUseCase implements IUseCase<ArchiveSubscript
                     "Gói này đang là gói thay thế của một gói khác, phải chọn gói thay thế tiếp theo trước khi lưu trữ.");
             }
         }
+    }
 
-        if (input.replacedByPlanId() != null) {
-            SubscriptionPlan replacement = subscriptionPlanRepository.findById(input.replacedByPlanId())
+    private void assignReplacementIfGiven(SubscriptionPlan plan, @Nullable UUID replacedByPlanId) {
+        if (replacedByPlanId != null) {
+            SubscriptionPlan replacement = subscriptionPlanRepository.findById(replacedByPlanId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói thay thế"));
             // A school forced to change plan on renewal (SubscriptionPlanResolver.resolveActivePlan) has no chance to refuse -- see
             // SubscriptionPlanReplacementValidator for the full set of rules.
             replacementValidator.requireValidReplacement(replacement, plan);
             plan.setReplacedByPlanId(replacement.getId());
         }
-        plan.setStatus(SubscriptionPlanStatus.ARCHIVED);
-        SubscriptionPlan savedPlan = subscriptionPlanRepository.save(plan);
-
-        return savedPlan.getId();
     }
 
 }

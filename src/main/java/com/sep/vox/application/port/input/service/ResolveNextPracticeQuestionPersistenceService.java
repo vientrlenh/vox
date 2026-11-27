@@ -24,14 +24,13 @@ public class ResolveNextPracticeQuestionPersistenceService {
             UUID studentId,
             UUID practicePaperId,
             PracticeQuestionSelectionService.NextQuestionSelection selection) {
-        paperItemRepository.save(PracticePaperItem.builder()
-                .practicePaperId(practicePaperId)
-                .practiceQuestionId(selection.question().getId())
-                .slotOrder(selection.slot())
-                .targetCriterionCode(selection.criterion())
-                .targetSubAttribute(selection.subAttribute())
-                .targetDifficultyRank(selection.targetRank())
-                .build());
+        paperItemRepository.save(PracticePaperItem.forSlot(
+                practicePaperId,
+                selection.question().getId(),
+                selection.slot(),
+                selection.criterion(),
+                selection.subAttribute(),
+                selection.targetRank()));
         studentQuestionExposureRepository.recordExposure(studentId, selection.question().getId());
     }
 }

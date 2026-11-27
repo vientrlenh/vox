@@ -56,17 +56,33 @@ public class RecalculateAssessmentTimeDurationService {
 
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessmentId);
         if (papers.isEmpty()) {
-            // Không mã đề nào ⇒ chưa tính được thời gian làm bài. Ghi 0 chứ không phải null: cùng
-            // một trạng thái thì phải cùng một cách mã hoá, mà nhánh dưới đã ghi 0 cho trường hợp
-            // có mã đề nhưng chưa gán câu hỏi nào. Không cần soi lại ca thi: 0 giây thì ca nào cũng
-            // đủ dài.
-            assessment.setAssessmentTimeDurationSecond(0);
-            assessmentRepository.save(assessment);
+            storeZeroDuration(assessment);
             return;
         }
 
-        // Hai query cho cả kỳ thi thay vì (1 query/mã đề + 1 query/câu hỏi). Hàm này chạy sau MỌI thao
-        // tác sửa đề, nên kỳ thi 5 mã đề × 40 câu trước đây tốn ~200 query mỗi lần bấm lưu.
+        int maxDuration = recalculatePaperDurations(papers);
+        assessment.setAssessmentTimeDurationSecond(maxDuration);
+        requireActiveSchedulesStillFit(assessment);
+        assessmentRepository.save(assessment);
+    }
+
+    /**
+     * No paper variant means the attempt time cannot be computed yet. Writes 0 rather than null: the same
+     * state must be encoded the same way, and the branch below already writes 0 for the case of a paper variant with
+     * no question assigned yet. There is no need to re-check the schedules: with 0 seconds every session is long enough.
+     */
+    private void storeZeroDuration(Assessment assessment) {
+        assessment.setAssessmentTimeDurationSecond(0);
+        assessmentRepository.save(assessment);
+    }
+
+    /**
+     * Two queries for the whole assessment instead of (1 query per paper variant + 1 query per question). This function
+     * runs after EVERY paper edit, so an assessment of 5 variants x 40 questions used to cost ~200 queries on each save click.
+     *
+     * @return the longest paper duration in seconds
+     */
+    private int recalculatePaperDurations(List<AssessmentPaper> papers) {
         List<UUID> paperIds = papers.stream().map(paper -> paper.getId()).toList();
         Map<UUID, List<AssessmentPaperItem>> itemsByPaperId = assessmentPaperItemRepository.findByPaperIdIn(paperIds).stream()
             .collect(Collectors.groupingBy(item -> item.getPaperId()));
@@ -79,26 +95,20 @@ public class RecalculateAssessmentTimeDurationService {
             .toList();
         Map<UUID, Question> questionById = questionRepository.findByIdIn(questionIds).stream()
             .collect(Collectors.toMap(question -> question.getId(), question -> question));
-        // Thời lượng phát AUDIO/VIDEO cũng là thời gian thí sinh ngồi trong phòng, nên phải nằm trong
-        // ngân sách đồng hồ -- xem PaperTimeCalculator để rõ vì sao ước tính CHI PHÍ lại không được
-        // cộng phần này.
+        // The playback duration of AUDIO/VIDEO is also time the candidate sits in the room, so it must be inside the
+        // clock budget -- see PaperTimeCalculator for why the COST estimate must not add this part.
         Map<UUID, QuestionAsset> assetByQuestionId = PaperTimeCalculator.indexByQuestionId(
             questionAssetRepository.findByQuestionIdIn(questionIds));
+        return applyPaperDurations(papers, itemsByPaperId, questionById, assetByQuestionId);
+    }
 
+    private int applyPaperDurations(
+            List<AssessmentPaper> papers, Map<UUID, List<AssessmentPaperItem>> itemsByPaperId,
+            Map<UUID, Question> questionById, Map<UUID, QuestionAsset> assetByQuestionId) {
         int maxDuration = 0;
         List<AssessmentPaper> changedPapers = new ArrayList<AssessmentPaper>();
         for (AssessmentPaper paper : papers) {
-            // List chứ không phải Set: một câu hỏi lặp lại trong cùng mã đề thì phải tính đủ số lần.
-            List<Question> paperQuestions = new ArrayList<Question>();
-            for (AssessmentPaperItem item : itemsByPaperId.getOrDefault(paper.getId(), List.of())) {
-                if (item.getQuestionId() == null) {
-                    continue;
-                }
-                Question question = questionById.get(item.getQuestionId());
-                if (question != null) {
-                    paperQuestions.add(question);
-                }
-            }
+            List<Question> paperQuestions = questionsOfPaper(itemsByPaperId.getOrDefault(paper.getId(), List.of()), questionById);
             int paperDuration = PaperTimeCalculator.breakdownOf(paperQuestions, assetByQuestionId).totalSeconds();
             if (paper.getTimeDurationSeconds() == null || paper.getTimeDurationSeconds() != paperDuration) {
                 paper.setTimeDurationSeconds(paperDuration);
@@ -109,10 +119,22 @@ public class RecalculateAssessmentTimeDurationService {
         if (!changedPapers.isEmpty()) {
             assessmentPaperRepository.saveAll(changedPapers);
         }
+        return maxDuration;
+    }
 
-        assessment.setAssessmentTimeDurationSecond(maxDuration);
-        requireActiveSchedulesStillFit(assessment);
-        assessmentRepository.save(assessment);
+    /** A List, not a Set: a question repeated within the same paper variant must be counted every time it appears. */
+    private List<Question> questionsOfPaper(List<AssessmentPaperItem> items, Map<UUID, Question> questionById) {
+        List<Question> paperQuestions = new ArrayList<Question>();
+        for (AssessmentPaperItem item : items) {
+            if (item.getQuestionId() == null) {
+                continue;
+            }
+            Question question = questionById.get(item.getQuestionId());
+            if (question != null) {
+                paperQuestions.add(question);
+            }
+        }
+        return paperQuestions;
     }
 
     /**

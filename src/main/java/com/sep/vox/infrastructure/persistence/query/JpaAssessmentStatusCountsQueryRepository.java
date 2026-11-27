@@ -15,6 +15,34 @@ import jakarta.persistence.PersistenceContext;
 @Repository
 public class JpaAssessmentStatusCountsQueryRepository implements AssessmentStatusCountsQueryRepository {
 
+    private static final String STATUS_COUNTS_SELECT = """
+        SELECT new com.sep.vox.application.query.dto.AssessmentStatusCountsDto(
+            COUNT(e),
+            COALESCE(SUM(CASE WHEN e.status = 'DRAFT' THEN 1L ELSE 0L END), 0L),
+            COALESCE(SUM(CASE WHEN e.status = 'SCHEDULED' THEN 1L ELSE 0L END), 0L),
+            COALESCE(SUM(CASE WHEN e.status = 'IN_PROGRESS' THEN 1L ELSE 0L END), 0L),
+            COALESCE(SUM(CASE WHEN e.status = 'CLOSED' THEN 1L ELSE 0L END), 0L),
+            COALESCE(SUM(CASE WHEN e.status = 'RESULTS_PUBLISHED' THEN 1L ELSE 0L END), 0L),
+            COALESCE(SUM(CASE WHEN e.status = 'CANCELLED' THEN 1L ELSE 0L END), 0L)
+        )
+        FROM AssessmentJpaEntity e
+        WHERE (:schoolId IS NULL OR e.schoolId = :schoolId)
+          AND (:kind IS NULL OR e.kind = :kind)
+        """;
+
+    private static final String ACCESSIBLE_ASSESSMENTS_FILTER = """
+          AND (
+                :systemAdmin = true
+                OR (:schoolAdmin = true AND e.schoolId = :currentSchoolId)
+                OR EXISTS (
+                    SELECT 1
+                    FROM AssessmentMemberJpaEntity em
+                    WHERE em.assessmentId = e.id
+                      AND em.userId = :currentUserId
+                )
+              )
+        """;
+
     @PersistenceContext
     private EntityManager em;
 
@@ -28,40 +56,8 @@ public class JpaAssessmentStatusCountsQueryRepository implements AssessmentStatu
             String kind,
             Instant createdFrom,
             Instant createdTo) {
-        StringBuilder jpql = new StringBuilder("""
-            SELECT new com.sep.vox.application.query.dto.AssessmentStatusCountsDto(
-                COUNT(e),
-                COALESCE(SUM(CASE WHEN e.status = 'DRAFT' THEN 1L ELSE 0L END), 0L),
-                COALESCE(SUM(CASE WHEN e.status = 'SCHEDULED' THEN 1L ELSE 0L END), 0L),
-                COALESCE(SUM(CASE WHEN e.status = 'IN_PROGRESS' THEN 1L ELSE 0L END), 0L),
-                COALESCE(SUM(CASE WHEN e.status = 'CLOSED' THEN 1L ELSE 0L END), 0L),
-                COALESCE(SUM(CASE WHEN e.status = 'RESULTS_PUBLISHED' THEN 1L ELSE 0L END), 0L),
-                COALESCE(SUM(CASE WHEN e.status = 'CANCELLED' THEN 1L ELSE 0L END), 0L)
-            )
-            FROM AssessmentJpaEntity e
-            WHERE (:schoolId IS NULL OR e.schoolId = :schoolId)
-              AND (:kind IS NULL OR e.kind = :kind)
-            """);
-        if (createdFrom != null) {
-            jpql.append(" AND e.createdAt >= :createdFrom\n");
-        }
-        if (createdTo != null) {
-            jpql.append(" AND e.createdAt <= :createdTo\n");
-        }
-        jpql.append("""
-              AND (
-                    :systemAdmin = true
-                    OR (:schoolAdmin = true AND e.schoolId = :currentSchoolId)
-                    OR EXISTS (
-                        SELECT 1
-                        FROM AssessmentMemberJpaEntity em
-                        WHERE em.assessmentId = e.id
-                          AND em.userId = :currentUserId
-                    )
-                  )
-            """);
-
-        TypedQuery<AssessmentStatusCountsDto> query = em.createQuery(jpql.toString(), AssessmentStatusCountsDto.class)
+        TypedQuery<AssessmentStatusCountsDto> query = em.createQuery(
+            statusCountsJpql(createdFrom != null, createdTo != null), AssessmentStatusCountsDto.class)
             .setParameter("schoolId", schoolId)
             .setParameter("kind", kind)
             .setParameter("systemAdmin", systemAdmin)
@@ -75,5 +71,16 @@ public class JpaAssessmentStatusCountsQueryRepository implements AssessmentStatu
             query.setParameter("createdTo", createdTo);
         }
         return query.getSingleResult();
+    }
+
+    private static String statusCountsJpql(boolean hasCreatedFrom, boolean hasCreatedTo) {
+        StringBuilder jpql = new StringBuilder(STATUS_COUNTS_SELECT);
+        if (hasCreatedFrom) {
+            jpql.append(" AND e.createdAt >= :createdFrom\n");
+        }
+        if (hasCreatedTo) {
+            jpql.append(" AND e.createdAt <= :createdTo\n");
+        }
+        return jpql.append(ACCESSIBLE_ASSESSMENTS_FILTER).toString();
     }
 }

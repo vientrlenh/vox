@@ -8,10 +8,12 @@ import com.sep.vox.domain.model.supportedlanguage.SupportedLanguage;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -175,6 +177,10 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             return;
         }
 
+        seedPolicies(language, framework, frameworkVersion);
+    }
+
+    private void seedPolicies(SupportedLanguage language, Framework framework, FrameworkVersion frameworkVersion) {
         Instant now = Instant.now();
         int created = 0;
         for (PolicySeed seed : POLICIES) {
@@ -199,46 +205,85 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             FrameworkVersion frameworkVersion,
             Instant now) {
 
+        Optional<PolicyInputs> resolved = resolveInputs(seed, frameworkId, frameworkVersion);
+        if (resolved.isEmpty() || isAlreadySeeded(resolved.get())) {
+            return false;
+        }
+
+        PolicyInputs inputs = resolved.get();
+        int nextVersion = assessmentPolicyRepository.findMaxVersionForScope(
+            null, languageId, frameworkVersion.getId(), inputs.gradeLevelId(), null, null) + 1;
+
+        assessmentPolicyRepository.save(buildSystemPolicy(inputs, languageId, frameworkVersion, nextVersion, now));
+        return true;
+    }
+
+    /** @return empty, after logging why, when a template cannot be built from the current data. */
+    private Optional<PolicyInputs> resolveInputs(PolicySeed seed, UUID frameworkId, FrameworkVersion frameworkVersion) {
+        FrameworkResultBand targetBand = findTargetBand(seed, frameworkVersion);
+        if (targetBand == null) {
+            return Optional.empty();
+        }
+
+        // The specialized template declares no Grade: with an empty scope the school chooses when copying it over.
+        UUID gradeLevelId = null;
+        if (seed.gradeLevelCode() != null) {
+            GradeLevel gradeLevel = findGradeLevel(seed.gradeLevelCode());
+            if (gradeLevel == null) {
+                return Optional.empty();
+            }
+            gradeLevelId = gradeLevel.getId();
+        }
+
+        RubricVersion rubricVersion = findSystemRubricVersion(seed, frameworkId);
+        if (rubricVersion == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new PolicyInputs(targetBand, gradeLevelId, rubricVersion));
+    }
+
+    private @Nullable FrameworkResultBand findTargetBand(PolicySeed seed, FrameworkVersion frameworkVersion) {
         FrameworkResultBand targetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), seed.targetBandCode()).orElse(null);
         if (targetBand == null) {
             log.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
                 frameworkVersion.getCode(), seed.targetBandCode());
-            return false;
         }
+        return targetBand;
+    }
 
-        // The specialized template declares no Grade: with an empty scope the school chooses when copying it over.
-        GradeLevel gradeLevel = null;
-        if (seed.gradeLevelCode() != null) {
-            gradeLevel = gradeLevelRepository.findByCode(seed.gradeLevelCode()).orElse(null);
-            if (gradeLevel == null) {
-                log.warn("Không tìm thấy khối {}. Bỏ qua chính sách chấm mẫu cho khối này",
-                    seed.gradeLevelCode());
-                return false;
-            }
+    private @Nullable GradeLevel findGradeLevel(String gradeLevelCode) {
+        GradeLevel gradeLevel = gradeLevelRepository.findByCode(gradeLevelCode).orElse(null);
+        if (gradeLevel == null) {
+            log.warn("Không tìm thấy khối {}. Bỏ qua chính sách chấm mẫu cho khối này", gradeLevelCode);
         }
-        UUID gradeLevelId = gradeLevel == null ? null : gradeLevel.getId();
+        return gradeLevel;
+    }
 
+    private @Nullable RubricVersion findSystemRubricVersion(PolicySeed seed, UUID frameworkId) {
         RubricVersion rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
         if (rubricVersion == null) {
             log.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
-            return false;
+            return null;
         }
         Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
         if (rubric == null || rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             log.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
                 + " bậc {}", seed.rubricVersionCode(), seed.targetBandCode());
-            return false;
+            return null;
         }
         // The same check CreateSystemAssessmentPolicyUseCase applies: the rubric is tied to the FRAMEWORK (not
         // the framework version), so compare against getFrameworkId of the version in use.
         if (!rubric.getFrameworkId().equals(frameworkId)) {
             log.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
-            return false;
+            return null;
         }
+        return rubricVersion;
+    }
 
+    private boolean isAlreadySeeded(PolicyInputs inputs) {
         // Idempotent by EXACTLY the identity of a template: (rubric version, target band).
         //
         // This place used to use existsActiveForScopeAnyRubricVersion -- the "one policy per scope"
@@ -251,27 +296,24 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         // assessments.assessment_policy_id), findActivePolicy has no remaining callers, and idx_assessment_policies
         // _scope_version does not catch any row that has NULL in its key. The manual creation path of the system admin
         // (CreateSystemAssessmentPolicyUseCase) keeps the old rule.
-        boolean alreadySeeded = assessmentPolicyRepository
-            .findPublishedSystemWideByRubricVersionId(rubricVersion.getId()).stream()
-            .anyMatch(existing -> targetBand.getId().equals(existing.getTargetFrameworkBandId()));
-        if (alreadySeeded) {
-            return false;
-        }
+        return assessmentPolicyRepository
+            .findPublishedSystemWideByRubricVersionId(inputs.rubricVersion().getId()).stream()
+            .anyMatch(existing -> inputs.targetBand().getId().equals(existing.getTargetFrameworkBandId()));
+    }
 
-        int nextVersion = assessmentPolicyRepository.findMaxVersionForScope(
-            null, languageId, frameworkVersion.getId(), gradeLevelId, null, null) + 1;
-
-        assessmentPolicyRepository.save(AssessmentPolicy.builder()
+    private AssessmentPolicy buildSystemPolicy(PolicyInputs inputs, UUID languageId, FrameworkVersion frameworkVersion,
+            int nextVersion, Instant now) {
+        return AssessmentPolicy.builder()
             // schoolId null = a system policy, belonging to no school.
             .schoolId(null)
-            .gradeLevelId(gradeLevelId)
+            .gradeLevelId(inputs.gradeLevelId())
             // School year and Class belong to the scope of a specific school, so a system policy always leaves them empty.
             .schoolGradeId(null)
             .schoolClassId(null)
             .languageId(languageId)
             .frameworkVersionId(frameworkVersion.getId())
-            .rubricVersionId(rubricVersion.getId())
-            .targetFrameworkBandId(targetBand.getId())
+            .rubricVersionId(inputs.rubricVersion().getId())
+            .targetFrameworkBandId(inputs.targetBand().getId())
             // See the class javadoc: the regulation dictates the band, not the score threshold.
             .passingScore(null)
             .strictness(AssessmentPolicyStrictness.STANDARD)
@@ -281,8 +323,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
             // the real validity range is what the school sets itself when copying it over.
             .effectiveFrom(now)
             .effectiveTo(null)
-            .build());
-        return true;
+            .build();
     }
 
     private FrameworkVersion latestPublishedVersion(UUID frameworkId) {
@@ -298,5 +339,8 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
      * @param rubricVersionCode  mã phiên bản bộ tiêu chí mẫu tương ứng của hệ thống.
      * @param targetBandCode     mã bậc mục tiêu; đây là thứ phân biệt bản chuẩn với bản chuyên.
      */
+    private record PolicyInputs(
+        FrameworkResultBand targetBand, @Nullable UUID gradeLevelId, RubricVersion rubricVersion) {}
+
     private record PolicySeed(String gradeLevelCode, String rubricVersionCode, String targetBandCode) {}
 }

@@ -44,6 +44,15 @@ public class SupportedLanguage extends BaseModel {
         this.isActive = isActive;
     }
 
+    public static SupportedLanguage defined(LanguageCode code, String name, String description) {
+        return builder()
+                .code(code)
+                .name(name)
+                .description(description)
+                .active(true)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

@@ -64,20 +64,24 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
             throw new IllegalArgumentException("Phiên bản không thuộc framework này");
 
         if (input.status() == FrameworkVersionStatus.PUBLISHED) {
-            if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-                throw new IllegalArgumentException("Chỉ có thể xuất bản phiên bản ở trạng thái DRAFT");
-            if (!frameworkCriterionRepository.existsByFrameworkVersionId(input.versionId()))
-                throw new IllegalArgumentException("Phiên bản framework phải có ít nhất một tiêu chí trước khi xuất bản");
-            if (!frameworkResultBandRepository.existsByFrameworkVersionId(input.versionId()))
-                throw new IllegalArgumentException("Phiên bản framework phải có ít nhất một dải kết quả trước khi xuất bản");
-            validateEveryCriterionHasBandsWithSignals(input.versionId());
-            validateNoConflictingPublished(input.frameworkId(), input.versionId(), version.getEffectiveFrom(), version.getEffectiveTo());
+            validatePublishable(input, version);
         } else if (input.status() == FrameworkVersionStatus.ARCHIVED) {
             if (version.getStatus() != FrameworkVersionStatus.PUBLISHED)
                 throw new IllegalArgumentException("Chỉ có thể lưu trữ phiên bản ở trạng thái PUBLISHED");
         } else {
             throw new IllegalArgumentException("Trạng thái không hợp lệ để cập nhật");
         }
+    }
+
+    private void validatePublishable(UpdateFrameworkVersionStatusCommand input, FrameworkVersion version) {
+        if (version.getStatus() != FrameworkVersionStatus.DRAFT)
+            throw new IllegalArgumentException("Chỉ có thể xuất bản phiên bản ở trạng thái DRAFT");
+        if (!frameworkCriterionRepository.existsByFrameworkVersionId(input.versionId()))
+            throw new IllegalArgumentException("Phiên bản framework phải có ít nhất một tiêu chí trước khi xuất bản");
+        if (!frameworkResultBandRepository.existsByFrameworkVersionId(input.versionId()))
+            throw new IllegalArgumentException("Phiên bản framework phải có ít nhất một dải kết quả trước khi xuất bản");
+        validateEveryCriterionHasBandsWithSignals(input.versionId());
+        validateNoConflictingPublished(input.frameworkId(), input.versionId(), version.getEffectiveFrom(), version.getEffectiveTo());
     }
 
     private void validateEveryCriterionHasBandsWithSignals(UUID versionId) {
@@ -95,17 +99,20 @@ public class UpdateFrameworkVersionStatusUseCase implements IUseCase<UpdateFrame
         Map<UUID, List<FrameworkCriterionBand>> bandsByCriterion = bands.stream().collect(Collectors.groupingBy(fcb -> fcb.getFrameworkCriterionId()));
 
         for (FrameworkCriterion criterion : criteria) {
-            List<FrameworkCriterionBand> criterionBands = bandsByCriterion.getOrDefault(criterion.getId(), List.of());
-            if (criterionBands.isEmpty()) {
+            validateCriterionBandsHaveSignals(criterion, bandsByCriterion.getOrDefault(criterion.getId(), List.of()));
+        }
+    }
+
+    private void validateCriterionBandsHaveSignals(FrameworkCriterion criterion, List<FrameworkCriterionBand> criterionBands) {
+        if (criterionBands.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một thang kết quả trước khi xuất bản");
+        }
+        for (FrameworkCriterionBand band : criterionBands) {
+            if (band.getPositiveSignals() == null || band.getPositiveSignals().values().isEmpty()
+                    || band.getNegativeSignals() == null || band.getNegativeSignals().values().isEmpty()) {
                 throw new IllegalArgumentException(
-                        "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một thang kết quả trước khi xuất bản");
-            }
-            for (FrameworkCriterionBand band : criterionBands) {
-                if (band.getPositiveSignals() == null || band.getPositiveSignals().values().isEmpty()
-                        || band.getNegativeSignals() == null || band.getNegativeSignals().values().isEmpty()) {
-                    throw new IllegalArgumentException(
-                            "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một dấu hiệu tích cực và tiêu cực ở mỗi thang kết quả trước khi xuất bản");
-                }
+                        "Tiêu chí \"" + criterion.getName() + "\" phải có ít nhất một dấu hiệu tích cực và tiêu cực ở mỗi thang kết quả trước khi xuất bản");
             }
         }
     }

@@ -105,21 +105,7 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
     }
 
     private AssessmentPaperDto createFromBlueprint(Assessment assessment, UUID currentUserId) {
-        if (assessment.getBlueprintId() == null) {
-            throw new IllegalArgumentException("Bài kiểm tra chưa gắn blueprint");
-        }
-        if (assessment.getBlueprintVersionId() == null) {
-            throw new IllegalArgumentException("CHAIR chưa chốt version blueprint cho kỳ thi này");
-        }
-
-        AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(assessment.getBlueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint đã chốt"));
-        assessmentTimeQuotaGuardService.requireWithinPlan(
-            assessment.getSchoolId(),
-            version.getTotalTimeLimitSeconds(),
-            "Mã đề tạo từ blueprint " + version.getCode()
-        );
-
+        AssessmentBlueprintVersion version = requireFinalizedVersionWithinPlan(assessment);
         List<AssessmentBlueprintSection> sections = assessmentBlueprintSectionRepository
             .findByBlueprintVersionId(version.getId())
             .stream()
@@ -136,45 +122,86 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
             assessment.getId(), assessment.getBlueprintVersionId(), assessment.getCode() + "-P" + variant, variant));
 
         for (AssessmentBlueprintSection section : sections) {
-            AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(
-                AssessmentPaperSection.fromBlueprintSection(paper.getId(), section));
-
-            List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
-                .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
-                .toList();
-
-            for (AssessmentBlueprintSlot slot : slots) {
-                UUID questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
-                if (questionId != null) {
-                    Question fixedQuestion = questionRepository.findById(questionId)
-                        .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong slot"));
-                    if (fixedQuestion.getStatus() != QuestionStatus.PUBLISHED) {
-                        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
-                            throw new IllegalArgumentException(
-                                "Câu hỏi " + fixedQuestion.getCode() + " trong khung chưa PUBLISHED, không thể sinh đề thi");
-                        }
-                        // Class test: the fixed question was archived after the blueprint was published. Leave this
-                        // slot empty so the CHAIR picks another question through the picker, instead of blocking the paper variant altogether.
-                        assessmentPaperItemRepository.save(
-                            AssessmentPaperItem.emptySlot(savedSection.getId(), paper.getId(), slot));
-                        continue;
-                    }
-                }
-                assessmentPaperItemRepository.save(
-                    AssessmentPaperItem.forBlueprintSlot(savedSection.getId(), paper.getId(), slot, questionId));
-                if (questionId != null) {
-                    assessmentQuestionSecureLockService.lockQuestionForAssessment(
-                        questionId,
-                        assessment.getId(),
-                        releaseModeFor(assessment),
-                        currentUserId
-                    );
-                }
-            }
+            copyBlueprintSection(assessment, paper, section, slotsBySectionId, currentUserId);
         }
 
         recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
         return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+    }
+
+    private AssessmentBlueprintVersion requireFinalizedVersionWithinPlan(Assessment assessment) {
+        if (assessment.getBlueprintId() == null) {
+            throw new IllegalArgumentException("Bài kiểm tra chưa gắn blueprint");
+        }
+        if (assessment.getBlueprintVersionId() == null) {
+            throw new IllegalArgumentException("CHAIR chưa chốt version blueprint cho kỳ thi này");
+        }
+
+        AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(assessment.getBlueprintVersionId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint đã chốt"));
+        assessmentTimeQuotaGuardService.requireWithinPlan(
+            assessment.getSchoolId(),
+            version.getTotalTimeLimitSeconds(),
+            "Mã đề tạo từ blueprint " + version.getCode()
+        );
+        return version;
+    }
+
+    private void copyBlueprintSection(
+            Assessment assessment,
+            AssessmentPaper paper,
+            AssessmentBlueprintSection section,
+            Map<UUID, List<AssessmentBlueprintSlot>> slotsBySectionId,
+            UUID currentUserId) {
+        AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(
+            AssessmentPaperSection.fromBlueprintSection(paper.getId(), section));
+
+        List<AssessmentBlueprintSlot> slots = slotsBySectionId.getOrDefault(section.getId(), List.of()).stream()
+            .sorted(Comparator.comparingInt(slot -> slot.getOrder()))
+            .toList();
+
+        for (AssessmentBlueprintSlot slot : slots) {
+            saveBlueprintSlotItem(assessment, paper, savedSection, slot, currentUserId);
+        }
+    }
+
+    private void saveBlueprintSlotItem(
+            Assessment assessment,
+            AssessmentPaper paper,
+            AssessmentPaperSection savedSection,
+            AssessmentBlueprintSlot slot,
+            UUID currentUserId) {
+        UUID questionId = slot.getSlotType() == AssessmentBlueprintSlotType.FIXED ? slot.getFixedQuestionId() : null;
+        if (questionId != null && !isFixedQuestionUsable(assessment, questionId)) {
+            assessmentPaperItemRepository.save(
+                AssessmentPaperItem.emptySlot(savedSection.getId(), paper.getId(), slot));
+            return;
+        }
+        assessmentPaperItemRepository.save(
+            AssessmentPaperItem.forBlueprintSlot(savedSection.getId(), paper.getId(), slot, questionId));
+        if (questionId != null) {
+            assessmentQuestionSecureLockService.lockQuestionForAssessment(
+                questionId,
+                assessment.getId(),
+                releaseModeFor(assessment),
+                currentUserId
+            );
+        }
+    }
+
+    private boolean isFixedQuestionUsable(Assessment assessment, UUID questionId) {
+        Question fixedQuestion = questionRepository.findById(questionId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi cố định trong slot"));
+        if (fixedQuestion.getStatus() == QuestionStatus.PUBLISHED) {
+            return true;
+        }
+        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
+            throw new IllegalArgumentException(
+                "Câu hỏi " + fixedQuestion.getCode() + " trong khung chưa PUBLISHED, không thể sinh đề thi");
+        }
+        // Class test: the fixed question was archived after the blueprint was published. The caller leaves this
+        // slot empty so the CHAIR picks another question through the picker, instead of blocking the paper variant altogether.
+        return false;
     }
 
     /**
@@ -185,37 +212,9 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
      * test is truly free-form.
      */
     private AssessmentPaperDto createFromQuestions(Assessment assessment, List<ClassTestSectionCommand> sections, UUID currentUserId) {
-        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
-            throw new ForbiddenException("Chỉ bài kiểm tra trên lớp mới được soạn câu hỏi trực tiếp");
-        }
-        if (assessment.getBlueprintId() != null) {
-            throw new IllegalArgumentException(
-                "Bài đang dùng blueprint dùng chung, không thể soạn câu hỏi trực tiếp — tạo mã đề từ blueprint hoặc sao chép mã đề có sẵn");
-        }
-        if (sections == null || sections.isEmpty()) {
-            throw new IllegalArgumentException("Phải có ít nhất một phần trong đề");
-        }
+        requireDirectAuthoringAllowed(assessment, sections);
 
-        Set<UUID> seenQuestionIds = new HashSet<UUID>();
-        List<List<Question>> questionsBySection = new ArrayList<List<Question>>();
-        for (ClassTestSectionCommand section : sections) {
-            if (section.questions() == null || section.questions().isEmpty()) {
-                throw new IllegalArgumentException("Mỗi phần phải có ít nhất 1 câu hỏi");
-            }
-            List<Question> questions = new ArrayList<Question>();
-            for (ClassTestQuestionCommand questionCommand : section.questions()) {
-                if (!seenQuestionIds.add(questionCommand.questionId())) {
-                    throw new IllegalArgumentException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 mã đề");
-                }
-                Question question = questionRepository
-                    .findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
-                    .orElseThrow(() -> new ForbiddenException(
-                        "Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
-                requireCanUseQuestion(question, currentUserId);
-                questions.add(question);
-            }
-            questionsBySection.add(questions);
-        }
+        List<List<Question>> questionsBySection = loadQuestionsBySection(assessment, sections, currentUserId);
         // Projects the duration BEFORE writing to reject early -- the paper variant does not exist yet so
         // RecalculateAssessmentTimeDurationService cannot be reused. It must be totalSeconds (which includes media) because this is the
         // LENGTH yardstick of the assessment against the plan, see PaperTimeCalculator.
@@ -227,27 +226,88 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         AssessmentPaper paper = assessmentPaperRepository.save(AssessmentPaper.draftWithoutBlueprint(
             assessment.getId(), assessment.getCode() + "-P" + variant, variant));
 
+        saveClassTestSections(assessment, paper, sections, sectionWeights, questionsBySection, currentUserId);
+
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+    }
+
+    private void requireDirectAuthoringAllowed(Assessment assessment, List<ClassTestSectionCommand> sections) {
+        if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
+            throw new ForbiddenException("Chỉ bài kiểm tra trên lớp mới được soạn câu hỏi trực tiếp");
+        }
+        if (assessment.getBlueprintId() != null) {
+            throw new IllegalArgumentException(
+                "Bài đang dùng blueprint dùng chung, không thể soạn câu hỏi trực tiếp — tạo mã đề từ blueprint hoặc sao chép mã đề có sẵn");
+        }
+        if (sections == null || sections.isEmpty()) {
+            throw new IllegalArgumentException("Phải có ít nhất một phần trong đề");
+        }
+    }
+
+    private List<List<Question>> loadQuestionsBySection(
+            Assessment assessment, List<ClassTestSectionCommand> sections, UUID currentUserId) {
+        Set<UUID> seenQuestionIds = new HashSet<UUID>();
+        List<List<Question>> questionsBySection = new ArrayList<List<Question>>();
+        for (ClassTestSectionCommand section : sections) {
+            if (section.questions() == null || section.questions().isEmpty()) {
+                throw new IllegalArgumentException("Mỗi phần phải có ít nhất 1 câu hỏi");
+            }
+            List<Question> questions = new ArrayList<Question>();
+            for (ClassTestQuestionCommand questionCommand : section.questions()) {
+                if (!seenQuestionIds.add(questionCommand.questionId())) {
+                    throw new IllegalArgumentException("Một câu hỏi không thể xuất hiện nhiều lần trong cùng 1 mã đề");
+                }
+                questions.add(loadUsableQuestion(assessment, questionCommand, currentUserId));
+            }
+            questionsBySection.add(questions);
+        }
+        return questionsBySection;
+    }
+
+    private Question loadUsableQuestion(Assessment assessment, ClassTestQuestionCommand questionCommand, UUID currentUserId) {
+        Question question = questionRepository
+            .findAccessibleById(questionCommand.questionId(), currentUserId, assessment.getSchoolId(), false, false)
+            .orElseThrow(() -> new ForbiddenException(
+                "Bạn không có quyền sử dụng câu hỏi " + questionCommand.questionId()));
+        requireCanUseQuestion(question, currentUserId);
+        return question;
+    }
+
+    private void saveClassTestSections(
+            Assessment assessment,
+            AssessmentPaper paper,
+            List<ClassTestSectionCommand> sections,
+            List<BigDecimal> sectionWeights,
+            List<List<Question>> questionsBySection,
+            UUID currentUserId) {
         for (int i = 0; i < sections.size(); i++) {
             ClassTestSectionCommand sectionCommand = sections.get(i);
             List<BigDecimal> questionWeights = ClassTestSectionWeightPolicy.resolveQuestionWeights(sectionCommand.questions());
             AssessmentPaperSection savedSection = assessmentPaperSectionRepository.save(AssessmentPaperSection.forClassTest(
                 paper.getId(), i + 1, sectionCommand.title(), sectionCommand.instruction(), sectionWeights.get(i)));
 
-            List<Question> questions = questionsBySection.get(i);
-            for (int j = 0; j < questions.size(); j++) {
-                assessmentPaperItemRepository.save(AssessmentPaperItem.forQuestion(
-                    savedSection.getId(), paper.getId(), questions.get(j).getId(), j + 1, questionWeights.get(j)));
-                assessmentQuestionSecureLockService.lockQuestionForAssessment(
-                    questions.get(j).getId(),
-                    assessment.getId(),
-                    releaseModeFor(assessment),
-                    currentUserId
-                );
-            }
+            saveClassTestItems(assessment, paper, savedSection, questionsBySection.get(i), questionWeights, currentUserId);
         }
+    }
 
-        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+    private void saveClassTestItems(
+            Assessment assessment,
+            AssessmentPaper paper,
+            AssessmentPaperSection savedSection,
+            List<Question> questions,
+            List<BigDecimal> questionWeights,
+            UUID currentUserId) {
+        for (int j = 0; j < questions.size(); j++) {
+            assessmentPaperItemRepository.save(AssessmentPaperItem.forQuestion(
+                savedSection.getId(), paper.getId(), questions.get(j).getId(), j + 1, questionWeights.get(j)));
+            assessmentQuestionSecureLockService.lockQuestionForAssessment(
+                questions.get(j).getId(),
+                assessment.getId(),
+                releaseModeFor(assessment),
+                currentUserId
+            );
+        }
     }
 
     /** Thời gian thật của mã đề, gồm cả thời lượng phát AUDIO/VIDEO -- xem {@link PaperTimeCalculator}. */
@@ -310,6 +370,13 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
         AssessmentPaper paper = assessmentPaperRepository.save(AssessmentPaper.draft(
             assessment.getId(), sourcePaper.getBlueprintVersionId(), assessment.getCode() + "-P" + variant, variant));
 
+        copySections(assessment, sourcePaper, paper, currentUserId);
+
+        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
+        return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+    }
+
+    private void copySections(Assessment assessment, AssessmentPaper sourcePaper, AssessmentPaper paper, UUID currentUserId) {
         List<AssessmentPaperSection> sourceSections = assessmentPaperSectionRepository.findByPaperId(sourcePaper.getId()).stream()
             .sorted(Comparator.comparingInt(section -> section.getOrder()))
             .toList();
@@ -322,19 +389,25 @@ public class CreateAssessmentPaperUseCase implements IUseCase<CreateAssessmentPa
                 .toList();
 
             for (AssessmentPaperItem item : items) {
-                assessmentPaperItemRepository.save(item.copyInto(paper.getId(), savedSection.getId()));
-                if (item.getQuestionId() != null) {
-                    assessmentQuestionSecureLockService.lockQuestionForAssessment(
-                        item.getQuestionId(),
-                        assessment.getId(),
-                        releaseModeFor(assessment),
-                        currentUserId
-                    );
-                }
+                copyItem(assessment, paper, savedSection, item, currentUserId);
             }
         }
+    }
 
-        recalculateAssessmentTimeDurationService.recalculate(assessment.getId());
-        return AssessmentPaperDtoMapper.toDto(assessmentPaperRepository.findById(paper.getId()).orElse(paper));
+    private void copyItem(
+            Assessment assessment,
+            AssessmentPaper paper,
+            AssessmentPaperSection savedSection,
+            AssessmentPaperItem item,
+            UUID currentUserId) {
+        assessmentPaperItemRepository.save(item.copyInto(paper.getId(), savedSection.getId()));
+        if (item.getQuestionId() != null) {
+            assessmentQuestionSecureLockService.lockQuestionForAssessment(
+                item.getQuestionId(),
+                assessment.getId(),
+                releaseModeFor(assessment),
+                currentUserId
+            );
+        }
     }
 }

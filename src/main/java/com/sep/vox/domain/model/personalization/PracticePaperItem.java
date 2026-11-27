@@ -71,6 +71,19 @@ public class PracticePaperItem {
         this.targetDifficultyRank = targetDifficultyRank;
     }
 
+    public static PracticePaperItem forSlot(UUID practicePaperId, UUID practiceQuestionId, int slotOrder,
+                                            String targetCriterionCode, String targetSubAttribute,
+                                            int targetDifficultyRank) {
+        return builder()
+                .practicePaperId(practicePaperId)
+                .practiceQuestionId(practiceQuestionId)
+                .slotOrder(slotOrder)
+                .targetCriterionCode(targetCriterionCode)
+                .targetSubAttribute(targetSubAttribute)
+                .targetDifficultyRank(targetDifficultyRank)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

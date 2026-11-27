@@ -35,12 +35,6 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
     @Transactional
     public DeleteQuestionResponse execute(DeleteQuestionCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElse(null);
-        boolean schoolAdmin = !userContextPort.isSystemAdmin()
-            && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
-                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Question question = questionRepository.findById(input.questionId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
@@ -48,12 +42,6 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
 
         boolean owner = question.isCreatedBy(currentUserId);
-        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
-            && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
-        boolean schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL
-            && schoolAdmin
-            && currentSchoolId != null
-            && currentSchoolId.equals(bank.getSchoolId());
         boolean usedInAssessment = questionRepository.existsUsedInAssessment(question.getId());
 
         if (owner && question.getStatus() == QuestionStatus.DRAFT && !usedInAssessment) {
@@ -61,10 +49,12 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
             return new DeleteQuestionResponse(true, false);
         }
 
-        if (!systemAdminOnSystemBank && !schoolAdminOnSchoolBank) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
+        requireDeletePermission(bank, currentUserId);
 
+        return archiveOrDelete(question, usedInAssessment);
+    }
+
+    private DeleteQuestionResponse archiveOrDelete(Question question, boolean usedInAssessment) {
         if (usedInAssessment) {
             question.setStatus(QuestionStatus.ARCHIVED);
             questionRepository.save(question);
@@ -73,5 +63,23 @@ public class DeleteQuestionUseCase implements IUseCase<DeleteQuestionCommand, De
 
         questionRepository.deleteById(question.getId());
         return new DeleteQuestionResponse(true, false);
+    }
+
+    private void requireDeletePermission(QuestionBank bank, UUID currentUserId) {
+        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
+            .map(schoolUser -> schoolUser.getSchoolId())
+            .orElse(null);
+        boolean schoolAdmin = !userContextPort.isSystemAdmin()
+            && userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
+                .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
+        boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
+            && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
+        boolean schoolAdminOnSchoolBank = bank.getOwnerType() == QuestionBankOwnerType.SCHOOL
+            && schoolAdmin
+            && currentSchoolId != null
+            && currentSchoolId.equals(bank.getSchoolId());
+        if (!systemAdminOnSystemBank && !schoolAdminOnSchoolBank) {
+            throw new ForbiddenException("Quyền truy cập bị từ chối");
+        }
     }
 }

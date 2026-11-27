@@ -35,12 +35,8 @@ public class CreateSupportedLanguageUseCase implements IUseCase<CreateSupportedL
             throw new ResourceDuplicatedException("Ngôn ngữ đã tồn tại với mã: " + command.code());
         }
 
-        SupportedLanguage language = SupportedLanguage.builder()
-            .code(new LanguageCode(command.code()))
-            .name(command.name())
-            .description(command.description())
-            .active(true)
-            .build();
+        SupportedLanguage language = SupportedLanguage.defined(
+            new LanguageCode(command.code()), command.name(), command.description());
 
         try {
             SupportedLanguage saved = supportedLanguageRepository.save(language);

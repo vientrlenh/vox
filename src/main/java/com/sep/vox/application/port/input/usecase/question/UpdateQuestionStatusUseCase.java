@@ -55,16 +55,22 @@ public class UpdateQuestionStatusUseCase implements IUseCase<UpdateQuestionStatu
 
         QuestionStatusTransition.Rejection rejection = QuestionStatusTransition.rejectionFor(question, bank, editorCollaborator, actor, action, note);
         if (rejection != null) {
-            // Cùng một lý do từ chối, hai endpoint dịch ra hai kiểu khác nhau: ở đây là exception
-            // để giữ HTTP status, còn endpoint hàng loạt gom vào `failed[]`.
-            switch (rejection.kind()) {
-                case FORBIDDEN -> throw new ForbiddenException(rejection.reason());
-                case INVALID_STATE -> throw new IllegalArgumentException(rejection.reason());
-            }
+            throwAsException(rejection);
         }
 
         QuestionStatusTransition.apply(question, action);
         Question saved = questionRepository.save(question);
         return QuestionDtoMapper.toQuestionDto(saved);
+    }
+
+    /**
+     * The same rejection reason is turned into two different shapes by the two endpoints: here an exception, to
+     * keep the HTTP status, while the bulk endpoint collects it into {@code failed[]}.
+     */
+    private void throwAsException(QuestionStatusTransition.Rejection rejection) {
+        switch (rejection.kind()) {
+            case FORBIDDEN -> throw new ForbiddenException(rejection.reason());
+            case INVALID_STATE -> throw new IllegalArgumentException(rejection.reason());
+        }
     }
 }

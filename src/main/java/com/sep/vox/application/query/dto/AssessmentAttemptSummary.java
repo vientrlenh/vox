@@ -51,39 +51,17 @@ public record AssessmentAttemptSummary(
     // out of the query and converts them here, keeping the record itself
     // properly enum-typed for every other caller.
     public AssessmentAttemptSummary(
-            UUID candidateId,
-            UUID assessmentId,
-            String candidateStatus,
-            UUID sessionId,
-            Instant startedAt,
-            Instant submittedAt,
-            String status,
-            Boolean flagged,
-            String flagReason,
-            BigDecimal totalScore,
-            BigDecimal scoringScaleMin,
-            BigDecimal scoringScaleMax,
-            UUID rubricResultBandId,
-            String rubricResultBandCode,
-            String rubricResultBandName,
-            String resultStatus,
-            String deletedReason) {
+            UUID candidateId, UUID assessmentId, String candidateStatus, UUID sessionId,
+            Instant startedAt, Instant submittedAt, String status, Boolean flagged,
+            String flagReason, BigDecimal totalScore, BigDecimal scoringScaleMin,
+            BigDecimal scoringScaleMax, UUID rubricResultBandId, String rubricResultBandCode,
+            String rubricResultBandName, String resultStatus, String deletedReason) {
         this(
-            candidateId,
-            assessmentId,
+            candidateId, assessmentId,
             candidateStatus == null ? null : AssessmentCandidateStatus.valueOf(candidateStatus),
-            sessionId,
-            startedAt,
-            submittedAt,
-            AssessmentSessionStatus.valueOf(status),
-            Boolean.TRUE.equals(flagged),
-            flagReason,
-            totalScore,
-            scoringScaleMin,
-            scoringScaleMax,
-            rubricResultBandId,
-            rubricResultBandCode,
-            rubricResultBandName,
+            sessionId, startedAt, submittedAt, AssessmentSessionStatus.valueOf(status),
+            Boolean.TRUE.equals(flagged), flagReason, totalScore, scoringScaleMin, scoringScaleMax,
+            rubricResultBandId, rubricResultBandCode, rubricResultBandName,
             resultStatus == null ? null : AssessmentCandidateResultStatus.valueOf(resultStatus),
             deletedReason
         );

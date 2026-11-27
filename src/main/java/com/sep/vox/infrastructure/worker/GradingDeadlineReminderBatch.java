@@ -64,42 +64,55 @@ public class GradingDeadlineReminderBatch {
         }
         Instant now = Instant.now();
 
-        // Load results + assessments in bulk: one batch can reach several hundred rows, and calling one
-        // row at a time is an N+1 right inside the background job.
-        Map<UUID, AssessmentCandidateResult> resultsById = assessmentCandidateResultRepository.findByIdIn(
+        Map<UUID, AssessmentCandidateResult> resultsById = loadResultsById(due);
+        Map<UUID, Assessment> assessmentsById = loadAssessmentsById(resultsById);
+
+        for (AssessmentGradingAssignment assignment : due) {
+            remind(assignment, resultsById, assessmentsById, now);
+        }
+        return due.size();
+    }
+
+    // Load results + assessments in bulk: one batch can reach several hundred rows, and calling one
+    // row at a time is an N+1 right inside the background job.
+    private Map<UUID, AssessmentCandidateResult> loadResultsById(List<AssessmentGradingAssignment> due) {
+        return assessmentCandidateResultRepository.findByIdIn(
                 due.stream().map(assignment -> assignment.getCandidateResultId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 result -> result.getId(), Function.identity(), (left, right) -> left));
-        // Keep the Assessment as is instead of extracting only its name: the notification also needs the id and the assessment kind to open
-        // the right grading screen, and this batch is the only place in the flow still holding the Assessment in hand.
-        Map<UUID, Assessment> assessmentsById = assessmentRepository.findByIdIn(
+    }
+
+    // Keep the Assessment as is instead of extracting only its name: the notification also needs the id and the assessment kind to open
+    // the right grading screen, and this batch is the only place in the flow still holding the Assessment in hand.
+    private Map<UUID, Assessment> loadAssessmentsById(Map<UUID, AssessmentCandidateResult> resultsById) {
+        return assessmentRepository.findByIdIn(
                 resultsById.values().stream().map(result -> result.getAssessmentId()).distinct().toList()).stream()
             .collect(Collectors.toMap(
                 assessment -> assessment.getId(), Function.identity(), (left, right) -> left));
+    }
 
-        for (AssessmentGradingAssignment assignment : due) {
-            assignment.setRemindedAt(now);
-            assessmentGradingAssignmentRepository.save(assignment);
+    private void remind(AssessmentGradingAssignment assignment,
+            Map<UUID, AssessmentCandidateResult> resultsById, Map<UUID, Assessment> assessmentsById, Instant now) {
+        assignment.setRemindedAt(now);
+        assessmentGradingAssignmentRepository.save(assignment);
 
-            AssessmentCandidateResult result = resultsById.get(assignment.getCandidateResultId());
-            Assessment assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
-            GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
-                assignment.getId(),
-                assignment.getTeacherId(),
-                assessment == null ? null : assessment.getName(),
-                assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
-                assignment.getDeadlineAt(),
-                result == null ? null : result.getAssessmentId(),
-                assessment == null ? null : assessment.getKind()
-            );
-            outboxRepository.save(Outbox.create(
-                AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT,
-                assignment.getId(),
-                EventTypeConstant.GRADING_DEADLINE_REMINDER,
-                jsonSerializationPort.toJson(payload),
-                now
-            ));
-        }
-        return due.size();
+        AssessmentCandidateResult result = resultsById.get(assignment.getCandidateResultId());
+        Assessment assessment = result == null ? null : assessmentsById.get(result.getAssessmentId());
+        GradingDeadlineReminderPayloadV1 payload = new GradingDeadlineReminderPayloadV1(
+            assignment.getId(),
+            assignment.getTeacherId(),
+            assessment == null ? null : assessment.getName(),
+            assignment.getRoundType() == null ? null : assignment.getRoundType().name(),
+            assignment.getDeadlineAt(),
+            result == null ? null : result.getAssessmentId(),
+            assessment == null ? null : assessment.getKind()
+        );
+        outboxRepository.save(Outbox.create(
+            AggregateTypeConstant.ASSESSMENT_GRADING_ASSIGNMENT,
+            assignment.getId(),
+            EventTypeConstant.GRADING_DEADLINE_REMINDER,
+            jsonSerializationPort.toJson(payload),
+            now
+        ));
     }
 }

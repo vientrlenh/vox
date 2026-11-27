@@ -51,7 +51,19 @@ public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand,
 
         AssessmentCandidateResult result = prepared.context().candidateResult();
         gradingActionSupport.finish(prepared, result);
+        publishInvalidated(prepared, result);
 
+        return new GradingActionResponse(
+            command.assignmentId(),
+            result.getId(),
+            GradingOutcome.INVALIDATED.name(),
+            result.getStatus() == null ? null : result.getStatus().name(),
+            result.getTotalScore(),
+            null
+        );
+    }
+
+    private void publishInvalidated(GradingActionSupport.PreparedAction prepared, AssessmentCandidateResult result) {
         UUID studentId = gradingActionSupport.resolveStudentId(result);
         if (studentId != null) {
             AssessmentResultInvalidatedPayloadV1 payload = new AssessmentResultInvalidatedPayloadV1(
@@ -65,14 +77,5 @@ public class InvalidateResultUseCase implements IUseCase<GradingDecisionCommand,
                 Instant.now()
             ));
         }
-
-        return new GradingActionResponse(
-            command.assignmentId(),
-            result.getId(),
-            GradingOutcome.INVALIDATED.name(),
-            result.getStatus() == null ? null : result.getStatus().name(),
-            result.getTotalScore(),
-            null
-        );
     }
 }

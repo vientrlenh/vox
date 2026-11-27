@@ -192,6 +192,32 @@ public class PracticeQuestion {
         return maxResponseSeconds;
     }
 
+    public static PracticeQuestion generated(UUID id, UUID practiceTopicId, String questionText,
+                                             String targetCriterionCode, String targetSubAttribute,
+                                             String targetTense, int difficultyRank, String difficultyFeaturesJson,
+                                             String evaluationGuideJson, String suggestedIdeasJson,
+                                             String questionType, int maxResponseSeconds, int minResponseSeconds,
+                                             Integer vstepPart, Instant createdAt) {
+        return builder()
+                .id(id)
+                .practiceTopicId(practiceTopicId)
+                .questionText(questionText)
+                .targetCriterionCode(targetCriterionCode)
+                .targetSubAttribute(targetSubAttribute)
+                .targetTense(targetTense)
+                .difficultyRank(difficultyRank)
+                .difficultyFeaturesJson(difficultyFeaturesJson)
+                .evaluationGuideJson(evaluationGuideJson)
+                .suggestedIdeasJson(suggestedIdeasJson)
+                .questionType(questionType)
+                .maxResponseSeconds(maxResponseSeconds)
+                .minResponseSeconds(minResponseSeconds)
+                .vstepPart(vstepPart)
+                .active(true)
+                .createdAt(createdAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

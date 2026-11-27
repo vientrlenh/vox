@@ -1,35 +1,29 @@
 package com.sep.vox.application.port.input.usecase.assessmentblueprint;
 
-import com.sep.vox.domain.model.assessment.AssessmentBlueprint;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlot;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersion;
 import com.sep.vox.domain.model.question.Question;
 import java.math.BigDecimal;
 
 import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.common.StringNormalization;
-import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.assessmentblueprint.CreateQuestionSelectionSpecCommand;
 import com.sep.vox.application.port.input.command.assessmentblueprint.UpdateAssessmentBlueprintSlotCommand;
+import com.sep.vox.application.port.input.service.AssessmentBlueprintEditAccessService;
 import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.input.service.RecalculateBlueprintVersionTimeLimitService;
-import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.domain.dto.AssessmentBlueprintSlotDto;
 import com.sep.vox.domain.mapper.AssessmentBlueprintSlotDtoMapper;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintSlotType;
 import com.sep.vox.domain.model.assessment.AssessmentBlueprintVersionStatus;
 import com.sep.vox.domain.model.question.QuestionStatus;
-import com.sep.vox.domain.repository.AssessmentBlueprintRepository;
 import com.sep.vox.domain.repository.AssessmentBlueprintSlotRepository;
-import com.sep.vox.domain.repository.AssessmentBlueprintVersionRepository;
 import com.sep.vox.domain.repository.QuestionRepository;
-import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 @Service
@@ -37,32 +31,18 @@ import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAssessmentBlueprintSlotCommand, AssessmentBlueprintSlotDto> {
 
     private final AssessmentBlueprintSlotRepository assessmentBlueprintSlotRepository;
-    private final AssessmentBlueprintVersionRepository assessmentBlueprintVersionRepository;
-    private final AssessmentBlueprintRepository assessmentBlueprintRepository;
+    private final AssessmentBlueprintEditAccessService assessmentBlueprintEditAccessService;
     private final QuestionRepository questionRepository;
-    private final SchoolUserRepository schoolUserRepository;
     private final RecalculateBlueprintVersionTimeLimitService recalculateBlueprintVersionTimeLimitService;
-    private final UserContextPort userContextPort;
 
     @Override
     @Transactional
     public AssessmentBlueprintSlotDto execute(UpdateAssessmentBlueprintSlotCommand input) {
         UpdateAssessmentBlueprintSlotCommand command = normalize(input);
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
-            .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
-
-        AssessmentBlueprintSlot slot = assessmentBlueprintSlotRepository.findById(command.slotId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy slot"));
-        AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(slot.getBlueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
-        AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
-        if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
-        }
-
+        AssessmentBlueprintEditAccessService.EditableSlot editable =
+            assessmentBlueprintEditAccessService.requireEditableSlot(command.slotId());
+        AssessmentBlueprintSlot slot = editable.slot();
+        AssessmentBlueprintVersion version = editable.version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
             throw new IllegalArgumentException("Chỉ được sửa slot khi version đang DRAFT");
         }
@@ -75,6 +55,14 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
         }
         validateSlot(command);
 
+        applyChanges(slot, command);
+
+        AssessmentBlueprintSlot savedSlot = assessmentBlueprintSlotRepository.save(slot);
+        recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());
+        return AssessmentBlueprintSlotDtoMapper.toDto(savedSlot);
+    }
+
+    private void applyChanges(AssessmentBlueprintSlot slot, UpdateAssessmentBlueprintSlotCommand command) {
         slot.setOrder(command.order());
         slot.setWeight(command.weight() == null ? BigDecimal.ONE : command.weight());
         slot.setPrepTimeSecondsOverride(command.prepTimeSecondsOverride());
@@ -82,10 +70,6 @@ public class UpdateAssessmentBlueprintSlotUseCase implements IUseCase<UpdateAsse
         slot.setSlotType(command.slotType());
         slot.setFixedQuestionId(command.fixedQuestionId());
         slot.setSelectionSpec(selectionSpecOf(command.selectionSpec()));
-
-        AssessmentBlueprintSlot savedSlot = assessmentBlueprintSlotRepository.save(slot);
-        recalculateBlueprintVersionTimeLimitService.recalculate(version.getId());
-        return AssessmentBlueprintSlotDtoMapper.toDto(savedSlot);
     }
 
     private void validateSlot(UpdateAssessmentBlueprintSlotCommand command) {

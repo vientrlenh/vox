@@ -44,17 +44,33 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
     @Override
     @Transactional(readOnly = true)
     public PageResult<ImportRowResponse> execute(ViewImportRowsQuery input) {
+        validateInput(input);
+
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        User currentUser = findCurrentUser(currentUserId);
+        ImportSession session = findSession(input.sessionId());
+
+        requireSessionAccess(session, currentUser, currentUserId);
+
+        PageResult<ImportRow> rows = importRowRepository.findBySessionId(
+            session.getId(),
+            input.status(),
+            input.page(), 
+            input.size()
+        );
+        return importRowResponseMapper.toResponsePage(rows);
+    }
+
+    private void validateInput(ViewImportRowsQuery input) {
         if (input == null || input.sessionId() == null) {
             throw new IllegalArgumentException("Phiên import không được để trống");
         }
         if (input.page() <= 0 || input.size() <= 0) {
             throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
         }
+    }
 
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = findCurrentUser(currentUserId);
-        ImportSession session = findSession(input.sessionId());
-
+    private void requireSessionAccess(ImportSession session, User currentUser, UUID currentUserId) {
         boolean isSchoolAdmin = userRoleQueryRepository.findByUserIdWithRoleInfo(currentUserId).stream()
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
         if (isSchoolAdmin) {
@@ -64,14 +80,6 @@ public class ViewImportRowsUseCase implements IUseCase<ViewImportRowsQuery, Page
         } else if (!session.isCreatedBy(currentUserId)) {
             throw new ForbiddenException("Phiên import không thuộc về bạn");
         }
-
-        PageResult<ImportRow> rows = importRowRepository.findBySessionId(
-            session.getId(),
-            input.status(),
-            input.page(), 
-            input.size()
-        );
-        return importRowResponseMapper.toResponsePage(rows);
     }
 
     private User findCurrentUser(UUID currentUserId) {

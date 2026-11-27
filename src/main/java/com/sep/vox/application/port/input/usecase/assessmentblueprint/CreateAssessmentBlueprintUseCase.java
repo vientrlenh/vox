@@ -31,13 +31,7 @@ public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessme
     @Override
     @Transactional
     public AssessmentBlueprintDto execute(CreateAssessmentBlueprintCommand input) {
-        CreateAssessmentBlueprintCommand command = new CreateAssessmentBlueprintCommand(
-            input.languageId(),
-            input.gradeLevelId(),
-            StringNormalization.normalizeCode(input.code()),
-            StringNormalization.trimAndCollapseSpaces(input.name()),
-            StringNormalization.trimAndCollapseSpaces(input.description())
-        );
+        CreateAssessmentBlueprintCommand command = normalize(input);
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
@@ -57,6 +51,16 @@ public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessme
             command.name(),
             command.description());
         return AssessmentBlueprintDtoMapper.toDto(assessmentBlueprintRepository.save(blueprint));
+    }
+
+    private CreateAssessmentBlueprintCommand normalize(CreateAssessmentBlueprintCommand input) {
+        return new CreateAssessmentBlueprintCommand(
+            input.languageId(),
+            input.gradeLevelId(),
+            StringNormalization.normalizeCode(input.code()),
+            StringNormalization.trimAndCollapseSpaces(input.name()),
+            StringNormalization.trimAndCollapseSpaces(input.description())
+        );
     }
 
     private String blueprintCodeOf(String code) {

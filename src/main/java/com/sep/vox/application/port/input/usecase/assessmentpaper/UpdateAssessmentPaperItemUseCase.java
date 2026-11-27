@@ -69,31 +69,51 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
     @Transactional
     public AssessmentPaperItemDto execute(UpdateAssessmentPaperItemCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        AssessmentPaperItem item = findItemOfPaper(input);
+        AssessmentPaper paper = assessmentPaperRepository.findById(item.getPaperId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+        Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+        requirePaperEditable(assessment, paper);
+        assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
+
+        AssessmentBlueprintSlot slot = findAssignableBlueprintSlot(item);
+        Question question = findAssignableQuestion(input, assessment, slot, currentUserId);
+        requireCanAssignQuestion(question, currentUserId);
+
+        requireDurationWithinPlan(assessment, paper, item, question);
+        AssessmentPaperItem savedItem = assignQuestion(item, paper, assessment, question, currentUserId);
+        recalculateAssessmentTimeDurationService.recalculate(paper.getAssessmentId());
+        return AssessmentPaperItemDtoMapper.toDto(savedItem);
+    }
+
+    private AssessmentPaperItem findItemOfPaper(UpdateAssessmentPaperItemCommand input) {
         AssessmentPaperItem item = assessmentPaperItemRepository.findById(input.itemId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi"));
         if (!item.getPaperId().equals(input.paperId())) {
             throw new ResourceNotFoundException("Không tìm thấy câu hỏi trong đề thi");
         }
-        AssessmentPaper paper = assessmentPaperRepository.findById(item.getPaperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
-        Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
-        // Bài trên lớp khoá đề bằng một bước DRAFT → LOCKED và mở lại tự do, nên LOCKED ở đó là trạng
-        // thái làm việc bình thường; chỉ ở kỳ thi tập trung nó mới mang nghĩa "chốt, không sửa nữa".
+        return item;
+    }
+
+    private void requirePaperEditable(Assessment assessment, AssessmentPaper paper) {
+        // A class test locks its paper with a single DRAFT -> LOCKED step and reopens it freely, so LOCKED there is
+        // a normal working state; only in a centralized assessment does it mean "finalized, no more edits".
         if (assessment.getKind() == AssessmentKind.CENTRALIZED && paper.getStatus() == AssessmentPaperStatus.LOCKED) {
             throw new IllegalArgumentException("Đề thi đã bị khoá, không thể sửa câu hỏi");
         }
         if (assessment.getStatus() == AssessmentStatus.IN_PROGRESS) {
             throw new IllegalArgumentException("Không thể sửa câu hỏi khi bài kiểm tra đang diễn ra");
         }
-        assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
+    }
 
-        // H.7: chỉ ô FIXED mới phải khớp y hệt blueprint - đổi câu ở đó bắt buộc qua đổi version.
-        // Ô SELECTION thì blueprint chỉ mô tả tiêu chí, người ra đề mới là người chọn câu cụ thể,
-        // nên đây chính là chỗ duy nhất để gán câu cho ô đó.
+    private AssessmentBlueprintSlot findAssignableBlueprintSlot(AssessmentPaperItem item) {
+        // H.7: only a FIXED slot has to match the blueprint exactly - changing its question must go through a version change.
+        // A SELECTION slot only describes criteria in the blueprint; the paper author picks the concrete question,
+        // so this is the one place where a question is assigned to that slot.
         //
-        // Slot đã bị xoá (version còn DRAFT vẫn xoá slot được) thì coi như ô tự do: ràng buộc
-        // blueprint không còn tồn tại nữa, fail-closed ở đây chỉ làm mã đề kẹt vĩnh viễn.
+        // A deleted slot (a DRAFT version can still delete slots) is treated as a free slot: the blueprint
+        // constraint no longer exists, and failing closed here would only leave the paper variant stuck forever.
         AssessmentBlueprintSlot slot = item.getBlueprintSlotId() == null
             ? null
             : assessmentBlueprintSlotRepository.findById(item.getBlueprintSlotId()).orElse(null);
@@ -101,7 +121,14 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             throw new IllegalArgumentException(
                 "Ô câu hỏi này cố định theo blueprint, không thể đổi câu hỏi trực tiếp - phải qua đổi version blueprint");
         }
+        return slot;
+    }
 
+    private Question findAssignableQuestion(
+            UpdateAssessmentPaperItemCommand input,
+            Assessment assessment,
+            AssessmentBlueprintSlot slot,
+            UUID currentUserId) {
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
@@ -114,7 +141,10 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
         if (slot != null && slot.getSlotType() == AssessmentBlueprintSlotType.SELECTION) {
             requireMatchesSelectionSpec(slot.getSelectionSpec(), question);
         }
+        return question;
+    }
 
+    private void requireCanAssignQuestion(Question question, UUID currentUserId) {
         boolean isOwner = question.isCreatedBy(currentUserId);
         boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
         if (!isOwner && !isSchoolShared) {
@@ -123,14 +153,23 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
                 throw new ForbiddenException("Quyền READ_ONLY không được phép gán câu hỏi vào đề thi");
             }
         }
+    }
 
+    private void requireDurationWithinPlan(Assessment assessment, AssessmentPaper paper, AssessmentPaperItem item, Question question) {
         int candidateDurationSeconds = calculatePaperDurationAfterQuestionChange(paper.getId(), item.getId(), question);
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             candidateDurationSeconds,
             "Mã đề " + paper.getCode()
         );
+    }
 
+    private AssessmentPaperItem assignQuestion(
+            AssessmentPaperItem item,
+            AssessmentPaper paper,
+            Assessment assessment,
+            Question question,
+            UUID currentUserId) {
         item.setQuestionId(question.getId());
         AssessmentPaperItem savedItem = assessmentPaperItemRepository.save(item);
 
@@ -145,9 +184,7 @@ public class UpdateAssessmentPaperItemUseCase implements IUseCase<UpdateAssessme
             paper.setStatus(AssessmentPaperStatus.IN_REVIEW);
         }
         assessmentPaperRepository.save(paper);
-
-        recalculateAssessmentTimeDurationService.recalculate(paper.getAssessmentId());
-        return AssessmentPaperItemDtoMapper.toDto(savedItem);
+        return savedItem;
     }
 
     /**

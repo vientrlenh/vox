@@ -45,6 +45,16 @@ public class TopicInterestScoreEntry {
         this.lastEventAt = lastEventAt;
     }
 
+    public static TopicInterestScoreEntry scored(UUID topicId, double score, int sessionCount,
+                                                 Instant lastEventAt) {
+        return builder()
+                .topicId(topicId)
+                .score(score)
+                .sessionCount(sessionCount)
+                .lastEventAt(lastEventAt)
+                .build();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

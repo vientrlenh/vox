@@ -85,30 +85,33 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
         Map<UUID, AssessmentPaper> papersById = papersByIds(rows);
 
         return rows.stream()
-            .map(row -> {
-                AssessmentPaper assignedPaper = papersById.get(row.assignedPaperId());
-                List<AssessmentAttemptSummary> attempts = attemptsByCandidateId.getOrDefault(row.candidateId(), List.of());
-                int attemptsUsed = countAttemptsTowardLimit(attempts);
-                EntryAvailability entryAvailability = resolveEntryAvailability(row, now, attemptsUsed);
-
-                return new StudentAssessmentSummaryResponse(
-                    row.assessmentId(),
-                    row.assessmentName(),
-                    StudentAssessmentViewSupport.subjectOf(row.assessmentKind()),
-                    row.assessmentDescription(),
-                    durationMinutesOf(assignedPaper == null ? null : assignedPaper.getTimeDurationSeconds(), row),
-                    row.assessmentDate() == null ? null : row.assessmentDate().toString(),
-                    row.derivedStatus(),
-                    row.assessmentKind(),
-                    row.requiresOtp(),
-                    toSessionSummaries(attempts),
-                    row.maxAttempt(),
-                    attemptsUsed,
-                    entryAvailability.canEnter(),
-                    entryAvailability.message()
-                );
-            })
+            .map(row -> toSummary(row, attemptsByCandidateId, papersById, now))
             .toList();
+    }
+
+    private StudentAssessmentSummaryResponse toSummary(
+            StudentAssessmentRowInfo row, Map<UUID, List<AssessmentAttemptSummary>> attemptsByCandidateId,
+            Map<UUID, AssessmentPaper> papersById, Instant now) {
+        List<AssessmentAttemptSummary> attempts = attemptsByCandidateId.getOrDefault(row.candidateId(), List.of());
+        int attemptsUsed = countAttemptsTowardLimit(attempts);
+        EntryAvailability entryAvailability = resolveEntryAvailability(row, now, attemptsUsed);
+
+        return new StudentAssessmentSummaryResponse(
+            row.assessmentId(),
+            row.assessmentName(),
+            StudentAssessmentViewSupport.subjectOf(row.assessmentKind()),
+            row.assessmentDescription(),
+            durationMinutesOf(papersById.get(row.assignedPaperId()), row),
+            row.assessmentDate() == null ? null : row.assessmentDate().toString(),
+            row.derivedStatus(),
+            row.assessmentKind(),
+            row.requiresOtp(),
+            toSessionSummaries(attempts),
+            row.maxAttempt(),
+            attemptsUsed,
+            entryAvailability.canEnter(),
+            entryAvailability.message()
+        );
     }
 
     private Map<UUID, AssessmentPaper> papersByIds(List<StudentAssessmentRowInfo> rows) {
@@ -167,10 +170,18 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
     }
 
     /**
-     * Hai nhánh "chưa xếp ca" / "ca không tồn tại" của bản cũ đã bỏ: câu truy vấn INNER JOIN sang
-     * schedule và chỉ nhận ca học sinh được phép thấy, nên mọi dòng tới được đây đều đã có ca.
+     * The "no session assigned yet" and "session does not exist" branches of the old version are gone: the query INNER JOINs to the
+     * schedule and only returns sessions the student may see, so every row that reaches here already has a session.
      */
     private EntryAvailability resolveEntryAvailability(StudentAssessmentRowInfo row, Instant now, int attemptsUsed) {
+        EntryAvailability candidateBlock = resolveCandidateBlock(row, attemptsUsed);
+        if (candidateBlock != null) {
+            return candidateBlock;
+        }
+        return resolveScheduleAvailability(row, now);
+    }
+
+    private EntryAvailability resolveCandidateBlock(StudentAssessmentRowInfo row, int attemptsUsed) {
         if (row.blockedAt() != null) {
             return new EntryAvailability(false, "Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
         }
@@ -187,12 +198,15 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
             return new EntryAvailability(false, "Bạn chưa được gán đề thi.");
         }
 
-        // Không còn nhánh tắt riêng cho bài trên lớp: bài trên lớp giờ cũng thi trong phòng có
-        // giám khảo và ca thi thật, nên đi chung đường kiểm tra với kỳ thi tập trung.
+        // There is no separate switch-off branch for class tests any more: a class test is also taken in a room with a
+        // proctor and a real session, so it goes through the same checks as a centralized assessment.
         if (!AssessmentCandidateStatus.isAttended(row.candidateStatus())) {
             return new EntryAvailability(false, "Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị.");
         }
+        return null;
+    }
 
+    private EntryAvailability resolveScheduleAvailability(StudentAssessmentRowInfo row, Instant now) {
         if (row.assessmentStatus() != AssessmentStatus.IN_PROGRESS) {
             return new EntryAvailability(false, "Kỳ thi hiện chưa được mở để vào thi.");
         }
@@ -215,7 +229,8 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
     private record EntryAvailability(boolean canEnter, String message) {
     }
 
-    private static int durationMinutesOf(Integer paperDurationSeconds, StudentAssessmentRowInfo row) {
+    private static int durationMinutesOf(AssessmentPaper assignedPaper, StudentAssessmentRowInfo row) {
+        Integer paperDurationSeconds = assignedPaper == null ? null : assignedPaper.getTimeDurationSeconds();
         if (paperDurationSeconds != null && paperDurationSeconds > 0) {
             return Math.max(1, (int) Math.ceil(paperDurationSeconds / 60.0));
         }

@@ -36,32 +36,35 @@ public class ViewSystemRubricResultBandsUseCase implements IUseCase<ViewSystemRu
     @Override
     @Transactional(readOnly = true)
     public PageResult<RubricResultBandDto> execute(ViewSystemRubricResultBandsQuery query) {
-        // 1. Xác thực User
-        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
-        }
+        requireActiveCurrentUser();
+        requireSystemOwnedVersion(query.versionId());
 
-        // 2. Lấy Version ra để kiểm tra
-        RubricVersion version = rubricVersionRepository.findById(query.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version."));
-
-        // 3. Lấy Rubric gốc và kiểm tra quyền SYSTEM
-        Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-
-        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Phiên bản này thuộc về Trường học, không phải của Hệ thống.");
-        }
-
-        // 4. Query danh sách Result Band phân trang từ Database (Đã sort tăng dần theo order)
+        // The database already sorts ascending by order.
         PageResult<RubricResultBand> resultBandsPage = rubricResultBandRepository.findAllByRubricVersionId(
                 query.versionId(),
                 query.page(),
                 query.size()
         );
 
-        // 5. Sử dụng Mapper toPage trả về cho Frontend (Có đủ 4 trường Audit)
         return RubricResultBandDtoMapper.toPage(resultBandsPage);
+    }
+
+    private void requireActiveCurrentUser() {
+        UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
+        if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+        }
+    }
+
+    private void requireSystemOwnedVersion(UUID versionId) {
+        RubricVersion version = rubricVersionRepository.findById(versionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version."));
+
+        Rubric rubric = rubricRepository.findById(version.getRubricId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
+            throw new ForbiddenException("Hành động bị từ chối: Phiên bản này thuộc về Trường học, không phải của Hệ thống.");
+        }
     }
 }

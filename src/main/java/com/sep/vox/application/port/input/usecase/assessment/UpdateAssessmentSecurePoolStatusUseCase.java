@@ -45,12 +45,7 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
         if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(input.assessmentId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             throw new ForbiddenException("Quyền truy cập bị từ chối");
         }
-        if (!"RELEASE".equals(action)) {
-            throw new IllegalArgumentException("Action không hợp lệ");
-        }
-        if (pool.getReleaseMode() != AssessmentSecurePoolReleaseMode.MANUAL || pool.getStatus() != AssessmentSecurePoolStatus.SEALED) {
-            throw new IllegalArgumentException("Secure pool không ở trạng thái có thể release thủ công");
-        }
+        requireManualReleasePossible(action, pool);
 
         Instant now = Instant.now();
         pool.setStatus(AssessmentSecurePoolStatus.RELEASED);
@@ -58,11 +53,24 @@ public class UpdateAssessmentSecurePoolStatusUseCase implements IUseCase<UpdateA
         pool.setReleasedBy(currentUserId);
         AssessmentSecurePool savedPool = assessmentSecurePoolRepository.save(pool);
 
+        releaseQuestions(savedPool);
+
+        return AssessmentSecurePoolDtoMapper.toDto(savedPool);
+    }
+
+    private void requireManualReleasePossible(String action, AssessmentSecurePool pool) {
+        if (!"RELEASE".equals(action)) {
+            throw new IllegalArgumentException("Action không hợp lệ");
+        }
+        if (pool.getReleaseMode() != AssessmentSecurePoolReleaseMode.MANUAL || pool.getStatus() != AssessmentSecurePoolStatus.SEALED) {
+            throw new IllegalArgumentException("Secure pool không ở trạng thái có thể release thủ công");
+        }
+    }
+
+    private void releaseQuestions(AssessmentSecurePool savedPool) {
         for (Question question : questionRepository.findBySecurePoolId(savedPool.getId())) {
             question.setConfidentiality(QuestionConfidentiality.RELEASED);
             questionRepository.save(question);
         }
-
-        return AssessmentSecurePoolDtoMapper.toDto(savedPool);
     }
 }

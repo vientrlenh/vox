@@ -44,47 +44,55 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
     public PageResult<SchoolUserDto> execute(ViewSchoolUsersBySchoolQuery input) {
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
-        if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
-        }
-        if (!schoolUserRepository.existsBySchoolIdAndUserId(input.schoolId(), callerId)) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
-        }
+        requireCallerBelongsToSchool(callerId, input.schoolId());
 
         List<UserRoleInfo> callerRoles = userRoleQueryRepository.findByUserIdWithRoleInfo(callerId);
         boolean isSchoolAdmin = callerRoles.stream()
             .anyMatch(r -> "SYSTEM_ADMIN".equals(r.roleCode()) || "SCHOOL_ADMIN".equals(r.roleCode()));
 
-        // Admin: filter by whatever role the caller passes (null = all); sees everyone.
-        // TEACHER: force filter to TEACHER role UUID, exclude self from results.
-        UUID roleId;
-        UUID excludeUserId;
-        if (isSchoolAdmin) {
-            roleId = input.roleId();
-            excludeUserId = null;
-        } else {
-            // A TEACHER must hold the TEACHER role; otherwise reject instead of leaving roleId=null
-            // (roleId=null would make the query return every role and expose the student list).
-            roleId = callerRoles.stream()
-                .filter(r -> "TEACHER".equals(r.roleCode()))
-                .map(r -> r.roleId())
-                .findFirst()
-                .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
-            excludeUserId = callerId;
-        }
+        RoleFilter roleFilter = resolveRoleFilter(isSchoolAdmin, input, callerRoles, callerId);
 
         String status = input.status() == null ? null : input.status().name();
 
         PageResult<SchoolUser> schoolUsersPage = schoolUserRepository.searchBySchoolId(
             input.schoolId(),
-            excludeUserId,
+            roleFilter.excludeUserId(),
             StringNormalization.trimAndCollapseSpaces(input.search()),
-            roleId,
+            roleFilter.roleId(),
             status,
             input.page(),
             input.size()
         );
 
         return SchoolUserDtoMapper.toSchoolUserPageDto(schoolUsersPage);
+    }
+
+    private void requireCallerBelongsToSchool(UUID callerId, UUID schoolId) {
+        if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
+            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+        }
+        if (!schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)) {
+            throw new ForbiddenException("Quyền truy cập không hợp lệ");
+        }
+    }
+
+    // Admin: filter by whatever role the caller passes (null = all); sees everyone.
+    // TEACHER: force filter to TEACHER role UUID, exclude self from results.
+    private RoleFilter resolveRoleFilter(
+            boolean isSchoolAdmin, ViewSchoolUsersBySchoolQuery input, List<UserRoleInfo> callerRoles, UUID callerId) {
+        if (isSchoolAdmin) {
+            return new RoleFilter(input.roleId(), null);
+        }
+        // A TEACHER must hold the TEACHER role; otherwise reject instead of leaving roleId=null
+        // (roleId=null would make the query return every role and expose the student list).
+        UUID teacherRoleId = callerRoles.stream()
+            .filter(r -> "TEACHER".equals(r.roleCode()))
+            .map(r -> r.roleId())
+            .findFirst()
+            .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
+        return new RoleFilter(teacherRoleId, callerId);
+    }
+
+    private record RoleFilter(UUID roleId, UUID excludeUserId) {
     }
 }

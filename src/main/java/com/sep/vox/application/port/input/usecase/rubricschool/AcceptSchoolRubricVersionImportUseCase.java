@@ -40,14 +40,40 @@ public class AcceptSchoolRubricVersionImportUseCase implements IUseCase<AcceptSc
     @Override
     @Transactional
     public AcceptRubricVersionImportResponse execute(AcceptSchoolRubricVersionImportCommand command) {
+        requireActiveSchoolMember(command.schoolId());
+        ImportSession session = loadPreviewedSessionOfSchool(command);
+        requireSchoolOwnedRubric(session.getImportedEntityId(), command.schoolId());
+
+        if (command.confirmedMapping() != null) {
+            String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
+            session.setConfirmedMappingJson(mappingJson);
+        }
+
+        // Async architecture: only the status changes here, a worker does the rest.
+        session.setStatus(ImportSessionStatus.QUEUED);
+        session.setAttempts(0); // Reset attempts so the scheduler picks the session up.
+
+        importSessionRepository.save(session);
+
+        return new AcceptRubricVersionImportResponse(
+                session.getId(),
+                session.getTotalRows(),
+                0, 0, 0,
+                session.getStatus().name()
+        );
+    }
+
+    private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
-        if (!schoolUser.getSchoolId().equals(command.schoolId()))
+        if (!schoolUser.getSchoolId().equals(schoolId))
             throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
+    }
 
+    private ImportSession loadPreviewedSessionOfSchool(AcceptSchoolRubricVersionImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
 
@@ -58,30 +84,13 @@ public class AcceptSchoolRubricVersionImportUseCase implements IUseCase<AcceptSc
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
             throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để phê duyệt.");
         }
+        return session;
+    }
 
-        UUID rubricId = session.getImportedEntityId();
+    private void requireSchoolOwnedRubric(UUID rubricId, UUID schoolId) {
         Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
-        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
+        if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường học bạn.");
         }
-
-        if (command.confirmedMapping() != null) {
-            String mappingJson = jsonSerializationPort.toJson(command.confirmedMapping());
-            session.setConfirmedMappingJson(mappingJson);
-        }
-
-        //  CHÌA KHÓA CỦA KIẾN TRÚC ASYNC: Chỉ đổi trạng thái và kết thúc
-        session.setStatus(ImportSessionStatus.QUEUED);
-        session.setAttempts(0); // Reset số lần thử để Scheduler nhận diện
-
-        importSessionRepository.save(session);
-
-        // Trả kết quả thành công ngay lập tức để UI không bị treo
-        return new AcceptRubricVersionImportResponse(
-                session.getId(),
-                session.getTotalRows(),
-                0, 0, 0,
-                session.getStatus().name()
-        );
     }
 }

@@ -256,6 +256,10 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   or class only when its contract, side effects or failure cases cannot be read from its name and signature. When you
   edit a method, delete the comments in it that only restate the code (`// 1. Validate the user`); keep, and translate to
   English, those that record a reason (a race, a security rule, a workaround).
+- **Import types, never write packages inline.** Refer to a type by its simple name and add an `import` for it. Never
+  write a fully qualified name in code (`java.util.List<String> names`, `new com.sep.vox.domain.model.Foo()`), in
+  annotations, generics, casts or Javadoc `{@link}`. The only exception is two types with the same simple name used in
+  one file: import one and qualify the other.
 - **No N+1 queries.** Never query inside a loop or per element of a collection. Fetch in bulk (`IN` queries, joins, fetch
   graphs, batch methods on the repository). This also applies to GraphQL field resolvers, so use batch mapping there.
 - **Read the docs for the version in use.** Before using a package or framework API, read the official documentation

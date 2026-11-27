@@ -31,13 +31,25 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
     @Override
     @Transactional
     public UUID execute(UpdateSchoolGradeCommand command) {
-        // 1. Check that the school grade exists
         SchoolGrade grade = schoolGradeRepository.findById(command.schoolGradeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy năm học/khóa học (School Grade)."));
 
-        // 2. school_grades carries schoolId directly -- the grade level no longer has to serve as a "bridge".
+        // school_grades carries schoolId directly -- the grade level no longer has to serve as a "bridge".
 
-        // 3. Validate the user (optimized with an exists call)
+        requireCallerMayEdit(grade);
+        validateDateOrder(command, grade);
+
+        int updatedRows = updateAtomically(command);
+
+        if (updatedRows == 0) {
+            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thông tin nào thay đổi.");
+        }
+
+        return command.schoolGradeId();
+    }
+
+    private void requireCallerMayEdit(SchoolGrade grade) {
+        // exists call instead of loading the user, for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
             throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
@@ -52,17 +64,19 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
                 throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác.");
             }
         }
+    }
 
-        // 4. Validate the date logic
+    private void validateDateOrder(UpdateSchoolGradeCommand command, SchoolGrade grade) {
         LocalDate startDate = (command.startDate() != null) ? command.startDate() : grade.getStartDate();
         LocalDate endDate = (command.endDate() != null) ? command.endDate() : grade.getEndDate();
 
         if (startDate != null && endDate != null && !startDate.isBefore(endDate)) {
             throw new IllegalArgumentException("Ngày bắt đầu phải diễn ra trước ngày kết thúc.");
         }
+    }
 
-        // 5. Atomic update
-        int updatedRows = schoolGradeRepository.updateSchoolGradeAtomic(
+    private int updateAtomically(UpdateSchoolGradeCommand command) {
+        return schoolGradeRepository.updateSchoolGradeAtomic(
                 command.schoolGradeId(),
                 command.name() != null ? StringNormalization.trimAndCollapseSpaces(command.name()) : null,
                 command.description() != null ? StringNormalization.trimAndCollapseSpaces(command.description()) : null,
@@ -70,11 +84,5 @@ public class UpdateSchoolGradeUseCase implements IUseCase<UpdateSchoolGradeComma
                 command.startDate(),
                 command.endDate()
         );
-
-        if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thông tin nào thay đổi.");
-        }
-
-        return command.schoolGradeId();
     }
 }

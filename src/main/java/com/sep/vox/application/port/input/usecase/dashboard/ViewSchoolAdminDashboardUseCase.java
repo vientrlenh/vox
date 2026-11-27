@@ -45,9 +45,10 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Phần CHI TIÊU của màn này đọc từ ĐƠN HÀNG đã thu được tiền, không còn từ hóa đơn: hóa đơn giờ chỉ
- * là chứng từ phát hành sau khi tiền về (không còn status/amount/sourceType), còn thứ trả lời được
- * "trường đã trả bao nhiêu, cho cái gì" là Order -- xem InvoiceRepository và OrderSettlementService.
+ * The SPENDING part of this screen is read from ORDERS that have been paid, no longer from invoices: an invoice is
+ * now just a document issued after the money arrives (it no longer has status/amount/sourceType), and what can
+ * answer "how much did the school pay, and for what" is the Order -- see InvoiceRepository and
+ * OrderSettlementService.
  */
 @Service
 @RequiredArgsConstructor
@@ -166,34 +167,34 @@ public class ViewSchoolAdminDashboardUseCase implements IUseCase<Void, SchoolAdm
     }
 
     /**
-     * Đơn đã thu được tiền của trường. SUCCESS là trạng thái DUY NHẤT có tiền thật: PENDING mới chỉ
-     * là ý định mua, còn FAILED/CANCELLED/EXPIRED thì không đồng nào về (xem OrderSettlementService).
+     * The school's orders whose money was collected. SUCCESS is the ONLY status with real money: PENDING is only an
+     * intent to buy, while FAILED/CANCELLED/EXPIRED bring in not a single dong (see OrderSettlementService).
      */
     private List<Order> fetchPaidOrders(UUID schoolId) {
         Instant now = Instant.now();
-        // Mốc đầu = 00:00 ngày 1 của tháng CŨ NHẤT mà biểu đồ vẽ, tính theo giờ VN -- giống hệt
+        // The start bound = 00:00 on the 1st of the OLDEST month the chart draws, in Vietnam time -- exactly as in
         // ViewSystemAdminDashboardUseCase.
         //
-        // KHÔNG dùng now.minus(SPENDING_MONTHS, ChronoUnit.MONTHS): Instant chỉ nhận đơn vị tới DAYS
-        // nên câu đó ném UnsupportedTemporalTypeException, tức là màn quản trị của trường 500 ở mọi
-        // lượt gọi. Mà kể cả nếu chạy được thì nó cũng sai: cửa sổ trượt bắt đầu từ giữa tháng sẽ cắt
-        // mất phần đầu của tháng cũ nhất, trong khi buildMonthlySpending gom theo NGUYÊN tháng -- cột
-        // xa nhất của biểu đồ vì thế thiếu tiền so với chính nó.
+        // Do NOT use now.minus(SPENDING_MONTHS, ChronoUnit.MONTHS): Instant only accepts units up to DAYS, so that
+        // call throws UnsupportedTemporalTypeException, i.e. the school admin screen would return 500 on every
+        // call. And even if it ran it would be wrong: a sliding window starting mid-month would cut off the start
+        // of the oldest month, while buildMonthlySpending groups by WHOLE months -- the farthest bar of the chart
+        // would then be short of money compared with itself.
         Instant from = YearMonth.now(ZoneConstant.BUSINESS_ZONE)
             .minusMonths(SPENDING_MONTHS - 1L)
             .atDay(1)
             .atStartOfDay(ZoneConstant.BUSINESS_ZONE)
             .toInstant();
-        // findBySchoolIdAndStatusInRange chứ KHÔNG phải findByStatusInRange: bản kia không lọc trường
-        // nào cả (nó sinh ra cho màn System Admin), nên dùng ở đây là đưa đơn của mọi trường vào tổng
-        // chi và biểu đồ 12 tháng của đúng một trường đang đăng nhập.
+        // findBySchoolIdAndStatusInRange and NOT findByStatusInRange: the latter does not filter by school at all (it was
+        // made for the System Admin screen), so using it here would put the orders of every school into the total
+        // spending and the 12-month chart of the one school that is logged in.
         return orderRepository.findBySchoolIdAndStatusInRange(schoolId, OrderStatus.SUCCESS, from, now);
     }
 
     /**
-     * Tổng chi lấy {@code totalAmountVnd} -- số trường THẬT SỰ trả, đã gồm phí dịch vụ và đã trừ
-     * khoản bù nâng cấp. Đây là màn của người trả tiền, nên con số phải khớp với sao kê ngân hàng
-     * của họ chứ không phải với giá niêm yết của gói.
+     * Total spending uses {@code totalAmountVnd} -- what the school REALLY paid, including the service fee and
+     * after subtracting the upgrade credit. This is the screen of the payer, so the number has to match their bank
+     * statement, not the list price of the plan.
      */
     private static BigDecimal sumAmount(List<Order> orders) {
         return orders.stream()

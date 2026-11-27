@@ -30,15 +30,15 @@ public class ApproveAssessmentAppealUseCase implements IUseCase<ApproveAssessmen
 
         AssessmentResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
-            throw new IllegalArgumentException("Chỉ có thể duyệt đơn phúc khảo đang ở trạng thái Chờ duyệt.");
+            throw new IllegalArgumentException("Only an appeal in the Pending status can be approved.");
         }
 
         Instant now = Instant.now();
         if (command.deadline() == null) {
-            throw new IllegalArgumentException("Phải đặt hạn xử lý cho đơn phúc khảo.");
+            throw new IllegalArgumentException("A processing deadline must be set for the appeal.");
         }
         if (!command.deadline().isAfter(now)) {
-            throw new IllegalArgumentException("Hạn xử lý phải ở tương lai.");
+            throw new IllegalArgumentException("The processing deadline must be in the future.");
         }
 
         appeal.setStatus(AssessmentAppealStatus.APPROVED);

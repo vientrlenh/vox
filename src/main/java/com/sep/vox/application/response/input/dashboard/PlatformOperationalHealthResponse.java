@@ -21,11 +21,13 @@ public record PlatformOperationalHealthResponse(
     long gradingQueueDepth,
     long graded,
     long gradingFailed,
-    /** {@code null} khi trong cửa sổ chưa có phiên nào chấm xong lẫn chấm lỗi — 0% và "chưa có dữ
-     * liệu" là hai chuyện khác nhau, và một hệ thống chưa chạy phiên nào không phải là hệ thống có
-     * tỷ lệ thành công 0%. */
+    /**
+     * {@code null} when the window has no session that finished grading or failed grading -- 0% and "no
+     * data" are two different things, and a system that has not run any session does not have a
+     * 0% success rate.
+     */
     Double successRatePercent,
-    /** Liên tục theo ngày, cũ -> mới, ngày không có phiên nào đã trả về 0. */
+    /** Continuous by day, old -> new; a day without any session has been returned as 0. */
     List<GradingOutcomeBucketResponse> daily
 ) {
 }

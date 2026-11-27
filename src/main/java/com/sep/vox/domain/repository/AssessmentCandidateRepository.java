@@ -25,7 +25,7 @@ public interface AssessmentCandidateRepository {
 
     void deleteById(UUID id);
 
-    /** Xoá cả nhóm trong một câu lệnh — dùng cho thao tác xoá hàng loạt trên màn danh sách thí sinh. */
+    /** Deletes a whole group in one statement — used for bulk delete on the candidate list screen. */
     void deleteByIdIn(Collection<UUID> ids);
     void deleteByAssessmentId(UUID assessmentId);
 
@@ -34,7 +34,7 @@ public interface AssessmentCandidateRepository {
     boolean existsByAssessmentIdAndStudentId(UUID assessmentId, UUID studentId);
     List<AssessmentCandidate> findByStudentId(UUID studentId);
     List<AssessmentCandidate> findByScheduleId(UUID scheduleId);
-    /** Thí sinh đang được phân đúng mã đề này — dùng để gỡ phân đề trước khi xoá mã đề. */
+    /** Candidates currently assigned exactly this paper — used to unassign before deleting the paper. */
     List<AssessmentCandidate> findByAssignedPaperId(UUID paperId);
     Set<UUID> findStudentIdsByAssessmentId(UUID assessmentId);
     List<UUID> findUnblockedStudentIdsByAssessmentId(UUID assessmentId);
@@ -48,15 +48,15 @@ public interface AssessmentCandidateRepository {
     List<AssessmentCandidate> findActiveCandidates(UUID studentId, Instant now);
 
     /**
-     * Với mỗi học sinh trong {@code studentIds}, ca thi (DRAFT/PUBLISHED) mà họ đã được xếp và giao
-     * thời gian với [start, end). Quét MỌI kỳ thi chứ không riêng kỳ thi đang mở: một học sinh không
-     * thể ngồi ở hai phòng cùng lúc. {@code excludeScheduleId} (nếu khác null) được loại khỏi phép
-     * kiểm tra. Học sinh rảnh thì không có mặt trong kết quả.
+     * For each student in {@code studentIds}, the schedule (DRAFT/PUBLISHED) they are already placed in that overlaps
+     * in time with [start, end). Scans EVERY assessment, not only the open one: a student cannot sit in two rooms at the
+     * same time. {@code excludeScheduleId} (if not null) is excluded from the check. A student who is free is not
+     * present in the result.
      */
     List<StudentScheduleConflict> findConflictsForStudents(
             Collection<UUID> studentIds, Instant start, Instant end, UUID excludeScheduleId);
 
-    /** Một lần vướng lịch: học sinh {@code studentId} đã được xếp ca {@code scheduleId} chạy [start, end). */
+    /** One conflict: student {@code studentId} is already placed in schedule {@code scheduleId} running [start, end). */
     record StudentScheduleConflict(UUID studentId, UUID scheduleId, Instant startDate, Instant endDate) {
     }
 }

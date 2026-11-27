@@ -47,16 +47,16 @@ public class ViewMonitorableAssessmentUseCase implements IUseCase<UUID, Monitore
             ? monitoredAssessmentQueryRepository.findMonitorableBySchool(requireSchoolId(currentUserId), assessmentId, now, null)
             : monitoredAssessmentQueryRepository.findMonitorableByTeacher(currentUserId, assessmentId, now, null);
 
-        // Rỗng nghĩa là không gác ca nào của kỳ thi này -- chính là "không có quyền", nên trả 403 chứ
-        // không phải 404: nói "không tìm thấy" ở đây sẽ khiến giám thị đi báo kỳ thi bị mất.
+        // Empty means the caller does not supervise any schedule of this assessment -- which IS "no permission", so return
+        // 403 and not 404: saying "not found" here would make proctors go and report that the assessment was lost.
         return found.stream()
             .findFirst()
-            .orElseThrow(() -> new ForbiddenException("Bạn không giám sát ca thi nào của kỳ thi này"));
+            .orElseThrow(() -> new ForbiddenException("You are not proctoring any schedule of this assessment"));
     }
 
     private UUID requireSchoolId(UUID currentUserId) {
         return schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Access denied"));
     }
 }

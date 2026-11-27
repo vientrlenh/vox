@@ -44,14 +44,14 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
     public AssessmentDto execute(DeleteClassTestSectionCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         classTestDirectEditGuard.requireDirectlyEditable(assessment, currentUserId);
 
         // The paper is derived from the section being deleted: a class test can now have several papers,
         // and guessing "the first paper" would delete a section of another paper by mistake.
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.findById(input.sectionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy section"));
+            .orElseThrow(() -> new ResourceNotFoundException("Section not found"));
         AssessmentPaper paper = requirePaperOfAssessment(paperSection, assessment);
         List<AssessmentPaperSection> allPaperSections = requireMoreThanOneSection(paper);
 
@@ -80,9 +80,9 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
 
     private AssessmentPaper requirePaperOfAssessment(AssessmentPaperSection paperSection, Assessment assessment) {
         AssessmentPaper paper = assessmentPaperRepository.findById(paperSection.getPaperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
         if (!paper.getAssessmentId().equals(assessment.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy section");
+            throw new ResourceNotFoundException("Section not found");
         }
         return paper;
     }
@@ -92,7 +92,7 @@ public class DeleteClassTestSectionUseCase implements IUseCase<DeleteClassTestSe
             .sorted((a, b) -> Integer.compare(a.getOrder(), b.getOrder()))
             .toList();
         if (allPaperSections.size() <= 1) {
-            throw new IllegalArgumentException("Mã đề phải có ít nhất 1 section");
+            throw new IllegalArgumentException("A paper must have at least 1 section");
         }
         return allPaperSections;
     }

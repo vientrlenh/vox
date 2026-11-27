@@ -37,7 +37,7 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
         AssessmentPolicy policy = loadSystemPolicy(command);
 
         if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể lưu trữ (ARCHIVE) Assessment Policy đang ở trạng thái PUBLISHED.");
+            throw new IllegalArgumentException("Only an Assessment Policy in the PUBLISHED status can be archived (ARCHIVE).");
         }
 
         Instant now = Instant.now();
@@ -53,17 +53,17 @@ public class ArchiveSystemAssessmentPolicyUseCase implements IUseCase<ArchiveSys
     private void requireActiveUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
     }
 
     private AssessmentPolicy loadSystemPolicy(ArchiveSystemAssessmentPolicyCommand command) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
         if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào Assessment Policy của trường học.");
+            throw new ForbiddenException("Action denied: a school's Assessment Policy cannot be modified here.");
         }
         return policy;
     }

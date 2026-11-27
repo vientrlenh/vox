@@ -53,6 +53,6 @@ class CreateFrameworkCriteriaUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Mã tiêu chí đã tồn tại trong cơ sở dữ liệu");
+            .hasMessage("Criterion code already exists in the database");
     }
 }

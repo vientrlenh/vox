@@ -34,7 +34,7 @@ public final class ExchangeRateSnapshotMapper {
         try {
             return CurrencyCode.valueOf(code);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Giá trị tiền tệ khi convert domain model không hợp lệ: " + code);
+            throw new IllegalArgumentException("Invalid currency value when converting to the domain model: " + code);
         }
     }
 

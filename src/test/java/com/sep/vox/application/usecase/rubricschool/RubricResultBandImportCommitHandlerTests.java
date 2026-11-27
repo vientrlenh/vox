@@ -54,7 +54,7 @@ class RubricResultBandImportCommitHandlerTests {
 
         assertThatThrownBy(() -> handler.commit(session(), List.of(row())))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Lỗi lưu dữ liệu: Mã xếp loại (Result Band) bị trùng lặp trong Phiên bản Rubric này.")
+            .hasMessage("Data save error: the result band code (Result Band) is duplicated in this Rubric version.")
             .hasCauseInstanceOf(DataConflictException.class);
     }
 

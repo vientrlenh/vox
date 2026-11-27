@@ -8,10 +8,10 @@ public record CapCriterionScoreParams(
 ) implements ScoringRuleActionParams {
     public CapCriterionScoreParams {
         if (criterionCode == null || criterionCode.isBlank()) {
-            throw new IllegalArgumentException("Code của tiêu chí không được để trống");
+            throw new IllegalArgumentException("The criterion code must not be blank");
         }
         if (maxScore == null || maxScore.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Điểm tối đa không được để trống hoặc dưới 0");
+            throw new IllegalArgumentException("The maximum score must not be blank or below 0");
         }
     }
 }

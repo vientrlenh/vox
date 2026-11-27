@@ -16,9 +16,9 @@ public interface AssessmentItemResponseRepository {
         int sumDurationSecondsBySessionId(UUID sessionId);
 
     /**
-     * Tổng duration_seconds (giây trả lời thật) theo TỪNG session trong sessionIds -- dùng cho
-     * QuotaPricingCalibrationService. Chỉ aggregate 1 bảng (không join ai_usage_record) nên an
-     * toàn, không bị cartesian product -- join với SessionCostDto (query side) làm ở tầng Java.
+     * Total duration_seconds (real answering seconds) per EACH session in sessionIds -- used by
+     * QuotaPricingCalibrationService. Aggregates only 1 table (no join with ai_usage_record) so it is
+     * safe, with no cartesian product -- the join with SessionCostDto (query side) is done in the Java layer.
      */
     List<SessionDurationAggregate> sumDurationSecondsGroupedBySessionIds(Collection<UUID> sessionIds);
 }

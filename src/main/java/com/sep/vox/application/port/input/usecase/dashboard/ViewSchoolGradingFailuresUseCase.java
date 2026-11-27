@@ -15,15 +15,15 @@ import com.sep.vox.application.response.input.dashboard.SchoolGradingFailurePage
 import com.sep.vox.application.response.input.dashboard.SchoolGradingFailureResponse;
 
 /**
- * Chỗ đáp của dòng "AI chấm lỗi, chưa ai xử lý" trên trang tổng quan.
+ * The landing place of the "AI grading failed, nobody has handled it" row on the overview page.
  *
- * <p>Phạm vi lấy từ NGƯỜI ĐANG ĐĂNG NHẬP, không nhận schoolId từ client — cùng cách như
- * {@code ViewSchoolAdminDashboardUseCase}. Nhận từ client là mở đường cho quản trị trường này đọc
- * bài của trường khác.
+ * <p>The scope comes from the LOGGED-IN USER; schoolId is not accepted from the client -- the same way as
+ * {@code ViewSchoolAdminDashboardUseCase}. Accepting it from the client would open the way for one school's admin
+ * to read another school's submissions.
  *
- * <p>KHÔNG có hành động hàng loạt ở đây. Chấm lại bằng AI và chuyển người chấm đều là quyết định
- * theo TỪNG bài — chúng phụ thuộc vào lịch chấm, người rảnh, và định mức một lượt của chính phiên
- * đó. Hai mutation lẻ đã có sẵn và màn này chỉ dẫn tới chúng.
+ * <p>There is NO bulk action here. Re-grading with AI and reassigning the grader are both decisions made PER
+ * SUBMISSION -- they depend on the grading schedule, who is free, and the per-turn allowance of that very
+ * session. The two individual mutations already exist and this screen only leads to them.
  */
 @Service
 @RequiredArgsConstructor

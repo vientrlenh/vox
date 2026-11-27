@@ -29,14 +29,14 @@ import com.sep.vox.domain.repository.ProcessedEventRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Gửi OTP xác thực đăng ký trường.
+ * Sends the OTP that verifies a school registration.
  *
- * <p>OTP sinh tại đây, không nằm trong payload -- xem
- * {@link ResetPasswordOtpEmailConsumer} về lý do.
+ * <p>The OTP is generated here, not carried in the payload -- see
+ * {@link ResetPasswordOtpEmailConsumer} for the reason.
  *
- * <p>Khác với đặt lại mật khẩu, cache của luồng này giữ cả hồ sơ đăng ký chứ không chỉ mã
- * hash, và hồ sơ đó do use case ghi. Nên ở đây phải đọc dòng cache ra, chèn hash rồi ghi
- * lại. Nếu dòng cache đã hết hạn thì người dùng đã bỏ cuộc từ lâu: bỏ qua chứ không retry.
+ * <p>Unlike password reset, the cache of this flow holds the whole registration profile and not just the
+ * hash, and that profile is written by the use case. So here the cache row must be read out, the hash inserted and then written
+ * back. If the cache row has expired the user gave up long ago: skip, do not retry.
  */
 @Component
 @RequiredArgsConstructor
@@ -44,8 +44,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class RegisterVerificationOtpEmailConsumer {
 
     private static final String CONSUMER_GROUP = "register-verification-otp-email";
-    private static final String SUBJECT = "Mã xác thực đăng ký VOX";
-    private static final String EXPIRES_IN = "10 phút";
+    private static final String SUBJECT = "VOX registration verification code";
+    private static final String EXPIRES_IN = "10 minutes";
 
     private static final int OTP_SIZE = 6;
 
@@ -98,7 +98,7 @@ public class RegisterVerificationOtpEmailConsumer {
     }
 
     private void skipExpiredRegistration(UUID eventId, Acknowledgment ack) {
-        log.warn("Bỏ qua OTP đăng ký, hồ sơ trong cache đã hết hạn: eventId={}", eventId);
+        log.warn("Skipping the registration OTP, the profile in the cache has expired: eventId={}", eventId);
         markProcessed(eventId);
         ack.acknowledge();
     }
@@ -139,7 +139,7 @@ public class RegisterVerificationOtpEmailConsumer {
         } catch (Exception e) {
             log.error("Invalid payload: eventId={}", eventId, e);
             throw new IllegalStateException(
-                "Payload register-verification-otp không hợp lệ, eventId=" + eventId, e);
+                "Payload register-verification-otp is invalid, eventId=" + eventId, e);
         }
     }
 
@@ -149,7 +149,7 @@ public class RegisterVerificationOtpEmailConsumer {
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             log.error("Send mail error: eventId={}", eventId, e);
-            throw new IllegalStateException("Gửi mail OTP đăng ký thất bại: eventId=" + eventId, e);
+            throw new IllegalStateException("Failed to send the registration OTP email: eventId=" + eventId, e);
         }
     }
 

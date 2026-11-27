@@ -74,7 +74,7 @@ public class RestGradingAssignmentController {
     private final SetGradingDeadlineUseCase setGradingDeadlineUseCase;
     private final ReclaimOverdueAssignmentsUseCase reclaimOverdueAssignmentsUseCase;
 
-    @Operation(summary = "Phân công giáo viên chấm bài (gán tay, nhiều bài một lần, một vòng chấm)")
+    @Operation(summary = "Assigns teachers to grade (manual assignment, several results at once, one grading round)")
     @PostMapping
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> assign(
@@ -82,11 +82,11 @@ public class RestGradingAssignmentController {
         AssignGradingCommand command = AssignGradingRequest.toCommand(request);
         List<UUID> assignmentIds = assignGradingUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Phân công chấm bài thành công!", assignmentIds));
+            .body(ApiResponse.success("Grading assigned successfully!", assignmentIds));
     }
 
-    @Operation(summary = "Phân công tự động. Chọn bài theo 4 chế độ (toàn bộ / ngẫu nhiên N% / "
-        + "rủi ro cao / danh sách chỉ định) rồi chia đều theo tải hiện tại của nhóm giáo viên.")
+    @Operation(summary = "Automatic assignment. Picks results in 4 modes (all / random N% / "
+        + "high risk / specified list) and then spreads them evenly by the current load of the teacher group.")
     @PostMapping("/auto")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> autoAssign(
@@ -94,10 +94,10 @@ public class RestGradingAssignmentController {
         AutoAssignGradingCommand command = AutoAssignGradingRequest.toCommand(request);
         List<UUID> assignmentIds = autoAssignGradingUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Phân công tự động thành công!", assignmentIds));
+            .body(ApiResponse.success("Automatic assignment successful!", assignmentIds));
     }
 
-    @Operation(summary = "Đổi giáo viên chấm một bài (chỉ khi chưa chấm xong)")
+    @Operation(summary = "Changes the teacher grading a result (only while grading is not finished)")
     @PutMapping("/{assignmentId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> reassign(
@@ -105,47 +105,47 @@ public class RestGradingAssignmentController {
             @Valid @RequestBody ReassignGradingRequest request) {
         ReassignGradingCommand command = ReassignGradingRequest.toCommand(assignmentId, request);
         return ResponseEntity.ok(
-            ApiResponse.success("Đổi giáo viên chấm bài thành công!", reassignGradingUseCase.execute(command)));
+            ApiResponse.success("Grader changed successfully!", reassignGradingUseCase.execute(command)));
     }
 
-    @Operation(summary = "Gỡ phân công chấm bài (chỉ khi chưa chấm xong)")
+    @Operation(summary = "Removes a grading assignment (only while grading is not finished)")
     @DeleteMapping("/{assignmentId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> remove(@PathVariable("assignmentId") UUID assignmentId) {
         RemoveGradingAssignmentCommand command = new RemoveGradingAssignmentCommand(assignmentId);
         return ResponseEntity.ok(
-            ApiResponse.success("Gỡ phân công thành công!", removeGradingAssignmentUseCase.execute(command)));
+            ApiResponse.success("Assignment removed successfully!", removeGradingAssignmentUseCase.execute(command)));
     }
 
-    @Operation(summary = "Đặt / sửa hạn chấm cho một hoặc nhiều phân công. "
-        + "Bỏ trống `deadlineAt` để gỡ hạn.")
+    @Operation(summary = "Sets / edits the grading deadline of one or more assignments. "
+        + "Leave `deadlineAt` empty to remove the deadline.")
     @PutMapping("/deadline")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> setDeadline(
             @Valid @RequestBody SetGradingDeadlineRequest request) {
         SetGradingDeadlineCommand command = SetGradingDeadlineRequest.toCommand(request);
         return ResponseEntity.ok(
-            ApiResponse.success("Đặt hạn chấm thành công!", setGradingDeadlineUseCase.execute(command)));
+            ApiResponse.success("Grading deadline set successfully!", setGradingDeadlineUseCase.execute(command)));
     }
 
-    @Operation(summary = "Thu hồi phân công quá hạn, giao lại ngay nếu có chọn nhóm giáo viên thay thế. "
-        + "Bỏ trống `assignmentIds` để thu hồi mọi phân công quá hạn của kỳ thi. "
-        + "Trả về hai danh sách tách bạch: `reclaimedAssignmentIds` (phân công cũ vừa đóng) và "
-        + "`reassignedAssignmentIds` (phân công mới vừa mở, rỗng nếu chỉ thu hồi). "
-        + "Mỗi lượt xử lý tối đa 500 phân công; `hasMore = true` nghĩa là còn dòng quá hạn "
-        + "chưa xử lý, gọi lại để chạy lượt tiếp theo.")
+    @Operation(summary = "Reclaims overdue assignments and reassigns them right away if a replacement teacher group is chosen. "
+        + "Leave `assignmentIds` empty to reclaim every overdue assignment of the assessment. "
+        + "Returns two separate lists: `reclaimedAssignmentIds` (old assignments just closed) and "
+        + "`reassignedAssignmentIds` (new assignments just opened, empty if only reclaimed). "
+        + "Each run handles at most 500 assignments; `hasMore = true` means overdue rows "
+        + "remain unprocessed, so call again to run the next batch.")
     @PostMapping("/reclaim-overdue")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<ReclaimOverdueResponse>> reclaimOverdue(
             @Valid @RequestBody ReclaimOverdueAssignmentsRequest request) {
         ReclaimOverdueAssignmentsCommand command = ReclaimOverdueAssignmentsRequest.toCommand(request);
         return ResponseEntity.ok(
-            ApiResponse.success("Thu hồi phân công quá hạn thành công!",
+            ApiResponse.success("Overdue assignments reclaimed successfully!",
                 reclaimOverdueAssignmentsUseCase.execute(command)));
     }
 
-    @Operation(summary = "Giữ nguyên điểm — giáo viên xác nhận điểm đang có là đúng. "
-        + "Ở vòng chấm lần đầu, bài được công bố luôn (không cần admin duyệt lại).")
+    @Operation(summary = "Uphold the score -- the teacher confirms the current score is correct. "
+        + "In the first grading round the result is published right away (no further admin review needed).")
     @PostMapping("/{assignmentId}/uphold")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GradingActionResponse>> uphold(
@@ -153,11 +153,11 @@ public class RestGradingAssignmentController {
             @Valid @RequestBody(required = false) GradingDecisionRequest request) {
         GradingDecisionCommand command = GradingDecisionRequest.toCommand(assignmentId, request);
         return ResponseEntity.ok(
-            ApiResponse.success("Đã giữ nguyên điểm bài thi!", upholdResultUseCase.execute(command)));
+            ApiResponse.success("Result score upheld!", upholdResultUseCase.execute(command)));
     }
 
-    @Operation(summary = "Chấm lại — nộp là chốt. Điểm nhập theo từng tiêu chí của từng phần; "
-        + "tổng và xếp loại do hệ thống tính lại. Bài đang bị đánh dấu nghi vấn sẽ được gỡ cờ khi nộp.")
+    @Operation(summary = "Re-grade -- submitting is final. Scores are entered per criterion of each section; "
+        + "the total and the rating are recomputed by the system. A result flagged as suspicious has its flag cleared on submit.")
     @PostMapping("/{assignmentId}/regrade")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GradingActionResponse>> regrade(
@@ -165,11 +165,11 @@ public class RestGradingAssignmentController {
             @Valid @RequestBody SubmitGradingRequest request) {
         SubmitGradingCommand command = SubmitGradingRequest.toCommand(assignmentId, request);
         return ResponseEntity.ok(
-            ApiResponse.success("Nộp điểm chấm bài thành công!", regradeResultUseCase.execute(command)));
+            ApiResponse.success("Grading scores submitted successfully!", regradeResultUseCase.execute(command)));
     }
 
-    @Operation(summary = "Tính thử tổng điểm cho bộ điểm đang nhập. KHÔNG ghi gì. "
-        + "Là POST vì body giống hệt /regrade — tổng trả về bằng đúng tổng khi nộp.")
+    @Operation(summary = "Dry-run of the total score for the scores being entered. Writes NOTHING. "
+        + "It is a POST because the body is identical to /regrade -- the returned total equals the total on submit.")
     @PostMapping("/{assignmentId}/regrade/preview")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GradingPreviewResponse>> previewRegrade(
@@ -177,10 +177,10 @@ public class RestGradingAssignmentController {
             @Valid @RequestBody SubmitGradingRequest request) {
         SubmitGradingCommand command = SubmitGradingRequest.toCommand(assignmentId, request);
         return ResponseEntity.ok(
-            ApiResponse.success("Tính thử điểm thành công!", previewGradingUseCase.execute(command)));
+            ApiResponse.success("Score preview calculated successfully!", previewGradingUseCase.execute(command)));
     }
 
-    @Operation(summary = "Kết luận bài là vi phạm -> vô hiệu kết quả, không nhập điểm. Lý do bắt buộc.")
+    @Operation(summary = "Concludes the result is a violation -> invalidates the result, no scores entered. A reason is required.")
     @PostMapping("/{assignmentId}/invalidate")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GradingActionResponse>> invalidate(
@@ -188,11 +188,11 @@ public class RestGradingAssignmentController {
             @Valid @RequestBody GradingDecisionRequest request) {
         GradingDecisionCommand command = GradingDecisionRequest.toCommand(assignmentId, request);
         return ResponseEntity.ok(
-            ApiResponse.success("Vô hiệu bài thi thành công!", invalidateResultUseCase.execute(command)));
+            ApiResponse.success("Result invalidated successfully!", invalidateResultUseCase.execute(command)));
     }
 
-    @Operation(summary = "Kết luận KHÔNG vi phạm -> gỡ vô hiệu, gỡ chặn thí sinh, và mở luôn "
-        + "vòng chấm lần đầu cho chính giáo viên này. Lý do bắt buộc.")
+    @Operation(summary = "Concludes there is NO violation -> clears the invalidation, unblocks the candidate, and immediately opens "
+        + "the first grading round for this same teacher. A reason is required.")
     @PostMapping("/{assignmentId}/clear-invalid")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GradingActionResponse>> clearInvalid(
@@ -200,11 +200,11 @@ public class RestGradingAssignmentController {
             @Valid @RequestBody GradingDecisionRequest request) {
         GradingDecisionCommand command = GradingDecisionRequest.toCommand(assignmentId, request);
         return ResponseEntity.ok(
-            ApiResponse.success("Đã gỡ vô hiệu bài thi!", clearInvalidResultUseCase.execute(command)));
+            ApiResponse.success("Result invalidation cleared!", clearInvalidResultUseCase.execute(command)));
     }
 
-    @Operation(summary = "Trả lại phân công kèm lý do (quen biết thí sinh...). "
-        + "Bài quay về hàng chưa giao, admin nhận thông báo.")
+    @Operation(summary = "Returns the assignment with a reason (knows the candidate...). "
+        + "The result goes back to the unassigned pool and the admin is notified.")
     @PostMapping("/{assignmentId}/decline")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<GradingActionResponse>> decline(
@@ -212,7 +212,7 @@ public class RestGradingAssignmentController {
             @Valid @RequestBody GradingDecisionRequest request) {
         GradingDecisionCommand command = GradingDecisionRequest.toCommand(assignmentId, request);
         return ResponseEntity.ok(
-            ApiResponse.success("Đã trả lại phân công!", declineGradingAssignmentUseCase.execute(command)));
+            ApiResponse.success("Assignment declined!", declineGradingAssignmentUseCase.execute(command)));
     }
 
 }

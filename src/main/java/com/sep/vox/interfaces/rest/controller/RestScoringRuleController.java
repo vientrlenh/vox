@@ -45,9 +45,7 @@ public class RestScoringRuleController {
     private final DeleteSystemScoringRuleUseCase deleteSystemScoringRuleUseCase;
     private final DeleteSchoolScoringRuleUseCase deleteSchoolScoringRuleUseCase;
 
-    // Tạo mới 1 Scoring Rule cho Assessment Policy hệ thống.
-    // Chỉ tạo được khi Policy đang DRAFT (tránh thay đổi luật chấm điểm ngầm khi Policy đã PUBLISHED đang chấm bài thi thật).
-    @Operation(summary = "Tạo mới Scoring Rule cho Assessment Policy hệ thống (chỉ khi Policy đang ở trạng thái DRAFT)")
+    @Operation(summary = "Creates a Scoring Rule for a system Assessment Policy (only when the Policy is in DRAFT status)")
     @PostMapping("/system/{policyId}/scoring-rules")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSystemScoringRule(
@@ -56,12 +54,10 @@ public class RestScoringRuleController {
     ) {
         CreateScoringRuleCommand command = CreateScoringRuleRequest.toCreateScoringRuleCommand(policyId, request);
         UUID ruleId = createSystemScoringRuleUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Tạo Scoring Rule thành công", ruleId));
+        return ResponseEntity.ok(ApiResponse.success("Scoring Rule created successfully", ruleId));
     }
 
-    // Tạo mới 1 Scoring Rule cho Assessment Policy của trường học.
-    // Chỉ tạo được khi Policy đang DRAFT.
-    @Operation(summary = "Tạo mới Scoring Rule cho Assessment Policy của trường học (chỉ khi Policy đang ở trạng thái DRAFT)")
+    @Operation(summary = "Creates a Scoring Rule for a school Assessment Policy (only when the Policy is in DRAFT status)")
     @PostMapping("/schools/{schoolId}/{policyId}/scoring-rules")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createSchoolScoringRule(
@@ -71,11 +67,10 @@ public class RestScoringRuleController {
     ) {
         CreateSchoolScoringRuleCommand command = CreateScoringRuleRequest.toCreateSchoolScoringRuleCommand(schoolId, policyId, request);
         UUID ruleId = createSchoolScoringRuleUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Tạo Scoring Rule cho trường học thành công", ruleId));
+        return ResponseEntity.ok(ApiResponse.success("School Scoring Rule created successfully", ruleId));
     }
 
-    // Xóa 1 Scoring Rule khỏi Assessment Policy hệ thống. Chỉ xóa được khi Policy đang DRAFT.
-    @Operation(summary = "Xóa Scoring Rule khỏi Assessment Policy hệ thống (chỉ khi Policy đang ở trạng thái DRAFT)")
+    @Operation(summary = "Deletes a Scoring Rule from a system Assessment Policy (only when the Policy is in DRAFT status)")
     @DeleteMapping("/system/{policyId}/scoring-rules/{ruleId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemScoringRule(
@@ -83,11 +78,10 @@ public class RestScoringRuleController {
             @PathVariable("ruleId") UUID ruleId
     ) {
         deleteSystemScoringRuleUseCase.execute(new DeleteScoringRuleCommand(policyId, ruleId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa Scoring Rule thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Scoring Rule deleted successfully"));
     }
 
-    // Xóa 1 Scoring Rule khỏi Assessment Policy của trường học. Chỉ xóa được khi Policy đang DRAFT.
-    @Operation(summary = "Xóa Scoring Rule khỏi Assessment Policy của trường học (chỉ khi Policy đang ở trạng thái DRAFT)")
+    @Operation(summary = "Deletes a Scoring Rule from a school Assessment Policy (only when the Policy is in DRAFT status)")
     @DeleteMapping("/schools/{schoolId}/{policyId}/scoring-rules/{ruleId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolScoringRule(
@@ -96,6 +90,6 @@ public class RestScoringRuleController {
             @PathVariable("ruleId") UUID ruleId
     ) {
         deleteSchoolScoringRuleUseCase.execute(new DeleteSchoolScoringRuleCommand(schoolId, policyId, ruleId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa Scoring Rule cho trường học thành công"));
+        return ResponseEntity.ok(ApiResponse.success("School Scoring Rule deleted successfully"));
     }
 }

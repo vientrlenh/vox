@@ -54,9 +54,9 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
 
     private RubricVersion requireDraftVersion(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản gốc khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent version not found during background processing."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể import Xếp loại (Result Band) khi phiên bản Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Result Bands can only be imported when the Rubric version is in DRAFT status.");
         }
         return version;
     }
@@ -119,7 +119,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
             row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
             return true;
         } catch (Exception ex) {
-            errors.add(error("general", "Lỗi hệ thống: " + ex.getMessage()));
+            errors.add(error("general", "System error: " + ex.getMessage()));
             markInvalid(row, errors);
             return false;
         }
@@ -147,7 +147,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
         addMissingFieldErrors(fields, errors);
         String safeCode = fields.code() != null ? fields.code().trim() : "";
         if (errors.isEmpty() && !run.codesInFile().add(normalizeCode(safeCode))) {
-            errors.add(error("code", "Bị trùng Mã xếp loại '" + safeCode + "' ngay trong file Excel."));
+            errors.add(error("code", "Duplicate result band code '" + safeCode + "' within the Excel file."));
         }
         ParsedScores scores = parseScores(fields, safeCode, run, errors);
 
@@ -162,11 +162,11 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
     }
 
     private static void addMissingFieldErrors(RowFields fields, List<Map<String, String>> errors) {
-        if (fields.code() == null || fields.code().isBlank()) errors.add(error("code", "Thiếu Mã xếp loại (Code)."));
-        if (fields.name() == null || fields.name().isBlank()) errors.add(error("name", "Thiếu Tên xếp loại."));
-        if (fields.scoreMin() == null || fields.scoreMin().isBlank()) errors.add(error("scoreMin", "Thiếu Điểm tối thiểu."));
-        if (fields.scoreMax() == null || fields.scoreMax().isBlank()) errors.add(error("scoreMax", "Thiếu Điểm tối đa."));
-        if (fields.order() == null || fields.order().isBlank()) errors.add(error("order", "Thiếu Thứ tự."));
+        if (fields.code() == null || fields.code().isBlank()) errors.add(error("code", "Result band code is missing."));
+        if (fields.name() == null || fields.name().isBlank()) errors.add(error("name", "Result band name is missing."));
+        if (fields.scoreMin() == null || fields.scoreMin().isBlank()) errors.add(error("scoreMin", "Minimum score is missing."));
+        if (fields.scoreMax() == null || fields.scoreMax().isBlank()) errors.add(error("scoreMax", "Maximum score is missing."));
+        if (fields.order() == null || fields.order().isBlank()) errors.add(error("order", "Order is missing."));
     }
 
     private static String trimOrEmpty(String value) {
@@ -184,18 +184,18 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
             addScoreRangeErrors(run, scoreMin, scoreMax, order, safeCode, errors);
             return new ParsedScores(scoreMin, scoreMax, order);
         } catch (NumberFormatException e) {
-            errors.add(error("general", "Điểm số hoặc thứ tự không đúng định dạng số."));
+            errors.add(error("general", "Score or order is not a valid number."));
             return ParsedScores.DEFAULT;
         }
     }
 
     private void addScoreRangeErrors(CommitRun run, BigDecimal scoreMin, BigDecimal scoreMax, int order,
             String safeCode, List<Map<String, String>> errors) {
-        if (scoreMin.compareTo(BigDecimal.ZERO) < 0) errors.add(error("scoreMin", "Điểm số không được âm."));
-        if (scoreMin.compareTo(scoreMax) > 0) errors.add(error("scoreMin", "Điểm tối thiểu không được lớn hơn tối đa."));
-        if (order <= 0) errors.add(error("order", "Thứ tự phải lớn hơn 0."));
+        if (scoreMin.compareTo(BigDecimal.ZERO) < 0) errors.add(error("scoreMin", "Score must not be negative."));
+        if (scoreMin.compareTo(scoreMax) > 0) errors.add(error("scoreMin", "Minimum score must not exceed the maximum."));
+        if (order <= 0) errors.add(error("order", "Order must be greater than 0."));
 
-        if (!run.ordersInFile().add(order)) errors.add(error("order", "Bị trùng thứ tự " + order + " trong file Excel."));
+        if (!run.ordersInFile().add(order)) errors.add(error("order", "Duplicate order " + order + " in the Excel file."));
 
         try {
             ScoreRangeValidator.assertWithinScale(run.version().getScoringScaleMin(), run.version().getScoringScaleMax(),
@@ -251,7 +251,7 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
         try {
             rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã xếp loại (Result Band) bị trùng lặp trong Phiên bản Rubric này.", e);
+            throw new IllegalArgumentException("Data save error: the result band code (Result Band) is duplicated in this Rubric version.", e);
         }
     }
 
@@ -260,8 +260,8 @@ public class RubricResultBandImportCommitHandler implements ImportCommitHandler 
     }
 
     /**
-     * Chuẩn hóa code để so khớp: loại bỏ non-breaking space / zero-width space / BOM
-     * (rất hay dính khi copy dữ liệu từ Excel) mà String.strip() không loại bỏ được.
+     * Normalizes a code for matching: removes non-breaking space / zero-width space / BOM
+     * (very common when copying data from Excel) that String.strip() does not remove.
      */
     private static String normalizeCode(String raw) {
         if (raw == null) return null;

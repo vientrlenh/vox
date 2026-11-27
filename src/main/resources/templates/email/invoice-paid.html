@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hóa đơn thanh toán - VOX</title>
+  <title>Payment invoice - VOX</title>
 </head>
 <body style="margin:0; padding:0; background:#07115a; font-family:Arial, Helvetica, sans-serif; color:#ffffff;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#07115a; margin:0; padding:0;">
@@ -20,10 +20,10 @@
                 </tr>
                 <tr>
                   <td style="padding:8px 40px 32px;">
-                    <div style="font-size:34px; line-height:1.2; font-weight:700; color:#ffffff;">Thanh toán thành công</div>
+                    <div style="font-size:34px; line-height:1.2; font-weight:700; color:#ffffff;">Payment successful</div>
                     <div style="height:12px;"></div>
                     <div style="font-size:18px; line-height:1.6; color:#d8defe;">
-                      Cảm ơn trường <strong>{{schoolName}}</strong> đã thanh toán. Đây là hóa đơn điện tử cho giao dịch này.
+                      Thank you, <strong>{{schoolName}}</strong>, for your payment. This is the electronic invoice for this transaction.
                     </div>
                   </td>
                 </tr>
@@ -36,7 +36,7 @@
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#ffffff; border-radius:24px;">
                 <tr>
                   <td style="padding:36px 32px 4px; color:#111633;">
-                    <div style="font-size:22px; line-height:1.3; font-weight:700;">Hóa đơn #{{invoiceNumber}}</div>
+                    <div style="font-size:22px; line-height:1.3; font-weight:700;">Invoice #{{invoiceNumber}}</div>
                   </td>
                 </tr>
 
@@ -44,15 +44,15 @@
                   <td style="padding:16px 32px 0;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="font-size:14px;">
                       <tr>
-                        <td style="padding:6px 0; color:#64748b;">Trường</td>
+                        <td style="padding:6px 0; color:#64748b;">School</td>
                         <td style="padding:6px 0; text-align:right; font-weight:700; color:#1e293b;">{{schoolName}}</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0; color:#64748b;">Thời gian thanh toán</td>
+                        <td style="padding:6px 0; color:#64748b;">Payment time</td>
                         <td style="padding:6px 0; text-align:right; font-weight:700; color:#1e293b;">{{paidAtLabel}}</td>
                       </tr>
                       <tr>
-                        <td style="padding:6px 0; color:#64748b;">Có hiệu lực đến</td>
+                        <td style="padding:6px 0; color:#64748b;">Valid until</td>
                         <td style="padding:6px 0; text-align:right; font-weight:700; color:#1e293b;">{{validUntilLabel}}</td>
                       </tr>
                     </table>
@@ -75,7 +75,7 @@
                   <td style="padding:20px 32px 32px;">
                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                       <tr>
-                        <td style="font-size:15px; font-weight:800; color:#111633;">Tổng thanh toán</td>
+                        <td style="font-size:15px; font-weight:800; color:#111633;">Total paid</td>
                         <td style="text-align:right; font-size:22px; font-weight:800; color:#4f46e5;">{{amountLabel}}</td>
                       </tr>
                     </table>
@@ -88,7 +88,7 @@
           <tr>
             <td style="padding:4px 40px 36px; background:#111a7a;">
               <div style="text-align:center; font-size:13px; line-height:1.6; color:#aeb8ef;">
-                © 2026 VOX. Tất cả quyền được bảo lưu.
+                © 2026 VOX. All rights reserved.
               </div>
             </td>
           </tr>

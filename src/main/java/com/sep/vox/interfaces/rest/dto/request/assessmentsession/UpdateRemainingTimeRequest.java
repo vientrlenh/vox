@@ -4,8 +4,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateRemainingTimeRequest(
-    @NotNull(message = "Thời gian còn lại không được để trống")
-    @Min(value = 0, message = "Thời gian còn lại không được âm")
+    @NotNull(message = "Remaining time must not be blank")
+    @Min(value = 0, message = "Remaining time must not be negative")
     Integer remainingSeconds
 ) {
 

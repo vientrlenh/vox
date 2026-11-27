@@ -44,20 +44,20 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
     @Transactional
     public AssessmentCandidateDto execute(UpdateAssessmentCandidateStatusCommand input) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         Assessment assessment = assessmentRepository.findById(candidate.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of the candidate not found"));
         if (candidate.getScheduleId() == null) {
-            throw new IllegalArgumentException("Thí sinh chưa được xếp ca thi");
+            throw new IllegalArgumentException("The candidate has not been placed in an assessment schedule");
         }
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!hasAttendanceAccess(assessment, candidate.getScheduleId(), currentUserId)) {
-            throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
+            throw new ForbiddenException("You are not a proctor of this assessment schedule");
         }
 
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(candidate.getScheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule of the candidate not found"));
         Instant now = Instant.now();
         requireInsideAttendanceWindow(schedule, now);
 
@@ -71,7 +71,7 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
         Instant windowStart = schedule.getStartDate().minus(30, ChronoUnit.MINUTES);
         Instant windowEnd = schedule.getEndDate();
         if (now.isBefore(windowStart) || now.isAfter(windowEnd)) {
-            throw new IllegalArgumentException("Chỉ được điểm danh trong khoảng 30 phút trước đến khi kết thúc ca thi");
+            throw new IllegalArgumentException("Attendance can only be marked from 30 minutes before until the assessment schedule ends");
         }
     }
 
@@ -79,8 +79,8 @@ public class UpdateAssessmentCandidateStatusUseCase implements IUseCase<UpdateAs
         if (assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, currentUserId)) {
             return true;
         }
-        // CHAIR của bài kiểm tra cũng điểm danh được — với bài trên lớp thì giáo viên chủ bài là
-        // CHAIR chứ không nhất thiết là giám thị được phân công cho từng ca.
+        // The CHAIR of the assessment can also mark attendance -- for a class test the teacher who owns the test is the
+        // CHAIR, not necessarily the proctor assigned to each schedule.
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return true;
         }

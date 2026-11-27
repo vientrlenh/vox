@@ -30,8 +30,8 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Chốt quyền của bài kiểm tra trên lớp. Sáu use case điều phối của nhà trường đều
- * hỏi đúng những hàm ở đây, nên luật chỉ tồn tại ở một chỗ.
+ * Pins the authorization of class tests. The six school coordination use cases all
+ * ask exactly the functions here, so the rule exists in one place only.
  */
 class AssessmentGradingAccessClassTestTests {
 
@@ -85,8 +85,8 @@ class AssessmentGradingAccessClassTestTests {
     }
 
     /**
-     * Ca đối chứng quan trọng: CHAIR của kỳ thi TẬP TRUNG không được hưởng quyền này.
-     * Kỳ thi tập trung do nhà trường điều phối; quyền chấm đến từ dòng phân công.
+     * The important control case: the CHAIR of a CENTRALIZED assessment does not get this right.
+     * A centralized assessment is coordinated by the school; the right to grade comes from the assignment row.
      */
     @Test
     void should_not_treat_centralized_chair_as_class_test_chair() {
@@ -94,9 +94,9 @@ class AssessmentGradingAccessClassTestTests {
     }
 
     /**
-     * Cặp đối chứng của luật trên, và là chỗ dễ trộn lẫn nhất trong service này: CÙNG một người,
-     * CÙNG một kỳ thi tập trung — cửa GHI của luồng chấm đóng, cửa ĐỌC mở. Hai hàm phải trả ngược
-     * nhau ở đây, nếu có ngày chúng trả giống nhau thì một trong hai luật đã bị xoá nhầm.
+     * The control pair of the rule above, and the easiest place to mix up in this service: the SAME person,
+     * the SAME centralized assessment — the WRITE door of the grading flow is closed, the READ door is open. The two functions must return opposite
+     * values here; if one day they return the same, one of the two rules was deleted by mistake.
      */
     @Test
     void should_treat_centralized_chair_as_assessment_chair_for_reads() {
@@ -126,7 +126,7 @@ class AssessmentGradingAccessClassTestTests {
         assertThat(service.isClassTestResult(CLASS_TEST_RESULT_ID)).isTrue();
         assertThatThrownBy(() -> service.rejectClassTestCoordination(CLASS_TEST_RESULT_ID))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("nhà trường không phân công");
+            .hasMessageContaining("the school does not assign graders");
     }
 
     @Test
@@ -138,7 +138,7 @@ class AssessmentGradingAccessClassTestTests {
         service.rejectClassTestCoordination(CENTRALIZED_RESULT_ID);
     }
 
-    /** Lô lẫn lộn: chặn CẢ LÔ, không lọc lẻ — kết quả không được phụ thuộc dữ liệu ẩn. */
+    /** Mixed batch: block the WHOLE BATCH, do not filter individually — the result must not depend on hidden data. */
     @Test
     void should_reject_a_mixed_batch_as_a_whole() {
         givenMixedBatch();
@@ -148,7 +148,7 @@ class AssessmentGradingAccessClassTestTests {
             .isInstanceOf(ForbiddenException.class);
     }
 
-    /** Nhánh thu hồi hàng loạt cần biết ĐÚNG những dòng nào phải bỏ, không phải "có hay không". */
+    /** The bulk-revocation branch needs to know EXACTLY which rows to drop, not "yes or no". */
     @Test
     void should_report_exactly_which_results_belong_to_class_tests() {
         givenMixedBatch();

@@ -20,7 +20,7 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
     boolean existsByRubricIdAndIdNot(UUID rubricId, UUID id);
     Optional<RubricVersionJpaEntity> findByCode(String code);
     Optional<RubricVersionJpaEntity> findByName(String name);
-    // Nhận input đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    // Receives input already uppercased by the Impl; the entity side still wraps UPPER() in case old data has inconsistent case.
     @Query("SELECT v FROM RubricVersionJpaEntity v WHERE UPPER(v.code) IN :codes")
     List<RubricVersionJpaEntity> findByCodeIn(@Param("codes") Collection<String> codes);
     List<RubricVersionJpaEntity> findByNameIn(Collection<String> names);
@@ -66,7 +66,7 @@ public interface SpringDataRubricVersionRepository extends JpaRepository<RubricV
             Pageable pageable
     );
 
-    //Vì một Rubric thường chỉ có một vài Version (rất ít khi có đến hàng ngàn version), cách xịn nhất để đạt O(1) là: Dùng mệnh đề IN lấy toàn bộ Version của các Rubric đó lên bằng 1 câu SQL duy nhất, sau đó dùng Java cắt trang (Pagination trên RAM).
+    // A Rubric usually has only a few Versions (almost never thousands), so the best way to reach O(1) is: use an IN clause to fetch all Versions of those Rubrics in a single SQL statement, then paginate in Java (pagination in RAM).
     @Query("SELECT v FROM RubricVersionJpaEntity v WHERE v.rubricId IN :rubricIds AND (:status IS NULL OR v.status = :status)")
     List<RubricVersionJpaEntity> findByRubricIdInAndStatus(
             @Param("rubricIds") List<UUID> rubricIds,

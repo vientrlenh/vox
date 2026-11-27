@@ -17,8 +17,8 @@ public class JpaLearnerProfileQueryRepository
 
     private final SpringDataLearnerProfileRepository repository;
 
-    /** Rỗng = tự chọn khung đang hoạt động. Cùng thuộc tính mà
-     * {@code PracticeTopicOfferEnrichmentService} dùng -- hai nơi phải ghim cùng một khung. */
+    /** Empty = automatically pick the active framework. Same property that
+     * {@code PracticeTopicOfferEnrichmentService} uses -- both places must pin the same framework. */
     private final String practiceFrameworkVersionCode;
 
     public JpaLearnerProfileQueryRepository(
@@ -45,7 +45,7 @@ public class JpaLearnerProfileQueryRepository
      *
      * <p><b>Throwing in the wrong place.</b> The four use cases that call this function all follow "WRITE first, then READ back to build
      * the response", and all four are {@code @Transactional}. Throwing at the read step rolls back the write step too.
-     * Measured in practice: a student of THPT Trần Thông submitted the interest quiz, {@code interest_quiz_items} still had
+     * Measured in practice: a student of THPT Tran Thong submitted the interest quiz, {@code interest_quiz_items} still had
      * 7 rows but {@code learner_profiles} had 0 rows. The cause was only that the school's policy pointed
      * at a school year with no classes -- one leftover admin misconfiguration swallowed the student's work,
      * and dragged topic generation, schedule viewing and result viewing down with it.
@@ -73,7 +73,7 @@ public class JpaLearnerProfileQueryRepository
         );
     }
 
-    /** Khung chưa điền nhãn thì lấy mã làm nhãn -- thà hiện "B2" còn hơn hiện ô trống. */
+    /** A framework without a label uses its code as the label -- better to show "B2" than an empty cell. */
     private static String label(FrameworkResultBandJpaEntity band) {
         return band.getLabel() == null || band.getLabel().isBlank()
             ? band.getCode()

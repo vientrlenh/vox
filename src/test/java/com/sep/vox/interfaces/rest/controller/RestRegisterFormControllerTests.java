@@ -46,7 +46,7 @@ class RestRegisterFormControllerTests {
         MvcTestResult result = rejectRequest(id).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Đơn đăng ký đã từ chối thành công");
+            .extractingPath("$.message").isEqualTo("Registration form rejected successfully");
         verify(rejectRegisterFormUseCase).execute(new RejectRegisterFormCommand(id, "Missing documents"));
     }
 

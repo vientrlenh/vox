@@ -157,7 +157,7 @@ public class RegradeResultUseCase implements IUseCase<SubmitGradingCommand, Grad
             targetStatus == null ? prepared.context().candidateResult().getStatus() : targetStatus);
     }
 
-    /** Vòng nào cho phép chấm lại — dùng ở tài liệu và test, giữ cạnh luật cho dễ tra. */
+    /** Which rounds allow re-grading -- used in documentation and tests, kept next to the rule for easy lookup. */
     static boolean supports(GradingRoundType roundType) {
         return GradingRoundPolicy.isAllowed(roundType, GradingOutcome.REGRADED);
     }

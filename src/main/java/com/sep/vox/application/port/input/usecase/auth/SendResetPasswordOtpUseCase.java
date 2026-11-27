@@ -28,17 +28,17 @@ public class SendResetPasswordOtpUseCase implements IUseCase<SendResetPasswordOt
     private final JsonSerializationPort jsonSerializationPort;
 
     /**
-     * Use case này KHÔNG còn sinh OTP. Mã được sinh ở
-     * {@code ResetPasswordOtpEmailConsumer} ngay trước lúc gửi mail, để nó không bao giờ
-     * nằm trong outboxes.payload hay trong topic Kafka.
+     * This use case NO LONGER generates the OTP. The code is generated in
+     * {@code ResetPasswordOtpEmailConsumer} right before the mail is sent, so it never appears in
+     * outboxes.payload or in the Kafka topic.
      */
     @Override
     @Transactional
     public Void execute(SendResetPasswordOtpCommand input) {
         SendResetPasswordOtpCommand command = normalize(input);
 
-        // Email lạ vẫn trả về như bình thường: khác biệt phản hồi ở đây là một kênh dò xem
-        // địa chỉ nào có tài khoản.
+        // An unknown email is answered the same way as a known one: a difference in the response here would be a
+        // side channel for finding out which addresses have an account.
         User user = userRepository.findByEmailAndStatus(command.email(), UserStatus.ACTIVE).orElse(null);
         if (user == null) {
             return null;

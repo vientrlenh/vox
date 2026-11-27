@@ -36,7 +36,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         boolean immutable = questionEditAccessService.authorizeEditing(question, currentUserId);
 
         Question targetQuestion = immutable
@@ -54,7 +54,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
 
     private void validateNewAsset(UUID questionId, CreateQuestionAssetMutationCommand command) {
         if (questionAssetRepository.existsByQuestionId(questionId)) {
-            throw new IllegalArgumentException("Câu hỏi Ä‘ã có asset, hãy sửa hoặc xoá asset hiện có trước");
+            throw new IllegalArgumentException("The question already has an asset; edit or delete the existing asset first");
         }
 
         validateAssetOrder(questionId, command.order(), null);
@@ -84,7 +84,7 @@ public class CreateQuestionAssetUseCase implements IUseCase<CreateQuestionAssetM
         boolean duplicated = questionAssetRepository.findByQuestionId(questionId).stream()
             .anyMatch(asset -> asset.getOrder() == order && !asset.getId().equals(currentAssetId));
         if (duplicated) {
-            throw new IllegalArgumentException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
+            throw new IllegalArgumentException("Question asset order must not be duplicated");
         }
     }
 

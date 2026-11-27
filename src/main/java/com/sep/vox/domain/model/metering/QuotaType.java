@@ -33,7 +33,7 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
 public enum QuotaType {
     /** Assessment grading -- every AssessmentKind (both CENTRALIZED and CLASS_TEST) is deducted from here. */
     ASSESSMENT,
-    /** Học sinh tự luyện nói. */
+    /** A student practising speaking on their own. */
     PRACTICE;
 
     /**

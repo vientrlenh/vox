@@ -33,9 +33,9 @@ public interface SpringDataPracticeItemResponseRepository
            nativeQuery = true)
     UUID findSessionIdByResponseId(@Param("responseId") UUID responseId);
 
-    // Do kho THUC TE cua buoi: trung binh difficulty_rank cua cac cau hoc sinh da tra loi.
-    // Diem phien mot minh khong doc duoc -- no neo vao bac muc tieu, con do kho cau lai bam
-    // theo bac hien tai cua hoc sinh. "6.5 o bac 3" va "6.5 o bac 4" la hai chuyen khac han.
+    // Difficulty of the ACTUAL pool of the session: the average difficulty_rank of the questions the student answered.
+    // The session score alone is not readable -- it is anchored to the target band, while question difficulty follows
+    // the student's current band. "6.5 at band 3" and "6.5 at band 4" are two entirely different stories.
     @Query(value = """
         SELECT AVG(question.difficulty_rank)
         FROM practice_item_responses response
@@ -44,9 +44,9 @@ public interface SpringDataPracticeItemResponseRepository
         """, nativeQuery = true)
     Double findAverageDifficultyRank(@Param("sessionId") UUID sessionId);
 
-    // "Chưa chấm" = có response (tức đã có người nói) mà chưa có practice_item_evaluations.
-    // Chấm là bất đồng bộ nên con số này tự tụt về 0 khi kết quả lần lượt về -- màn tổng kết
-    // poll đúng con số này để biết khi nào thôi chờ.
+    // "Not yet graded" = has a response (someone has spoken) but no practice_item_evaluations yet.
+    // Grading is asynchronous, so this number drops to 0 by itself as results arrive -- the summary screen
+    // polls exactly this number to know when to stop waiting.
     @Query(value = """
         SELECT COUNT(*)::int
         FROM practice_item_responses response
@@ -59,29 +59,29 @@ public interface SpringDataPracticeItemResponseRepository
         """, nativeQuery = true)
     int countAwaitingEvaluation(@Param("sessionId") UUID sessionId);
 
-    // Diện cần XẢ CHẤM lúc đóng phiên: học sinh đã nói nhưng chuỗi follow-up chưa kết thúc,
-    // nên SubmitPracticeTurnUseCase chưa từng bắn sự kiện chấm cho câu này. Không xả thì công
-    // sức đó mất trắng -- quota đã trừ, lượt đã ghi, mà không có điểm lẫn quan sát điểm yếu.
+    // Set that needs a GRADING FLUSH when the session closes: the student has spoken but the follow-up chain has not ended,
+    // so SubmitPracticeTurnUseCase has never fired a grading event for this question. Without the flush that
+    // effort is lost entirely -- quota already deducted, turn already recorded, but no score and no weakness observation.
     /**
-     * Diện cần XẢ CHẤM. Ba nhánh, mỗi nhánh chặn một kiểu hỏng khác nhau:
+     * The set that needs a GRADING FLUSH. Three branches, each guarding against a different kind of failure:
      *
      * <ul>
-     *   <li>{@code PENDING} -- chưa từng gửi. Diện mồ côi thật.</li>
-     *   <li>{@code GRADING} quá hạn -- đã gửi mà im quá lâu. Bắt đúng những ca KHÔNG AI BÁO
-     *       ĐƯỢC: pod agents bị OOM-kill, node bị evict, mất Kafka lúc publish. Không có nhánh
-     *       này thì dòng nằm GRADING vĩnh viễn và không bao giờ được cứu.</li>
-     *   <li>{@code GRADING_FAILED} còn lượt -- agents báo hỏng, thử lại nhưng CÓ TRẦN. Hỏng do
-     *       dữ liệu (audio vỡ, transcript rỗng) thì thử bao nhiêu lần cũng hỏng y hệt; bắn lại
-     *       vô hạn chỉ đốt tiền LLM và giữ màn tổng kết quay mãi.</li>
+     *   <li>{@code PENDING} -- never sent. The truly orphaned set.</li>
+     *   <li>{@code GRADING} overdue -- sent but silent for too long. Catches exactly the cases that NOBODY CAN
+     *       REPORT: the agents pod OOM-killed, the node evicted, Kafka lost at publish time. Without this
+     *       branch the row stays GRADING forever and is never rescued.</li>
+     *   <li>{@code GRADING_FAILED} with attempts left -- agents reported a failure, retry but WITH A CAP. A failure caused by
+     *       the data (broken audio, empty transcript) fails identically however many times it is tried; firing again
+     *       without limit only burns LLM money and keeps the summary screen spinning.</li>
      * </ul>
      *
-     * <p>{@code GRADED} không bao giờ lọt vào -- đó là điều kiện dừng.
+     * <p>{@code GRADED} never gets in -- that is the stop condition.
      *
-     * <p>Trước khi có ba nhánh này, luật cũ chỉ hỏi "đã có bản chấm chưa", mà chấm một câu mất
-     * ~3,5 phút -- lâu hơn nhịp quét 5 phút. Nên mọi câu đều bị bắn lại trước khi kịp chấm xong,
-     * bản sao lại chiếm thêm 3,5 phút của consumer, các câu sau càng chậm nên càng bị bắn lại.
-     * Đo thật 2026-08-12: một câu bị chấm lại 8 LẦN, hàng đợi tồn 15 message và vẫn lớn dần
-     * trong khi offset consumer đứng yên.
+     * <p>Before these three branches existed, the old rule only asked "is there a grade yet", but grading one question takes
+     * ~3.5 minutes -- longer than the 5-minute sweep interval. So every question was re-fired before it could finish grading,
+     * the copy took another 3.5 minutes of the consumer, and later questions got slower and so were re-fired more.
+     * Measured on 2026-08-12: one question was graded again 8 TIMES, the queue backed up to 15 messages and kept growing
+     * while the consumer offset stood still.
      */
     @Query(value = """
         SELECT response.id AS responseId, response.practice_question_id AS questionId
@@ -109,12 +109,12 @@ public interface SpringDataPracticeItemResponseRepository
     );
 
     /**
-     * Đóng dấu ĐÃ GỬI yêu cầu chấm. Gọi NGAY SAU khi publish thành công, không phải trước --
-     * đánh dấu trước rồi publish hỏng thì câu đó bị khoá ngoài diện quét suốt cả cửa sổ nguội.
+     * Stamps the grading request as SENT. Called RIGHT AFTER a successful publish, not before --
+     * marking first and then failing to publish would lock the question out of the sweep for the whole cooling window.
      *
-     * <p>{@code grading_attempts} cộng dồn ở ĐÂY chứ không ở chỗ báo hỏng: ta cần đếm số lần ĐÃ
-     * THỬ, mà một lần thử có thể chết lặng không bao giờ báo hỏng. Đếm ở nhánh hỏng thì đúng
-     * những ca im lặng ấy lại được thử vô hạn.
+     * <p>{@code grading_attempts} is incremented HERE and not where a failure is reported: we need to count the attempts
+     * ALREADY MADE, and an attempt can die silently without ever reporting a failure. Counting in the failure branch would
+     * let exactly those silent cases be retried without limit.
      */
     @Modifying
     @Query(value = """
@@ -129,15 +129,15 @@ public interface SpringDataPracticeItemResponseRepository
         @Param("requestedAt") Instant requestedAt
     );
 
-    /** Bản chấm đã về. Gọi CÙNG TRANSACTION với lúc ghi practice_item_evaluations. */
+    /** The grade has arrived. Call in the SAME TRANSACTION as the write of practice_item_evaluations. */
     @Modifying
     @Query(value = "UPDATE practice_item_responses SET grading_status = 'GRADED' WHERE id = :responseId",
            nativeQuery = true)
     void markGraded(@Param("responseId") UUID responseId);
 
     /**
-     * Số câu ĐÃ BỎ CUỘC: hỏng và hết lượt thử. Màn tổng kết dùng con số này để nói thẳng "chấm
-     * không xong" thay vì quay vòng chờ một kết quả sẽ không bao giờ tới.
+     * Number of questions that GAVE UP: failed and out of attempts. The summary screen uses this number to say outright "grading
+     * could not finish" instead of spinning while waiting for a result that will never arrive.
      */
     @Query(value = """
         SELECT COUNT(*)::int
@@ -148,22 +148,22 @@ public interface SpringDataPracticeItemResponseRepository
         """, nativeQuery = true)
     int countGradingGaveUp(@Param("sessionId") UUID sessionId, @Param("maxAttempts") int maxAttempts);
 
-    /** Agents báo chấm hỏng. Số lần thử đã cộng lúc gửi nên ở đây chỉ đổi trạng thái. */
+    /** Agents reported a grading failure. The attempt count was already incremented at send time, so here only the status changes. */
     @Modifying
     @Query(value = "UPDATE practice_item_responses SET grading_status = 'GRADING_FAILED' WHERE id = :responseId",
            nativeQuery = true)
     void markGradingFailed(@Param("responseId") UUID responseId);
 
-    // Phiên ĐÃ ĐÓNG mà vẫn còn lượt chưa chấm -- những lượt mồ côi.
+    // CLOSED sessions that still have ungraded turns -- the orphaned turns.
     //
-    // Xả chấm chỉ chạy đúng lúc đóng phiên, nên hai nhóm lọt lưới: phiên đóng TRƯỚC khi có cơ
-    // chế đó, và phiên mà lần bắn sự kiện chấm bị hỏng (Kafka nghẽn, Python chết). Cả hai
-    // nhóm nằm đó vĩnh viễn, và màn tổng kết thì báo "đang chấm 1 câu" mãi không dứt -- gộp
-    // "sắp có" với "không bao giờ có" làm một.
+    // The grading flush only runs at the moment a session closes, so two groups slip through: sessions closed BEFORE that
+    // mechanism existed, and sessions where firing the grading event failed (Kafka congested, Python dead). Both
+    // groups stay there forever, and the summary screen keeps saying "grading 1 question" without end -- merging
+    // "about to arrive" with "never arriving".
     //
-    // Chặn theo :since (vd 24h) chứ không quét toàn bộ lịch sử: nếu việc chấm hỏng thật thì
-    // quét không giới hạn sẽ bắn lại cùng bộ sự kiện mỗi 5 phút, mãi mãi. Quá hạn thì thôi,
-    // và màn tổng kết nói thẳng là chấm không xong thay vì quay tiếp.
+    // Bounded by :since (e.g. 24h) rather than scanning the whole history: if grading is really broken then
+    // an unbounded scan would re-fire the same set of events every 5 minutes, forever. Past the limit we stop,
+    // and the summary screen says outright that grading could not finish instead of spinning on.
     @Query(value = """
         SELECT DISTINCT response.practice_session_id
         FROM practice_item_responses response

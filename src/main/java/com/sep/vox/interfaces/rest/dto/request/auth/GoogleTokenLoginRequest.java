@@ -14,11 +14,11 @@ import jakarta.validation.constraints.NotNull;
  * -- a truncated or inflated token fails at the signature check anyway.
  */
 public record GoogleTokenLoginRequest(
-    @NotBlank(message = "ID token của Google là bắt buộc")
+    @NotBlank(message = "Google ID token is required")
     String idToken,
 
     @Valid
-    @NotNull(message = "Thông tin của thiết bị là bắt buộc")
+    @NotNull(message = "Device information is required")
     ClientDeviceRequest device
 ) {
 

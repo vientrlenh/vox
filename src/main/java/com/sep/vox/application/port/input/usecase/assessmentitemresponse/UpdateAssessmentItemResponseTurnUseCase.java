@@ -26,11 +26,11 @@ public class UpdateAssessmentItemResponseTurnUseCase
     @Transactional
     public AssessmentItemResponseTurnResponse execute(UpdateAssessmentItemResponseTurnCommand input) {
         if (!assessmentItemResponseRepository.existsById(input.answerId())) {
-            throw new ResourceNotFoundException("Không tìm thấy câu trả lời của thí sinh");
+            throw new ResourceNotFoundException("Candidate's answer not found");
         }
 
         AssessmentItemResponseTurn turn = assessmentItemResponseTurnRepository.findByAssessmentItemResponseIdAndTurnOrder(input.answerId(), input.turnOrder())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy turn cần cập nhật"));
+            .orElseThrow(() -> new ResourceNotFoundException("Turn to update not found"));
 
         applyProvidedFields(turn, input);
 

@@ -19,10 +19,10 @@ import com.sep.vox.application.response.input.dashboard.SchoolAiCostTimeseriesRe
 import com.sep.vox.domain.common.DecimalText;
 
 /**
- * Chi phí AI của trường theo thời gian, đọc từ sổ {@code school_ai_spend_entries}.
+ * The AI cost of a school over time, read from the {@code school_ai_spend_entries} ledger.
  *
- * <p>Thay cho {@code schoolTokenUsageTimeseries} — trường GraphQL đó chưa bao giờ tồn tại trong
- * schema, và repository duy nhất có thể phục vụ nó đọc một bảng không mã nào còn ghi vào. Xem V10.
+ * <p>Replaces {@code schoolTokenUsageTimeseries} -- that GraphQL field never existed in the schema, and the only
+ * repository that could serve it read a table that no code writes to any more. See V10.
  */
 @Service
 @RequiredArgsConstructor

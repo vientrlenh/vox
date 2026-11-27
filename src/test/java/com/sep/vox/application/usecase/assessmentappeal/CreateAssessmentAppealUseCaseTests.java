@@ -160,7 +160,7 @@ public class CreateAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã được công bố");
+            .hasMessageContaining("published result");
 
         verify(assessmentResultAppealRepository, never()).save(any());
     }
@@ -177,7 +177,7 @@ public class CreateAssessmentAppealUseCaseTests {
         verify(assessmentResultAppealRepository, never()).save(any());
     }
 
-    // ---- hạn mức số vòng phúc khảo ------------------------------------------
+    // ---- quota of appeal rounds ------------------------------------------
 
     @Test
     void should_allow_a_second_appeal_after_the_first_was_published() {
@@ -197,7 +197,7 @@ public class CreateAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("tối đa 2 lần");
+            .hasMessageContaining("at most 2 times");
 
         verify(assessmentResultAppealRepository, never()).save(any());
     }
@@ -210,7 +210,7 @@ public class CreateAssessmentAppealUseCaseTests {
 
         useCase.execute(command());
 
-        // Quota phải đọc riêng số đơn ĐÃ CÔNG BỐ, không phải tổng số đơn của kết quả.
+        // The quota must read the number of PUBLISHED appeals separately, not the total number of appeals of the result.
         verify(assessmentResultAppealRepository).countPublishedByCandidateResultId(candidateResultId);
         verify(assessmentResultAppealRepository, never()).findByCandidateResultId(any());
     }
@@ -222,7 +222,7 @@ public class CreateAssessmentAppealUseCaseTests {
         when(assessmentResultAppealRepository.existsOpenByCandidateResultId(candidateResultId)).thenReturn(true);
         when(assessmentResultAppealRepository.countPublishedByCandidateResultId(candidateResultId)).thenReturn(2L);
 
-        // Vướng cả hai thì báo lỗi cụ thể hơn: đang có đơn xử lý dở.
+        // When both apply, report the more specific error: an appeal is still being processed.
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(ResourceDuplicatedException.class);
     }
@@ -231,7 +231,7 @@ public class CreateAssessmentAppealUseCaseTests {
     void should_reject_when_caller_is_not_the_owning_student() {
         AssessmentAppealAccessService.AppealContext context = context(AssessmentCandidateResultStatus.RELEASED);
         when(assessmentAppealAccessService.loadByCandidateResultId(candidateResultId)).thenReturn(context);
-        org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
+        org.mockito.Mockito.doThrow(new ForbiddenException("SECURITY"))
             .when(assessmentAppealAccessService).authorizeOwningStudent(eq(context), eq(studentId));
 
         assertThatThrownBy(() -> useCase.execute(command()))
@@ -248,10 +248,10 @@ public class CreateAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("câu trả lời");
+            .hasMessageContaining("answer");
     }
 
-    // ---- không chọn phần nào = phúc khảo toàn bài ---------------------------
+    // ---- no part selected = appeal the whole submission ---------------------------
 
     @Test
     void should_appeal_every_answered_part_when_none_selected() {
@@ -290,7 +290,7 @@ public class CreateAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(null)))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("không có câu trả lời nào");
+            .hasMessageContaining("has no answer");
 
         verify(assessmentResultAppealRepository, never()).save(any());
     }
@@ -320,7 +320,7 @@ public class CreateAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(List.of(paperItemId, paperItemId))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("trùng phần thi");
+            .hasMessageContaining("selected twice");
 
         verify(assessmentResultAppealRepository, never()).save(any());
     }
@@ -333,7 +333,7 @@ public class CreateAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(List.of(paperItemId, otherPaperItemId))))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("câu trả lời");
+            .hasMessageContaining("answer");
 
         verify(assessmentResultAppealRepository, never()).save(any());    
     }

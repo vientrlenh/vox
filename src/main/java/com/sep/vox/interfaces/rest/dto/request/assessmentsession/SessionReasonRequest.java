@@ -4,8 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record SessionReasonRequest(
-    @NotBlank(message = "Lý do là bắt buộc")
-    @Size(max = 512, message = "Lý do không được vượt quá 512 ký tự")
+    @NotBlank(message = "Reason is required")
+    @Size(max = 512, message = "Reason must not exceed 512 characters")
     String reason
 ) {
 }

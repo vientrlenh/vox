@@ -6,10 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 public record UpdateAssessmentSecurePoolStatusRequest(
-    @NotBlank(message = "Action là bắt buộc")
+    @NotBlank(message = "Action is required")
     @Pattern(
         regexp = "RELEASE",
-        message = "Action không hợp lệ"
+        message = "Action is invalid"
     )
     String action
 ) {

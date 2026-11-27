@@ -8,12 +8,12 @@ import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 
 /**
- * Một ví hạn mức cấp TRƯỜNG của kỳ đăng ký hiện tại.
+ * A SCHOOL-level quota wallet for the current subscription period.
  *
- * @param fundedFromBalanceVnd phần của {@code totalAllocatedAmountVnd} do trường tự nạp từ ví thay vì
- *                             do gói cấp (V12). Sau lần nạp đầu tiên thì total đã trộn hai nguồn, nên
- *                             đây là con số duy nhất trả lời được "gói cho bao nhiêu, mình bỏ thêm
- *                             bao nhiêu" -- và cũng là phần DUY NHẤT sống sót qua lần gia hạn kế tiếp.
+ * @param fundedFromBalanceVnd the part of {@code totalAllocatedAmountVnd} that the school topped up from its balance
+ *                             instead of receiving from the plan (V12). After the first top-up the total mixes
+ *                             two sources, so this is the only number that answers "how much did the plan give and
+ *                             how much did we add" -- and it is also the ONLY part that survives the next renewal.
  */
 public record SchoolSubscriptionQuotaRecordDto(
     UUID id,

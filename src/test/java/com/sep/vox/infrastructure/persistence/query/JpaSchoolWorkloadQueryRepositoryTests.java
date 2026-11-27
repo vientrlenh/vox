@@ -23,13 +23,13 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Chạy SQL THẬT: giá trị của repository này nằm ở chỗ năm nhóm LOẠI TRỪ NHAU và phủ kín. Điều đó chỉ
- * kiểm được bằng cách dựng đủ năm tình huống trong cùng một trường rồi đếm — một test với repository
- * giả sẽ khẳng định đúng những gì nó tự dựng ra.
+ * Runs REAL SQL: the value of this repository is that the five groups are MUTUALLY EXCLUSIVE and cover everything. That can only be
+ * checked by building all five situations in the same school and then counting -- a test with a fake
+ * repository would only assert exactly what it built itself.
  *
- * <p>Cái bẫy lớn nhất mà bộ test này canh: một phiên đã chuyển sang chấm tay VẪN mang trạng thái
- * {@code GRADING_FAILED}. Đếm theo trạng thái phiên là xếp bài đã có người nhận vào nhóm "chưa ai xử
- * lý", và trên giao diện nó sẽ mời quản trị trường bấm chấm lại đè lên bài giáo viên đang chấm dở.
+ * <p>The biggest trap this test suite guards: a session that has moved to manual grading STILL carries the status
+ * {@code GRADING_FAILED}. Counting by session status puts a result that already has an owner into the "nobody has handled it" group,
+ * and the UI would then invite the school admin to press regrade over a result a teacher is halfway through grading.
  */
 @RepositoryTest
 @Import(JpaSchoolWorkloadQueryRepository.class)

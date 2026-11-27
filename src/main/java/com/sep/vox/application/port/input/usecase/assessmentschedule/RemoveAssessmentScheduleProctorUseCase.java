@@ -39,19 +39,19 @@ public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAs
     @Transactional
     public UUID execute(DeleteAssessmentScheduleProctorCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Assessment schedule not found");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         AssessmentScheduleProctor proctor = assessmentScheduleProctorRepository.findById(input.proctorId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giám thị"));
+            .orElseThrow(() -> new ResourceNotFoundException("Proctor not found"));
         if (!proctor.getScheduleId().equals(schedule.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy giám thị");
+            throw new ResourceNotFoundException("Proctor not found");
         }
 
         assessmentScheduleProctorRepository.deleteById(proctor.getId());
@@ -71,6 +71,6 @@ public class RemoveAssessmentScheduleProctorUseCase implements IUseCase<DeleteAs
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return currentUserId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

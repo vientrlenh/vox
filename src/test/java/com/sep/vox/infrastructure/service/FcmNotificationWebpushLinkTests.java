@@ -11,12 +11,12 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.sep.vox.application.response.output.PushMessage;
 
 /**
- * Đường dẫn gắn vào {@code webpush.fcmOptions.link} -- thứ trình duyệt mở khi người dùng
- * bấm vào khay thông báo lúc tab đã đóng.
+ * The path attached to {@code webpush.fcmOptions.link} -- what the browser opens when the user
+ * taps the notification tray while the tab is closed.
  *
- * <p>Chỉ kiểm phần dựng URL, không kiểm phần gọi FCM: {@code MulticastMessage} không phơi
- * getter nào nên không assert được vào message đã dựng, còn bản thân lời gọi thư viện thì
- * đã có {@code PushNotificationWiringTests} lo phần lắp ráp.
+ * <p>Only checks the URL building, not the FCM call: {@code MulticastMessage} exposes no
+ * getter so the built message cannot be asserted on, and the library call itself is already
+ * covered for assembly by {@code PushNotificationWiringTests}.
  */
 class FcmNotificationWebpushLinkTests {
 
@@ -27,7 +27,7 @@ class FcmNotificationWebpushLinkTests {
     }
 
     private PushMessage message(Map<String, String> data) {
-        return new PushMessage("Điểm thi của bạn đã có", "Kỳ thi giữa kỳ", data);
+        return new PushMessage("Your assessment score is available", "Kỳ thi giữa kỳ", data);
     }
 
     private PushMessage messageWithId() {
@@ -49,7 +49,7 @@ class FcmNotificationWebpushLinkTests {
         assertThat(link).isEqualTo("https://app.vox.edu.vn/n/" + NOTIFICATION_ID);
     }
 
-    /** Chưa cấu hình: push vẫn phải gửi được, chỉ là bấm vào không mở đúng mục. */
+    /** Not configured: the push must still be sendable, tapping it just does not open the right entry. */
     @Test
     void should_skip_the_link_when_not_configured() {
         assertThat(service("").webpushLink(messageWithId())).isNull();
@@ -58,15 +58,15 @@ class FcmNotificationWebpushLinkTests {
     }
 
     /**
-     * FCM từ chối link không phải https. Để nó đi tiếp nghĩa là mất cả thông báo chứ không
-     * chỉ mất đường dẫn -- đúng cái bẫy mà cấu hình http://localhost lúc dev sẽ giăng ra.
+     * FCM rejects a link that is not https. Letting it through means losing the whole notification and not
+     * only the path -- exactly the trap that an http://localhost configuration in dev would set.
      */
     @Test
     void should_skip_the_link_when_configured_url_is_not_https() {
         assertThat(service("http://localhost:5173/n").webpushLink(messageWithId())).isNull();
     }
 
-    /** Không có id thì không biết mở mục nào; gửi link cụt còn tệ hơn không gửi link. */
+    /** Without an id there is no way to know which entry to open; sending a truncated link is worse than sending no link. */
     @Test
     void should_skip_the_link_when_the_push_carries_no_notification_id() {
         assertThat(service("https://app.vox.edu.vn/n")

@@ -32,9 +32,9 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Dựng đề luyện -- CHỈ câu MAIN đầu tiên (đúng README mục 4.1: vào phiên khi có 1 câu phù hợp
- * là đủ, không đợi dựng cả đề). Các câu MAIN tiếp theo được resolve trong lúc phiên chạy, xem
- * ResolveNextPracticeQuestionUseCase.
+ * Builds the practice paper -- ONLY the first MAIN question (as in README section 4.1: entering the session with
+ * one suitable question is enough, no need to wait for the whole paper to be built). The following MAIN questions are
+ * resolved while the session runs, see ResolveNextPracticeQuestionUseCase.
  */
 @Service
 @RequiredArgsConstructor
@@ -71,7 +71,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     @Override
     public PracticePaper execute(BuildPracticePaperCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
-        schoolSubscriptionActiveGuardService.requireActiveForStudent(studentId, "bắt đầu buổi luyện tập cá nhân hóa AI");
+        schoolSubscriptionActiveGuardService.requireActiveForStudent(studentId, "start a personalized AI practice session");
         PracticeTopic topic = requireTopic(input.topicId());
         BigDecimal spendableFundsVnd = spendablePracticeFundsVnd(studentId);
         PracticeFocusInfo focus = selectionService.resolveFocus(studentId, input.fromSubAttribute());
@@ -79,7 +79,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
         PracticeQuestionSelectionService.NextQuestionSelection selection = selectionService
             .resolveNextQuestion(topic, studentId, focus, chosen.order(), chosen.bandCount(),
                 chosen.frameworkVersionId(), List.of())
-            .orElseThrow(() -> new ResourceNotFoundException("Chủ đề chưa có câu luyện phù hợp."));
+            .orElseThrow(() -> new ResourceNotFoundException("The topic has no suitable practice question yet."));
         PracticeQuestion question = selection.question();
         requireFundsCoverWorstCaseCost(studentId, spendableFundsVnd, question);
         return persistAndMapToResponse(studentId, input, question, selection, chosen.order());
@@ -103,7 +103,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
             .multiply(quotaPricingPort.usdToVndRate())
             .setScale(COST_VND_SCALE, RoundingMode.HALF_UP);
         if (spendableFundsVnd.compareTo(estimatedCostVnd) < 0) {
-            throw new BusinessRuleViolationException("Không còn đủ hạn mức hoặc số dư cho một câu luyện trọn vẹn.");
+            throw new BusinessRuleViolationException("There is not enough quota or balance left for one complete practice question.");
         }
     }
 
@@ -131,22 +131,21 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     }
 
     /**
-     * Lối vào thật của phiên. Client chỉ biết "học sinh bấm một thẻ" nên gửi SELECTED, nhưng
-     * thẻ đó có thể là slot ε-greedy do HỆ THỐNG tráo vào lô chào. Ghi SELECTED cho nó hỏng
-     * hai việc:
+     * The real entry point of the session. The client only knows "the student tapped a card" so it sends SELECTED,
+     * but that card may be an ε-greedy slot that the SYSTEM swapped into the offered batch. Recording SELECTED for it
+     * breaks two things:
      *
      * <ul>
-     *   <li>tín hiệu sở thích thành dương giả -- 0.95 như học sinh tự chọn, trong khi chủ đề
-     *       là do hệ thống đưa tới. Từ 2026-08-06 EPSILON có case riêng trong
-     *       {@code InterestVectorService.recordSessionOutcome} và nhận 0.60 cùng nhóm với
-     *       EXPLORATION; trước đó nó rơi vào {@code default} nên nhận diện xong vẫn tính 0.95,
-     *       tức vế này của chú thích cũ mô tả một điều chưa thành sự thật.</li>
-     *   <li>van thăm dò §2.7 không bao giờ đóng, vì không phiếu nào mang origin EPSILON để
-     *       mà đếm.</li>
+     *   <li>the interest signal becomes a false positive -- 0.95 as if the student chose it, when the topic was
+     *       brought by the system. Since 2026-08-06 EPSILON has its own case in
+     *       {@code InterestVectorService.recordSessionOutcome} and gets 0.60, in the same group as EXPLORATION;
+     *       before that it fell into {@code default}, so even after being identified it still counted 0.95, meaning
+     *       this half of the old comment described something that was not yet true.</li>
+     *   <li>the exploration valve §2.7 never closes, because no vote carries the origin EPSILON to count.</li>
      * </ul>
      *
-     * Suy ra bằng cách xếp hạng lại thay vì nhớ slot nào đã chào cho ai: xem
-     * ViewPracticeTopicOffersUseCase.isOutsideTopRanked để biết vì sao không dùng cache.
+     * Inferred by re-ranking instead of remembering which slot was offered to whom: see
+     * ViewPracticeTopicOffersUseCase.isOutsideTopRanked for why a cache is not used.
      */
     private String resolveOrigin(UUID studentId, BuildPracticePaperCommand input) {
         String origin = input.origin() == null ? "SELECTED" : input.origin();
@@ -161,42 +160,44 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     }
 
     /**
-     * Tiền còn chi được cho lượt luyện này = LEAST(hạn mức trường còn lại + số dư ví tự nạp, hạn mức
-     * cá nhân còn lại) -- xem SchoolSubscriptionRepository.findPracticeSpendableFundsVnd.
+     * Money still spendable for this practice turn = LEAST(school quota remaining + self-funded school balance,
+     * personal quota remaining) -- see SchoolSubscriptionRepository.findPracticeSpendableFundsVnd.
      *
-     * <p>Kẹp về 0 vì con số đó có thể âm (hạn mức cá nhân bị cấp giảm xuống dưới mức đã dùng, hoặc
-     * dữ liệu cũ còn used vượt allocated): "không còn gì" phải luôn là đúng một con số, nếu không
-     * mọi phép so bên dưới lại phải tự nhớ xử lý số âm.
+     * <p>Clamped to 0 because that number can be negative (a personal quota reduced below what was already used, or
+     * old data where used exceeds allocated): "nothing left" must always be exactly one number, otherwise every
+     * comparison below would have to remember to handle negatives itself.
      */
     private BigDecimal spendablePracticeFundsVnd(UUID studentId) {
         return schoolSubscriptionRepository.findPracticeSpendableFundsVnd(studentId).max(BigDecimal.ZERO);
     }
 
     /**
-     * Thứ tự của bậc học sinh chọn, sau khi đã kiểm bậc đó có thật trong khung đang áp cho em.
+     * The order of the band the student chose, after checking that this band really exists in the framework in force
+     * for them.
      *
-     * <p>Phải kiểm, không được tin thẳng id client gửi: nhận bừa một bậc thuộc khung khác thì
-     * {@code result_band_order} của nó vô nghĩa với thang này, và mọi phép so độ khó phía sau
-     * lệch âm thầm. Dùng luôn thang bậc đã nạp cho màn hình chọn nên không tốn query mới.
+     * <p>It must be checked, the id sent by the client must not be trusted directly: accepting a band of another
+     * framework would make its {@code result_band_order} meaningless on this ladder, and every difficulty
+     * comparison afterwards would silently be off. The band ladder already loaded for the picker screen is reused,
+     * so no new query is needed.
      */
     /**
-     * Bậc học sinh chọn, xác thực theo KHUNG CỦA CHÍNH BẬC ĐÓ.
+     * The band the student chose, validated against THE FRAMEWORK OF THAT BAND ITSELF.
      *
-     * <p>Trước đây đối chiếu với {@code frameworkBandLadder()} -- tức khung đang hiệu lực toàn
-     * hệ. Từ khi màn luyện tập cho chọn khung, cách đó từ chối mọi bậc thuộc khung khác, kể cả
-     * khi khung ấy vẫn đang ban hành và hiển thị ngay trên màn hình.
+     * <p>It used to be matched against {@code frameworkBandLadder()} -- the framework in force system-wide. Since the
+     * practice screen lets the student choose a framework, that rejected every band of a different framework, even
+     * when that framework is still published and shown right on the screen.
      *
-     * <p>Vẫn phải xác thực chứ không tin thẳng client: bậc gửi lên có thể thuộc một bản nháp
-     * hoặc bản đã hết hiệu lực. Điều kiện "còn hiệu lực" lấy từ chính danh sách khung mà màn
-     * chọn khung dùng, nên hai bên không thể lệch nhau.
+     * <p>It must still be validated rather than trusting the client: the band sent up may belong to a draft or to a
+     * version that is no longer in force. The "still in force" condition comes from the same framework list that the
+     * framework picker uses, so the two cannot drift apart.
      *
-     * <p>Trả về cả số bậc của khung đó: {@code PracticeQuestionSelectionService} cần nó để kẹp
-     * độ khó, và lấy theo khung đang hiệu lực thay vì khung đã chọn sẽ ánh xạ sai khi hai khung
-     * khác số bậc.
+     * <p>It also returns the number of bands of that framework: {@code PracticeQuestionSelectionService} needs it to
+     * clamp the difficulty, and taking it from the framework in force instead of the chosen one would map wrongly when
+     * the two frameworks have different numbers of bands.
      */
     private ChosenBand chosenBand(UUID bandId) {
         if (bandId == null) {
-            throw new ResourceNotFoundException("Chưa chọn bậc muốn luyện.");
+            throw new ResourceNotFoundException("No band was chosen to practise.");
         }
         for (FrameworkVersionRepository.ActiveFramework framework : enrichmentService.activeFrameworks()) {
             Optional<FrameworkResultBand> match = enrichmentService.frameworkBandLadder(framework.versionId()).stream()
@@ -210,7 +211,7 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
                 );
             }
         }
-        throw new ResourceNotFoundException("Bậc luyện tập không thuộc khung đánh giá nào đang ban hành.");
+        throw new ResourceNotFoundException("The practice band does not belong to any published framework.");
     }
 
     private record ChosenBand(int order, int bandCount, UUID frameworkVersionId) {
@@ -219,6 +220,6 @@ public class BuildPracticePaperUseCase implements IUseCase<BuildPracticePaperCom
     private PracticeTopic requireTopic(UUID topicId) {
         return topicRepository.findTopicById(topicId)
             .filter(candidate -> candidate.isActive())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice topic not found."));
     }
 }

@@ -68,15 +68,16 @@ public class RestPracticeSessionInternalController {
     }
 
     /**
-     * Nhịp tim của phiên luyện -- agents gọi định kỳ trong suốt lúc WebSocket realtime còn mở.
+     * Heartbeat of the practice session -- agents call it periodically for as long as the realtime WebSocket stays open.
      *
-     * <p>Vì sao để AGENTS gửi chứ không phải app: app đã giữ WS tới agents và bơm audio liên
-     * tục, nên agents biết từng giây phiên còn sống hay không. Timer trong app thì vẫn chạy dù
-     * mạng đã rớt, và Android bóp timer khi app xuống nền -- cả hai đều cho tín hiệu sai.
+     * <p>Why AGENTS sends it and not the app: the app already holds the WS to agents and pumps audio
+     * continuously, so agents know every second whether the session is alive. A timer in the app keeps running
+     * even after the network drops, and Android throttles timers when the app goes to the background -- both give a
+     * wrong signal.
      *
-     * <p>Trả 200 kể cả khi phiên đã đóng: đây là tín hiệu sống, không phải lệnh nghiệp vụ. Agents
-     * không có việc gì để làm với lỗi ở đây, và ném lỗi chỉ tổ đẻ ra log nhiễu lúc phiên vừa kết
-     * thúc bình thường mà nhịp cuối còn đang bay.
+     * <p>Returns 200 even when the session is already closed: this is a liveness signal, not a business command. Agents
+     * have nothing to do with an error here, and throwing one only breeds noisy logs when the session has just
+     * ended normally while the last beat is still in flight.
      */
     @PostMapping("/{sessionId}/heartbeat")
     public ApiResponse<Void> heartbeat(@PathVariable UUID sessionId) {
@@ -96,7 +97,7 @@ public class RestPracticeSessionInternalController {
             @PathVariable UUID sessionId,
             @RequestBody TurnRequest request) {
         UUID studentId = practiceSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."))
+            .orElseThrow(() -> new ResourceNotFoundException("Practice session not found."))
             .getStudentId();
         SubmitPracticeTurn turn = SubmitPracticeTurn.builder()
                 .sessionId(sessionId)
@@ -126,10 +127,10 @@ public class RestPracticeSessionInternalController {
         String audioUrl,
         String transcript,
         int durationSeconds,
-        // Chi phí AI thật (USD) của turn này, Python tính đồng bộ từ realtimeCorrectionGraph
-        // ngay trong request này (xem PracticeAttemptConnection._flush_turn_usage bên
-        // Agentic AI) -- nullable phòng client Python cũ chưa deploy kịp, SubmitPracticeTurnUseCase
-        // fallback về ZERO. Xem AI_USAGE_QUOTA_USD_MIGRATION.md.
+        // Real AI cost (USD) of this turn, computed by Python synchronously from realtimeCorrectionGraph
+        // within this very request (see PracticeAttemptConnection._flush_turn_usage in
+        // Agentic AI) -- nullable in case an old Python client has not been deployed yet, SubmitPracticeTurnUseCase
+        // falls back to ZERO. See AI_USAGE_QUOTA_USD_MIGRATION.md.
         BigDecimal turnCostUsd,
         String wordFeedbackJson,
         Double turnScore,

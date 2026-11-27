@@ -38,23 +38,23 @@ public interface SpringDataPracticeItemEvaluationRepository
         """, nativeQuery = true)
     Double findLastValidNormalizedScore(@Param("sessionId") UUID sessionId);
 
-    // KHÔNG lọc question_complete nữa (2026-08-07).
+    // Does NOT filter question_complete any more (2026-08-07).
     //
-    // Luật cũ: câu bỏ dở vẫn được chấm để lấy quan sát điểm yếu, nhưng không tính vào điểm
-    // phiên -- "chấm một câu dở dang theo rubric của câu đầy đủ thì chắc chắn thấp, phạt học
-    // sinh vì mất mạng là sai".
+    // Old rule: an abandoned question was still graded to collect weakness observations, but was not counted in the
+    // session score -- "grading an unfinished question by the rubric of a complete one is certain to be low, penalizing the student
+    // for losing connection is wrong".
     //
-    // Hai lý do bỏ:
-    //   1. Hồ sơ điểm yếu đã gỡ 2026-08-06, nên vế "vẫn chấm để lấy quan sát" không còn đích
-    //      nào. Giờ chấm xong rồi vứt.
-    //   2. Giả định "chắc chắn thấp" không đúng. Đo trên phiên thật 2026-08-07: câu bỏ dở
-    //      (2 lượt, 26 giây) được 80,07 -- CAO HƠN cả hai câu hoàn tất (72,56 và 73,97).
+    // Two reasons for dropping it:
+    //   1. The weakness profile was removed on 2026-08-06, so the "still grade to collect observations" side has no
+    //      destination any more. Now it is graded and then thrown away.
+    //   2. The "certain to be low" assumption is wrong. Measured on a real session on 2026-08-07: an abandoned
+    //      question (2 turns, 26 seconds) scored 80.07 -- HIGHER than both completed questions (72.56 and 73.97).
     //
-    // Và khi câu bỏ dở là câu DUY NHẤT, loại nó không bảo vệ được gì: AVG trên tập rỗng ra
-    // NULL, cả phiên hiện 0 điểm. Bảo vệ khỏi bị kéo xuống mà thành xoá trắng.
+    // And when the abandoned question is the ONLY one, excluding it protects nothing: AVG over an empty set gives
+    // NULL and the whole session shows 0 points. Protecting against being pulled down turns into wiping everything out.
     //
-    // marked_invalid mới là cờ đúng vai cho "có đáng tính không" -- ValidityNode đã hạ cờ đó
-    // cho câu quá ngắn hoặc lạc đề.
+    // marked_invalid is the flag with the right role for "is it worth counting" -- ValidityNode has already raised that flag
+    // for answers that are too short or off topic.
     @Query(value = """
         SELECT AVG(evaluation.item_score)
         FROM practice_item_responses response

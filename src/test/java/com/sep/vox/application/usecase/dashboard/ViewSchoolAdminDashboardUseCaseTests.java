@@ -49,11 +49,11 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Chi tiêu của trường đọc từ ĐƠN HÀNG đã thu tiền (OrderStatus.SUCCESS), không còn từ hóa đơn PAID.
+ * The school's spending is read from ORDERS that have been paid (OrderStatus.SUCCESS), no longer from PAID invoices.
  *
- * <p>Điểm mới đáng test là tách hai loại tiền: đơn TOPUP là nạp vào ví tự nạp, còn lại là mua/gia hạn
- * gói. Trên cùng một màn hình, tổng phải bằng đúng tổng hai cột đó -- nếu không thì người đọc không
- * cách nào đối chiếu được con số nào với con số nào.
+ * <p>The new thing worth testing is separating the two kinds of money: a TOPUP order is a deposit into the
+ * self-funded balance, and the rest are plan purchases/renewals. On the same screen the total must equal exactly the
+ * sum of those two columns -- otherwise the reader has no way to reconcile which number is which.
  */
 class ViewSchoolAdminDashboardUseCaseTests {
 
@@ -158,15 +158,15 @@ class ViewSchoolAdminDashboardUseCaseTests {
     }
 
     /**
-     * Đơn chưa thu được tiền không phải là chi tiêu -- nhưng phép lọc đó giờ nằm trong CÂU TRUY VẤN
-     * chứ không còn lọc lại ở Java. Bản cũ của test này giả lập repository trả về đơn PENDING/FAILED
-     * rồi đòi use case bỏ qua chúng; với truy vấn đã lọc sẵn theo status thì tình huống đó không tồn
-     * tại, nên thứ đáng chốt là use case HỎI repository đúng cái gì.
+     * An order whose money was not collected is not spending -- but that filter now lives in the QUERY and is no
+     * longer repeated in Java. The old version of this test made the repository return PENDING/FAILED orders and
+     * demanded that the use case ignore them; with a query already filtered by status that situation cannot occur, so
+     * what is worth pinning down is WHAT the use case ASKS the repository.
      *
-     * <p>Vế schoolId không thừa: {@code findByStatusInRange} (bản KHÔNG lọc trường, dành cho màn
-     * System Admin) vẫn còn đó, và gọi nhầm nó ở đây là đưa doanh thu của mọi trường vào tổng chi và
-     * biểu đồ của đúng một trường -- không test nào khác trong lớp này bắt được, vì mock nào cũng trả
-     * về đúng thứ mình dựng sẵn.
+     * <p>The schoolId part is not redundant: {@code findByStatusInRange} (the version that does NOT filter by school,
+     * made for the System Admin screen) still exists, and calling it here by mistake would put the revenue of every
+     * school into the total spending and the chart of the one school -- no other test in this class catches that,
+     * because every mock returns exactly what it was built to return.
      */
     @Test
     void should_only_ask_for_this_schools_successful_orders() {
@@ -312,13 +312,13 @@ class ViewSchoolAdminDashboardUseCaseTests {
             .sumUnusedAllocation(any(), eq(QuotaType.PRACTICE));
     }
 
-    /** Hàng đợi khiếu nại sạch phải ra null, KHÔNG phải 0 — 0 nghĩa là có đơn vừa nộp hôm nay. */
+    /** A clean appeal queue must come out as null, NOT 0 -- 0 would mean an appeal was just submitted today. */
     @Test
     void should_report_no_appeal_age_when_the_queue_is_empty() {
         assertThat(useCase.execute(null).oldestPendingAppealDays()).isNull();
     }
 
-    /** Đếm theo NGÀY LỊCH giờ VN: đơn nộp 23:00 hôm qua đọc là "đã sang ngày thứ hai". */
+    /** Counted in Vietnam CALENDAR DAYS: an appeal submitted at 23:00 yesterday reads as "already on the second day". */
     @Test
     void should_count_appeal_age_in_business_calendar_days() {
         when(assessmentResultAppealRepository.findOldestPendingRequestedAt(SCHOOL_ID))
@@ -366,10 +366,11 @@ class ViewSchoolAdminDashboardUseCaseTests {
     }
 
     /**
-     * Tổng phần CHƯA TIÊU của các trần chi cá nhân — đúng thứ cổng thật trả về.
+     * The total of the UNSPENT part of the personal spending caps -- exactly what the real gate returns.
      *
-     * <p>Cố ý không dựng từng dòng allocation: phép kẹp âm theo TỪNG DÒNG nằm trong câu JPQL, nên nơi
-     * chốt nó là test của tầng persistence. Ở đây thứ đang test là use case dùng con số ấy ra sao.
+     * <p>Deliberately does not build each allocation row: clamping negatives PER ROW lives in the JPQL query, so the
+     * place that pins it down is the persistence layer test. Here what is tested is how the use case uses that
+     * number.
      */
     private void givenCommittedToUsers(String unusedAllocationVnd) {
         when(subscriptionQuotaUserAllocationRepository.sumUnusedAllocation(any(), eq(QuotaType.ASSESSMENT)))
@@ -394,7 +395,7 @@ class ViewSchoolAdminDashboardUseCaseTests {
         return monthly.stream()
             .filter(m -> m.month().equals(month))
             .findFirst()
-            .orElseThrow(() -> new AssertionError("Không có cột chi tiêu cho tháng " + month));
+            .orElseThrow(() -> new AssertionError("No spending column for month " + month));
     }
 
     private Order order(OrderType type, OrderStatus status, BigDecimal totalVnd, Instant createdAt) {

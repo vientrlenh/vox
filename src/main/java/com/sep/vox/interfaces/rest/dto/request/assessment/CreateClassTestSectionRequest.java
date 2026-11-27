@@ -13,7 +13,7 @@ public record CreateClassTestSectionRequest(
     /** Paper code that receives the new section. Empty is valid only when the test has exactly one paper code. */
     UUID paperId,
 
-    @NotBlank(message = "Tiêu đề section là bắt buộc")
+    @NotBlank(message = "Section title is required")
     String title,
 
     String instruction,
@@ -21,7 +21,7 @@ public record CreateClassTestSectionRequest(
     BigDecimal weight,
 
     @Valid
-    @NotEmpty(message = "Section phải có ít nhất một câu hỏi")
+    @NotEmpty(message = "A section must have at least one question")
     List<ClassTestQuestionRequest> questions
 ) {
 

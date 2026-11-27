@@ -7,7 +7,7 @@ import java.time.Instant;
 import jakarta.validation.constraints.NotNull;
 
 public record ApproveAssessmentAppealRequest(
-    @NotNull(message = "Phải đặt hạn xử lý cho đơn phúc khảo")
+    @NotNull(message = "A processing deadline must be set for the appeal")
     Instant deadline
 ) {
 

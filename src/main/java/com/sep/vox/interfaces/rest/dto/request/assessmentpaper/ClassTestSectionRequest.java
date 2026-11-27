@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotEmpty;
 import com.sep.vox.interfaces.rest.dto.request.assessment.ClassTestQuestionRequest;
 
 public record ClassTestSectionRequest(
-    @NotBlank(message = "Tiêu đề section là bắt buộc")
+    @NotBlank(message = "Section title is required")
     String title,
 
     String instruction,
@@ -17,7 +17,7 @@ public record ClassTestSectionRequest(
     BigDecimal weight,
 
     @Valid
-    @NotEmpty(message = "Section phải có ít nhất một câu hỏi")
+    @NotEmpty(message = "A section must have at least one question")
     List<ClassTestQuestionRequest> questions
 ) {
 }

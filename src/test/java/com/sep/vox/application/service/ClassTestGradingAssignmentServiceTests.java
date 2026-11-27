@@ -130,8 +130,8 @@ class ClassTestGradingAssignmentServiceTests {
     }
 
     /**
-     * Hàng rào chống vi phạm unique index {@code uq_grading_assignment_active_result}:
-     * {@code ClearInvalidResultUseCase} đã tự mở một vòng INITIAL mới rồi.
+     * The barrier against violating the unique index {@code uq_grading_assignment_active_result}:
+     * {@code ClearInvalidResultUseCase} has already opened a new INITIAL round itself.
      */
     @Test
     void should_not_open_second_assignment_when_one_is_already_open() {

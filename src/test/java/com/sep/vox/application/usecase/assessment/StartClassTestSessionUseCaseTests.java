@@ -45,8 +45,8 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Bài kiểm tra trên lớp giờ thi trong phòng có giám khảo, nên cổng vào thi phải siết đúng như kỳ
- * thi tập trung: đã điểm danh, đã được xếp ca, ca thi đang trong giờ.
+ * A class test is now taken in a room with proctors, so the entry gate must be as strict as for a centralized
+ * assessment: marked present, placed in an assessment schedule, and the schedule must be in its time window.
  */
 class StartClassTestSessionUseCaseTests {
 
@@ -133,9 +133,9 @@ class StartClassTestSessionUseCaseTests {
     }
 
     /**
-     * Bài trên lớp bật stream mà tắt OTP vẫn đi qua cổng này, nên cổng này cũng phải hỏi service
-     * streaming còn sống không — nếu không thì học sinh vào thi được nhưng không có đoạn ghi giám
-     * sát nào, và bài làm coi như không kiểm chứng được.
+     * A class test with streaming on and OTP off still goes through this gate, so this gate must also ask whether the
+     * streaming service is alive -- otherwise the student enters but no proctoring footage is recorded, and the
+     * submission cannot be verified.
      */
     @Test
     void should_check_streaming_health_when_class_test_is_monitored() {
@@ -156,7 +156,7 @@ class StartClassTestSessionUseCaseTests {
     @Test
     void should_refuse_entry_ticket_when_streaming_service_is_down() {
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(monitoredAssessment()));
-        doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
+        doThrow(new ServiceUnavailableException("Streaming service is not running"))
             .when(healthCheckPort).checkStreamingOk();
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
@@ -167,7 +167,7 @@ class StartClassTestSessionUseCaseTests {
     /** A non-proctored test must not be dragged down when streaming is dead. */
     @Test
     void should_still_issue_entry_ticket_for_unmonitored_class_test_when_streaming_is_down() {
-        doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
+        doThrow(new ServiceUnavailableException("Streaming service is not running"))
             .when(healthCheckPort).checkStreamingOk();
 
         AssessmentEntryTicketResponse result = useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID));
@@ -182,7 +182,7 @@ class StartClassTestSessionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Bạn chưa được điểm danh có mặt");
+            .hasMessageContaining("You have not been marked present");
     }
 
     @Test
@@ -194,7 +194,7 @@ class StartClassTestSessionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Bạn chưa được xếp ca thi");
+            .hasMessageContaining("You have not been placed in an assessment schedule");
     }
 
     @Test
@@ -204,17 +204,17 @@ class StartClassTestSessionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Ca thi không hợp lệ hoặc đã hết hạn");
+            .hasMessageContaining("The assessment schedule is invalid or has expired");
     }
 
-    /** Giáo viên bật OTP thì học sinh phải đi cổng OTP, không được vào thẳng qua cổng này. */
+    /** When the teacher turns OTP on, the student must use the OTP gate and cannot enter directly through this one. */
     @Test
     void should_redirect_to_otp_flow_when_class_test_requires_otp() {
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(assessment(true)));
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("yêu cầu xác thực OTP");
+            .hasMessageContaining("requires OTP verification");
     }
 
     @Test
@@ -226,7 +226,7 @@ class StartClassTestSessionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new StartClassTestSessionCommand(ASSESSMENT_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Bạn đã bị buộc kết thúc bài thi này");
+            .hasMessageContaining("Your attempt at this assessment was force-ended");
     }
 
     private AssessmentCandidate candidate(AssessmentCandidateStatus status) {

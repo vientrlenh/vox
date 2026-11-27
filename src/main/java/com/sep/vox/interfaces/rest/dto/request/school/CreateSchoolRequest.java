@@ -12,40 +12,40 @@ import jakarta.validation.constraints.Size;
 public record CreateSchoolRequest(
     UUID schoolDirectoryId, 
 
-    @Size(max = 100, message = "Mã trường không được vượt quá 100 ký tự")
+    @Size(max = 100, message = "School code must not exceed 100 characters")
     String schoolCode, 
 
-    @Size(max = 255, message = "Tên trường không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "School name must not exceed 255 characters")
     String schoolName, 
 
-    @Size(max = 512, message = "Địa chỉ trường không được vượt quá 512 ký tự")
+    @Size(max = 512, message = "School address must not exceed 512 characters")
     String schoolAddress, 
 
-    @Size(max = 100, message = "Tên miền của trường không được vượt quá 100 ký tự")
+    @Size(max = 100, message = "School domain must not exceed 100 characters")
     String schoolDomain, 
 
-    @NotNull(message = "Số học sinh trong trường không được để trống")
-    @Min(value = 1, message = "Số lượng học sinh không được nhỏ hơn 1")
+    @NotNull(message = "Number of students in the school must not be blank")
+    @Min(value = 1, message = "Student count must not be less than 1")
     Integer studentCount, 
 
-    @NotBlank(message = "Email của quản trị viên nhà trường không được để trống")
-    @Size(max = 255, message = "Email của quản trị viên nhà trường không được vượt quá 255 ký tự")
+    @NotBlank(message = "School admin email must not be blank")
+    @Size(max = 255, message = "School admin email must not exceed 255 characters")
     String adminEmail, 
 
-    @Size(max = 20, message = "Số điện thoại của quản trị viên nhà trường không được vượt quá 20 ký tự")
+    @Size(max = 20, message = "School admin phone number must not exceed 20 characters")
     String adminPhone, 
 
-    @NotBlank(message = "Tên đầy đủ của quản trị viên nhà trường không được để trống")
-    @Size(max = 255, message = "Tên đầy đủ của quản trị viên nhà trường không được vượt quá 255 ký tự")
+    @NotBlank(message = "Full name of the school admin must not be blank")
+    @Size(max = 255, message = "Full name of the school admin must not exceed 255 characters")
     String adminFullName, 
 
-    @NotNull(message = "Ngày tháng năm sinh của quản trị viên nhà trường không được để trống")
+    @NotNull(message = "Date of birth of the school admin must not be blank")
     LocalDate adminDateOfBirth, 
 
-    @Size(max = 255, message = "Địa chỉ của quản trị viên nhà trường không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Address of the school admin must not exceed 255 characters")
     String adminAddress, 
 
-    @Size(max = 4096, message = "Url ảnh đại diện của quản trị viên nhà trường không được vượt quá 4096 ký tự")
+    @Size(max = 4096, message = "Avatar URL of the school admin must not exceed 4096 characters")
     String adminAvatarUrl
 ) {
 

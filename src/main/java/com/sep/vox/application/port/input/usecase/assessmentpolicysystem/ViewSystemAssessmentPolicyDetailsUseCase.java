@@ -32,22 +32,22 @@ public class ViewSystemAssessmentPolicyDetailsUseCase implements IUseCase<ViewSy
     public AssessmentPolicyDto execute(ViewSystemAssessmentPolicyDetailsQuery query) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
 
         AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Assessment Policy was not found."));
 
         if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Assessment Policy này không thuộc về Hệ thống.");
+            throw new ForbiddenException("This Assessment Policy does not belong to the System.");
         }
 
-        // Cùng lằn ranh với ViewSystemAssessmentPoliciesUseCase: trường chỉ xem được bản mẫu đã ban
-        // hành. Thiếu chốt này thì giấu bản nháp khỏi danh sách là vô nghĩa -- đoán id là xem được.
+        // The same line as ViewSystemAssessmentPoliciesUseCase: a school can only see published template
+        // policies. Without this guard, hiding drafts from the list is pointless -- a guessed id would show them.
         if (!userContextPort.isSystemAdmin() && policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new ForbiddenException("Chỉ xem được chính sách mẫu đã ban hành (PUBLISHED).");
+            throw new ForbiddenException("Only a published (PUBLISHED) template policy can be viewed.");
         }
 
         return AssessmentPolicyDtoMapper.toDto(policy);

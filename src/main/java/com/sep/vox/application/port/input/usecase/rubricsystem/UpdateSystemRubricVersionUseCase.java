@@ -47,7 +47,7 @@ public class UpdateSystemRubricVersionUseCase
 
         String safeName = normalizeRequiredText(
                 command.name(),
-                "Tên phiên bản Rubric không được để trống."
+                "The Rubric version name must not be empty."
         );
 
         boolean descriptionBlank = isBlankDescription(command.description());
@@ -76,30 +76,30 @@ public class UpdateSystemRubricVersionUseCase
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
     }
 
     private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Không tìm thấy Rubric Version.")
+                        new ResourceNotFoundException("Rubric Version not found.")
                 );
 
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException(
-                    "Chỉ có thể cập nhật thông tin khi phiên bản đang ở trạng thái DRAFT."
+                    "Information can only be updated while the version is in DRAFT status."
             );
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc.")
+                        new ResourceNotFoundException("Parent Rubric not found.")
                 );
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
             throw new ForbiddenException(
-                    "Hành động bị từ chối: Rubric này thuộc về Trường học."
+                    "Action denied: this Rubric belongs to a School."
             );
         }
         return version;
@@ -118,7 +118,7 @@ public class UpdateSystemRubricVersionUseCase
         if (finalEffectiveTo != null
                 && finalEffectiveFrom.isAfter(finalEffectiveTo)) {
             throw new IllegalArgumentException(
-                    "Ngày bắt đầu hiệu lực không được lớn hơn ngày kết thúc hiệu lực."
+                    "The effective start date must not be later than the effective end date."
             );
         }
     }
@@ -132,7 +132,7 @@ public class UpdateSystemRubricVersionUseCase
 
         if (finalScoreMin.compareTo(finalScoreMax) > 0) {
             throw new IllegalArgumentException(
-                    "Điểm tối thiểu không được lớn hơn điểm tối đa."
+                    "The minimum score must not be greater than the maximum score."
             );
         }
 
@@ -169,7 +169,7 @@ public class UpdateSystemRubricVersionUseCase
             );
         } catch (DataConflictException e) {
             throw new IllegalArgumentException(
-                    "Không thể cập nhật Rubric Version do dữ liệu bị trùng hoặc không hợp lệ."
+                    "Cannot update the Rubric Version because the data is duplicated or invalid."
             );
         }
     }

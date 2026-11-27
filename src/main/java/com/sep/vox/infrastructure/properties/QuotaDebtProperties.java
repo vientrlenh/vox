@@ -7,10 +7,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import com.sep.vox.application.port.output.QuotaDebtConfigPort;
 
 /**
- * Trần cảnh báo cho nợ của trường (số dư ví tự nạp âm -- xem ConsumeQuotaService.checkDebtCapTransition
- * và SchoolSubscriptionDebtGuardService). CHỈ để cảnh báo sớm khi pipeline đo chi phí AI có bug làm
- * nợ tăng bất thường -- KHÔNG chặn việc trừ quota (chi phí thật luôn phải được ghi nhận đúng) và
- * KHÔNG ảnh hưởng cơ chế tự mở khóa khi trường nạp bù đưa số dư về không âm.
+ * Warning ceiling for school debt (a negative self-funded wallet balance -- see ConsumeQuotaService.checkDebtCapTransition
+ * and SchoolSubscriptionDebtGuardService). ONLY for an early warning when the AI cost measuring pipeline has a bug that makes
+ * debt grow abnormally -- it does NOT block quota deduction (the real cost must always be recorded correctly) and
+ * does NOT affect the automatic unlock mechanism when the school tops up and brings the balance back to non-negative.
  */
 @ConfigurationProperties(prefix = "vox.quota.debt")
 public record QuotaDebtProperties(

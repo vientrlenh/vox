@@ -27,14 +27,14 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
     List<OrderJpaEntity> findByStatus(String status);
 
     /**
-     * Danh sách đơn cho System Admin: lọc theo trường/trạng thái/loại, tìm theo tên trường.
+     * Order list for the System Admin: filter by school/status/type, search by school name.
      *
-     * <p>Mỗi bộ lọc đều bỏ qua được bằng cách truyền null -- gộp vào một câu thay vì tách nhiều method
-     * vì tổ hợp bật/tắt của bốn bộ lọc là 16 biến thể.
+     * <p>Every filter can be skipped by passing null -- merged into one statement instead of several methods
+     * because the on/off combinations of four filters make 16 variants.
      *
-     * <p>Sắp thêm theo id DESC sau createdAt: hai đơn tạo trong cùng một tick (trường bấm nhanh, hoặc
-     * import) mà chỉ sắp theo createdAt thì Postgres trả về thứ tự tùy ý, phân trang sẽ lặp hoặc bỏ
-     * sót dòng giữa các trang. id là uuidv7 nên "id DESC" chính là "mới nhất trước".
+     * <p>Additionally ordered by id DESC after createdAt: two orders created in the same tick (a school clicking fast, or
+     * import) ordered only by createdAt make Postgres return an arbitrary order, and pagination would repeat or skip
+     * rows between pages. id is a uuidv7, so "id DESC" is "newest first".
      */
     @Query("""
         SELECT o FROM OrderJpaEntity o
@@ -57,8 +57,8 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
 
     boolean existsBySchoolIdAndTypeInAndStatus(UUID schoolId, Collection<String> types, String status);
 
-    // Soi đúng điều kiện của uq_orders_one_open_subscription_order. Trả Optional được vì unique
-    // index đảm bảo tối đa một dòng khớp.
+    // Mirrors exactly the condition of uq_orders_one_open_subscription_order. It can return Optional because the unique
+    // index guarantees at most one matching row.
     @Query("""
         SELECT o FROM OrderJpaEntity o
         WHERE o.schoolId = :schoolId
@@ -67,7 +67,7 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
         """)
     Optional<OrderJpaEntity> findOpenSubscriptionOrderBySchoolId(@Param("schoolId") UUID schoolId);
 
-    // Khoảng NỬA MỞ [from, to) -- cùng lý do với SpringDataSchoolBalanceEntryRepository.
+    // HALF-OPEN range [from, to) -- same reason as SpringDataSchoolBalanceEntryRepository.
     @Query("""
         SELECT COALESCE(SUM(o.totalAmountVnd), 0) FROM OrderJpaEntity o
         WHERE o.status = :status
@@ -79,31 +79,31 @@ public interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity,
         @Param("to") Instant to);
 
     /**
-     * Đơn theo trạng thái trong một khoảng, cùng khoảng NỬA MỞ [from, to) với
-     * {@link #sumTotalAmountByStatusInRange} -- hai câu này phải soi cùng một mốc thời gian, nếu
-     * không thì tổng doanh thu và biểu đồ theo tháng trên cùng một màn hình sẽ không cộng lại bằng
-     * nhau.
+     * Orders by status within a range, the same HALF-OPEN range [from, to) as
+     * {@link #sumTotalAmountByStatusInRange} -- the two statements must use the same time boundary, otherwise
+     * the total revenue and the monthly chart on the same screen would not add up to
+     * the same number.
      *
-     * <p>Có mặt riêng thay vì dùng {@code findByStatus}: dashboard chỉ vẽ 12-24 tháng gần nhất, mà
-     * findByStatus nạp MỌI đơn thành công từ trước tới nay -- một danh sách chỉ có tăng, không bao
-     * giờ giảm.
+     * <p>It exists separately instead of using {@code findByStatus}: the dashboard only draws the latest 12-24 months, while
+     * findByStatus loads EVERY successful order ever -- a list that only grows and never
+     * shrinks.
      */
     List<OrderJpaEntity> findByStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
         String status, Instant from, Instant to);
 
     /**
-     * Bản LỌC THEO TRƯỜNG của câu trên, cho màn quản trị của chính trường đó.
+     * The SCHOOL-FILTERED version of the statement above, for a school's own admin screen.
      *
-     * <p>Phải là một câu riêng chứ không dùng lại câu trên rồi lọc ở Java: câu trên KHÔNG có điều kiện
-     * school_id, nên gọi nó từ màn của một trường là đưa doanh thu của MỌI trường vào tổng chi và biểu
-     * đồ 12 tháng của trường đang đăng nhập -- rò rỉ số liệu giữa các trường chứ không chỉ là nạp thừa.
+     * <p>It must be a separate statement rather than reusing the one above and filtering in Java: the one above has NO
+     * school_id condition, so calling it from a school's screen would put the revenue of ALL schools into the spend total
+     * and the 12-month chart of the logged-in school -- a leak of figures between schools, not just an extra load.
      */
     List<OrderJpaEntity> findBySchoolIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
         UUID schoolId, String status, Instant from, Instant to);
 
-    // PESSIMISTIC_WRITE: chặn hai lần chốt thanh toán song song trên cùng một đơn (webhook cổng đua
-    // với PendingOrderReconciler). @Version trên entity chỉ phát hiện xung đột SAU khi cả hai đã
-    // làm việc thừa; khóa ở đây chặn ngay từ đầu.
+    // PESSIMISTIC_WRITE: blocks two parallel payment finalizations on the same order (the gateway webhook racing
+    // with PendingOrderReconciler). @Version on the entity only detects the conflict AFTER both have
+    // done redundant work; the lock here blocks it from the start.
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<OrderJpaEntity> findWithLockById(UUID id);
 }

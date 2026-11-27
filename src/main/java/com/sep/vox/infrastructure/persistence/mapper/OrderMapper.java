@@ -57,7 +57,7 @@ public final class OrderMapper {
         try {
             return OrderType.valueOf(type);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại đơn hàng khi chuyển đổi sang domain model không hợp lệ: " + type);
+            throw new IllegalArgumentException("Invalid order type when converting to the domain model: " + type);
         }
     }
 
@@ -67,7 +67,7 @@ public final class OrderMapper {
         try {
             return OrderStatus.valueOf(status);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái đơn hàng khi chuyển đổi sang domain model không hợp lệ: " + status);
+            throw new IllegalArgumentException("Invalid order status when converting to the domain model: " + status);
         }
     }
 

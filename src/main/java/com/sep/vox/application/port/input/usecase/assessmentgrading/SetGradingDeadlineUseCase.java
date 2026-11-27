@@ -16,10 +16,10 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 
 /**
- * Admin đặt hoặc sửa hạn chấm, một hay nhiều bài cùng lúc.
+ * An admin sets or edits the grading deadline, for one or many submissions at once.
  *
- * <p>Sửa hạn thì {@code reminded_at} được xoá: hạn mới là một cam kết mới, và giáo
- * viên xứng đáng được nhắc lại theo hạn đó thay vì bị coi như đã nhắc rồi.
+ * <p>Editing the deadline clears {@code reminded_at}: the new deadline is a new commitment, and the
+ * teacher deserves to be reminded again for it instead of being treated as already reminded.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,10 +34,10 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         List<UUID> assignmentIds = command.assignmentIds() == null ? List.<UUID>of() : command.assignmentIds();
         if (assignmentIds.isEmpty()) {
-            throw new IllegalArgumentException("Phải chọn ít nhất một phân công để đặt hạn.");
+            throw new IllegalArgumentException("At least one assignment must be selected to set a deadline.");
         }
         if (command.deadlineAt() != null && command.deadlineAt().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
+            throw new IllegalArgumentException("The grading deadline must be in the future.");
         }
 
         List<AssessmentGradingAccessService.GradingContext> contexts = loadLockedContexts(assignmentIds);
@@ -70,7 +70,7 @@ public class SetGradingDeadlineUseCase implements IUseCase<SetGradingDeadlineCom
         for (UUID assignmentId : lockOrderedIds) {
             AssessmentGradingAccessService.GradingContext context = assessmentGradingAccessService.loadForUpdate(assignmentId);
             if (context.assignment().isCompleted()) {
-                throw new IllegalArgumentException("Không thể đặt hạn cho phân công đã chốt.");
+                throw new IllegalArgumentException("A deadline cannot be set for a finalized assignment.");
             }
             contexts.add(context);
         }

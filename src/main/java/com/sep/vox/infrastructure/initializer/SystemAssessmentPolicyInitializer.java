@@ -160,19 +160,19 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         SupportedLanguage language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
-            log.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo chính sách chấm mẫu của hệ thống", LANGUAGE_CODE);
+            log.warn("No language {}. Skipping system sample grading policy initialization", LANGUAGE_CODE);
             return;
         }
 
         Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo chính sách chấm mẫu", FRAMEWORK_CODE);
+            log.warn("No active framework {}. Skipping sample grading policy initialization", FRAMEWORK_CODE);
             return;
         }
 
         FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo chính sách chấm mẫu",
+            log.warn("Framework {} has no published version. Skipping sample grading policy initialization",
                 FRAMEWORK_CODE);
             return;
         }
@@ -190,10 +190,10 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         }
 
         if (created == 0) {
-            log.info("Chính sách chấm mẫu của hệ thống đã đầy đủ. Bỏ qua khởi tạo");
+            log.info("The system sample grading policies are already complete. Skipping initialization");
             return;
         }
-        log.info("Đã khởi tạo {} chính sách chấm mẫu của hệ thống (ngôn ngữ {}, khung {})",
+        log.info("Initialized {} system sample grading policies (language {}, framework {})",
             created, LANGUAGE_CODE, frameworkVersion.getCode());
     }
 
@@ -246,7 +246,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
         FrameworkResultBand targetBand = frameworkResultBandRepository
             .findByVersionIdAndCode(frameworkVersion.getId(), seed.targetBandCode()).orElse(null);
         if (targetBand == null) {
-            log.warn("Phiên bản khung {} thiếu bậc {}. Bỏ qua chính sách chấm mẫu tương ứng",
+            log.warn("Framework version {} lacks band {}. Skipping the corresponding sample grading policy",
                 frameworkVersion.getCode(), seed.targetBandCode());
         }
         return targetBand;
@@ -255,7 +255,7 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     private @Nullable GradeLevel findGradeLevel(String gradeLevelCode) {
         GradeLevel gradeLevel = gradeLevelRepository.findByCode(gradeLevelCode).orElse(null);
         if (gradeLevel == null) {
-            log.warn("Không tìm thấy khối {}. Bỏ qua chính sách chấm mẫu cho khối này", gradeLevelCode);
+            log.warn("Grade {} not found. Skipping the sample grading policy for this grade", gradeLevelCode);
         }
         return gradeLevel;
     }
@@ -263,20 +263,20 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     private @Nullable RubricVersion findSystemRubricVersion(PolicySeed seed, UUID frameworkId) {
         RubricVersion rubricVersion = rubricVersionRepository.findByCode(seed.rubricVersionCode()).orElse(null);
         if (rubricVersion == null) {
-            log.warn("Không tìm thấy phiên bản bộ tiêu chí mẫu {}. Bỏ qua chính sách chấm mẫu bậc {}",
+            log.warn("Sample criteria set version {} not found. Skipping the sample grading policy for band {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return null;
         }
         Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId()).orElse(null);
         if (rubric == null || rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            log.warn("Bộ tiêu chí của phiên bản {} không thuộc sở hữu SYSTEM. Bỏ qua chính sách chấm mẫu"
-                + " bậc {}", seed.rubricVersionCode(), seed.targetBandCode());
+            log.warn("The criteria set of version {} is not owned by SYSTEM. Skipping the sample grading policy"
+                + " for band {}", seed.rubricVersionCode(), seed.targetBandCode());
             return null;
         }
         // The same check CreateSystemAssessmentPolicyUseCase applies: the rubric is tied to the FRAMEWORK (not
         // the framework version), so compare against getFrameworkId of the version in use.
         if (!rubric.getFrameworkId().equals(frameworkId)) {
-            log.warn("Bộ tiêu chí {} không cùng khung với chính sách. Bỏ qua chính sách chấm mẫu bậc {}",
+            log.warn("Criteria set {} is not in the same framework as the policy. Skipping the sample grading policy for band {}",
                 seed.rubricVersionCode(), seed.targetBandCode());
             return null;
         }
@@ -334,10 +334,10 @@ public class SystemAssessmentPolicyInitializer implements ApplicationRunner {
     }
 
     /**
-     * @param gradeLevelCode     mã khối trong catalog toàn cục; null = bản mẫu không khai phạm vi,
-     *                           trường tự chọn lúc sao về (dùng cho bản lớp chuyên).
-     * @param rubricVersionCode  mã phiên bản bộ tiêu chí mẫu tương ứng của hệ thống.
-     * @param targetBandCode     mã bậc mục tiêu; đây là thứ phân biệt bản chuẩn với bản chuyên.
+     * @param gradeLevelCode     code of the grade in the global catalog; null = a template that declares no scope,
+     *                           the school chooses when copying it (used for the specialized-class version).
+     * @param rubricVersionCode  code of the matching system sample criteria set version.
+     * @param targetBandCode     code of the target band; this is what distinguishes the standard version from the specialized one.
      */
     private record PolicyInputs(
         FrameworkResultBand targetBand, @Nullable UUID gradeLevelId, RubricVersion rubricVersion) {}

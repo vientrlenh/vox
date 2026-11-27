@@ -12,8 +12,8 @@ public final class RubricResultBandValidator {
     private RubricResultBandValidator() {}
 
     /**
-     * Dùng cho check đơn lẻ (VD: sửa 1 band, so với danh sách sibling lấy 1 lần từ DB) — O(n).
-     * Chạm biên cũng tính là overlap (VD: 0-4 và 4-6 bị chặn vì điểm 4 rơi vào cả 2 dải).
+     * For single checks (e.g. editing 1 band, against the list of siblings fetched once from the DB) — O(n).
+     * Touching at the boundary also counts as overlap (e.g. 0-4 and 4-6 are blocked because score 4 falls in both ranges).
      */
     public static void assertNoOverlap(List<RubricResultBand> siblingBands, BigDecimal newMin, BigDecimal newMax,
             String newBandName) {
@@ -25,12 +25,12 @@ public final class RubricResultBandValidator {
     }
 
     /**
-     * Dùng cho batch (tạo nhiều band cùng lúc / import file): siblingsByMin là map các band đã có,
-     * key = scoreMin, PHẢI luôn giữ bất biến "không overlap lẫn nhau" giữa các band trong map.
-     * Với bất biến đó, band mới chỉ có thể đụng độ với đúng 2 ứng viên: band liền trước (floorEntry)
-     * và band liền sau/trùng (ceilingEntry) theo scoreMin — nên chỉ cần 2 lượt tra O(log n) thay vì
-     * quét tuần tự O(n) toàn bộ danh sách. Gọi lại nhiều lần trong 1 batch n band cho tổng độ phức tạp
-     * O(n log n) thay vì O(n^2) như quét List.
+     * For batches (creating many bands at once / file import): siblingsByMin is a map of the existing bands,
+     * key = scoreMin, MUST always keep the invariant "no mutual overlap" between the bands in the map.
+     * With that invariant, a new band can only collide with exactly 2 candidates: the band just before (floorEntry)
+     * and the band just after/equal (ceilingEntry) by scoreMin — so only 2 O(log n) lookups are needed instead of
+     * a sequential O(n) scan of the whole list. Called repeatedly within a batch of n bands the total complexity is
+     * O(n log n) instead of O(n^2) as with scanning a List.
      */
     public static void assertNoOverlap(NavigableMap<BigDecimal, RubricResultBand> siblingsByMin, BigDecimal newMin,
             BigDecimal newMax, String newBandName) {
@@ -51,8 +51,8 @@ public final class RubricResultBandValidator {
 
     private static void throwOverlap(String newBandName, BigDecimal newMin, BigDecimal newMax, RubricResultBand sibling) {
         throw new IllegalArgumentException(
-                "Thang điểm '" + newBandName + "' (" + newMin + " - " + newMax
-                        + ") bị chồng lấn (kể cả chạm biên) với thang điểm '" + sibling.getName() + "' ("
+                "Band '" + newBandName + "' (" + newMin + " - " + newMax
+                        + ") overlaps (including touching at the boundary) with band '" + sibling.getName() + "' ("
                         + sibling.getScoreMin() + " - " + sibling.getScoreMax() + ").");
     }
 }

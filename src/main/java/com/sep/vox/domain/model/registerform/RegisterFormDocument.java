@@ -50,7 +50,7 @@ public class RegisterFormDocument {
 
     public static List<RegisterFormDocument> createMany(UUID registerFormId, List<String> urls, Instant now) {
         if (urls.size() > 10) {
-            throw new IllegalArgumentException("Chỉ có thể gửi tối đa 10 tài liệu cho một đơn đăng ký");
+            throw new IllegalArgumentException("At most 10 documents can be submitted for one register form");
         }
         return urls.stream()
             .map(url -> create(registerFormId, url, now))

@@ -5,18 +5,18 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Mọi thứ FE cần để đưa người dùng sang trang thanh toán, đã chuẩn hoá cho mọi cổng.
+ * Everything the FE needs to send the user to the payment page, normalized for every gateway.
  *
- * @param action        redirect hay submit form — xem {@link CheckoutAction}
- * @param actionUrl     đích của redirect (REDIRECT) hoặc thuộc tính action của form (FORM_POST)
- * @param paymentLinkId định danh link phía cổng, để đối chiếu ngược với dashboard; null với cổng
- *                      không có khái niệm này (SePay PG định danh đơn bằng order_invoice_number)
- * @param fields        các field ẩn của form, rỗng khi action là REDIRECT. Thứ tự các key là một
- *                      phần của hợp đồng chứ không phải chi tiết trình bày: SePay ký trên chuỗi
- *                      ghép theo đúng thứ tự đó, nên form phải POST y nguyên thứ tự này. Có chứa
- *                      chữ ký nên không được ghi vào log
- * @param qrCode        chuỗi VietQR để FE tự vẽ mã, null với cổng không trả về QR
- * @param transfer      thông tin chuyển khoản tay đi kèm mã QR, null khi không có QR
+ * @param action        redirect or submit a form -- see {@link CheckoutAction}
+ * @param actionUrl     the redirect target (REDIRECT) or the form's action attribute (FORM_POST)
+ * @param paymentLinkId the link identifier on the gateway side, for cross-checking against the dashboard; null for a gateway
+ *                      without this concept (SePay PG identifies the order by order_invoice_number)
+ * @param fields        the form's hidden fields, empty when action is REDIRECT. The key order is part of
+ *                      the contract and not a presentation detail: SePay signs the string joined in exactly that
+ *                      order, so the form must POST in this same order. Contains the
+ *                      signature so it must not be written to logs
+ * @param qrCode        the VietQR string for the FE to draw the code itself, null for a gateway that returns no QR
+ * @param transfer      the manual transfer details that go with the QR code, null when there is no QR
  */
 public record PaymentCheckoutResult(
     CheckoutAction action,
@@ -33,8 +33,8 @@ public record PaymentCheckoutResult(
     }
 
     /**
-     * Cổng vừa trả về mã QR vừa có trang checkout riêng: hiện mã trong ứng dụng, giữ URL làm lối
-     * thoát. Không có QR thì đừng dùng factory này — dùng {@link #redirect} để FE khỏi phải đoán.
+     * A gateway that both returns a QR code and has its own checkout page: show the code in the app, keep the URL as an
+     * escape hatch. Without a QR, do not use this factory -- use {@link #redirect} so the FE does not have to guess.
      */
     public static PaymentCheckoutResult qr(
             String qrCode, BankTransferDetails transfer, String checkoutUrl, String paymentLinkId) {
@@ -42,8 +42,8 @@ public record PaymentCheckoutResult(
             CheckoutAction.QR, checkoutUrl, paymentLinkId, Map.of(), qrCode, transfer);
     }
 
-    // LinkedHashMap chứ không phải Map.copyOf: Map.copyOf trả về map không có thứ tự xác định, mà
-    // ở đây thứ tự chính là cái quyết định chữ ký khớp hay không.
+    // LinkedHashMap and not Map.copyOf: Map.copyOf returns a map with no defined order, and here the
+    // order is exactly what decides whether the signature matches.
     public static PaymentCheckoutResult formPost(String actionUrl, Map<String, String> fields) {
         return new PaymentCheckoutResult(
             CheckoutAction.FORM_POST, actionUrl, null,

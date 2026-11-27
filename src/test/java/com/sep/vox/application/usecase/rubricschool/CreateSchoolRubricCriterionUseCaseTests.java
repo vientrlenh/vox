@@ -87,6 +87,6 @@ class CreateSchoolRubricCriterionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Lỗi lưu dữ liệu: Mã tiêu chí, Khung tiêu chuẩn hoặc Thứ tự (order) đã tồn tại trong phiên bản này từ trước.");
+            .hasMessage("Data save error: the criterion code, Framework or order already exists in this version.");
     }
 }

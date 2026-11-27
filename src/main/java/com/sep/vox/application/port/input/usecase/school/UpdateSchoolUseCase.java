@@ -34,19 +34,19 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
     @Transactional
     public UUID execute(UpdateSchoolCommand command) {
         School school = schoolRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
 
         // exists call instead of loading the user, for performance
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
         requireSameSchoolForSchoolUser(currentUserId, school);
 
         int updatedRows = updateAtomically(command, normalizedUniquePhone(command), normalizedUniqueEmail(command));
 
         if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Cập nhật thất bại hoặc không có thay đổi.");
+            throw new ResourceNotFoundException("Update failed or there was no change.");
         }
 
         return command.id();
@@ -71,7 +71,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         // SECURITY GUARD: a user linked to a school (a school admin) may only edit their own school
         Optional<SchoolUser> schoolUserOpt = schoolUserRepository.findByUserId(currentUserId);
         if (schoolUserOpt.isPresent() && !schoolUserOpt.get().getSchoolId().equals(school.getId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa thông tin trường học của đơn vị khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to edit the information of another organization's school.");
         }
     }
 
@@ -85,7 +85,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         }
         String phone = StringNormalization.normalizePhone(command.contactPhone());
         if (schoolRepository.existsByContactPhoneAndIdNot(phone, command.id())) {
-            throw new ResourceDuplicatedException("Số điện thoại này đã được sử dụng.");
+            throw new ResourceDuplicatedException("This phone number is already in use.");
         }
         return phone;
     }
@@ -96,7 +96,7 @@ public class UpdateSchoolUseCase implements IUseCase<UpdateSchoolCommand, UUID> 
         }
         String email = StringNormalization.normalizeEmail(command.contactEmail());
         if (schoolRepository.existsByContactEmailAndIdNot(email, command.id())) {
-            throw new ResourceDuplicatedException("Email này đã được sử dụng.");
+            throw new ResourceDuplicatedException("This email is already in use.");
         }
         return email;
     }

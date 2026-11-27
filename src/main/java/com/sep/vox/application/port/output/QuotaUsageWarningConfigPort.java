@@ -3,9 +3,10 @@ package com.sep.vox.application.port.output;
 import java.math.BigDecimal;
 
 /**
- * Ngưỡng cảnh báo SỚM khi hạn mức AI của trường mới dùng tới một tỉ lệ nào đó của
- * {@code total_allocated_amount_vnd} -- xem ConsumeQuotaService.checkUsageWarningTransition. Giá trị
- * thật bind từ application.yaml ({@code vox.quota.usage-warning.*}) ở QuotaUsageWarningProperties.
+ * The EARLY warning threshold for when a school's AI quota has only reached a certain fraction of
+ * {@code total_allocated_amount_vnd} -- see ConsumeQuotaService.checkUsageWarningTransition. The
+ * real values are bound from application.yaml ({@code vox.quota.usage-warning.*}) in
+ * QuotaUsageWarningProperties.
  */
 public interface QuotaUsageWarningConfigPort {
 

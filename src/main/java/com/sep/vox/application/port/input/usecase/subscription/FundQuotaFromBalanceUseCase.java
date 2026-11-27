@@ -28,33 +28,35 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Chuyển tiền từ ví TỰ NẠP của trường sang ví HẠN MỨC của một loại quota.
+ * Moves money from the school's SELF-FUNDED balance to the QUOTA pool of one quota type.
  *
- * <p><b>Vì sao tiền đi vào ví của TRƯỜNG chứ không vào trần chi của một người.</b> Phương án "duyệt
- * bao nhiêu thì trừ ví bấy nhiêu" trừ tiền HAI LẦN: dòng phân bổ không giữ tiền, nên lúc người đó
- * tiêu thật thì {@code tryConsume} vẫn hỏng (ví hạn mức vẫn cạn) và
- * {@code ConsumeQuotaService.chargeOverage} trừ ví lần nữa. Ví mất 800k cho 300k chi phí AI có thật,
- * còn {@code school_ai_spend_entries} chỉ ghi 300k -- hai sổ nói hai con số. Chi tiết trong V12.
+ * <p><b>Why the money goes into the SCHOOL's pool and not into one person's spending cap.</b> The alternative
+ * "deduct the balance by whatever amount is approved" deducts money TWICE: the allocation row holds no money, so
+ * when that person really spends, {@code tryConsume} still fails (the quota pool is still empty) and
+ * {@code ConsumeQuotaService.chargeOverage} deducts the balance again. The balance loses 800k for 300k of real AI
+ * cost, while {@code school_ai_spend_entries} records only 300k -- two ledgers telling two different numbers.
+ * Details in V12.
  *
- * <p>Nạp vào ví hạn mức thì {@code tryConsume} thấy còn chỗ, {@code chargeOverage} không chạy, và
- * KHÔNG một dòng nào của ConsumeQuotaService phải sửa. Phần chưa tiêu ở lại ví của trường để chia cho
- * người khác, thay vì mắc kẹt trên tên một học sinh không bao giờ vào luyện.
+ * <p>With the money in the quota pool, {@code tryConsume} sees room, {@code chargeOverage} does not run, and NOT
+ * ONE line of ConsumeQuotaService has to change. What is left unspent stays in the school's pool to be divided
+ * among others, instead of being stuck under the name of a student who never comes to practise.
  *
- * <p><b>MỘT CHIỀU, VÀ HIỆN CHƯA GỠ ĐƯỢC.</b> Không có đường chuyển ngược về ví, cũng không chuyển
- * được sang loại quota kia. Nhầm ví thì <b>không có cách sửa</b> -- và đừng tưởng một dòng ADJUSTMENT
- * là cách: nó chỉ CỘNG tiền trở lại ví, trong khi mọi lệnh ghi school_subscription_quota_records
- * ({@code addAllocation}, {@code addFundingFromBalance}) đều chỉ biết cộng, không câu nào hạ được
- * total_allocated_amount_vnd/funded_from_balance_vnd xuống. Làm vậy là trường vừa lấy lại tiền vừa
- * giữ nguyên ví hạn mức đã phình: sinh tiền từ hư không.
+ * <p><b>ONE WAY, AND CURRENTLY IRREVERSIBLE.</b> There is no path back to the balance, and no transfer to the
+ * other quota type either. A wrong choice of pool has <b>no fix</b> -- and do not think an ADJUSTMENT row is one:
+ * it only ADDS money back to the balance, while every write to school_subscription_quota_records
+ * ({@code addAllocation}, {@code addFundingFromBalance}) only knows how to add, and none of them can lower
+ * total_allocated_amount_vnd/funded_from_balance_vnd. Doing it would let the school take the money back and also
+ * keep the inflated quota pool: money out of thin air.
  *
- * <p>Gỡ thật thì phải là một đường đi ĐÔI trong cùng transaction -- bút toán cộng ví ĐI KÈM một lệnh
- * hạ ví hạn mức, kẹp sàn ở phần đã tiêu để không đẩy funded xuống dưới 0 hay total xuống dưới used.
- * Chưa có đường đó, nên tuyến phòng thủ duy nhất là giao diện: phải nói to loại ví trước khi xác nhận.
+ * <p>A real undo has to be a PAIRED operation in the same transaction -- the balance credit entry GOES TOGETHER
+ * with a command that lowers the quota pool, clamped at the spent amount so funded never drops below 0 and total
+ * never below used. That path does not exist yet, so the only line of defence is the UI: it must say loudly which
+ * pool it is before the user confirms.
  *
- * <p><b>Thứ tự trong method là bắt buộc, không phải tuỳ tiện</b> -- xem javadoc của
- * {@link SchoolBalanceRepository}: KHÓA dòng số dư trước, tính ở Java, rồi save + ghi bút toán, tất cả
- * trong CÙNG một transaction. Đọc bằng {@code findBySchoolId} rồi trừ sẽ để hai quản trị viên bấm cùng
- * lúc cùng thấy 2tr và cùng tiêu nó.
+ * <p><b>The order inside the method is mandatory, not arbitrary</b> -- see the Javadoc of
+ * {@link SchoolBalanceRepository}: LOCK the balance row first, compute in Java, then save + write the entry, all
+ * in the SAME transaction. Reading with {@code findBySchoolId} and then subtracting would let two administrators
+ * who click at the same time both see 2M and both spend it.
  */
 @Service
 @RequiredArgsConstructor
@@ -87,7 +89,7 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
         // wallet live or die together. One statement adds both total and funded -- see addFundingFromBalance.
         quotaRecordRepository.addFundingFromBalance(pool.getId(), amountVnd);
 
-        log.info("Trường {} nạp {}đ từ ví tự nạp vào hạn mức {} (kỳ {}), số dư còn {}đ, người thực hiện {}",
+        log.info("School {} funded {} VND from the school balance into quota {} (period {}), remaining balance {} VND, performed by {}",
             input.schoolId(), amountVnd, quotaType, subscription.getId(), balanceAfterVnd, actorId);
 
         return fundingResponse(pool.getId(), amountVnd, balanceAfterVnd);
@@ -95,13 +97,13 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
 
     private SchoolSubscription requireActiveSubscription(UUID schoolId) {
         return schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
+            .orElseThrow(() -> new ResourceNotFoundException("The school has no active subscription"));
     }
 
     private SchoolSubscriptionQuotaRecord requirePool(UUID subscriptionId, QuotaType quotaType) {
         return quotaRecordRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription quota not found"));
     }
 
     // A school in debt is blocked here, BEFORE looking at the balance -- debt means a negative balance, so the "enough
@@ -120,8 +122,8 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
 
         if (balance.getBalanceVnd().compareTo(amountVnd) < 0) {
             throw new IllegalArgumentException(
-                "Số dư ví tự nạp không đủ: cần " + amountVnd + "đ nhưng chỉ còn "
-                    + balance.getBalanceVnd() + "đ");
+                "Insufficient school balance: needs " + amountVnd + " VND but only "
+                    + balance.getBalanceVnd() + " VND left");
         }
 
         // balanceAfterVnd comes from apply() itself rather than subtracting again here: the entry and the aggregate
@@ -137,34 +139,34 @@ public class FundQuotaFromBalanceUseCase implements IUseCase<FundQuotaFromBalanc
 
     private QuotaFundingResponse fundingResponse(UUID poolId, BigDecimal amountVnd, BigDecimal balanceAfterVnd) {
         SchoolSubscriptionQuotaRecord funded = quotaRecordRepository.findById(poolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription quota not found"));
         return new QuotaFundingResponse(
             SchoolSubscriptionQuotaRecordDto.toDto(funded), amountVnd, balanceAfterVnd);
     }
 
     /**
-     * Chỉ quản trị của CHÍNH trường đó (hoặc System Admin). Cùng phép kiểm với
-     * {@code DistributeQuotaToUsersService.requireSchoolAdminAccess} -- vai trò đã do @PreAuthorize ở
-     * controller chặn, phần còn lại ở đây là chặn một quản trị trường thao tác lên trường khác.
+     * Only the administrator of THAT school (or a System Admin). The same check as
+     * {@code DistributeQuotaToUsersService.requireSchoolAdminAccess} -- the role was already enforced by
+     * @PreAuthorize on the controller; what remains here is stopping a school admin from acting on another school.
      */
     private void requireSchoolAdminAccess(UUID schoolId) {
         if (schoolId == null) {
-            throw new IllegalArgumentException("Thiếu mã trường");
+            throw new IllegalArgumentException("School ID is missing");
         }
         if (!userContextPort.isSystemAdmin() && !schoolId.equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
     /**
-     * Chặn 0 và số âm. Số âm sẽ là một đường CỘNG tiền vào ví mà không có đơn hàng nào đứng sau (V2:
-     * "không cho cộng tiền từ hư không"), còn 0 thì sinh một bút toán vi phạm
-     * chk_school_balance_entries_quota_funding_traceable -- chặn ở đây để lỗi ra thành câu tiếng Việt
-     * thay vì một DataIntegrityViolationException.
+     * Rejects 0 and negative numbers. A negative number would be a path that ADDS money to the balance with no order
+     * behind it (V2: "no money from thin air"), and 0 would produce an entry that violates
+     * chk_school_balance_entries_quota_funding_traceable -- rejected here so the error comes out as a readable
+     * message instead of a DataIntegrityViolationException.
      */
     private static BigDecimal requirePositiveAmount(BigDecimal amountVnd) {
         if (amountVnd == null || amountVnd.signum() <= 0) {
-            throw new IllegalArgumentException("Số tiền nạp vào hạn mức phải lớn hơn 0");
+            throw new IllegalArgumentException("The amount to fund the quota must be greater than 0");
         }
         return amountVnd;
     }

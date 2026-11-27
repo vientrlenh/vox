@@ -64,12 +64,12 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Blueprint version not found"));
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment blueprint not found"));
 
         requireStatusActor(version, blueprint, currentUserId, currentSchoolId);
         Instant now = Instant.now();
@@ -94,18 +94,18 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
         switch (action) {
             case "PUBLISH" -> {
                 if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-                    throw new IllegalArgumentException("Chỉ được publish version ở trạng thái DRAFT");
+                    throw new IllegalArgumentException("Only a DRAFT version can be published");
                 }
                 validatePublishable(version);
                 version.setStatus(AssessmentBlueprintVersionStatus.PUBLISHED);
             }
             case "ARCHIVE" -> {
                 if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-                    throw new IllegalArgumentException("Chỉ được archive version ở trạng thái PUBLISHED");
+                    throw new IllegalArgumentException("Only a PUBLISHED version can be archived");
                 }
                 version.setStatus(AssessmentBlueprintVersionStatus.ARCHIVED);
             }
-            default -> throw new IllegalArgumentException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Invalid action");
         }
     }
 
@@ -129,10 +129,10 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
     private void requireStatusActor(AssessmentBlueprintVersion version, AssessmentBlueprint blueprint, UUID currentUserId, UUID currentSchoolId) {
         if (!assessmentBlueprintRepository.canChangeVersionStatus(blueprint.getId(), currentUserId, currentSchoolId)) {
             throw new ForbiddenException(
-                "Quyền truy cập bị từ chối — cần là SCHOOL_ADMIN hoặc CHAIR/REVIEWER của kỳ thi đã gắn blueprint này");
+                "Access denied: you must be a SCHOOL_ADMIN or a CHAIR/REVIEWER of the assessment that uses this blueprint");
         }
         if (version.isCreatedBy(currentUserId) && !maySelfApproveVersion(blueprint, currentUserId, currentSchoolId)) {
-            throw new ForbiddenException("Người tạo version không được tự đổi trạng thái version của chính mình");
+            throw new ForbiddenException("The creator of a version must not change the status of their own version");
         }
     }
 
@@ -163,13 +163,13 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
     private void validatePublishable(AssessmentBlueprintVersion version) {
         List<AssessmentBlueprintSection> sections = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
         if (sections.isEmpty()) {
-            throw new IllegalArgumentException("Blueprint version phải có ít nhất một section trước khi publish");
+            throw new IllegalArgumentException("A blueprint version must have at least one section before it is published");
         }
         BigDecimal weightSum = sections.stream()
             .map(section -> section.getSectionWeight() == null ? BigDecimal.ZERO : section.getSectionWeight())
             .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
         if (weightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
-            throw new IllegalArgumentException("Tổng trọng số section phải bằng 1.00 trước khi publish");
+            throw new IllegalArgumentException("The total section weight must be 1.00 before publishing");
         }
 
         List<AssessmentBlueprintSlot> allSlots = assessmentBlueprintSlotRepository.findByBlueprintVersionId(version.getId());
@@ -185,7 +185,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
                     ? null
                     : questionRepository.findById(slot.getFixedQuestionId()).orElse(null);
                 if (question == null || question.getStatus() != QuestionStatus.PUBLISHED) {
-                    throw new IllegalArgumentException("Câu hỏi fixed cho slot phải ở trạng thái PUBLISHED");
+                    throw new IllegalArgumentException("The fixed question of the slot must be PUBLISHED");
                 }
             });
     }
@@ -200,7 +200,7 @@ public class UpdateAssessmentBlueprintVersionStatusUseCase
                 .reduce(BigDecimal.ZERO, (a, b) -> a.add(b));
             if (slotWeightSum.subtract(BigDecimal.ONE).abs().compareTo(WEIGHT_TOLERANCE) > 0) {
                 throw new IllegalArgumentException(
-                    "Tổng trọng số ô câu hỏi trong phần \"" + section.getTitle() + "\" phải bằng 1.00 trước khi publish");
+                    "The total question slot weight in section \"" + section.getTitle() + "\" must be 1.00 before publishing");
             }
         }
     }

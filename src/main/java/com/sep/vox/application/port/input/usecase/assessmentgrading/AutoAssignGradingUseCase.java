@@ -33,14 +33,14 @@ import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
 import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 
 /**
- * Chọn một tập bài rồi chia đều cho nhóm giáo viên được chọn.
+ * Picks a set of submissions and distributes them evenly among the chosen group of teachers.
  *
- * <p>Hai phần tách bạch, mỗi phần một service test được riêng: {@link GradingSampleSelector}
- * quyết <em>chấm bài nào</em> (4 chế độ), {@link RoundRobinLoadBalancer} quyết
- * <em>ai chấm</em> (cân theo tải thật, không chia vòng tròn từ số 0 nên chạy lần hai
- * không dồn vào người đầu danh sách).
+ * <p>Two separate parts, each one a separately testable service: {@link GradingSampleSelector}
+ * decides <em>which submissions to grade</em> (4 modes), {@link RoundRobinLoadBalancer} decides
+ * <em>who grades</em> (balanced by real load, not a round robin starting from 0, so a second run
+ * does not pile onto the first person in the list).
  *
- * <p>Bài đã có phân công đang mở bị loại ở tầng query, nên gọi lại nhiều lần là an toàn.
+ * <p>Submissions that already have an open assignment are excluded at the query level, so calling it repeatedly is safe.
  */
 @Service
 @RequiredArgsConstructor
@@ -83,7 +83,7 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
 
     private void requireAssignmentTarget(AutoAssignGradingCommand command) {
         if (command.assessmentId() == null && command.scheduleId() == null) {
-            throw new IllegalArgumentException("Phải chọn kỳ thi hoặc ca thi để phân công tự động.");
+            throw new IllegalArgumentException("An assessment or an assessment schedule must be selected for automatic assignment.");
         }
         // Blocked right at assessmentId rather than waiting for the attempt list: a class test has already been assigned
         // entirely to its owner so the list would be EMPTY, and "empty" returns success silently --
@@ -96,15 +96,15 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
     private List<UUID> requireTeachersOfSchool(List<UUID> requestedTeacherIds, UUID schoolId) {
         List<UUID> teacherIds = requestedTeacherIds == null ? List.<UUID>of() : requestedTeacherIds;
         if (teacherIds.isEmpty()) {
-            throw new IllegalArgumentException("Phải chọn ít nhất một giáo viên để phân công.");
+            throw new IllegalArgumentException("At least one teacher must be selected for assignment.");
         }
         if (new HashSet<>(teacherIds).size() != teacherIds.size()) {
-            throw new ResourceDuplicatedException("Không được chọn trùng giáo viên.");
+            throw new ResourceDuplicatedException("The same teacher must not be selected twice.");
         }
         // One query for the whole group instead of repeating isTeacherOfSchool per person (N+1).
         Set<UUID> validTeachers = assessmentGradingQueryRepository.findTeacherIdsInSchool(schoolId, teacherIds);
         if (!validTeachers.containsAll(teacherIds)) {
-            throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
+            throw new IllegalArgumentException("The grader must be a teacher of the same school as the assessment.");
         }
         return teacherIds;
     }
@@ -174,14 +174,14 @@ public class AutoAssignGradingUseCase implements IUseCase<AutoAssignGradingComma
     private GradingRoundType requireNotAppealRound(GradingRoundType roundType) {
         if (roundType == GradingRoundType.APPEAL) {
             throw new IllegalArgumentException(
-                "Vòng phúc khảo được phân công từ màn đơn phúc khảo, không phân công ở đây.");
+                "Appeal rounds are assigned from the appeal screen, not here.");
         }
         return roundType;
     }
 
     private Instant validateDeadline(Instant deadlineAt) {
         if (deadlineAt != null && deadlineAt.isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Hạn chấm phải ở tương lai.");
+            throw new IllegalArgumentException("The grading deadline must be in the future.");
         }
         return deadlineAt;
     }

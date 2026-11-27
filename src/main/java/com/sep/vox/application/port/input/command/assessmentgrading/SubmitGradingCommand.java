@@ -5,14 +5,14 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Giáo viên nộp điểm cho các phần thi của một bài. Cùng một command dùng cho cả
- * {@code /regrade} (ghi & chốt) lẫn {@code /regrade/preview} (chỉ tính thử) — hai
- * đường phải nhận đúng một đầu vào thì tổng chúng trả về mới bằng nhau.
+ * A teacher submits scores for the exam parts of a submission. The same command serves both
+ * {@code /regrade} (write & finalize) and {@code /regrade/preview} (compute only) -- the two
+ * paths must receive exactly the same input so that the totals they return are equal.
  *
- * <p>KHÔNG có điểm tổng: tổng luôn được dẫn xuất lại từ điểm tiêu chí.
+ * <p>Has NO total score: the total is always re-derived from the criterion scores.
  *
- * <p>Vào bằng {@code assignmentId}, không phải {@code candidateResultId}: quyền chấm
- * đến từ chính dòng phân công, và vòng chấm ({@code roundType}) cũng nằm ở đó.
+ * <p>Enters by {@code assignmentId}, not {@code candidateResultId}: the permission to grade
+ * comes from the assignment row itself, and the grading round ({@code roundType}) lives there too.
  */
 public record SubmitGradingCommand(
     UUID assignmentId,

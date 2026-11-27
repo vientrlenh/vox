@@ -5,16 +5,16 @@ import java.math.RoundingMode;
 import java.util.List;
 
 /**
- * <p>Bỏ nhánh riêng của {@code SUM} 2026-08-14. Trước đó {@code SUM} nghĩa là "mỗi tiêu chí chiếm
- * một lát của thang (10 = 2+2+2+2+2), cộng thẳng không qua trọng số" -- và ở kiểu khai đó trọng số
- * là dữ liệu chết: không tham gia phép tính, cũng không được kiểm lúc publish, nên con số hiện trên
- * giao diện có thể hoàn toàn bịa. Nay cả hai phương pháp đều chấm mỗi tiêu chí trên TOÀN thang và
- * gộp bằng cùng biểu thức dưới đây; chúng chỉ khác nhau ở ràng buộc tổng trọng số lúc publish (xem
- * {@code RubricScoringConsistencyValidator}), tức khác về CÁCH KHAI chứ không khác về phép tính.
+ * <p>The separate {@code SUM} branch was removed 2026-08-14. Before that {@code SUM} meant "each criterion takes
+ * a slice of the scale (10 = 2+2+2+2+2), added directly without weights" -- and with that declaration style the weight
+ * was dead data: it took no part in the calculation and was not checked at publish time, so the number shown on the
+ * UI could be completely made up. Now both methods grade each criterion on the WHOLE scale and
+ * combine with the same expression below; they differ only in the total-weight constraint at publish time (see
+ * {@code RubricScoringConsistencyValidator}), i.e. they differ in HOW THEY ARE DECLARED, not in the calculation.
  *
- * <p>Biểu thức {@code Σ(điểm × trọng số) / Σtrọng số} bất biến với việc nhân tỉ lệ toàn bộ trọng
- * số, nên nó đúng cho cả hai ràng buộc: phân bổ ({@code Σw = 1}) chia cho 1 nên quy về tổng có
- * trọng số, còn trung bình ({@code Σw = n}) chia cho n nên quy về trung bình cộng.
+ * <p>The expression {@code Σ(score × weight) / Σweight} is invariant under scaling all weights proportionally,
+ * so it is correct for both constraints: allocation ({@code Σw = 1}) divides by 1 and reduces to the weighted
+ * sum, while average ({@code Σw = n}) divides by n and reduces to the arithmetic mean.
  */
 public final class RubricItemScoreFormula {
 
@@ -22,19 +22,19 @@ public final class RubricItemScoreFormula {
     }
 
     /**
-     * Một tiêu chí ĐÃ được phân giải: điểm đã kẹp trong khoảng của chính tiêu chí đó, kèm trọng
-     * số khai trong rubric.
+     * A RESOLVED criterion: the score already clamped to the range of that criterion itself, together with the weight
+     * declared in the rubric.
      *
-     * @param weight null coi như không khai trọng số -- cột {@code rubric_criterions.weight} là
-     *               NOT NULL nên trong thực tế không xảy ra, nhưng công thức không nên phụ thuộc
-     *               vào ràng buộc của một bảng cụ thể.
+     * @param weight null is treated as no weight declared -- the {@code rubric_criterions.weight} column is
+     *               NOT NULL so in practice it does not happen, but the formula should not depend
+     *               on the constraint of one specific table.
      */
     public record ScoredCriterion(BigDecimal score, BigDecimal weight) {
     }
 
     /**
-     * @param scored   các tiêu chí đã phân giải; rỗng thì trả về {@code scaleMin}
-     * @param scaleMin thang điểm của rubric version -- kết quả luôn bị kẹp về trong thang
+     * @param scored   the resolved criteria; if empty, returns {@code scaleMin}
+     * @param scaleMin the score scale of the rubric version -- the result is always clamped into the scale
      */
     public static BigDecimal compute(
             List<ScoredCriterion> scored,

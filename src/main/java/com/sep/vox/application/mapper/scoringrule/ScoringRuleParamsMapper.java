@@ -27,12 +27,12 @@ public class ScoringRuleParamsMapper {
 
     // Raw JSON map -> concrete condition Value Object (e.g. DURATION_LESS_THAN -> DurationThresholdParams)
     public ScoringRuleConditionParams toConditionParams(ScoringRuleConditionType conditionType, Map<String, Object> raw) {
-        return convert(raw, conditionType.paramTypes(), "điều kiện (conditionParams)");
+        return convert(raw, conditionType.paramTypes(), "condition (conditionParams)");
     }
 
     // Raw JSON map -> concrete action Value Object (e.g. CAP_FINAL_SCORE -> CapFinalScoreParams)
     public ScoringRuleActionParams toActionParams(ScoringRuleActionType actionType, Map<String, Object> raw) {
-        return convert(raw, actionType.paramType(), "hành động (actionParams)");
+        return convert(raw, actionType.paramType(), "action (actionParams)");
     }
 
     // Any Value Object -> raw JSON map, used when returning data to the outside in a response (DTO)
@@ -61,7 +61,7 @@ public class ScoringRuleParamsMapper {
         try {
             return jsonSerializationPort.toObjectMap(json);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Chuỗi JSON gửi lên không hợp lệ: " + e.getMessage());
+            throw new IllegalArgumentException("The submitted JSON string is invalid: " + e.getMessage());
         }
     }
 
@@ -72,7 +72,7 @@ public class ScoringRuleParamsMapper {
             // Wrap the Jackson conversion error into an easy-to-read business error, so the technical stack trace
             // does not leak to the client
             throw new IllegalArgumentException(
-                    "Tham số " + fieldLabel + " không hợp lệ với loại đã chọn: " + e.getMessage());
+                    "Parameter " + fieldLabel + " is invalid for the selected type: " + e.getMessage());
         }
     }
 }

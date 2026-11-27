@@ -24,7 +24,7 @@ public class QuestionBankManageAccessService {
     public void requireManageAccess(QuestionBank bank, UUID currentUserId) {
         if (bank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
+                throw new ForbiddenException("Access denied");
             }
             return;
         }
@@ -32,7 +32,7 @@ public class QuestionBankManageAccessService {
             .map(schoolUser -> schoolUser.getSchoolId())
             .orElse(null);
         if (currentSchoolId == null || !currentSchoolId.equals(bank.getSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 }

@@ -33,7 +33,7 @@ public class AssessmentScheduleAutoCompleteJob {
     public void run() {
         int completed = assessmentScheduleClosureService.completeEndedSchedules(Instant.now(), BATCH_SIZE);
         if (completed > 0) {
-            log.info("Tự đóng {} ca thi đã qua giờ kết thúc", completed);
+            log.info("Auto-closed {} assessment schedules past their end time", completed);
         }
     }
 }

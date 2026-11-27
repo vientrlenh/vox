@@ -26,10 +26,10 @@ class SchoolSubscriptionActiveGuardServiceTests {
         when(repository.findActiveBySchoolId(SCHOOL_ID)).thenReturn(Optional.empty());
         SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
-        assertThatThrownBy(() -> guard.requireActiveForSchool(SCHOOL_ID, "tạo Bài kiểm tra tập trung"))
+        assertThatThrownBy(() -> guard.requireActiveForSchool(SCHOOL_ID, "create a centralized assessment"))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("chưa có gói subscription đang hoạt động")
-            .hasMessageContaining("tạo Bài kiểm tra tập trung");
+            .hasMessageContaining("has no active subscription")
+            .hasMessageContaining("create a centralized assessment");
     }
 
     @Test
@@ -38,7 +38,7 @@ class SchoolSubscriptionActiveGuardServiceTests {
         when(repository.findActiveBySchoolId(SCHOOL_ID)).thenReturn(Optional.of(mock(SchoolSubscription.class)));
         SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
-        assertThatCode(() -> guard.requireActiveForSchool(SCHOOL_ID, "tạo Class Test")).doesNotThrowAnyException();
+        assertThatCode(() -> guard.requireActiveForSchool(SCHOOL_ID, "create a class test")).doesNotThrowAnyException();
     }
 
     @Test
@@ -47,9 +47,9 @@ class SchoolSubscriptionActiveGuardServiceTests {
         when(repository.findActiveSubscriptionIdForUser(STUDENT_ID)).thenReturn(Optional.empty());
         SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
-        assertThatThrownBy(() -> guard.requireActiveForStudent(STUDENT_ID, "bắt đầu buổi luyện tập cá nhân hóa AI"))
+        assertThatThrownBy(() -> guard.requireActiveForStudent(STUDENT_ID, "start a personalized AI practice session"))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("chưa có gói subscription đang hoạt động");
+            .hasMessageContaining("has no active subscription");
     }
 
     @Test
@@ -58,7 +58,7 @@ class SchoolSubscriptionActiveGuardServiceTests {
         when(repository.findActiveSubscriptionIdForUser(STUDENT_ID)).thenReturn(Optional.of(SUBSCRIPTION_ID));
         SchoolSubscriptionActiveGuardService guard = new SchoolSubscriptionActiveGuardService(repository);
 
-        assertThatCode(() -> guard.requireActiveForStudent(STUDENT_ID, "bắt đầu buổi luyện tập cá nhân hóa AI"))
+        assertThatCode(() -> guard.requireActiveForStudent(STUDENT_ID, "start a personalized AI practice session"))
             .doesNotThrowAnyException();
     }
 }

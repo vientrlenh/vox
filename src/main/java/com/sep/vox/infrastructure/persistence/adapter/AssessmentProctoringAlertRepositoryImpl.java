@@ -19,16 +19,16 @@ public class AssessmentProctoringAlertRepositoryImpl implements AssessmentProcto
     private final SpringDataAssessmentProctoringAlertRepository springDataAssessmentProctoringAlertRepository;
 
     /**
-     * Chống trùng hai lớp, và lớp thứ hai mới là lớp thật.
+     * Two layers of duplicate protection, and the second one is the real one.
      *
-     * <p>Kiểm tra tồn tại trước chỉ để tránh ném exception trong trường hợp thường gặp (Kafka gửi lại
-     * một message đã xử lý xong từ lâu). Nhưng kiểm-rồi-ghi vốn có khe hở: hai instance consumer cùng
-     * nhận một message trong lúc rebalance sẽ cùng vượt qua bước kiểm tra. Ràng buộc unique trên
-     * {@code event_id} mới là thứ đóng khe hở đó, nên vi phạm ràng buộc ở đây KHÔNG phải lỗi -- nó
-     * chính là cơ chế chống trùng đang làm việc, và phải được nuốt thay vì đẩy message vào DLT.
+     * <p>The existence check first only avoids throwing an exception in the common case (Kafka redelivering
+     * a message that was fully processed long ago). But check-then-write has a gap: two consumer instances
+     * receiving the same message during a rebalance both pass the check. The unique constraint on
+     * {@code event_id} is what closes that gap, so a constraint violation here is NOT an error -- it
+     * is the duplicate protection doing its work, and it must be swallowed instead of sending the message to the DLT.
      *
-     * <p>Dùng {@code saveAndFlush} để va chạm nổ ra ngay trong khối try này, thay vì lúc commit ở
-     * một tầng khác nơi không ai còn biết nó nghĩa là gì.
+     * <p>{@code saveAndFlush} is used so that the collision surfaces inside this try block, instead of at commit time in
+     * another layer where nobody knows what it means any more.
      */
     @Override
     public boolean saveIfAbsent(AssessmentProctoringAlert alert) {

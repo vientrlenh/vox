@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotBlank;
 
 public record UpdateAssessmentScheduleStatusRequest(
-    @NotBlank(message = "Hành động là bắt buộc")
+    @NotBlank(message = "Action is required")
     String action,
 
     String note,

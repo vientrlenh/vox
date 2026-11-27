@@ -40,9 +40,9 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
     public Void execute(DeleteSchoolRubricVersionCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
 
         RubricVersion version = loadVersionOwnedBySchool(command, currentUserId);
@@ -57,32 +57,32 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
 
     private RubricVersion loadVersionOwnedBySchool(DeleteSchoolRubricVersionCommand command, UUID currentUserId) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Rubric version was not found."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(command.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào phiên bản của trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to interfere with a version of another school.");
         }
         return version;
     }
 
     private void requireActiveSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+            throw new ForbiddenException("Action denied: this school is disabled in the system.");
         }
     }
 
     private void requireDeletable(RubricVersion version) {
         // Hard delete only while DRAFT; other statuses use the separate Archive function.
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
+            throw new IllegalArgumentException("Only a version in DRAFT status can be deleted. Use the Archive function if the version is PUBLISHED.");
         }
 
         // Do not delete while an Assessment Policy still points at the version.
@@ -93,7 +93,7 @@ public class DeleteSchoolRubricVersionUseCase implements IUseCase<DeleteSchoolRu
         if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
                 || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
             throw new IllegalArgumentException(
-                    "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
+                    "Cannot delete this version because an Assessment Policy is using it. Delete or archive those policies first.");
         }
     }
 }

@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.application.port.input.service.RoundRobinLoadBalancer;
 
 /**
- * Chia theo TẢI THẬT, không phải chia vòng tròn từ số 0 — đó là toàn bộ lý do lớp này
- * tồn tại, và cũng là thứ dễ viết sai nhất khi ai đó "đơn giản hoá" nó.
+ * Distributes by REAL LOAD, not round-robin from zero -- that is the whole reason this class
+ * exists, and also the thing most easily written wrong when someone "simplifies" it.
  */
 class RoundRobinLoadBalancerTests {
 
@@ -93,6 +93,6 @@ class RoundRobinLoadBalancerTests {
     void should_reject_an_empty_assignee_group() {
         assertThatThrownBy(() -> balancer.distribute(work(1), List.of(), Map.of()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("ít nhất một giáo viên");
+            .hasMessageContaining("At least one teacher");
     }
 }

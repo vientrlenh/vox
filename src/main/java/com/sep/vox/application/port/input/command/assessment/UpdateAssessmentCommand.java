@@ -19,13 +19,13 @@ public record UpdateAssessmentCommand(
     Integer assessmentTimeDurationSecond,
     ResultDecisionMethod resultDecisionMethod,
     Boolean requiresOtp,
-    /** null = giữ nguyên cấu hình giám sát; danh sách rỗng = tắt giám sát. */
+    /** null = keep the proctoring configuration; an empty list = turn proctoring off. */
     List<String> requiredStreamTypes,
     AssessmentStreamTypePermission streamTypePermission,
 
     /**
-     * Ngưỡng tin cậy AI theo PHẦN TRĂM (0-100). null = giữ nguyên, đúng patch semantics như mọi
-     * trường khác trong lệnh này.
+     * The AI confidence threshold as a PERCENTAGE (0-100). null = keep it, exactly the patch semantics of every other
+     * field in this command.
      */
     BigDecimal aiConfidenceThresholdPercent
 ) {

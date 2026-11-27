@@ -31,10 +31,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user;
         if (login.contains("@")) {
             user = userRepository.findByEmail(login)
-                .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
+                .orElseThrow(() -> new UsernameNotFoundException("Incorrect login credentials"));
         } else {
             user = userRepository.findByPhone(login)
-                .orElseThrow(() -> new UsernameNotFoundException("Thông tin đăng nhập sai"));
+                .orElseThrow(() -> new UsernameNotFoundException("Incorrect login credentials"));
         } 
         List<UserRoleInfo> userRoleWithInfo = userRoleQueryRepository.findByUserIdWithRoleInfo(user.getId());
         List<String> roles = userRoleWithInfo

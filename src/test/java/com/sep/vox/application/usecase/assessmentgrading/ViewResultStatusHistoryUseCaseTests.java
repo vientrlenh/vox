@@ -34,9 +34,9 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 /**
- * Ba nhóm người xem với ba lý do khác nhau. Cổng {@code @PreAuthorize} của controller
- * cho cả TEACHER vào, nên nếu use case không có nhánh cho họ thì giáo viên LUÔN nhận
- * {@code Forbidden} — cửa mở nhưng bên trong khoá (review BE-14).
+ * Three groups of viewers with three different reasons. The controller's {@code @PreAuthorize} gate
+ * lets TEACHER in, so if the use case has no branch for them a teacher ALWAYS gets
+ * {@code Forbidden} -- the door is open but locked inside (review BE-14).
  */
 class ViewResultStatusHistoryUseCaseTests {
 
@@ -103,8 +103,8 @@ class ViewResultStatusHistoryUseCaseTests {
     }
 
     /**
-     * "Từng được giao", không phải "đang cầm": phân công đã COMPLETED cũng tính. Mock trả
-     * {@code false} mặc định nên các ca phủ định không cần khai gì thêm.
+     * "Was ever assigned", not "currently holding": an already COMPLETED assignment counts too. The mock returns
+     * {@code false} by default so the negative cases need no extra stubbing.
      */
     private void givenEverAssignedTo(UUID assignedTeacherId) {
         when(assessmentGradingAssignmentRepository
@@ -113,7 +113,7 @@ class ViewResultStatusHistoryUseCaseTests {
     }
 
     private void schoolAdminIsRefused() {
-        doThrow(new ForbiddenException("BẢO MẬT")).when(assessmentGradingAccessService)
+        doThrow(new ForbiddenException("SECURITY")).when(assessmentGradingAccessService)
             .authorizeSchoolAdmin(any(), any());
     }
 
@@ -122,14 +122,14 @@ class ViewResultStatusHistoryUseCaseTests {
         loggedInAs(studentId);
 
         assertThat(useCase.execute(candidateResultId)).hasSize(1);
-        // Chủ bài không phải đi qua nhánh phân quyền admin.
+        // The owner of the test does not go through the admin authorization branch.
         verify(assessmentGradingAccessService, never()).authorizeSchoolAdmin(any(), any());
     }
 
     /**
-     * Dòng thời gian mang scoreBefore/scoreAfter — với chính chủ nó chính là điểm, nên nó
-     * chịu đúng luật công bố như màn kết quả. Trả rỗng chứ không ném lỗi: đây là khối phụ
-     * trợ, ném lỗi sẽ làm hỏng cả trang chỉ vì một mục bên lề.
+     * The timeline carries scoreBefore/scoreAfter -- for the owner themselves that IS the score, so it
+     * follows exactly the same publication rule as the result screen. Return empty instead of throwing: this is an auxiliary
+     * block, and throwing would break the whole page over a side item.
      */
     @Test
     void should_hide_timeline_from_the_owning_student_until_the_result_is_concluded() {
@@ -155,7 +155,7 @@ class ViewResultStatusHistoryUseCaseTests {
         givenEverAssignedTo(teacherId);
         schoolAdminIsRefused();
 
-        // Lịch sử điểm chính là ngữ cảnh giáo viên cần khi chấm phúc khảo.
+        // The score history is exactly the context a teacher needs when grading an appeal.
         assertThat(useCase.execute(candidateResultId)).hasSize(1);
     }
 
@@ -176,7 +176,7 @@ class ViewResultStatusHistoryUseCaseTests {
     @Test
     void should_refuse_a_teacher_who_was_never_assigned_to_this_paper() {
         loggedInAs(teacherId);
-        // Bài này có người khác cầm; người đăng nhập chưa từng được giao.
+        // Someone else holds this submission; the logged-in user was never assigned.
         givenEverAssignedTo(UUID.randomUUID());
         schoolAdminIsRefused();
 
@@ -185,8 +185,8 @@ class ViewResultStatusHistoryUseCaseTests {
     }
 
     /**
-     * Khoá lại chủ đích: quyền đọc suy từ "đã từng được giao", KHÔNG từ dòng phân công
-     * đang mở — quay lại lối cũ là giáo viên vừa nộp điểm xong mất quyền xem ngay.
+     * Locks in the intent: read access is derived from "was ever assigned", NOT from the currently
+     * open assignment row -- going back to the old way means a teacher who has just submitted a score loses the right to view it immediately.
      */
     @Test
     void should_not_look_at_the_open_assignment_row_to_authorize_a_teacher() {

@@ -39,9 +39,9 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentResultStatusHistoryRepository;
 
 /**
- * Lối thoát cho tình trạng một bài treo chặn cả kỳ thi (review BE-5) — nhưng nó chỉ đưa
- * bài về {@code RELEASED}, KHÔNG bao giờ sinh {@code FINAL}, và không được đụng vào tranh
- * chấp điểm đang treo. Ba điều đó quan trọng ngang nhau.
+ * The way out of a stuck submission that blocks a whole assessment (review BE-5) -- but it only moves
+ * the submission to {@code RELEASED}, NEVER produces {@code FINAL}, and must not touch a score
+ * dispute that is still pending. These three points are equally important.
  */
 class BulkFinalizeAssessmentResultsUseCaseTests {
 
@@ -123,21 +123,21 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new BulkFinalizeAssessmentResultsCommand(assessmentId, false)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa ai chấm");
+            .hasMessageContaining("nobody has graded");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
     }
 
     @Test
     void should_refuse_while_an_appeal_is_still_open_even_when_the_admin_confirmed() {
-        // Cờ "công bố theo điểm AI" chỉ nói về bài chưa ai chấm. Nuốt luôn một tranh
-        // chấp điểm đang treo thì đơn kẹt mở vĩnh viễn.
+        // The flag "publish with the AI score" is only about submissions nobody has graded. Swallowing a pending score
+        // dispute too would leave the appeal stuck open forever.
         givenPreview(new BulkFinalizePreviewInfo(3, 2, 0, 0, 1, 0, List.of(UUID.randomUUID())));
         givenResults(result(AssessmentCandidateResultStatus.RELEASED));
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("phúc khảo");
+            .hasMessageContaining("appeal");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
     }
@@ -150,33 +150,33 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đơn phúc khảo");
+            .hasMessageContaining("appeal");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
     }
 
     @Test
     void should_refuse_when_a_paper_is_being_regraded_for_an_appeal() {
-        // Một giáo viên đang cầm bài chấm dở ở vòng APPEAL — chốt sổ không quyết thay.
+        // A teacher is holding a half-graded submission in the APPEAL round -- finalizing does not decide for them.
         givenResults(result(AssessmentCandidateResultStatus.RE_GRADING));
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chấm phúc khảo");
+            .hasMessageContaining("graded on appeal");
 
         verify(assessmentCandidateResultRepository, never()).save(any());
     }
 
     @Test
     void should_name_every_blocking_status_in_one_message() {
-        // Báo từng thứ một là bắt admin bấm lại nhiều lần mới biết còn gì phải xử lý.
+        // Reporting them one at a time forces the admin to click again many times before knowing what is left to handle.
         givenResults(
             result(AssessmentCandidateResultStatus.APPEALED),
             result(AssessmentCandidateResultStatus.RE_GRADING));
 
         assertThatThrownBy(() -> useCase.execute(confirmed()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContainingAll("đơn phúc khảo", "chấm phúc khảo");
+            .hasMessageContainingAll("appeal", "graded on appeal");
     }
 
     @Test
@@ -259,7 +259,7 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
             assertThat(history.getToStatus()).isEqualTo(AssessmentCandidateResultStatus.RELEASED);
             // It must be distinguishable later: this submission was published on the AI score, not
             // on a human score.
-            assertThat(history.getReason()).contains("điểm AI");
+            assertThat(history.getReason()).contains("AI score");
         });
     }
 
@@ -284,8 +284,8 @@ class BulkFinalizeAssessmentResultsUseCaseTests {
 
     @Test
     void should_leave_assignments_on_papers_it_did_not_touch() {
-        // Vòng SPOT_CHECK trên bài RELEASED và vòng REMEDIATION trên bài INVALID vẫn còn
-        // nguyên việc để làm — đóng chúng là xoá một quyết định chưa được đưa ra.
+        // A SPOT_CHECK round on a RELEASED submission and a REMEDIATION round on an INVALID submission still have
+        // work to do -- closing them would erase a decision that has not been made yet.
         givenResults(
             result(AssessmentCandidateResultStatus.RELEASED),
             result(AssessmentCandidateResultStatus.INVALID));

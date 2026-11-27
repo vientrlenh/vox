@@ -35,12 +35,12 @@ public class CreateAssessmentBlueprintUseCase implements IUseCase<CreateAssessme
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         // Grade level is a shared catalog: it only has to exist, it no longer belongs to a school.
         if (command.gradeLevelId() != null
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-            throw new ResourceNotFoundException("Không tìm thấy khối lớp");
+            throw new ResourceNotFoundException("Grade level not found");
         }
 
         AssessmentBlueprint blueprint = AssessmentBlueprint.create(

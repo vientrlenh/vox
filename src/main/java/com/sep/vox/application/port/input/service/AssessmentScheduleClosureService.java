@@ -49,8 +49,8 @@ public class AssessmentScheduleClosureService {
         }
         long activeCount = assessmentSessionRepository.countActiveByAssessmentId(assessmentId);
         if (activeCount > 0) {
-            throw new IllegalArgumentException("Còn " + activeCount
-                + " học sinh đang làm bài ở ca thi đang diễn ra, không thể đóng bài kiểm tra");
+            throw new IllegalArgumentException("There are still " + activeCount
+                + " students taking the assessment in a running schedule, so the assessment cannot be closed");
         }
     }
 
@@ -102,10 +102,10 @@ public class AssessmentScheduleClosureService {
     }
 
     /**
-     * Ca đã công bố mà đã qua giờ kết thúc → COMPLETED, tối đa {@code limit} ca mỗi lượt. Đây là
-     * đường bình thường: ca tự đóng khi hết giờ, không phải chờ tới lúc bài kiểm tra đóng.
+     * A published schedule whose end time has passed → COMPLETED, at most {@code limit} schedules per run. This is the
+     * normal path: a schedule closes itself when time runs out, without waiting for the assessment to close.
      *
-     * @return số ca đã đổi trạng thái
+     * @return the number of schedules whose status changed
      */
     public int completeEndedSchedules(Instant now, int limit) {
         List<AssessmentSchedule> ended = assessmentScheduleRepository.findPublishedEndedBefore(now, limit);

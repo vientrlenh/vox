@@ -30,8 +30,8 @@ public class SchoolBalanceRepositoryImpl implements SchoolBalanceRepository {
     }
 
     /**
-     * INSERT ... ON CONFLICT DO NOTHING rồi mới khóa: hai câu, nhưng câu đầu chỉ ghi đúng một lần cho
-     * cả đời của trường và các lần sau chỉ tốn một lần kiểm ràng buộc duy nhất.
+     * INSERT ... ON CONFLICT DO NOTHING first, then lock: two statements, but the first writes exactly once for
+     * the whole life of the school and later calls cost only one unique-constraint check.
      */
     @Override
     public SchoolBalance findBySchoolIdForUpdateOrCreate(UUID schoolId, Instant now) {
@@ -39,7 +39,7 @@ public class SchoolBalanceRepositoryImpl implements SchoolBalanceRepository {
         return springDataSchoolBalanceRepository.findWithLockBySchoolId(schoolId)
             .map(SchoolBalanceMapper::toDomain)
             .orElseThrow(() -> new IllegalStateException(
-                "Không đọc được ví trường " + schoolId + " ngay sau khi đã bảo đảm dòng tồn tại"));
+                "Could not read the balance of school " + schoolId + " right after ensuring the row exists"));
     }
 
     @Override

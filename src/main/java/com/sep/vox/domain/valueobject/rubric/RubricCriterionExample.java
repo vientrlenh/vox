@@ -9,13 +9,13 @@ public record RubricCriterionExample(
 ) {
     public RubricCriterionExample {
         if (transcript == null || transcript.isBlank()) {
-            throw new IllegalArgumentException("Ví dụ của tiêu chí không được để trống");
+            throw new IllegalArgumentException("The criterion example must not be blank");
         }
         if (explanation == null || explanation.isBlank()) {
-            throw new IllegalArgumentException("Giải thích cho ví dụ của tiêu chí không được để trống");
+            throw new IllegalArgumentException("The explanation of the criterion example must not be blank");
         }
         if (expectedScore == null || expectedScore.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Điểm số dự kiến không được để trống hoặc dưới 0");
+            throw new IllegalArgumentException("The expected score must not be blank or below 0");
         }
     }
 }

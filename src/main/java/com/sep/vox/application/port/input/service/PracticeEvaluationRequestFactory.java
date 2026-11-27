@@ -21,13 +21,13 @@ import com.sep.vox.domain.repository.PracticeResponseTurnRepository;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 
 /**
- * Dựng yêu cầu chấm cho MỘT câu của phiên luyện.
+ * Builds the grading request for ONE question of a practice session.
  *
- * Tách khỏi {@code SubmitPracticeTurnUseCase} vì giờ có HAI nơi cần bắn yêu cầu chấm, không
- * còn một: lượt cuối của một câu (đường bình thường) và lúc đóng phiên với những câu học sinh
- * bỏ dở (xem {@link PracticeGradingFlushService}). Để nguyên trong use case rồi gọi chéo sang
- * là buộc hai đường phải đi qua cùng một @Transactional -- mà đường xả chấm chạy trong
- * transaction đóng phiên, hoàn toàn khác ngữ cảnh.
+ * Split out of {@code SubmitPracticeTurnUseCase} because there are now TWO places that need to fire a grading request, no
+ * longer one: the last turn of a question (the normal path) and the closing of a session with the questions the student
+ * left unfinished (see {@link PracticeGradingFlushService}). Leaving it in the use case and calling across
+ * would force both paths through the same @Transactional -- yet the flush path runs inside the
+ * session-closing transaction, a completely different context.
  */
 @Service
 @RequiredArgsConstructor
@@ -43,7 +43,7 @@ public class PracticeEvaluationRequestFactory {
             UUID responseId,
             UUID questionId) {
         QuestionEvaluationInfo question = practiceQuestionQueryRepository.findQuestionWithTopic(questionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice question not found."));
         List<AssessmentAttemptEvaluationRequestedExternalEvent.TurnInput> turns = loadTurns(responseId);
         return new PracticeAttemptEvaluationRequestedExternalEvent(
             sessionId.toString(),

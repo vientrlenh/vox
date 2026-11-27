@@ -60,7 +60,7 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
         }
         String finalName = StringNormalization.trimAndCollapseSpaces(name);
         if (finalName.isBlank()) {
-            throw new IllegalArgumentException("Tên Rubric không hợp lệ hoặc bị để trống.");
+            throw new IllegalArgumentException("The Rubric name is invalid or empty.");
         }
         return finalName;
     }
@@ -68,19 +68,19 @@ public class UpdateSystemRubricUseCase implements IUseCase<UpdateSystemRubricCom
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
     }
 
     private void loadSystemOwnedRubric(UUID rubricId) {
         Rubric rubric = rubricRepository.findById(rubricId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Rubric was not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
+            throw new ForbiddenException("This Rubric belongs to a School. A System Admin is not allowed to interfere.");
         }
     }
 }

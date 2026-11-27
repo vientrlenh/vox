@@ -21,11 +21,11 @@ import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
- * Giáo viên trả lại phân công kèm lý do (quen biết thí sinh, quá tải...).
+ * A teacher hands an assignment back with a reason (knows the candidate, overloaded...).
  *
- * <p>Bài KHÔNG đổi trạng thái — nó chỉ quay về hàng chưa giao. Dòng phân công vẫn
- * được giữ với {@code outcome = DECLINED}: xoá đi thì mất luôn thông tin "người này
- * đã từ chối bài này", mà đó chính là thứ admin cần khi giao lại.
+ * <p>The submission does NOT change status -- it only goes back to the unassigned queue. The assignment row is
+ * kept with {@code outcome = DECLINED}: deleting it would lose the information "this person
+ * already declined this submission", which is exactly what the admin needs when reassigning.
  */
 @Service
 @RequiredArgsConstructor

@@ -112,17 +112,17 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
         );
     }
 
-    /** Số thẻ đứng đầu bảng xếp hạng được coi là "trong tầm ngắm" -- chủ đề ngoài ngưỡng này
-     * chỉ có thể lọt vào lô chào qua ε-greedy (xem execute()). */
+    /** The number of cards at the top of the ranking that count as "in sight" -- a topic outside this threshold
+     * can only get into the offered batch through ε-greedy (see execute()). */
     private static final int TOP_RANK_WINDOW = 10;
 
     /**
-     * Chủ đề này có nằm NGOÀI top-{@value #TOP_RANK_WINDOW} theo Final(t) không.
+     * Whether this topic is OUTSIDE the top-{@value #TOP_RANK_WINDOW} by Final(t).
      *
-     * Dùng để suy ra phiên có phải do thăm dò hệ thống đẩy hay không, thay vì phải NHỚ slot
-     * epsilon nào đã chào cho ai: nhớ thì cần một map sống mãi trong RAM (rò theo số học sinh ×
-     * số chủ đề) hoặc phải thêm TTL/LRU với đủ thứ bug đi kèm (mất state sau restart, evict
-     * nhầm lúc học sinh còn đang chọn). Xếp hạng vốn tất định nên tính lại rẻ hơn và không sai.
+     * Used to infer whether a session was pushed by system exploration, instead of having to REMEMBER which epsilon
+     * slot was offered to whom: remembering needs a map living forever in RAM (leaking with students × topics) or a
+     * TTL/LRU with all the bugs that come with it (state lost after a restart, evicting wrongly while the student is
+     * still choosing). The ranking is deterministic anyway, so recomputing is cheaper and not wrong.
      */
     @Transactional(readOnly = true)
     public boolean isOutsideTopRanked(UUID studentId, UUID topicId) {
@@ -141,7 +141,7 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
                 break;
             }
         }
-        // Không tìm thấy (chủ đề vừa bị tắt/đổi) -> không dám kết luận là thăm dò.
+        // Not found (the topic was just switched off/changed) -> do not dare conclude that it was exploration.
         return position >= TOP_RANK_WINDOW;
     }
 
@@ -151,9 +151,9 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
 
     private static String rationaleFor(RankedTopic topic) {
         if (topic.fromSchool()) {
-            return "Khớp chương trình học của bạn";
+            return "Matches your curriculum";
         }
-        return "Gợi ý cho bạn";
+        return "Suggested for you";
     }
 
     
@@ -246,23 +246,22 @@ public class ViewPracticeTopicOffersUseCase implements IUseCase<ViewPracticeTopi
     }
 
     /**
-     * Chưa nộp quiz sở thích thì KHÔNG chào chủ đề nào.
+     * If the interest quiz has not been submitted, offer NO topic at all.
      *
-     * <p>Cổng này phải nằm ở server chứ không phải ở app. Cổng bên Flutter chỉ gác tab "Luyện
-     * tập", trong khi màn Trang chủ -- tab hiện ra ngay sau khi đăng nhập -- cũng gọi
-     * {@code practiceTopicOffers} để dựng thẻ "Chủ đề hôm nay" (xem
-     * {@code PersonalizeRepository.getDashboard}). Nên chỉ cần đăng nhập là lô chào đã chạy,
-     * không cần chạm vào tab nào.
+     * <p>This gate must live on the server, not in the app. The Flutter gate only guards the "Practice" tab, while the
+     * Home screen -- the tab shown right after login -- also calls {@code practiceTopicOffers} to build the
+     * "Topic of the day" card (see {@code PersonalizeRepository.getDashboard}). So logging in alone is enough to
+     * run the offer, without touching any tab.
      *
-     * <p>Không chặn thì {@code dimension_interest_scores} rỗng và câu xếp hạng lấp bằng
-     * {@code COALESCE(..., 0.5)}: mọi chủ đề trong chương trình ra đúng cùng một điểm, client
-     * vẫn in "% khớp" từ con số đó. Danh sách trông như đã cá nhân hoá trong khi chưa có một
-     * tín hiệu nào -- sai lặng lẽ, không lỗi.
+     * <p>Without the gate, {@code dimension_interest_scores} is empty and the ranking query fills it with
+     * {@code COALESCE(..., 0.5)}: every topic in the curriculum gets exactly the same score, and the client still
+     * prints "% match" from that number. The list looks personalized when there is not a single signal -- a silent
+     * error, no failure.
      *
-     * <p>Hệ quả nữa, quan trọng hơn: lô chào rỗng khiến controller kích hoạt sinh bù, mà lượt
-     * sinh đó gửi bản đồ sở thích RỖNG sang LLM. Đo được trên production 2026-08-15: 111 học
-     * sinh, 0 hồ sơ, 0 phiên luyện, nhưng kho đã có 6 chủ đề chung chung sinh lúc 10:25 --
-     * và kho là của chung nên cả 111 em đều nhận chúng. Xem thêm cổng cùng cặp ở
+     * <p>Another consequence, and a more important one: an empty offer makes the controller trigger a backfill
+     * generation, and that generation sends an EMPTY interest map to the LLM. Measured on production on 2026-08-15:
+     * 111 students, 0 profiles, 0 practice sessions, yet the pool already had 6 generic topics generated at 10:25 --
+     * and the pool is shared, so all 111 students received them. See also the paired gate in
      * {@code TopicOfferBackfillService.backfillAsync}.
      */
     private boolean hasCompletedInterestQuiz(UUID studentId) {

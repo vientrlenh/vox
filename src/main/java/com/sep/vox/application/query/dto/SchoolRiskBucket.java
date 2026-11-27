@@ -1,29 +1,29 @@
 package com.sep.vox.application.query.dto;
 
 /**
- * Bốn nhóm "trường cần chú ý" trên trang tổng quan hệ thống.
+ * The four "schools needing attention" buckets on the system overview page.
  *
- * <p>KHÔNG phải một phép chia nhóm — đừng cộng bốn số lại:
+ * <p>This is NOT a partition -- do not add the four numbers up:
  *
  * <ul>
- *   <li>{@link #EXPIRING_SOON} là TẬP CON của nhóm trường còn gói.</li>
- *   <li>{@link #LAPSED} và {@link #SUSPENDED} loại trừ nhau và loại trừ nhóm còn gói.</li>
- *   <li>{@link #IN_DEBT} CẮT NGANG cả ba: nó đọc từ số dư ví chứ không từ trạng thái thuê bao, nên
- *       một trường đang còn gói mà ví âm nằm ở cả hai chỗ.</li>
+ *   <li>{@link #EXPIRING_SOON} is a SUBSET of the group of schools that still have a plan.</li>
+ *   <li>{@link #LAPSED} and {@link #SUSPENDED} are mutually exclusive and exclude the group that still has a plan.</li>
+ *   <li>{@link #IN_DEBT} CUTS ACROSS all three: it reads from the wallet balance and not from the subscription status, so
+ *       a school that still has a plan but a negative wallet sits in both places.</li>
  * </ul>
  *
- * <p>Trường CHƯA TỪNG mua gói nào không thuộc ba nhóm đầu: chúng không có dòng nào trong
- * {@code school_subscriptions} để gộp, nên vị từ của cả ba trả về NULL và loại chúng ra. Đó là hành
- * vi GIỐNG HỆT phép đếm của trang tổng quan, và giữ nguyên là có chủ đích — hai màn hình phải nói
- * cùng một con số trước đã; có nên thêm nhóm thứ năm cho chúng hay không là câu hỏi riêng.
+ * <p>Schools that have NEVER bought a plan belong to none of the first three buckets: they have no row in
+ * {@code school_subscriptions} to group, so the predicates of all three return NULL and exclude them. That
+ * is IDENTICAL to the overview page's count, and keeping it that way is deliberate -- the two screens must
+ * first say the same number; whether to add a fifth bucket for them is a separate question.
  */
 public enum SchoolRiskBucket {
-    /** Còn gói, nhưng kỳ đang phủ sẽ hết trong ngưỡng cảnh báo. */
+    /** Still has a plan, but the covering period will end within the warning threshold. */
     EXPIRING_SOON,
-    /** Từng có gói, hiện không kỳ nào phủ, và không bị đình chỉ. */
+    /** Once had a plan, no period covers it now, and it is not suspended. */
     LAPSED,
-    /** Bị đình chỉ và hiện không có kỳ nào phủ. */
+    /** Suspended and no period covers it now. */
     SUSPENDED,
-    /** Ví tự nạp âm — chính là trường đang bị chặn mở ca thi. */
+    /** The top-up wallet is negative -- exactly the schools blocked from opening assessment sessions. */
     IN_DEBT
 }

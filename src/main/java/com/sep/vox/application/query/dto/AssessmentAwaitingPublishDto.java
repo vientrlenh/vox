@@ -17,11 +17,11 @@ public record AssessmentAwaitingPublishDto(
     String name,
     Instant closeAt,
     int unscoredCount,
-    /** Trong số đó, còn cứu được bằng AI. */
+    /** Of those, the ones that can still be rescued by the AI. */
     int aiFailedRetryLeft,
-    /** Trong số đó, hết lượt AI — bắt buộc xếp giáo viên chấm. */
+    /** Of those, the ones out of AI attempts -- a teacher MUST be assigned to grade them. */
     int aiFailedNoRetryLeft,
-    /** Trong số đó, đã nằm ở hàng đợi người chấm (chờ phân công hoặc đang chấm). */
+    /** Of those, the ones already in the grader queue (waiting for assignment or being graded). */
     int awaitingHumanGrading
 ) {
 }

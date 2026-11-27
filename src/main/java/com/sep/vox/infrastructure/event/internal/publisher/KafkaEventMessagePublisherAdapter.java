@@ -34,7 +34,7 @@ public class KafkaEventMessagePublisherAdapter implements EventMessagePublisherP
         if (topic == null) {
             log.error("Topic not configured: eventId={}, eventType={}", event.getId(), event.getEventType());
             return CompletableFuture.failedFuture(
-                new IllegalStateException("Chưa cấu hình topic cho eventType=" + event.getEventType())
+                new IllegalStateException("No topic configured for eventType=" + event.getEventType())
             );
         }
 

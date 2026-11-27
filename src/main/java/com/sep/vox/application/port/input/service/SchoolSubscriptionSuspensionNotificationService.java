@@ -18,13 +18,13 @@ import com.sep.vox.domain.repository.OutboxRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Phát 2 event thông báo đình chỉ/gỡ đình chỉ gói -- mirror đúng cách {@code SchoolDebtNotificationService}
- * đang ghi outbox: CHỐT danh sách người nhận NGAY LÚC publish, nhúng thẳng vào payload, không để
- * consumer truy vấn lại. Mỗi method PHẢI được gọi trong cùng transaction với nơi đổi status (nơi gọi
- * tự chịu trách nhiệm @Transactional).
+ * Publishes 2 events notifying a plan suspension/unsuspension -- mirrors exactly how {@code SchoolDebtNotificationService}
+ * writes to the outbox: the recipient list is FIXED AT PUBLISH TIME and embedded straight in the payload, with no
+ * re-query by the consumer. Each method MUST be called in the same transaction as the place that changes the status (the caller
+ * is responsible for @Transactional).
  *
- * <p>Không có bảng audit riêng như SchoolDebtEvent -- lịch sử "ai đình chỉ/gỡ lúc nào/vì sao" đã có
- * SchoolSubscriptionEvent(SUSPENDED/UNSUSPENDED) làm sổ bền vững, xem ForceSuspendSubscriptionUseCase.
+ * <p>There is no separate audit table like SchoolDebtEvent -- the history of "who suspended/unsuspended when and why" already lives in
+ * SchoolSubscriptionEvent(SUSPENDED/UNSUSPENDED) as the durable ledger, see ForceSuspendSubscriptionUseCase.
  */
 @Service
 @RequiredArgsConstructor

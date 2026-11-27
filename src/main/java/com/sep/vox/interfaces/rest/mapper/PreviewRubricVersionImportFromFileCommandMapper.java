@@ -21,7 +21,7 @@ public class PreviewRubricVersionImportFromFileCommandMapper {
 
             return new PreviewRubricVersionImportFromFileCommand(rubricId, uploadedFile);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Hệ thống không thể đọc nội dung file tải lên. Vui lòng kiểm tra lại file.");
+            throw new IllegalArgumentException("The system cannot read the content of the uploaded file. Please check the file again.");
         }
     }
 
@@ -36,7 +36,7 @@ public class PreviewRubricVersionImportFromFileCommandMapper {
 
             return new PreviewSchoolRubricVersionImportCommand(schoolId, rubricId, uploadedFile);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Hệ thống không thể đọc nội dung file tải lên. Vui lòng kiểm tra lại file.");
+            throw new IllegalArgumentException("The system cannot read the content of the uploaded file. Please check the file again.");
         }
     }
 }

@@ -44,7 +44,7 @@ public class AcceptSchoolRubricResultBandImportUseCase implements IUseCase<Accep
     @Transactional
     public AcceptRubricResultBandImportResponse execute(AcceptRubricResultBandImportCommand command) {
         if (command.schoolId() == null) {
-            throw new IllegalArgumentException("Yêu cầu không hợp lệ: Thiếu mã trường học.");
+            throw new IllegalArgumentException("Invalid request: the school id is missing.");
         }
 
         requireActiveSchoolMember(command.schoolId());
@@ -65,33 +65,33 @@ public class AcceptSchoolRubricResultBandImportUseCase implements IUseCase<Accep
 
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
 
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
-        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Does not belong to any school."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("SECURITY: the school security id does not match.");
     }
 
     private ImportSession loadPreviewedSessionOfSchool(AcceptRubricResultBandImportCommand command) {
-        ImportSession session = importSessionRepository.findById(command.sessionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
+        ImportSession session = importSessionRepository.findById(command.sessionId()).orElseThrow(() -> new ResourceNotFoundException("Import session not found."));
 
         // Cross-check that the session belongs to the caller's school.
         if (session.getType() != ImportType.RUBRIC_RESULT_BAND || session.getImportedEntityId() == null
                 || session.getSchoolId() == null || !session.getSchoolId().equals(command.schoolId())) {
-            throw new IllegalArgumentException("Dữ liệu phiên làm việc không hợp lệ hoặc không thuộc trường của bạn.");
+            throw new IllegalArgumentException("The session data is invalid or does not belong to your school.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Phiên làm việc phải ở trạng thái PREVIEWED mới có thể thực hiện Xác nhận.");
+            throw new IllegalArgumentException("The session must be in PREVIEWED status before it can be confirmed.");
         }
         return session;
     }
 
     private void requireSchoolOwnedRubric(ImportSession session, UUID schoolId) {
-        RubricVersion version = rubricVersionRepository.findById(session.getImportedEntityId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric tương ứng."));
+        RubricVersion version = rubricVersionRepository.findById(session.getImportedEntityId()).orElseThrow(() -> new ResourceNotFoundException("The matching Rubric version was not found."));
         Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow();
 
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường học bạn.");
+            throw new ForbiddenException("Security: this Rubric is not owned by your school.");
         }
     }
 }

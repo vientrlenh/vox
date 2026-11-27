@@ -1,6 +1,6 @@
 spring:
-    # Cổng động: application.yaml cố định gRPC ở 9090, nên mọi @SpringBootTest đều chết với
-    # BindException khi máy đang chạy sẵn app (bootRun/IDE). Test không gọi gRPC nên để 0.
+    # Dynamic port: application.yaml fixes gRPC at 9090, so every @SpringBootTest dies with a
+    # BindException when the machine is already running the app (bootRun/IDE). Tests do not call gRPC, so it is set to 0.
     grpc:
         server:
             port: 0
@@ -8,35 +8,35 @@ spring:
     boot:
         admin:
             client:
-                # Cùng họ với khối kafka bên dưới: chặn test nói chuyện ra ngoài process.
+                # Same family as the kafka block below: stops tests from talking outside the process.
                 #
-                # Hôm nay client này chưa chạy trong test vì mọi @SpringBootTest đều dùng
-                # webEnvironment MOCK, không có WebServer thật nên WebServerInitializedEvent
-                # không bao giờ phát và ApplicationRegistrator không khởi động. Nhưng nó chỉ
-                # cách một chữ RANDOM_PORT: thêm đúng một test cần HTTP thật là client bật
-                # lên và POST vào spring.boot.admin.client.url -- địa chỉ đó ghi cứng
-                # localhost:8081, tức là app THẬT đang chạy trên máy dev, cứ 10 giây một lần.
-                # Kết quả là một instance ma nằm trong trang admin của app thật, trỏ về một
-                # cổng đã đóng ngay khi test kết thúc.
+                # Today this client does not run in tests because every @SpringBootTest uses
+                # webEnvironment MOCK, with no real WebServer, so WebServerInitializedEvent
+                # is never published and ApplicationRegistrator does not start. But it is only
+                # one word away from RANDOM_PORT: add a single test that needs real HTTP and the client starts
+                # and POSTs to spring.boot.admin.client.url -- that address is hardcoded to
+                # localhost:8081, i.e. the REAL app running on the dev machine, once every 10 seconds.
+                # The result is a ghost instance in the real app's admin page, pointing at a
+                # port that was closed as soon as the test ended.
                 enabled: false
 
-    # Cách ly Kafka. ContainerTestConfig chỉ dựng testcontainer cho Postgres, KHÔNG có
-    # container Kafka -- nên nếu không chặn ở đây thì mọi @SpringBootTest sẽ nối thẳng vào
-    # broker thật của máy dev (spring.kafka.bootstrap-servers mặc định localhost:9092).
+    # Kafka isolation. ContainerTestConfig only builds a testcontainer for Postgres, there is NO
+    # Kafka container -- so without a guard here every @SpringBootTest would connect straight to the
+    # real broker of the dev machine (spring.kafka.bootstrap-servers defaults to localhost:9092).
     #
-    # từ offset 0 bằng đúng group-id production, tra phiên thi trong DB testcontainer rỗng nên
-    # fail hết, rồi đẩy toàn bộ event sang DLT. Với app thật thì số event đó coi như đã tiêu
-    # thụ xong và mất vĩnh viễn.
+    # from offset 0 with the exact production group-id, look up exam sessions in the empty testcontainer DB and
+    # fail all of them, then push every event to the DLT. For the real app those events count as already
+    # consumed and are lost forever.
     kafka:
         listener:
-            # Chốt chặn chính: không container listener nào khởi động, nên không có gì bị đọc mất.
+            # Main guard: no listener container starts, so nothing is read and lost.
             auto-startup: false
         admin:
-            # @RetryableTopic(autoCreateTopics="true") đăng ký NewTopic bean; KafkaAdmin sẽ tạo
-            # chúng trên broker thật ngay lúc dựng context dù listener không chạy.
+            # @RetryableTopic(autoCreateTopics="true") registers NewTopic beans; KafkaAdmin would create
+            # them on the real broker while the context is built even though no listener runs.
             auto-create: false
         consumer:
-            # Chốt chặn cuối, phòng khi có test tự bật listener lên: không tua lại lịch sử topic.
+            # Last guard, in case a test starts a listener itself: do not rewind the topic history.
             auto-offset-reset: latest
 
     jpa:
@@ -86,18 +86,18 @@ app:
     password-setup-url: http://localhost:5173/test-password-setup-url
     oauth2-url: http://localhost:5173/oauth2-callback
 
-  # OutboxEventScheduler chạy mỗi giây và đẩy mọi hàng outbox lên Kafka. @EnableScheduling
-  # bật sẵn trong test, nên chỉ cần một test ghi được hàng outbox là một event giả lọt vào
-  # topic thật -- chiều ngược lại của cùng một rò rỉ mà khối spring.kafka phía trên chặn.
+  # OutboxEventScheduler runs every second and pushes every outbox row to Kafka. @EnableScheduling
+  # is on in tests, so a single test that writes an outbox row lets a fake event leak into a
+  # real topic -- the reverse direction of the same leak that the spring.kafka block above stops.
   outbox:
     scheduler:
       enabled: false
 
-  # Mỗi @KafkaListener khai groupId qua các khoá dưới đây, KHÔNG lấy từ
-  # spring.kafka.consumer.group-id -- nên đè khoá đó là vô ích, phải đè từng cái một.
-  # Mặc định chúng trùng đúng group-id production (vox-recording, vox-email...), tức là test
-  # commit offset thẳng vào group mà app thật đang dùng. Đây là lớp phòng thủ thứ hai, phòng
-  # khi có test tự bật listener lên bằng KafkaListenerEndpointRegistry.
+  # Each @KafkaListener declares its groupId through the keys below, NOT from
+  # spring.kafka.consumer.group-id -- so overriding that key is useless, each one must be overridden separately.
+  # By default they equal the exact production group-id (vox-recording, vox-email...), meaning a test would
+  # commit offsets straight into the group the real app uses. This is the second line of defence, in case
+  # a test starts a listener itself through KafkaListenerEndpointRegistry.
   external-event:
     kafka:
       consumer-groups:

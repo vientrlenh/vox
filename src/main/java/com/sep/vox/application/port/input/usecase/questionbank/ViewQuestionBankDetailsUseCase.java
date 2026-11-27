@@ -22,7 +22,7 @@ public class ViewQuestionBankDetailsUseCase implements IUseCase<ViewQuestionBank
     @Transactional(readOnly = true)
     public QuestionBankDto execute(ViewQuestionBankDetailsQuery input) {
         QuestionBank questionBank = questionBankRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         return QuestionBankDtoMapper.toDto(questionBank);
     }
 }

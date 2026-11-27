@@ -45,16 +45,16 @@ public class GetAssessmentScheduleOtpUseCase implements IUseCase<GetAssessmentSc
         Instant now = Instant.now();
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(input.scheduleId(), now)
-            .orElseThrow(() -> new ResourceNotFoundException("Lịch thi yêu cầu không tìm thấy hoặc đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested assessment schedule was not found or has expired"));
 
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new IllegalArgumentException("Lịch thi yêu cầu không thuộc về kỳ thi này");
+            throw new IllegalArgumentException("The requested assessment schedule does not belong to this assessment");
         }
 
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của lịch thi này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of this assessment schedule not found"));
         if (!hasAccess(input.scheduleId(), assessment.getSchoolId(), userId)) {
-            throw new ForbiddenException("Lịch thi này không được bạn giám sát");
+            throw new ForbiddenException("You are not a proctor of this assessment schedule");
         }
 
         String otpKey = CacheKey.assessmentScheduleOtpKey(input.scheduleId());

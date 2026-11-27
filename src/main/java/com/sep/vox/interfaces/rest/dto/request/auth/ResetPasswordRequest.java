@@ -5,14 +5,14 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record ResetPasswordRequest(
-    @NotBlank(message = "Email không được để trống")
-    @Email(message = "Định dạng email không hợp lệ")
+    @NotBlank(message = "Email must not be blank")
+    @Email(message = "Email format is invalid")
     String email,
 
-    @NotBlank(message = "Mật khẩu không được để trống")
+    @NotBlank(message = "Password must not be blank")
     String password, 
 
-    @NotBlank(message = "Otp không được để trống")
+    @NotBlank(message = "Otp must not be blank")
     String otp
 ) {
 

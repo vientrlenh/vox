@@ -8,10 +8,10 @@ public record RubricCriterionExamples(
 ) {
     public RubricCriterionExamples {
         if (values == null || values.isEmpty()) {
-            throw new IllegalArgumentException("Ví dụ của tiêu chí trong khung chấm điểm không được để trống");
+            throw new IllegalArgumentException("The criterion examples in the scoring framework must not be blank");
         }
         if (values.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("Ví dụ của tiêu chí trong khung chấm điểm không được chứa giá trị trống");
+            throw new IllegalArgumentException("The criterion examples in the scoring framework must not contain blank values");
         }
         values = List.copyOf(values);
     }

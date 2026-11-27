@@ -13,12 +13,12 @@ import com.sep.vox.application.port.input.service.SubscriptionUpgradePolicyServi
 import com.sep.vox.domain.model.subscription.SchoolSubscription;
 
 /**
- * Khoản bù khi nâng cấp phải luôn chừa lại một số tiền THẬT SỰ trả được.
+ * The credit on upgrade must always leave an amount that can REALLY be paid.
  *
- * <p>Đơn 0đ không thanh toán được y như đơn âm tiền: cổng từ chối, đơn nằm PENDING tới lúc hết hạn, và
- * trường không có đường nào nâng cấp. Trần cũ đặt đúng bằng giá gói mới nên chạm 0 là chuyện có thật --
- * không cần gói lạ, chỉ cần trường có kỳ đang chạy CỘNG một kỳ đã trả tiền đang xếp hàng, vì
- * calculateUnusedCredit cố ý bù cho mọi kỳ chưa kết thúc.
+ * <p>A 0-dong order cannot be paid any more than a negative one: the gateway rejects it, the order sits PENDING until it expires, and
+ * the school has no way to upgrade. The old cap was exactly the new plan's price so reaching 0 really happens --
+ * no odd plan needed, just a school with a running period PLUS a paid queued period, because
+ * calculateUnusedCredit deliberately credits every unfinished period.
  */
 class SubscriptionUpgradeCreditTests {
 
@@ -43,7 +43,7 @@ class SubscriptionUpgradeCreditTests {
         BigDecimal credit = policy.calculateUnusedCredit(unfinished, newPlanPrice, now);
 
         assertThat(newPlanPrice.subtract(credit))
-            .as("số tiền còn phải trả")
+            .as("amount still to be paid")
             .isGreaterThanOrEqualTo(MIN_PAYABLE_VND);
         assertThat(credit).isEqualByComparingTo(newPlanPrice.subtract(MIN_PAYABLE_VND));
     }
@@ -80,7 +80,7 @@ class SubscriptionUpgradeCreditTests {
         assertThat(credit).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
-    /** Không có kỳ nào chưa kết thúc thì không có gì để bù. */
+    /** No unfinished period means nothing to credit. */
     @Test
     void should_give_no_credit_when_there_is_nothing_unfinished() {
         assertThat(policy.calculateUnusedCredit(List.of(), new BigDecimal("12000000"), now))
@@ -95,7 +95,7 @@ class SubscriptionUpgradeCreditTests {
         return subscription;
     }
 
-    /** Kỳ đã trả tiền nhưng chưa tới ngày chạy -- phần chưa dùng đúng bằng toàn bộ giá đã trả. */
+    /** A paid period that has not reached its start day -- the unused part equals the whole price paid. */
     private SchoolSubscription queuedPeriod(BigDecimal pricePaid, Instant start) {
         return period(pricePaid, start, start.plus(Duration.ofDays(365)));
     }

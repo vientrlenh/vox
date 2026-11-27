@@ -19,12 +19,12 @@ import com.sep.vox.domain.repository.PracticePaperRepository;
 import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
 
 /**
- * Ghi PracticePaper + PracticePaperItem + exposure -- tách riêng khỏi
- * BuildPracticePaperUseCase để @Transactional chỉ bọc đúng phần ghi DB, không
- * bọc luôn phần gọi ra ngoài (Python agents) phía trước nó. Là bean riêng
- * (không phải method private/protected cùng class) vì self-invocation bỏ qua
- * proxy AOP của Spring -- @Transactional trên method cùng class sẽ bị lờ đi
- * nếu gọi qua this.
+ * Writes PracticePaper + PracticePaperItem + exposure -- split out of
+ * BuildPracticePaperUseCase so @Transactional wraps only the DB write, not
+ * the external calls (Python agents) that come before it. A separate bean
+ * (not a private/protected method of the same class) because self-invocation bypasses the
+ * Spring AOP proxy -- @Transactional on a method of the same class would be ignored
+ * when called through this.
  */
 @Service
 @RequiredArgsConstructor

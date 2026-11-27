@@ -11,9 +11,9 @@ import com.sep.vox.application.query.dto.AppealSummaryInfo;
 import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 import com.sep.vox.domain.common.PageResult;
 
-// Dùng chung type AppealSummaryInfo với school admin theo quyết định của chủ dự án -- field
-// reviewerName vẫn tồn tại trên type này, nhưng FE (web/mobile) không được hỏi/hiện field đó
-// cho học sinh (xem useStudentAppealQueries.ts / appeal_api.dart).
+// Shares the AppealSummaryInfo type with the school admin by the project owner's decision -- the
+// reviewerName field still exists on this type, but the frontend (web/mobile) must not ask for or show that field to
+// the student (see useStudentAppealQueries.ts / appeal_api.dart).
 @Service
 @RequiredArgsConstructor
 public class ViewMyAppealsUseCase

@@ -184,7 +184,7 @@ class PagingConventionTests {
     }
 
     @Test
-    @DisplayName("mọi tham số page trên schema GraphQL đều mặc định là 1")
+    @DisplayName("every page argument in the GraphQL schema defaults to 1")
     void graphql_page_arguments_must_default_to_one() throws IOException {
         List<String> offenders = new ArrayList<String>();
         int scanned = 0;
@@ -211,9 +211,9 @@ class PagingConventionTests {
             }
         }
 
-        assertThat(scanned).as("số trường phân trang quét được").isGreaterThan(50);
+        assertThat(scanned).as("number of paged fields scanned").isGreaterThan(50);
         assertThat(offenders)
-            .as("trường GraphQL còn khai page mặc định 0 trong khi adapter đã trừ 1")
+            .as("GraphQL field still declares a page default of 0 although the adapter already subtracts 1")
             .isEmpty();
     }
 

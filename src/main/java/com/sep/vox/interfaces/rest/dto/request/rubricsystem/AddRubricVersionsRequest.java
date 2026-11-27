@@ -16,27 +16,27 @@ import java.time.Instant;
 import java.util.List;
 
 public record AddRubricVersionsRequest(
-        @NotEmpty(message = "Danh sách phiên bản không được để trống")
+        @NotEmpty(message = "Version list must not be blank")
         @Valid
         List<RubricVersionItemRequest> versions
 ) {
     public record RubricVersionItemRequest(
-            @NotNull(message = "Số Version không được để trống")
-            @Positive(message = "Số Version phải lớn hơn 0")
+            @NotNull(message = "Version number must not be blank")
+            @Positive(message = "Version number must be greater than 0")
             Integer version,
 
-            @NotBlank(message = "Tên phiên bản không được để trống")
+            @NotBlank(message = "Version name must not be blank")
             String name,
 
-            @NotNull(message = "Điểm sàn không được để trống")
-            @DecimalMin(value = "0.0", message = "Điểm sàn phải lớn hơn hoặc bằng 0")
+            @NotNull(message = "Floor score must not be blank")
+            @DecimalMin(value = "0.0", message = "Floor score must be greater than or equal to 0")
             BigDecimal scoringScaleMin,
 
-            @NotNull(message = "Điểm trần không được để trống")
-            @DecimalMin(value = "0.0", inclusive = false, message = "Điểm trần phải lớn hơn 0")
+            @NotNull(message = "Ceiling score must not be blank")
+            @DecimalMin(value = "0.0", inclusive = false, message = "Ceiling score must be greater than 0")
             BigDecimal scoringScaleMax,
 
-            @NotNull(message = "Phương pháp tính điểm tổng không được để trống (SUM/WEIGHTED_AVERAGE)")
+            @NotNull(message = "Total score method must not be blank (SUM/WEIGHTED_AVERAGE)")
             RubricTotalScoreMethod totalScoreMethod,
 
             Instant effectiveFrom,

@@ -12,10 +12,10 @@ import com.sep.vox.application.query.dto.AiQualityReportInfo;
 import com.sep.vox.application.query.repository.AssessmentResultAuditQueryRepository;
 
 /**
- * "AI chấm lệch bao nhiêu", tính từ chính kết quả hậu kiểm đã có.
+ * "How far off the AI grades", computed from the post-check results that already exist.
  *
- * <p>Phạm vi luôn khoá trong trường của người gọi — số liệu chất lượng chấm của một
- * trường không phải thứ trường khác được xem.
+ * <p>The scope is always locked to the caller's school -- the grading quality figures of one
+ * school are not something another school may see.
  */
 @Service
 @RequiredArgsConstructor

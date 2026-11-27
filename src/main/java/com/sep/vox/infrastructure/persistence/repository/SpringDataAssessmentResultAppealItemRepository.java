@@ -11,7 +11,7 @@ import com.sep.vox.infrastructure.persistence.entity.assessment.AssessmentResult
 public interface SpringDataAssessmentResultAppealItemRepository
         extends JpaRepository<AssessmentResultAppealItemJpaEntity, UUID> {
 
-    /** id là uuidv7 nên order theo id giữ đúng thứ tự học sinh chọn phần thi. */
+    /** id is a uuidv7, so ordering by id keeps the order in which the student picked the parts. */
     List<AssessmentResultAppealItemJpaEntity> findByAppealIdOrderByIdAsc(UUID appealId);
 
     void deleteByAppealIdIn(Collection<UUID> appealIds);

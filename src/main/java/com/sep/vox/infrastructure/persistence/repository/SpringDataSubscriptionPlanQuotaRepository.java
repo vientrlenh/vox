@@ -16,14 +16,14 @@ public interface SpringDataSubscriptionPlanQuotaRepository extends JpaRepository
     List<SubscriptionPlanQuotaJpaEntity> findBySubscriptionPlanIdIn(Collection<UUID> subscriptionPlanIds);
 
     /**
-     * DML thẳng chứ KHÔNG phải derived delete (load entity lên rồi đánh dấu removed). Bắt buộc phải
-     * vậy vì UpdateSubscriptionPlanUseCase thay bộ hạn mức theo kiểu xóa hết -- ghi lại: derived
-     * delete chỉ xếp hàng chờ tới lúc flush, mà ActionQueue của Hibernate chạy INSERT TRƯỚC DELETE,
-     * nên dòng mới sẽ đâm vào dòng cũ chưa kịp xóa. Hiện chưa có unique (subscription_plan_id,
-     * quota_type) nên chưa vỡ, nhưng đúng ra phải có -- xem CreateSubscriptionPlanUseCase.
+     * Direct DML and NOT a derived delete (which loads the entity and marks it removed). This is required
+     * because UpdateSubscriptionPlanUseCase replaces the quota set by delete-everything-then-rewrite: a derived
+     * delete is only queued until flush, and Hibernate's ActionQueue runs INSERT BEFORE DELETE,
+     * so the new row would collide with the old row that has not yet been deleted. There is currently no unique (subscription_plan_id,
+     * quota_type) so it has not broken yet, but there should be -- see CreateSubscriptionPlanUseCase.
      *
-     * <p>flushAutomatically = true để thay đổi đang treo (vd. UPDATE gói vừa lưu ngay trước đó) được
-     * đẩy xuống DB TRƯỚC khi câu DELETE này chạy, nếu không clearAutomatically sẽ vứt mất chúng.
+     * <p>flushAutomatically = true so that pending changes (e.g. the plan UPDATE saved just before) are
+     * pushed to the DB BEFORE this DELETE runs, otherwise clearAutomatically would throw them away.
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("DELETE FROM SubscriptionPlanQuotaJpaEntity q WHERE q.subscriptionPlanId = :subscriptionPlanId")

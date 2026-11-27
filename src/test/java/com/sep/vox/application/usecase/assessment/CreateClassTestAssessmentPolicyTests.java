@@ -138,19 +138,19 @@ class CreateClassTestAssessmentPolicyTests {
 
     @Test
     void should_reject_when_school_has_no_active_subscription() {
-        doThrow(new BusinessRuleViolationException("Trường chưa có gói subscription đang hoạt động, không thể tạo Class Test."))
+        doThrow(new BusinessRuleViolationException("The school has no active subscription plan, so a class test cannot be created."))
             .when(schoolSubscriptionActiveGuardService).requireActiveForSchool(eq(SCHOOL_ID), any());
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("chưa có gói subscription đang hoạt động");
+            .hasMessageContaining("has no active subscription plan");
     }
 
     @Test
     void should_reject_when_assessment_policy_is_missing() {
         assertThatThrownBy(() -> useCase.execute(command(null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Bộ tiêu chí đánh giá là bắt buộc");
+            .hasMessageContaining("The assessment criteria set is required");
     }
 
     @Test
@@ -159,7 +159,7 @@ class CreateClassTestAssessmentPolicyTests {
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessageContaining("Không tìm thấy bộ tiêu chí đánh giá");
+            .hasMessageContaining("Assessment criteria set not found");
     }
 
     @Test
@@ -169,7 +169,7 @@ class CreateClassTestAssessmentPolicyTests {
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Chỉ được dùng bộ tiêu chí đã xuất bản");
+            .hasMessageContaining("Only a published criteria set may be used");
     }
 
     @Test
@@ -179,7 +179,7 @@ class CreateClassTestAssessmentPolicyTests {
 
         assertThatThrownBy(() -> useCase.execute(command(POLICY_ID)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Bộ tiêu chí không thuộc trường của bạn");
+            .hasMessageContaining("The criteria set does not belong to your school");
     }
 
     /** A system policy ({@code schoolId = null}) can be used by every school. */

@@ -18,9 +18,9 @@ public record SubmitTurnResultDto(
      * the next session, not a reason to discard the work just done.
      */
     boolean quotaExhausted,
-    /** Đã nói bao nhiêu giây trong phiên (kể cả lượt này) -- xem SubmitTurnResult. */
+    /** Seconds spoken so far in the session (including this turn) -- see SubmitTurnResult. */
     int sessionSpokenSeconds,
-    /** Ngân sách nói của phiên: chỗ hẹp hơn giữa hạn mức gói và trần bậc. */
+    /** Speaking budget of the session: the narrower of the plan quota and the band ceiling. */
     int sessionBudgetSeconds
 ) {
 }

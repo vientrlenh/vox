@@ -25,7 +25,7 @@ public class ViewMyClassDetailsUseCase implements IUseCase<ViewMyClassDetailsQue
         myClassAccessGuard.requireClassMembership(input.schoolClassId());
 
         SchoolClass schoolClass = schoolClassRepository.findById(input.schoolClassId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
 
         return SchoolClassDtoMapper.toDto(schoolClass);
     }

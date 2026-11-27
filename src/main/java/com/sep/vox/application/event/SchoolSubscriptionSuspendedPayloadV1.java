@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Trường vừa bị System Admin cưỡng chế đình chỉ gói (mất quyền dùng NGAY, khác hủy thường). Người nhận
- * là mọi SCHOOL_ADMIN của trường -- CHỐT NGAY lúc phát sự kiện, cùng lý do với
- * SchoolLockedDueToDebtPayloadV1.schoolAdminIds.
+ * A System Admin has forcibly suspended a school's plan (access is lost IMMEDIATELY, unlike a
+ * normal cancellation). Every SCHOOL_ADMIN of the school is a recipient -- FIXED when the event
+ * is published, for the same reason as SchoolLockedDueToDebtPayloadV1.schoolAdminIds.
  */
 public record SchoolSubscriptionSuspendedPayloadV1(
     List<UUID> schoolAdminIds,

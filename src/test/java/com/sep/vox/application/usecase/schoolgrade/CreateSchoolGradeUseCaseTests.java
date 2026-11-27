@@ -105,6 +105,6 @@ class CreateSchoolGradeUseCaseTests {
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(com.sep.vox.application.exception.ResourceDuplicatedException.class)
-            .hasMessage("Mã năm học đã tồn tại trong Khối lớp này.");
+            .hasMessage("The school year code already exists in this grade level.");
     }
 }

@@ -11,15 +11,15 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.response.input.learnerprofile.LearnerProfileResponses.PracticeFrameworkOption;
 
 /**
- * Các khung đánh giá học sinh có thể chọn trước khi chọn bậc luyện tập.
+ * The assessment frameworks a student may choose before choosing a practice band.
  *
- * <p>Mỗi khung chỉ hiện BẢN ĐÃ BAN HÀNH MỚI NHẤT, do server tự chọn -- học sinh không phải
- * biết tới khái niệm phiên bản. Bản nháp hoặc bản hết hiệu lực không lọt ra ngoài, vì truy vấn
- * dùng đúng bộ điều kiện với {@code findActiveVersionId}.
+ * <p>Each framework shows only its LATEST PUBLISHED VERSION, picked by the server -- the student does not need to
+ * know the concept of versions. Drafts and expired versions do not leak out, because the query uses exactly the same
+ * conditions as {@code findActiveVersionId}.
  *
- * <p>Danh sách này là khái niệm TOÀN HỆ, không phụ thuộc học sinh nào -- cùng lý do với
- * {@link ViewPracticeBandOptionsUseCase}: chặn người lạ là việc của {@code @PreAuthorize} ở
- * controller, không phải bằng cách nhận studentId rồi bỏ đi.
+ * <p>This list is a SYSTEM-WIDE concept, independent of which student asks -- same reason as
+ * {@link ViewPracticeBandOptionsUseCase}: keeping strangers out is the job of {@code @PreAuthorize} on the
+ * controller, not of accepting a studentId and then discarding it.
  */
 @Service
 @RequiredArgsConstructor

@@ -7,7 +7,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateQuestionCollaboratorRequest(
-    @NotNull(message = "Quyền cộng tác không được để trống")
+    @NotNull(message = "Collaboration permission must not be blank")
     QuestionCollaboratorPermission permission
 ) {
 

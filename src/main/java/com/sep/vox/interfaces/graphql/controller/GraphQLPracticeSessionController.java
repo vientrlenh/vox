@@ -58,9 +58,9 @@ public class GraphQLPracticeSessionController {
     }
 
     /**
-     * Học sinh xem lại bài của CHÍNH MÌNH (màn tổng kết sau phiên, và xem lại từ lịch sử).
-     * Cùng nội dung với {@link #studentPracticeSessionDetail} nhưng khác luật quyền: bên kia
-     * là giáo viên xem bài học sinh mình dạy, gọi nhầm sang đó thì học sinh dính Access Denied.
+     * A student reviews their OWN result (the post-session summary screen, and reviewing from history).
+     * Same content as {@link #studentPracticeSessionDetail} but with different permission rules: that one
+     * is for a teacher viewing the results of students they teach; calling it by mistake gives the student Access Denied.
      */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")

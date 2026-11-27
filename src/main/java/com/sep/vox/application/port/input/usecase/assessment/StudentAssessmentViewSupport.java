@@ -17,7 +17,7 @@ final class StudentAssessmentViewSupport {
         return subjectOf(assessment == null || assessment.getKind() == null ? null : assessment.getKind().name());
     }
 
-    /** Bản nhận thẳng cột {@code kind} dạng chuỗi, cho nhánh đọc đi qua query repository. */
+    /** Variant that takes the {@code kind} column as a string, for the read path that goes through the query repository. */
     static String subjectOf(String kind) {
         if (kind == null) {
             return "Assessment";
@@ -58,7 +58,7 @@ final class StudentAssessmentViewSupport {
             : durationMinutesOf(schedule.getStartDate(), schedule.getEndDate(), fallbackMinutes);
     }
 
-    /** Bản nhận thẳng hai mốc thời gian, cho nhánh đọc đi qua query repository. */
+    /** Variant that takes the two time boundaries directly, for the read path that goes through the query repository. */
     static int durationMinutesOf(Instant startDate, Instant endDate, int fallbackMinutes) {
         if (startDate == null || endDate == null) {
             return fallbackMinutes;

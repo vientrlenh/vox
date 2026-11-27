@@ -32,12 +32,12 @@ import com.sep.vox.domain.service.question.QuestionScopeStatusTransition;
 import com.sep.vox.domain.service.question.QuestionScopeStatusTransition.RejectionCode;
 
 /**
- * Đổi trạng thái nhiều chủ đề câu hỏi trong một request, "thành công một phần" -- xem javadoc của
- * {@code BulkUpdateQuestionBankStatusUseCase} để rõ vì sao không gọi lại use case đổi từng mục.
+ * Changes the status of several question topics in one request, "partial success" -- see the javadoc of
+ * {@code BulkUpdateQuestionBankStatusUseCase} for why the single-item use case is not called again.
  *
- * <p>Đây là bước hay vấp nhất khi nạp dữ liệu: import câu hỏi CHỈ nhận chủ đề đã {@code PUBLISHED},
- * mà chủ đề nhập từ Excel luôn vào ở {@code DRAFT}. Không có publish hàng loạt thì phải mở từng chủ
- * đề một -- ba khối là ba chục lần bấm.
+ * <p>This is the step people trip over most when loading data: question import ONLY accepts {@code PUBLISHED} topics,
+ * while topics imported from Excel always arrive as {@code DRAFT}. Without bulk publish every topic has to be opened
+ * one by one -- three grades means thirty clicks.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,7 +53,7 @@ public class BulkUpdateQuestionTopicStatusUseCase
     @Transactional
     public BulkUpdateQuestionTopicStatusResponse execute(BulkUpdateQuestionScopeStatusCommand input) {
         if (input.ids() == null || input.ids().isEmpty()) {
-            throw new IllegalArgumentException("Danh sách chủ đề câu hỏi không được để trống");
+            throw new IllegalArgumentException("The question topic list must not be empty");
         }
 
         String action = StringNormalization.normalizeCode(input.action());
@@ -110,7 +110,7 @@ public class BulkUpdateQuestionTopicStatusUseCase
         }
 
         QuestionScopeStatusTransition.Rejection rejection = QuestionScopeStatusTransition.rejectionFor(
-            topic.getStatus().name(), context.action(), "chủ đề câu hỏi");
+            topic.getStatus().name(), context.action(), "question topic");
         if (rejection != null) {
             return Optional.of(failure(topic, rejection.code().name(), rejection.reason()));
         }

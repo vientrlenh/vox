@@ -7,7 +7,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateFrameworkVersionStatusRequest(
-    @NotNull(message = "Trạng thái không được để trống")
+    @NotNull(message = "Status must not be blank")
     FrameworkVersionStatus status
 ) {
 

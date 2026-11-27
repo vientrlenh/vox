@@ -53,9 +53,9 @@ public interface AiUsageRecordRepository {
     BigDecimal sumCostVndByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt);
 
     /**
-     * Như trên nhưng giữ nguyên tệ gốc, để ghi vào school_balance_entries.cost_usd cho việc đối soát
-     * ngược với hóa đơn nhà cung cấp. Phải soi CÙNG mốc chargedAt với bản VND, nếu không hai cột của
-     * cùng một bút toán sẽ mô tả hai tập dòng khác nhau.
+     * Same as above but keeps the original currency, to be written to school_balance_entries.cost_usd for reconciliation
+     * against the provider invoice. It must look at the SAME chargedAt boundary as the VND version, otherwise the two columns of
+     * the same entry would describe two different sets of rows.
      */
     BigDecimal sumCostUsdByAssessmentSessionIdAndChargedAt(UUID assessmentSessionId, Instant chargedAt);
 }

@@ -31,8 +31,8 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 /**
- * Gỡ phân công xoá hẳn dòng, tức xoá luôn con trỏ tới đơn phúc khảo — nên đơn phải
- * được nhả TRƯỚC khi xoá, nếu không nó kẹt ở {@code GRADING} không lối ra (review BE-1).
+ * Removing an assignment deletes the row outright, which deletes the pointer to the appeal too -- so the appeal must
+ * be released BEFORE the delete, otherwise it is stuck in {@code GRADING} with no way out (review BE-1).
  */
 class RemoveGradingAssignmentUseCaseTests {
 
@@ -120,7 +120,7 @@ class RemoveGradingAssignmentUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new RemoveGradingAssignmentCommand(assignmentId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã chấm xong");
+            .hasMessageContaining("has been graded");
 
         verify(assessmentResultAppealRepository, never()).save(any());
         verify(assessmentGradingAssignmentRepository, never()).deleteById(any());

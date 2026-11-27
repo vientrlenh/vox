@@ -36,28 +36,28 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Trường sao một bản mẫu đã ban hành của hệ thống về làm rubric riêng, kèm luôn các chính sách chấm
- * mẫu gắn với phiên bản đó.
+ * A school copies a published system template into a rubric of its own, together with the template scoring
+ * policies attached to that version.
  *
- * <p>Vì sao phải sao chứ không dùng thẳng bản của hệ thống: {@code CreateSchoolAssessmentPolicyUseCase}
- * từ chối gắn chính sách của trường vào phiên bản rubric không thuộc trường đó. Nên sao chép không
- * phải tối ưu hoá cho tiện, nó là con đường duy nhất để một bản mẫu đi vào được việc chấm bài.
+ * <p>Why it must be copied instead of using the system's version directly: {@code CreateSchoolAssessmentPolicyUseCase}
+ * refuses to attach a school policy to a rubric version that does not belong to that school. So copying is
+ * not a convenience optimisation, it is the only way for a template to reach grading.
  *
- * <h2>Vì sao chính sách nằm chung ở đây</h2>
+ * <h2>Why the policies are handled here too</h2>
  *
- * <p>Bản sao rubric ra ở trạng thái DRAFT, mà một phiên bản DRAFT chưa ban hành được nếu chưa có
- * chính sách nào liên kết đã PUBLISHED ({@code ChangeSchoolRubricVersionStatusUseCase}). Nghĩa là
- * "sao rubric" luôn kéo theo "tạo chính sách" ngay sau đó -- gộp vào một bước là mô tả đúng thứ tự
- * bắt buộc chứ không phải gói tiện ích. Đường ngược lại (sao chính sách rồi tự nhân bản rubric) đã
- * bị gỡ vì nó tạo ra bản sao rubric thứ hai mỗi lần trường muốn thêm một chính sách.
+ * <p>The copied rubric comes out as DRAFT, and a DRAFT version cannot be published until at least one linked
+ * policy is PUBLISHED ({@code ChangeSchoolRubricVersionStatusUseCase}). So "copy the rubric" is always
+ * followed by "create a policy" -- merging them into one step describes the mandatory order rather than
+ * being a convenience bundle. The opposite route (copy the policy, then clone the rubric automatically) was
+ * removed because it created a second rubric copy every time a school wanted to add one more policy.
  *
- * <p>Việc tạo chính sách KHÔNG viết lại ở đây mà uỷ cho {@code CreateSchoolAssessmentPolicyUseCase}:
- * mọi luật (khung còn PUBLISHED, bậc mục tiêu thuộc đúng khung và không vượt trần của khối, đúng một
- * phạm vi, mỗi phạm vi một chính sách, đánh số version theo phạm vi) đã nằm trọn ở đó. Nhân bản
- * chúng sang đây là tạo ra hai bộ luật sẽ trôi lệch nhau.
+ * <p>Creating the policy is NOT rewritten here but delegated to {@code CreateSchoolAssessmentPolicyUseCase}:
+ * every rule (framework still PUBLISHED, target band belongs to the framework and does not exceed the grade level's
+ * ceiling, exactly one scope, one policy per scope, version numbering per scope) already lives there. Duplicating
+ * them here would create two rule sets that drift apart.
  *
- * <p>Cả hai use case đều {@code @Transactional} nên lời gọi bên trong nhập vào cùng giao dịch: một
- * chính sách hỏng validate sẽ cuộn lại cả bản sao rubric, không để lại rubric mồ côi.
+ * <p>Both use cases are {@code @Transactional}, so the inner call joins the same transaction: a
+ * policy that fails validation rolls back the rubric copy too, leaving no orphan rubric.
  */
 @Service
 @RequiredArgsConstructor
@@ -80,9 +80,9 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         requireActiveMemberOfSchool(currentUserId, command.schoolId());
 
         RubricVersion sourceVersion = rubricVersionRepository.findById(command.sourceRubricVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric mẫu."));
+            .orElseThrow(() -> new ResourceNotFoundException("Template Rubric version not found."));
         Rubric sourceRubric = rubricRepository.findById(sourceVersion.getRubricId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của bản mẫu."));
+            .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric of the template not found."));
         requireClonableTemplate(sourceRubric, sourceVersion);
 
         // Same normalisation as CreateSchoolRubricUseCase: both paths write to one unique constraint, so
@@ -122,40 +122,40 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
 
     private void requireActiveMemberOfSchool(UUID currentUserId, UUID schoolId) {
         User currentUser = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
+            .orElseThrow(() -> new UnauthorizedException("Account error."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-            .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+            .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sao chép về trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to copy into another school.");
         }
     }
 
     private void requireClonableTemplate(Rubric sourceRubric, RubricVersion sourceVersion) {
         if (sourceRubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Chỉ được sao chép từ bộ tiêu chí mẫu của hệ thống.");
+            throw new ForbiddenException("You can only copy from a system template Rubric.");
         }
         // Only published versions are accepted: a system draft is unfinished, unreviewed work and must not
         // leak outside the system admin's scope.
         if (sourceVersion.getStatus() != RubricStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được sao chép từ phiên bản mẫu đã được ban hành (PUBLISHED).");
+            throw new IllegalArgumentException("You can only copy from a template version that has been published (PUBLISHED).");
         }
         // Cloning an empty template would create a version the school can never publish (the "must have
         // criteria" gate blocks it), and they would only find out at the last step.
         if (rubricCriterionRepository.findByRubricVersionId(sourceVersion.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Bản mẫu này chưa có tiêu chí nào nên không sao chép được.");
+            throw new IllegalArgumentException("This template has no criterion yet, so it cannot be copied.");
         }
     }
 
     private void requireCodeAndName(String safeCode, String safeName) {
         if (safeCode == null || safeCode.isBlank()) {
-            throw new IllegalArgumentException("Mã bộ tiêu chí không được để trống.");
+            throw new IllegalArgumentException("The Rubric code must not be empty.");
         }
         if (safeName == null || safeName.isBlank()) {
-            throw new IllegalArgumentException("Tên bộ tiêu chí không được để trống.");
+            throw new IllegalArgumentException("The Rubric name must not be empty.");
         }
     }
 
@@ -168,33 +168,33 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             sourceRubric.getFrameworkId(),
             safeCode);
         if (isCodeTaken) {
-            throw new ResourceDuplicatedException("Trường của bạn đã có một bộ tiêu chí mang mã '" + safeCode
-                + "' cho ngôn ngữ và khung năng lực này. Hãy dùng mã khác (ví dụ đặt theo khối:"
+            throw new ResourceDuplicatedException("Your school already has a Rubric with code '" + safeCode
+                + "' for this language and framework. Use another code (for example named after the grade level:"
                 + " ENG-K10, ENG-K11).");
         }
     }
 
     /**
-     * Dựng chính sách của trường từ các chính sách mẫu mà trường đã chọn, trỏ vào bản sao rubric vừa
-     * tạo.
+     * Builds the school's policies from the template policies the school selected, pointing at the rubric copy
+     * that was just created.
      *
-     * <p>Chỉ kiểm hai thứ mà {@code CreateSchoolAssessmentPolicyUseCase} không thể tự biết: bản mẫu
-     * có hợp lệ và có thuộc đúng phiên bản đang sao hay không, và phạm vi có tuân luật kế thừa Khối
-     * hay không. Mọi luật còn lại để nguyên bên kia.
+     * <p>Only checks two things that {@code CreateSchoolAssessmentPolicyUseCase} cannot know by itself: whether the
+     * template is valid and belongs to the version being copied, and whether the scope obeys the grade level
+     * inheritance rule. Every other rule is left on the other side.
      */
     private void createPoliciesFromTemplates(
             CloneSystemRubricToSchoolCommand command, UUID sourceVersionId, UUID clonedVersionId) {
 
         List<CloneSystemRubricToSchoolCommand.PolicyToClone> requested = command.policies();
         if (requested == null || requested.isEmpty()) {
-            // Sao bộ tiêu chí "trần": hợp lệ, nhưng phiên bản này sẽ nằm DRAFT tới khi trường tự gắn
-            // một chính sách cho nó.
+            // Copying the "ceiling" rubric: valid, but this version stays DRAFT until the school attaches
+            // a policy to it itself.
             return;
         }
 
-        // Chỉ nạp một lần rồi tra trong bộ nhớ: danh sách chính sách mẫu của một phiên bản luôn nhỏ
-        // (hiện là 1 bản mỗi phiên bản), và làm thế thì phép kiểm "thuộc đúng phiên bản đang sao"
-        // không cần thêm truy vấn nào.
+        // Load once and look up in memory: the template policy list of a version is always small
+        // (currently 1 per version), and this way the "belongs to the version being copied" check
+        // needs no extra query.
         List<AssessmentPolicy> templates = assessmentPolicyRepository
                 .findPublishedSystemWideByRubricVersionId(sourceVersionId);
 
@@ -234,7 +234,7 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
             List<AssessmentPolicy> templates, CloneSystemRubricToSchoolCommand.PolicyToClone choice) {
 
         if (choice.sourcePolicyId() == null) {
-            throw new IllegalArgumentException("Thiếu id chính sách mẫu cần sao.");
+            throw new IllegalArgumentException("The id of the template policy to copy is missing.");
         }
 
         // Looking only in the list of the exact version being cloned already rejects the id of a template
@@ -243,18 +243,18 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
                 .filter(candidate -> candidate.getId().equals(choice.sourcePolicyId()))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Không tìm thấy chính sách mẫu đã ban hành nào thuộc phiên bản bộ tiêu chí này."));
+                        "No published template policy was found for this Rubric version."));
         if (template.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được sao từ chính sách mẫu đã được ban hành (PUBLISHED).");
+            throw new IllegalArgumentException("You can only copy from a template policy that has been published (PUBLISHED).");
         }
         return template;
     }
 
     /**
-     * Bản mẫu đã khai Khối thì bản sao BẮT BUỘC giữ đúng khối đó -- cho trường đổi sang khối khác là
-     * biến bản mẫu "Khối 10" thành chính sách của Khối 12 mà vẫn mang nguyên thông số soạn cho Khối
-     * 10. Bản mẫu không khai khối thì trường tự chọn, và phép kiểm "đúng một phạm vi" nằm ở
-     * {@code CreateSchoolAssessmentPolicyUseCase} nên không lặp lại ở đây.
+     * When the template declares a grade level the copy MUST keep exactly that grade level -- letting the school switch to
+     * another one would turn a "Grade 10" template into a Grade 12 policy that still carries the parameters written for Grade
+     * 10. When the template declares no grade level the school chooses, and the "exactly one scope" check lives in
+     * {@code CreateSchoolAssessmentPolicyUseCase} so it is not repeated here.
      */
     private TargetScope resolveScope(
             AssessmentPolicy template, CloneSystemRubricToSchoolCommand.PolicyToClone choice) {
@@ -262,14 +262,14 @@ public class CloneSystemRubricToSchoolUseCase implements IUseCase<CloneSystemRub
         if (template.getGradeLevelId() != null) {
             if (choice.gradeLevelId() != null || choice.schoolGradeId() != null || choice.schoolClassId() != null) {
                 throw new IllegalArgumentException(
-                        "Chính sách mẫu này đã gắn với một Khối cụ thể nên bản sao giữ nguyên khối đó;"
-                                + " không nhận phạm vi khác.");
+                        "This template policy is already tied to a specific grade level, so the copy keeps that grade level;"
+                                + " it does not accept another scope.");
             }
             return new TargetScope(template.getGradeLevelId(), null, null);
         }
         return new TargetScope(choice.gradeLevelId(), choice.schoolGradeId(), choice.schoolClassId());
     }
 
-    /** Phạm vi bản sao sẽ áp dụng, sau khi gộp phạm vi của bản mẫu với lựa chọn của trường. */
+    /** The scope the copy will apply, after merging the template's scope with the school's choice. */
     private record TargetScope(UUID gradeLevelId, UUID schoolGradeId, UUID schoolClassId) {}
 }

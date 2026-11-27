@@ -8,7 +8,7 @@ public record SchoolDomain(String value) {
 
     public SchoolDomain {
         if (value != null && !EDUCATION_DOMAIN_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Định dạng tên miền trường không hợp lệ");
+            throw new IllegalArgumentException("The school domain format is invalid");
         }
     }
 }

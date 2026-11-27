@@ -33,20 +33,20 @@ public class DeleteQuestionCollaboratorUseCase implements IUseCase<DeleteQuestio
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         if (!question.isCreatedBy(currentUserId)) {
-            throw new ForbiddenException("Chỉ owner mới được quản lý collaborator");
+            throw new ForbiddenException("Only the owner can manage collaborators");
         }
         if (bank.getOwnerType() != QuestionBankOwnerType.SCHOOL) {
-            throw new IllegalArgumentException("Chỉ question thuộc school bank mới dùng collaborator");
+            throw new IllegalArgumentException("Only a question in a school bank can have collaborators");
         }
 
         QuestionCollaborator collaborator = questionCollaboratorRepository.findById(input.collaboratorId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy collaborator"));
+            .orElseThrow(() -> new ResourceNotFoundException("Collaborator not found"));
         if (!collaborator.getQuestionId().equals(question.getId())) {
-            throw new ForbiddenException("Collaborator không thuộc câu hỏi này");
+            throw new ForbiddenException("The collaborator does not belong to this question");
         }
 
         questionCollaboratorRepository.deleteById(collaborator.getId());

@@ -9,8 +9,8 @@ public final class RubricVersionMapper {
 
     private RubricVersionMapper() {}
 
-    // sourceRubricVersionId đi qua setter ở cả hai chiều: nó cố ý không nằm trong constructor để
-    // không bắt mọi nơi dựng RubricVersion phải thêm một tham số hầu hết đều là null.
+    // sourceRubricVersionId goes through the setter in both directions: it is intentionally not in the constructor so that
+    // every place that builds a RubricVersion is not forced to add a parameter that is mostly null.
     public static RubricVersion toDomain(RubricVersionJpaEntity jpa) {
         RubricVersion domain = newDomain(jpa);
         domain.setSourceRubricVersionId(jpa.getSourceRubricVersionId());

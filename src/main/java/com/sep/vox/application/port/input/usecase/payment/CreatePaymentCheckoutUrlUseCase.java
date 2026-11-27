@@ -33,12 +33,12 @@ import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 /**
- * Phát URL thanh toán cho một đơn. Thay cho CẢ BA use case cũ
- * (CreatePaymentLinkForSubscriptionRequest / ForRenewal / ForTokenPurchase): ba luồng đó khác nhau ở
- * chỗ "mua cái gì", mà chuyện đó giờ đã nằm gọn trong Order rồi -- tới bước thu tiền thì chúng giống
- * hệt nhau, chỉ là một số tiền và một đơn để gắn vào.
+ * Issues the payment URL for an order. Replaces ALL THREE old use cases
+ * (CreatePaymentLinkForSubscriptionRequest / ForRenewal / ForTokenPurchase): those three flows differed in
+ * "what is being bought", which now lives entirely in the Order -- by the time money is collected they are
+ * identical, just an amount and an order to attach it to.
  *
- * <p>Hiện chỉ nhận thanh toán qua cổng thứ ba (E_BANKING) -- xem PaymentRecord.forEBankingCheckout.
+ * <p>Currently only the third gateway (E_BANKING) is accepted -- see PaymentRecord.forEBankingCheckout.
  */
 @Service
 @RequiredArgsConstructor
@@ -112,7 +112,7 @@ public class CreatePaymentCheckoutUrlUseCase
     private void requireProviderConfigured(PaymentProvider provider) {
         if (!paymentProcessResolver.resolve(provider).isConfigured()) {
             throw new IllegalArgumentException(
-                "Cổng thanh toán " + provider + " chưa được cấu hình trên hệ thống. Vui lòng chọn cổng khác hoặc liên hệ hỗ trợ.");
+                "Payment gateway " + provider + " is not configured on the system. Please choose another gateway or contact support.");
         }
     }
 
@@ -158,11 +158,12 @@ public class CreatePaymentCheckoutUrlUseCase
     }
 
     /**
-     * Khóa đơn, kiểm tra quyền và trạng thái, trả về lần thử đang treo (hoặc null).
+     * Locks the order, checks permission and status, and returns the pending attempt (or null).
      *
-     * <p>Khóa nhả ngay khi transaction này đóng, tức TRƯỚC lượt gọi cổng. Nó vẫn cần thiết: trường mở
-     * hai tab rồi bấm gần như cùng lúc là chuyện bình thường, và khóa khiến hai luồng đó nhìn thấy
-     * cùng một sự thật về "đã có lần thử nào treo chưa" thay vì cùng đọc rồi cùng phát link.
+     * <p>The lock is released as soon as this transaction closes, i.e. BEFORE the gateway call. It is still needed:
+     * a school opening two tabs and clicking almost at the same time is normal, and the lock makes those two
+     * threads see the same truth about "is there already a pending attempt" instead of both reading and then both
+     * issuing a link.
      */
     private PaymentRecord loadPendingAttempt(UUID orderId) {
         Order order = requirePayableOrder(orderId);
@@ -187,7 +188,7 @@ public class CreatePaymentCheckoutUrlUseCase
 
         switch (remoteStatus) {
             case PAID -> throw new IllegalArgumentException(
-                "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Vui lòng đợi trong giây lát.");
+                "This order has already been paid and the system is recording it. Please wait a moment.");
 
             case CANCELLED, EXPIRED, FAILED, NOT_FOUND -> {
                 failDeadAttempt(pending, remoteStatus);
@@ -209,8 +210,8 @@ public class CreatePaymentCheckoutUrlUseCase
         if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
                 && !pending.canRetireOnGatewayNotFound(Instant.now())) {
             throw new IllegalArgumentException(
-                "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. "
-                    + "Vui lòng thử lại sau vài phút.");
+                "The order has just opened a payment session that the gateway has not confirmed yet. "
+                    + "Please try again in a few minutes.");
         }
         // The gateway has confirmed this attempt does NOT bring in money -- settle it to make room for the new one.
         // It may only be settled AFTER that confirmation: failing an attempt that is still alive means that when the
@@ -240,7 +241,7 @@ public class CreatePaymentCheckoutUrlUseCase
             // here. Making the school wait for the old attempt to expire is better than issuing a
             // second parallel link.
             throw new IllegalArgumentException(
-                "Đơn hàng đang có một phiên thanh toán chờ xử lý. Vui lòng hoàn tất phiên đó hoặc thử lại sau.");
+                "The order has a pending payment session. Please complete that session or try again later.");
         }
         return PaymentCheckoutResponse.redirectTo(
             order.getId(), pending.getId(), pending.getProviderOrderRef(),
@@ -248,28 +249,28 @@ public class CreatePaymentCheckoutUrlUseCase
     }
 
     /**
-     * Chốt một lần thử mới và COMMIT nó, để lượt gọi cổng phía sau luôn có một dòng đại diện.
+     * Settles a new attempt and COMMITS it, so that the gateway call that follows always has a row representing it.
      *
-     * <p>Khóa lại đơn và kiểm tra lại từ đầu chứ không tin vào kết quả của
-     * {@code loadPendingAttempt}: giữa hai transaction, đơn có thể đã bị hủy, đã hết hạn, hoặc một
-     * tab khác đã kịp mở lần thử của nó.
+     * <p>Locks the order again and re-checks everything instead of trusting the result of
+     * {@code loadPendingAttempt}: between the two transactions the order may have been cancelled, may have
+     * expired, or another tab may already have opened its own attempt.
      */
     private PreparedAttempt openAttempt(UUID orderId, PaymentProvider provider) {
         Order order = requirePayableOrder(orderId);
 
-        // Không đưa số tiền <= 0 sang cổng. Không cổng nào nhận, nên nếu lọt qua thì trường nhận một
-        // lỗi của nhà cung cấp không đọc được, còn đơn thì nằm PENDING tới lúc hết hạn. Đường sinh ra
-        // đơn 0đ đã được bịt ở SubscriptionUpgradePolicyService.calculateUnusedCredit; chốt chặn này ở
-        // đây để mọi đường TƯƠNG LAI dẫn tới cùng chỗ đều dừng lại với câu nói người đọc hiểu được,
-        // chứ không phải để sửa lại lần nữa cùng một lỗi.
+        // Never send an amount <= 0 to the gateway. No gateway accepts it, so if it got through the school would receive
+        // an unreadable provider error while the order sits PENDING until it expires. The path that produced 0 VND
+        // orders was closed in SubscriptionUpgradePolicyService.calculateUnusedCredit; this guard is here so that
+        // every FUTURE path leading to the same place stops with a message the reader understands, not to fix
+        // the same bug again.
         if (order.getTotalAmountVnd() == null || order.getTotalAmountVnd().signum() <= 0) {
             throw new IllegalArgumentException(
-                "Đơn hàng không có số tiền cần thanh toán, không thể tạo phiên thanh toán. Vui lòng liên hệ hỗ trợ.");
+                "The order has no amount to pay, so a payment session cannot be created. Please contact support.");
         }
 
-        // Mã đơn do adapter sinh và LUÔN MỚI, kể cả khi đây là lần trả lại của cùng một đơn: PayOS từ
-        // chối orderCode trùng, SePay đòi order_invoice_number duy nhất. Cả hai adapter sinh mã cục bộ
-        // (đồng hồ / UUID) chứ không gọi mạng, nên gọi trong transaction là an toàn.
+        // The order code is generated by the adapter and is ALWAYS NEW, even when this is a repayment of the same order:
+        // PayOS rejects a duplicate orderCode and SePay requires a unique order_invoice_number. Both adapters generate
+        // the code locally (clock / UUID) without a network call, so calling it inside the transaction is safe.
         String providerOrderRef = paymentProcessResolver.resolve(provider).newOrderRef();
 
         PaymentRecord payment = paymentRecordRepository.save(PaymentRecord.forEBankingCheckout(
@@ -280,15 +281,16 @@ public class CreatePaymentCheckoutUrlUseCase
     }
 
     /**
-     * Chỉ lưu URL. Bộ field FORM_POST mang chữ ký HMAC -- lưu xuống DB là ai đọc được DB cũng dựng
-     * lại được một checkout hợp lệ, mà chúng lại tính lại được nên lưu cũng không thêm gì.
+     * Stores only the URL. The FORM_POST field set carries an HMAC signature -- storing it in the DB would let
+     * anyone who can read the DB rebuild a valid checkout, and since it can be recomputed anyway, storing it adds
+     * nothing.
      *
-     * <p>Không khóa đơn ở đây: chỉ đụng đúng dòng payment_records vừa tạo, và việc nó có được phép
-     * tồn tại hay không đã chốt xong ở {@code openAttempt}.
+     * <p>Does not lock the order here: it only touches the payment_records row that was just created, and whether
+     * that row may exist was already settled in {@code openAttempt}.
      */
     private Void attachCheckoutData(UUID paymentId, String checkoutUrl, String qrPayloadJson) {
         PaymentRecord payment = paymentRecordRepository.findById(paymentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần thanh toán vừa tạo"));
+            .orElseThrow(() -> new ResourceNotFoundException("The payment attempt that was just created was not found"));
         payment.setCheckoutUrl(checkoutUrl);
         if (qrPayloadJson != null) {
             payment.setProviderPayloadJson(qrPayloadJson);
@@ -297,7 +299,7 @@ public class CreatePaymentCheckoutUrlUseCase
         return null;
     }
 
-    /** Chuỗi QR + thông tin chuyển khoản, dạng JSON để lưu xuống provider_payload_json. */
+    /** The QR string + bank transfer details, as JSON to store in provider_payload_json. */
     private String qrPayloadJson(PaymentCheckoutResult result) {
         if (result.action() != CheckoutAction.QR) {
             return null;
@@ -305,16 +307,16 @@ public class CreatePaymentCheckoutUrlUseCase
         try {
             return jsonSerializationPort.toJson(new StoredQrPayload(result.qrCode(), result.transfer()));
         } catch (RuntimeException e) {
-            // Không làm hỏng cả lần thanh toán chỉ vì không ghi được payload: mã vẫn hiện được ở
-            // lượt này, chỉ mất khả năng dựng lại khi trường quay lại đơn. Lúc đó nhánh checkout_url
-            // ở resolvePendingAttempt vẫn đưa họ sang trang của cổng.
-            log.warn("Không ghi được payload QR cho lần thanh toán {} -- lần sau sẽ phải mở trang của cổng",
+            // Do not break the whole payment just because the payload could not be stored: the code can still be shown this
+            // time, only the ability to rebuild it when the school returns to the order is lost. The checkout_url branch in
+            // resolvePendingAttempt still sends them to the gateway page then.
+            log.warn("Could not store the QR payload for payment attempt {} -- next time the gateway page will have to be opened",
                 result.paymentLinkId(), e);
             return null;
         }
     }
 
-    /** Đọc ngược payload đã lưu; trả null nếu lần thử này không phải dạng QR hoặc payload hỏng. */
+    /** Reads back the stored payload; returns null if this attempt is not of the QR kind or the payload is corrupt. */
     private StoredQrPayload readQrPayload(PaymentRecord pending) {
         String json = pending.getProviderPayloadJson();
         if (json == null || json.isBlank()) {
@@ -324,33 +326,33 @@ public class CreatePaymentCheckoutUrlUseCase
             StoredQrPayload payload = jsonSerializationPort.fromJson(json, StoredQrPayload.class);
             return payload.qrCode() == null ? null : payload;
         } catch (RuntimeException e) {
-            log.warn("Payload QR của lần thanh toán {} không đọc được -- bỏ qua, dùng đường checkout_url",
+            log.warn("The QR payload of payment attempt {} cannot be read -- ignoring it and using the checkout_url path",
                 pending.getId(), e);
             return null;
         }
     }
 
-    /** Hình dạng của provider_payload_json. KHÔNG chứa chữ ký -- xem PaymentRecordJpaEntity. */
+    /** The shape of provider_payload_json. It does NOT contain the signature -- see PaymentRecordJpaEntity. */
     private record StoredQrPayload(String qrCode, BankTransferDetails transfer) {}
 
     /**
-     * Khóa dòng đơn rồi kiểm tra ba điều kiện bắt buộc để được phát link. Gọi ở ĐẦU mỗi transaction
-     * có ghi, vì mỗi transaction là một lần nhìn dữ liệu mới.
+     * Locks the order row, then checks the three conditions required to issue a link. Called at the START of every
+     * transaction that writes, because each transaction is a fresh look at the data.
      */
     private Order requirePayableOrder(UUID orderId) {
         Order order = orderRepository.findByIdForUpdate(orderId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new IllegalArgumentException("Đơn hàng không còn ở trạng thái chờ thanh toán.");
+            throw new IllegalArgumentException("The order is no longer awaiting payment.");
         }
-        // Đơn quá hạn thì KHÔNG phát link mới: hạn này đã gửi sang cổng ở lần thử trước, và cấp thêm
-        // thời gian ở đây nghĩa là sửa một cam kết đã chốt. Muốn mua tiếp thì đặt đơn mới.
+        // An overdue order does NOT get a new link: this deadline was already sent to the gateway with the earlier attempt,
+        // and granting more time here would mean changing a commitment that is already made. To buy again, place a new order.
         if (!Instant.now().isBefore(order.getExpiresAt())) {
-            throw new IllegalArgumentException("Đơn hàng đã hết hạn thanh toán, hãy đặt đơn mới.");
+            throw new IllegalArgumentException("The order's payment period has expired; please place a new order.");
         }
         return order;
     }
@@ -368,7 +370,7 @@ public class CreatePaymentCheckoutUrlUseCase
         return requiresNewTransactionPort.callInNewTransaction(work);
     }
 
-    /** Dữ liệu cần mang qua ranh giới transaction để gọi cổng -- đều là POJO đã tách khỏi persistence context. */
+    /** Data that has to cross the transaction boundary for the gateway call -- all POJOs already detached from the persistence context. */
     private record PreparedAttempt(
         UUID paymentId, String providerOrderRef, BigDecimal amountVnd, Instant expiresAt) {}
 }

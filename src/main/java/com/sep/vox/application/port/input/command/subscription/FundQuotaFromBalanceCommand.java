@@ -6,10 +6,10 @@ import java.util.UUID;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Chuyển {@code amountVnd} từ ví tự nạp của trường sang ví hạn mức của {@code quotaType}.
+ * Transfers {@code amountVnd} from the school's top-up wallet to the quota wallet of {@code quotaType}.
  *
- * <p>{@code reason} tuỳ chọn -- ghi chú của quản trị viên (vd "theo đề nghị của lớp 12A"), lưu thẳng
- * vào bút toán để tra ngược.
+ * <p>{@code reason} is optional -- the administrator's note (e.g. "at the request of class 12A"), stored directly
+ * in the ledger entry so it can be traced back.
  */
 public record FundQuotaFromBalanceCommand(
     UUID schoolId,

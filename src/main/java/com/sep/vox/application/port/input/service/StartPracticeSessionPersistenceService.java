@@ -16,9 +16,9 @@ import com.sep.vox.application.response.input.practicesession.PracticeSessionRes
 import com.sep.vox.domain.repository.PracticePaperRepository;
 import com.sep.vox.domain.repository.PracticeSessionRepository;
 
-/** Phần ghi DB (đọc đề đã giữ chỗ + tạo session + đổi trạng thái đề) của
- * StartPracticeSessionUseCase -- tách riêng để @Transactional không bọc luôn
- * agentAvailabilityClient.requireReady() (health-check ra ngoài, timeout tới 12s). */
+/** The DB write part (read the reserved paper + create the session + change the paper status) of
+ * StartPracticeSessionUseCase -- split out so @Transactional does not also wrap
+ * agentAvailabilityClient.requireReady() (an external health check, timeout up to 12s). */
 @Service
 @RequiredArgsConstructor
 public class StartPracticeSessionPersistenceService {
@@ -33,7 +33,7 @@ public class StartPracticeSessionPersistenceService {
         PracticePaper paper = practicePaperRepository
             .findReservedPaper(paperId, studentId, now)
             .orElseThrow(() -> new ResourceNotFoundException(
-                "Đề luyện không tồn tại hoặc đã hết thời gian giữ chỗ."
+                "The practice paper does not exist or its reservation time has expired."
             ));
         com.sep.vox.domain.model.personalization.PracticeSession savedSession = startSession(studentId, paper, now);
         practicePaperRepository.save(paper.withStatus("STARTED"));
@@ -66,13 +66,13 @@ public class StartPracticeSessionPersistenceService {
     }
 
     /**
-     * Đề dựng TRƯỚC V15 không có bậc mục tiêu. Chúng đã hết hạn giữ chỗ từ lâu
-     * ({@code findReservedPaper} lọc theo {@code now}) nên trên thực tế không đề nào vào được
-     * đây -- nhưng nói thẳng vẫn hơn ghi một bậc bịa vào phiên.
+     * Papers built BEFORE V15 have no target band. Their reservation expired long ago
+     * ({@code findReservedPaper} filters by {@code now}) so in practice no paper reaches
+     * here -- but saying it plainly still beats writing an invented band into the session.
      */
     private UUID requireTargetBand(UUID targetFrameworkBandId) {
         if (targetFrameworkBandId == null) {
-            throw new ResourceNotFoundException("Đề luyện chưa có bậc mục tiêu, hãy dựng lại đề.");
+            throw new ResourceNotFoundException("The practice paper has no target band, please build the paper again.");
         }
         return targetFrameworkBandId;
     }

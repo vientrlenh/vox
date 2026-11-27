@@ -37,20 +37,20 @@ public class DeleteAssessmentBlueprintSlotUseCase implements IUseCase<DeleteAsse
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         AssessmentBlueprintSlot slot = assessmentBlueprintSlotRepository.findById(input.slotId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy slot"));
+            .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(slot.getBlueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Blueprint version not found"));
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(version.getBlueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment blueprint not found"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được xoá slot khi version đang DRAFT");
+            throw new IllegalArgumentException("A slot can only be deleted while the version is DRAFT");
         }
 
         assessmentBlueprintSlotRepository.deleteById(slot.getId());

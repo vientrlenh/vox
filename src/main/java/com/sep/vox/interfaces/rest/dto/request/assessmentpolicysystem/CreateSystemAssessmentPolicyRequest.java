@@ -11,24 +11,24 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record CreateSystemAssessmentPolicyRequest(
-        @NotNull(message = "Phiên bản Khung tiêu chuẩn không được để trống")
+        @NotNull(message = "Framework version must not be blank")
         UUID frameworkVersionId,
 
-        @NotNull(message = "Phiên bản Rubric không được để trống")
+        @NotNull(message = "Rubric version must not be blank")
         UUID rubricVersionId,
 
-        @NotNull(message = "Ngôn ngữ không được để trống")
+        @NotNull(message = "Language must not be blank")
         UUID languageId,
 
-        @NotNull(message = "Band mục tiêu không được để trống")
+        @NotNull(message = "Target band must not be blank")
         UUID targetFrameworkBandId,
 
-        @DecimalMin(value = "0.0", message = "Điểm đạt phải lớn hơn hoặc bằng 0")
+        @DecimalMin(value = "0.0", message = "Passing score must be greater than or equal to 0")
         BigDecimal passingScore,
 
         AssessmentPolicyStrictness strictness,
 
-        @NotNull(message = "Ngày bắt đầu hiệu lực không được để trống")
+        @NotNull(message = "Effective start date must not be blank")
         Instant effectiveFrom,
 
         Instant effectiveTo

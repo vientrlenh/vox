@@ -18,8 +18,8 @@ public class JpaSessionCostQueryRepository implements SessionCostQueryRepository
     private EntityManager em;
 
     /**
-     * JPQL constructor expression, cùng khuôn với phần lớn query-repository trong package này -- gộp
-     * bằng SQL rồi dựng thẳng DTO, thay vì kéo từng dòng ai_usage_records về Java để cộng.
+     * JPQL constructor expression, same mould as most query repositories in this package -- aggregates
+     * in SQL and builds the DTO directly, instead of pulling every ai_usage_records row into Java to sum.
      */
     @Override
     public List<SessionCostDto> sumCostUsdGroupedBySessionSince(Instant since) {

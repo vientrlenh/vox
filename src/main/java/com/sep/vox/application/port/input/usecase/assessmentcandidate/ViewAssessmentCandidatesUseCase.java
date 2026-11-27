@@ -40,7 +40,7 @@ public class ViewAssessmentCandidatesUseCase implements IUseCase<ViewAssessmentC
     @Transactional(readOnly = true)
     public List<AssessmentCandidateDto> execute(ViewAssessmentCandidatesQuery input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         authorize(assessment, input.scheduleId());
 
         List<AssessmentCandidate> candidates = assessmentCandidateRepository.findByAssessmentId(assessment.getId()).stream()
@@ -52,10 +52,10 @@ public class ViewAssessmentCandidatesUseCase implements IUseCase<ViewAssessmentC
         return AssessmentCandidateDtoMapper.toDtoList(candidates);
     }
 
-    // Nhà trường (SCHOOL_ADMIN) và CHAIR của kỳ thi xem được toàn bộ candidate. Giáo viên
-    // KHÔNG phải CHAIR chỉ xem được khi đang là giám thị (proctor) của đúng 1 ca thi cụ thể --
-    // bắt buộc phải truyền scheduleId, không cho xem toàn bộ candidate của cả kỳ thi qua
-    // đường này (tránh giám thị 1 ca nhìn thấy dữ liệu của ca khác).
+    // The school (SCHOOL_ADMIN) and the CHAIR of the assessment can see every candidate. A teacher who is
+    // NOT the CHAIR can only see them while being the proctor of exactly 1 specific assessment schedule --
+    // scheduleId is mandatory, and this path does not let anyone see all candidates of the whole assessment
+    // (so the proctor of one schedule cannot see the data of another schedule).
     private void authorize(Assessment assessment, java.util.UUID scheduleId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
@@ -72,6 +72,6 @@ public class ViewAssessmentCandidatesUseCase implements IUseCase<ViewAssessmentC
         if (scheduleId != null && assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(scheduleId, currentUserId)) {
             return;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

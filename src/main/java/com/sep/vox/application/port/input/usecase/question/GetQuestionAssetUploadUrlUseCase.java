@@ -37,9 +37,9 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
     @Override
     public QuestionAssetUploadUrlResponse execute(GetQuestionAssetUploadUrlQuery input) {
         Question question = questionRepository.findById(input.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         boolean owner = question.isCreatedBy(currentUserId);
@@ -49,7 +49,7 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
         boolean systemAdminOnSystemBank = userContextPort.isSystemAdmin()
             && bank.getOwnerType() == QuestionBankOwnerType.SYSTEM;
         if (!systemAdminOnSystemBank && !owner && !editorCollaborator) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         String normalizedContentType = normalizeContentType(input.contentType());
@@ -63,7 +63,7 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
 
     private static String normalizeContentType(String contentType) {
         if (contentType == null) {
-            throw new IllegalArgumentException("Content type không được để trống");
+            throw new IllegalArgumentException("Content type must not be empty");
         }
 
         String normalized = contentType.trim().toLowerCase(Locale.ROOT);
@@ -77,7 +77,7 @@ public class GetQuestionAssetUploadUrlUseCase implements IUseCase<GetQuestionAss
         if (!(contentType.startsWith("image/")
                 || contentType.startsWith("video/")
                 || contentType.startsWith("audio/"))) {
-            throw new IllegalArgumentException("Chỉ hỗ trợ upload asset dạng image/*, video/* hoặc audio/*");
+            throw new IllegalArgumentException("Only image/*, video/* or audio/* assets can be uploaded");
         }
     }
 

@@ -39,10 +39,10 @@ public interface AssessmentAppealQueryRepository {
     Optional<AppealDetailInfo> findStudentDetailById(UUID appealId, UUID studentId);
 
     /**
-     * Ứng viên chấm phúc khảo cho MỘT đơn cụ thể, kèm cờ xung đột lợi ích.
+     * Appeal-grading candidates for ONE specific appeal, with the conflict-of-interest flag.
      *
-     * <p>Cần {@code appealId} chứ không chỉ {@code schoolId} như bản cũ: xung đột được
-     * tính theo <em>bài thi của đơn đó</em>, không phải theo trường.
+     * <p>Needs {@code appealId} and not only {@code schoolId} like the old version: the conflict is
+     * computed against <em>the submission of that appeal</em>, not against the school.
      */
     List<AppealReviewerLiteInfo> findAssignableReviewers(UUID schoolId, UUID appealId, String keyword);
 }

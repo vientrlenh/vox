@@ -12,7 +12,7 @@ import com.sep.vox.domain.dto.FrameworkCriterionDto;
 import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 
-// Query gốc cho System Admin: xem chi tiết 1 FrameworkCriterion theo ID, không giới hạn trạng thái Version.
+// Root query for System Admin: details of one FrameworkCriterion by ID, regardless of the Version status.
 @Service
 @RequiredArgsConstructor
 public class ViewFrameworkCriterionDetailsUseCase implements IUseCase<ViewFrameworkCriterionDetailsQuery, FrameworkCriterionDto> {
@@ -23,7 +23,7 @@ public class ViewFrameworkCriterionDetailsUseCase implements IUseCase<ViewFramew
     @Transactional(readOnly = true)
     public FrameworkCriterionDto execute(ViewFrameworkCriterionDetailsQuery query) {
         FrameworkCriterion criterion = frameworkCriterionRepository.findById(query.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí (Criterion) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("Criterion not found."));
 
         return FrameworkCriterionDtoMapper.toDto(criterion);
     }

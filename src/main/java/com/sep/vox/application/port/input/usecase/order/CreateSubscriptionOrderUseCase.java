@@ -82,18 +82,18 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
         boolean hasSuspended = schoolSubscriptionRepository.findBySchoolId(schoolId).stream()
             .anyMatch(subscription -> subscription.getStatus() == SchoolSubscriptionStatus.SUSPENDED);
         if (hasSuspended) {
-            throw new IllegalArgumentException("Gói đăng ký của trường đang bị đình chỉ, không thể đặt đơn mới.");
+            throw new IllegalArgumentException("The school's subscription is suspended, so a new order cannot be placed.");
         }
     }
 
     private SubscriptionPlan requirePlanOnSale(UUID subscriptionPlanId) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(subscriptionPlanId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
         // The old flow only checked the plan EXISTS -- a real gap: an order pointing at a DRAFT plan (price not
         // finalised, admin can still edit) or an ARCHIVED one (no longer sold) could still be created, and by
         // settlement the school had already paid for a plan that should not be on sale.
         if (plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new IllegalArgumentException("Gói này hiện không được mở bán.");
+            throw new IllegalArgumentException("This plan is not currently on sale.");
         }
         return plan;
     }
@@ -104,7 +104,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     private void requireNoOpenSubscriptionOrder(UUID schoolId) {
         if (orderRepository.findOpenSubscriptionOrderBySchoolId(schoolId).isPresent()) {
             throw new IllegalArgumentException(
-                "Trường đang có một đơn đăng ký chờ thanh toán, hãy hoàn tất hoặc hủy đơn đó trước khi đặt đơn mới.");
+                "The school has a subscription order awaiting payment; complete or cancel it before placing a new order.");
         }
     }
 
@@ -119,7 +119,7 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     private void requireNoQueuedPeriod(UUID schoolId, Instant now) {
         if (hasQueuedPeriod(schoolId, now)) {
             throw new IllegalArgumentException(
-                "Trường đã có một kỳ đã thanh toán đang chờ tới ngày chạy, hãy đợi kỳ đó bắt đầu rồi mới mua tiếp.");
+                "The school already has a paid period waiting for its start date; wait for it to start before buying again.");
         }
     }
 
@@ -142,17 +142,18 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     }
 
     /**
-     * NÂNG CẤP chỉ khi gói mới ĐẮT HƠN gói đang chạy. Gói rẻ hơn hoặc bằng giá đi đường nối tiếp --
-     * và đó không phải chuyện đặt tên.
+     * An UPGRADE only when the new plan is MORE EXPENSIVE than the running one. A cheaper or equally priced plan
+     * takes the chained path -- and that is not a naming matter.
      *
-     * <p>Khoản bù bị chặn trên bởi giá gói mới (xem SubscriptionUpgradePolicyService), nên "nâng cấp"
-     * xuống một gói rẻ hơn sẽ âm thầm đốt phần chênh: đang dùng gói 12 triệu, đổi sang gói 3 triệu ở
-     * ngày thứ hai thì chỉ được bù tối đa 3 triệu, mất trắng gần 9 triệu mà không có chỗ nào báo.
-     * Đi đường nối tiếp thì trường dùng hết kỳ đắt tiền đã trả rồi mới sang gói rẻ -- không mất gì.
+     * <p>The credit is capped above by the new plan's price (see SubscriptionUpgradePolicyService), so
+     * "upgrading" to a cheaper plan would silently burn the difference: on a 12 million plan, switching to a
+     * 3 million plan on the second day only gets at most 3 million credited, losing almost 9 million with nothing
+     * to tell the school. On the chained path the school uses up the expensive period it already paid for before
+     * moving to the cheaper plan -- nothing is lost.
      *
-     * <p>So GIÁ NIÊM YẾT của hai gói, không so pricePaidSnapshot: câu hỏi ở đây là "gói mới có phải
-     * hàng cao cấp hơn không", chứ không phải "lần trước trường trả bao nhiêu" -- một trường từng
-     * được giảm giá không vì thế mà biến mọi lần mua sau thành nâng cấp.
+     * <p>Compares the LIST PRICE of the two plans, not pricePaidSnapshot: the question here is "is the new plan
+     * a higher-tier product", not "how much did the school pay last time" -- a school that once got a discount
+     * does not turn every later purchase into an upgrade because of it.
      */
     private boolean isUpgradeTo(SubscriptionPlan plan, SchoolSubscription inForce) {
         if (inForce.getSubscriptionPlanId().equals(plan.getId())) {
@@ -183,14 +184,14 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
             .setScale(0, RoundingMode.HALF_UP);
 
         return Order.forSubscriptionUpgrade(schoolId,
-            "Nâng cấp lên " + plan.getName(), plan.getPriceVnd(), unusedCredit, serviceFeeVnd, now);
+            "Upgrade to " + plan.getName(), plan.getPriceVnd(), unusedCredit, serviceFeeVnd, now);
     }
 
     /**
-     * Có kỳ nào đã trả tiền mà chưa tới ngày chạy không.
+     * Whether any period has been paid for but has not reached its start date.
      *
-     * <p>"Chưa kết thúc" trừ "đang chạy" -- không cần thêm truy vấn nào: kỳ đang chạy nhiều nhất là
-     * một, nên còn dư dòng nào trong danh sách chưa-kết-thúc thì đó chính là kỳ đang xếp hàng.
+     * <p>"Unfinished" minus "running" -- no extra query is needed: there is at most one running period, so any
+     * row left over in the unfinished list is exactly the period waiting in the queue.
      */
     private boolean hasQueuedPeriod(UUID schoolId, Instant now) {
         int unfinished = schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).size();
@@ -202,6 +203,6 @@ public class CreateSubscriptionOrderUseCase implements IUseCase<CreateSubscripti
     private Order chainedOrder(UUID schoolId, SubscriptionPlan plan, Instant now) {
         BigDecimal serviceFeeVnd = plan.getPriceVnd().multiply(serviceFeePort.serviceFeeRatio()).setScale(0, RoundingMode.HALF_UP);
         return Order.forSubscription(schoolId, OrderType.SUBSCRIPTION_REQUEST,
-            "Đăng ký " + plan.getName(), plan.getPriceVnd(), serviceFeeVnd, now);
+            "Subscribe to " + plan.getName(), plan.getPriceVnd(), serviceFeeVnd, now);
     }
 }

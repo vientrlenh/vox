@@ -20,21 +20,21 @@ public interface AssessmentScheduleProctorRepository {
     List<UUID> findScheduleIdsByTeacherIdAndScheduleIdIn(UUID teacherId, Collection<UUID> scheduleIds);
 
     /**
-     * Giáo viên này đã gác một ca thi (DRAFT/PUBLISHED) nào khác giao thời gian với [start, end) chưa.
-     * Quét MỌI kỳ thi chứ không riêng kỳ thi đang mở: một người không thể có mặt ở hai ca cùng lúc.
-     * {@code excludeScheduleId} (nếu khác null) được loại khỏi phép kiểm tra.
+     * Whether this teacher already proctors another schedule (DRAFT/PUBLISHED) that overlaps in time with [start, end).
+     * Scans EVERY assessment, not only the open one: a person cannot be present at two schedules at the same time.
+     * {@code excludeScheduleId} (if not null) is excluded from the check.
      */
     boolean existsOverlappingAssignment(UUID teacherId, Instant start, Instant end, UUID excludeScheduleId);
 
     /**
-     * Với mỗi giáo viên trong {@code teacherIds}, ca thi (DRAFT/PUBLISHED) đầu tiên mà họ đã gác và
-     * giao thời gian với [start, end) — dùng cho màn chọn giám thị để báo trước ai đang bận.
-     * Giáo viên rảnh thì không có mặt trong kết quả.
+     * For each teacher in {@code teacherIds}, the first schedule (DRAFT/PUBLISHED) they proctor that
+     * overlaps in time with [start, end) — used by the proctor selection screen to warn in advance who is busy.
+     * A teacher who is free is not present in the result.
      */
     List<ProctorScheduleConflict> findConflictsForTeachers(
             Collection<UUID> teacherIds, Instant start, Instant end, UUID excludeScheduleId);
 
-    /** Một lần vướng lịch: giáo viên {@code teacherId} đã gác ca {@code scheduleId} chạy [start, end). */
+    /** One conflict: teacher {@code teacherId} already proctors schedule {@code scheduleId} running [start, end). */
     record ProctorScheduleConflict(UUID teacherId, UUID scheduleId, Instant startDate, Instant endDate) {
     }
 }

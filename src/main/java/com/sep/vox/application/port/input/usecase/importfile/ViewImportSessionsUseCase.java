@@ -38,7 +38,7 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
     @Transactional(readOnly = true)
     public PageResult<ImportSessionSummaryResponse> execute(ViewImportSessionsQuery input) {
         if (input == null || input.page() <= 0 || input.size() <= 0) {
-            throw new IllegalArgumentException("Số trang và kích thước trang không hợp lệ");
+            throw new IllegalArgumentException("Invalid page number and page size");
         }
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = findCurrentUser(currentUserId);
@@ -57,24 +57,24 @@ public class ViewImportSessionsUseCase implements IUseCase<ViewImportSessionsQue
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("Current user is not active");
         }
         return user;
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("Current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("School is not active");
         }
     }
 }

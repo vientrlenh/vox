@@ -16,22 +16,22 @@ import com.sep.vox.domain.model.subscription.SchoolSubscription;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Trường báo sẽ KHÔNG mua tiếp sau khi kỳ hiện tại kết thúc.
+ * The school announces that it will NOT buy again after the current period ends.
  *
- * <p>Hành động này KHÔNG cắt quyền dùng và KHÔNG hoàn tiền: trường đã trả cho trọn kỳ nên dùng bình
- * thường tới hết endDate, rồi SubscriptionExpiryJob tự chuyển sang EXPIRED như mọi kỳ khác. Muốn cắt
- * ngay thì đó là đình chỉ (ForceSuspendSubscriptionUseCase), và đó là quyền của System Admin.
+ * <p>This action does NOT cut off access and does NOT refund: the school paid for the whole period, so it keeps
+ * using it normally until endDate, and then SubscriptionExpiryJob moves it to EXPIRED like any other period. To
+ * cut access immediately that is a suspension (ForceSuspendSubscriptionUseCase), which is a System Admin right.
  *
- * <p>QUAN TRỌNG -- {@code cancelledAt} ở đây là một GHI NHẬN Ý ĐỊNH, không phải một công tắc điều
- * khiển thứ gì. Hệ thống KHÔNG có gia hạn tự động: muốn có kỳ mới thì trường phải tự đặt đơn
- * (RenewSchoolSubscriptionUseCase). Nên "hủy" ở đây không dừng được khoản thu nào cả -- vốn dĩ chẳng
- * có khoản thu nào sắp tự xảy ra. Giá trị của nó là tín hiệu: cho FE hiện đúng trạng thái, và cho
- * bên kinh doanh biết trường nào định rời đi mà còn kịp giữ. Đừng viết logic nào dựa vào cột này với
- * giả định nó chặn được gia hạn.
+ * <p>IMPORTANT -- {@code cancelledAt} here is a RECORD OF INTENT, not a switch that controls anything. The system
+ * has NO auto-renewal: to get a new period the school has to place an order itself
+ * (RenewSchoolSubscriptionUseCase). So "cancel" here stops no charge at all -- there is no charge about to
+ * happen on its own anyway. Its value is as a signal: for the FE to show the right status, and for the sales
+ * side to learn which schools plan to leave while there is still time to keep them. Do not write any logic that
+ * relies on this column on the assumption that it blocks renewal.
  *
- * <p>Không có đường gỡ hủy. Nếu sau này thêm, {@code cancelledAt} sẽ bị xóa về null và lúc đó nó
- * không còn là lịch sử nữa -- phải ghi thêm một dòng school_subscription_events như đình chỉ đang
- * làm. Hiện tại cột này chỉ được ghi một lần và không bao giờ xóa, nên bản thân nó đã là lịch sử.
+ * <p>There is no way to undo a cancellation. If one is added later, {@code cancelledAt} would be cleared back to
+ * null and it would no longer be history -- another school_subscription_events row would have to be written, as
+ * suspension does. For now this column is written once and never cleared, so it is history by itself.
  */
 @Service
 @RequiredArgsConstructor
@@ -52,10 +52,10 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Trường không có gói nào đang hoạt động để hủy."));
+            .orElseThrow(() -> new ResourceNotFoundException("The school has no active subscription to cancel."));
 
         if (subscription.getCancelledAt() != null) {
-            throw new IllegalArgumentException("Gói đăng ký đã được hủy trước đó.");
+            throw new IllegalArgumentException("The subscription was already cancelled.");
         }
 
         Instant now = Instant.now();
@@ -72,12 +72,12 @@ public class CancelSchoolSubscriptionUseCase implements IUseCase<Void, UUID> {
         SchoolSubscription queued = queuedPeriod(schoolId, now, inForceId);
         if (queued != null) {
             throw new IllegalArgumentException(
-                "Trường đã thanh toán cho một kỳ tiếp theo (chạy tới " + DISPLAY_DATE.format(queued.getEndDate())
-                    + "), không thể đánh dấu hủy. Vui lòng liên hệ hỗ trợ nếu muốn dừng sớm.");
+                "The school has paid for a following period (running until " + DISPLAY_DATE.format(queued.getEndDate())
+                    + "), so it cannot be marked as cancelled. Please contact support if you want to stop early.");
         }
     }
 
-    /** Kỳ chưa kết thúc mà KHÔNG phải kỳ đang chạy -- tức kỳ đã trả tiền và đang chờ tới ngày. */
+    /** A period that has not ended and is NOT the running one -- i.e. a period that is paid for and waiting for its start date. */
     private SchoolSubscription queuedPeriod(UUID schoolId, Instant now, UUID inForceId) {
         return schoolSubscriptionRepository.findUnfinishedBySchoolId(schoolId, now).stream()
             .filter(period -> !period.getId().equals(inForceId))

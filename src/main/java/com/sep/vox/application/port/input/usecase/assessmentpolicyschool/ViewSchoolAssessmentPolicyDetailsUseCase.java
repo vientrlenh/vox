@@ -39,15 +39,15 @@ public class ViewSchoolAssessmentPolicyDetailsUseCase implements IUseCase<ViewSc
         requireActiveUser(currentUserId);
 
         AssessmentPolicy policy = assessmentPolicyRepository.findById(query.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Assessment Policy was not found."));
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
 
         if (policy.getSchoolId() == null ||
                 !policy.getSchoolId().equals(query.schoolId()) ||
                 !schoolUser.getSchoolId().equals(policy.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Assessment Policy của trường khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to view the Assessment Policy of another school.");
         }
 
         requireSchoolActive(query.schoolId());
@@ -57,17 +57,17 @@ public class ViewSchoolAssessmentPolicyDetailsUseCase implements IUseCase<ViewSc
 
     private void requireActiveUser(UUID currentUserId) {
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
     }
 
     private void requireSchoolActive(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
+            throw new ForbiddenException("Action denied: this school has been deactivated.");
         }
     }
 }

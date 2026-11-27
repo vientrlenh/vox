@@ -53,7 +53,7 @@ class ClassTestTokenQuotaGuardServiceTests {
     // conversion is off by a full 3 digits and cannot hide behind a multiplication by 1.
     private static final BigDecimal USD_TO_VND_RATE = BigDecimal.valueOf(1_000);
     private static final int ASSESSMENT_SECONDS = 3_600;
-    // 3.600 giây × 1 thí sinh × 1 lượt × 1 USD/giây × 1.000 = 3.600.000đ cho mọi test bên dưới.
+    // 3,600 seconds × 1 candidate × 1 turn × 1 USD/second × 1,000 = 3,600,000 VND for every test below.
     private static final BigDecimal ESTIMATE_VND = BigDecimal.valueOf(3_600_000);
 
     private SchoolSubscriptionRepository schoolSubscriptionRepository;
@@ -130,9 +130,9 @@ class ClassTestTokenQuotaGuardServiceTests {
     }
 
     /**
-     * Hạn mức 100.000đ nằm GIỮA ước lượng tính bằng USD (3.600) và tính bằng VND (3.600.000). Bản cũ
-     * so thẳng 3.600 với 100.000 nên cho qua; chỉ khi quy đổi trước lúc so thì mới chặn. Đây là con số
-     * duy nhất phân biệt được hai hành vi, nên đừng đổi nó thành một hạn mức "rõ ràng là thiếu".
+     * A quota of 100,000 VND sits BETWEEN the estimate in USD (3,600) and in VND (3,600,000). The old version
+     * compared 3,600 straight against 100,000 and so let it pass; only converting before comparing blocks it. This is the only
+     * number that tells the two behaviours apart, so do not change it into a quota that is "obviously insufficient".
      */
     @Test
     void should_convert_estimate_to_vnd_before_comparing_with_quota() {
@@ -151,9 +151,8 @@ class ClassTestTokenQuotaGuardServiceTests {
     }
 
     /**
-     * Cạn hạn mức nhưng đã nạp tiền thì vẫn publish được: ConsumeQuotaService sẽ trừ phần vượt sang ví
-     * tự nạp (bút toán OVERAGE_CHARGE), nên chặn ở đây là từ chối đúng khoản mà lúc chấm xong mình sẽ
-     * thu tiền.
+     * With the quota exhausted but money topped up, publishing is still allowed: ConsumeQuotaService will deduct the excess from the
+     * self-funded balance (OVERAGE_CHARGE entry), so blocking here would reject exactly the amount we will charge when grading finishes.
      */
     @Test
     void should_pass_when_top_up_balance_covers_the_part_beyond_quota() {
@@ -173,13 +172,13 @@ class ClassTestTokenQuotaGuardServiceTests {
     }
 
     /**
-     * Số dư âm = trường đang NỢ = bị khóa, chặn ngay cả khi hạn mức còn thừa dư (khoản nợ chẳng liên
-     * quan gì tới ước lượng lần này). Khóa ở cấp TRƯỜNG nên áp cho cả bài tập trung.
+     * A negative balance = the school is in DEBT = locked, blocked even if the quota has plenty left (the debt has nothing
+     * to do with this estimate). The lock is at SCHOOL level so it applies to centralized assessments too.
      *
-     * <p>Kiểm cả THÔNG ĐIỆP chứ không chỉ loại exception: nợ phải được báo là "đang bị khóa" với cách
-     * gỡ riêng (thanh toán bù), không được rơi xuống cửa dưới rồi báo thành "hết hạn mức". Đó cũng là
-     * lý do spendableSchoolFundsVnd kẹp số dư âm về 0 thay vì cộng thẳng -- cộng thẳng thì khoản nợ bị
-     * trừ lần thứ hai vào hạn mức và người dùng được chỉ sai cách khắc phục.
+     * <p>Checks the MESSAGE as well as the exception type: debt must be reported as "locked" with its own remedy
+     * (pay it off), and must not fall through to the gate below and be reported as "quota exhausted". That is also
+     * why spendableSchoolFundsVnd clamps a negative balance to 0 instead of adding it directly -- added directly the debt would be
+     * deducted a second time from the quota and the user pointed to the wrong remedy.
      */
     @Test
     void should_reject_with_lock_reason_when_balance_is_negative() {
@@ -188,12 +187,12 @@ class ClassTestTokenQuotaGuardServiceTests {
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(centralizedAssessment(ASSESSMENT_SECONDS)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("khóa");
+            .hasMessageContaining("locked");
     }
 
     /**
-     * Trần cá nhân là GIỚI HẠN nội bộ trường tự đặt, không phải túi tiền -- cộng số dư ví trường vào
-     * đó sẽ xóa sạch chính cái trần vừa đặt ra. Ví trường thừa sức trả, giáo viên vẫn bị chặn.
+     * The personal cap is an internal LIMIT the school sets itself, not a pocket of money -- adding the school balance to
+     * it would wipe out the cap just set. The school balance can easily pay, yet the teacher is still blocked.
      */
     @Test
     void should_not_add_school_balance_to_personal_allocation_ceiling() {
@@ -202,18 +201,18 @@ class ClassTestTokenQuotaGuardServiceTests {
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("cá nhân");
+            .hasMessageContaining("personal");
     }
 
     @Test
     void should_pass_when_teacher_has_no_personal_allocation_row() {
-        // Không có allocation riêng = không bị chặn theo cá nhân, chỉ cần trường đủ tiền.
+        // No personal allocation = no personal blocking, the school only needs enough money.
         assertThatCode(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS))).doesNotThrowAnyException();
     }
 
     @Test
     void should_not_check_personal_allocation_for_centralized_assessment() {
-        // Kỳ thi tập trung do nhà trường tổ chức, không thuộc túi riêng của ai.
+        // A centralized assessment is run by the school, it does not belong to anyone's own pocket.
         givenUserAllocation(0, 0);
 
         assertThatCode(() -> guard.requireWithinTokenQuota(centralizedAssessment(ASSESSMENT_SECONDS))).doesNotThrowAnyException();
@@ -236,7 +235,7 @@ class ClassTestTokenQuotaGuardServiceTests {
 
         assertThatThrownBy(() -> guard.requireWithinTokenQuota(classTest(ASSESSMENT_SECONDS)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("Không tìm thấy hạn mức");
+            .hasMessageContaining("of the subscription not found");
     }
 
     /**
@@ -362,7 +361,7 @@ class ClassTestTokenQuotaGuardServiceTests {
                 .build()));
     }
 
-    /** Chưa từng nạp = chưa có dòng số dư, cùng nghĩa với số dư 0 -- xem SchoolBalance.emptyFor. */
+    /** Never topped up = no balance row, the same meaning as a balance of 0 -- see SchoolBalance.emptyFor. */
     private void givenNoBalanceRow() {
         when(schoolBalanceRepository.findBySchoolId(schoolId)).thenReturn(Optional.empty());
     }

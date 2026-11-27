@@ -65,9 +65,9 @@ public final class RecordAssessmentAttemptEvaluationCommandMapper {
         );
     }
 
-    // Mở gói (không còn private) để RecordPracticeAttemptEvaluationCommandMapper dùng
-    // lại: Python chấm bài luyện bằng ĐÚNG đồ thị chấm bài thi nên payload cùng hình
-    // dạng, chép sang một bản thứ hai là mở đường cho hai bản trôi lệch nhau.
+    // Package-private (no longer private) so RecordPracticeAttemptEvaluationCommandMapper can reuse
+    // it: Python grades practice with EXACTLY the same graph as assessment grading so the payload has the same
+    // shape, and copying it into a second version invites the two copies to drift apart.
     static Map<String, CriterionScoreInput> toCriteria(Map<String, CriterionScoreDto> criteria) {
         if (criteria == null) {
             return null;
@@ -97,9 +97,9 @@ public final class RecordAssessmentAttemptEvaluationCommandMapper {
         );
     }
 
-    // Mở gói (không còn private) để RecordPracticeAttemptEvaluationCommandMapper dùng
-    // lại: Python chấm bài luyện bằng ĐÚNG đồ thị chấm bài thi nên payload cùng hình
-    // dạng, chép sang một bản thứ hai là mở đường cho hai bản trôi lệch nhau.
+    // Package-private (no longer private) so RecordPracticeAttemptEvaluationCommandMapper can reuse
+    // it: Python grades practice with EXACTLY the same graph as assessment grading so the payload has the same
+    // shape, and copying it into a second version invites the two copies to drift apart.
     static EvaluationSignalsInput toSignals(EvaluationSignalsDto dto) {
         if (dto == null) {
             return null;
@@ -165,9 +165,9 @@ public final class RecordAssessmentAttemptEvaluationCommandMapper {
         );
     }
 
-    // Mở gói (không còn private) để RecordPracticeAttemptEvaluationCommandMapper dùng
-    // lại: Python chấm bài luyện bằng ĐÚNG đồ thị chấm bài thi nên payload cùng hình
-    // dạng, chép sang một bản thứ hai là mở đường cho hai bản trôi lệch nhau.
+    // Package-private (no longer private) so RecordPracticeAttemptEvaluationCommandMapper can reuse
+    // it: Python grades practice with EXACTLY the same graph as assessment grading so the payload has the same
+    // shape, and copying it into a second version invites the two copies to drift apart.
     static List<TurnDetailInput> toTurns(List<TurnDetailDto> turns) {
         if (turns == null) {
             return null;

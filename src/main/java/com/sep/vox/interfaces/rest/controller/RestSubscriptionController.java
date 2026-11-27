@@ -76,14 +76,14 @@ public class RestSubscriptionController {
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> createPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
         UUID data = createSubscriptionPlanUseCase.execute(CreateSubscriptionPlanRequest.toCommand(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói đăng ký thành công", data));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Subscription plan created successfully", data));
     }
 
     /**
-     * Tạo gói mới (DRAFT) và archive NGAY gói {id} (phải đang ACTIVE) trỏ replacedByPlanId sang gói
-     * mới -- gộp hai bước tạo gói + ngừng bán/chọn gói thay thế. Xem
-     * CreateSubscriptionPlanReplacementUseCase cho lý do điều khoản (giá/chu kỳ/hạn mức) chỉ được
-     * kiểm lúc publish, không phải ở đây.
+     * Creates a new plan (DRAFT) and archives plan {id} IMMEDIATELY (it must be ACTIVE), pointing replacedByPlanId at the
+     * new plan -- merging the two steps of creating a plan + retiring/choosing a replacement plan. See
+     * CreateSubscriptionPlanReplacementUseCase for why the terms (price/cycle/quota) are only
+     * checked at publish time, not here.
      */
     @PostMapping("/{id}/replacement-plan")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -92,7 +92,7 @@ public class RestSubscriptionController {
             @Valid @RequestBody CreateSubscriptionPlanRequest request) {
         UUID data = createSubscriptionPlanReplacementUseCase.execute(
             new CreateSubscriptionPlanReplacementCommand(id, CreateSubscriptionPlanRequest.toCommand(request)));
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Tạo gói thay thế thành công", data));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("Replacement plan created successfully", data));
     }
 
     @DeleteMapping("/{id}")
@@ -101,15 +101,15 @@ public class RestSubscriptionController {
             @PathVariable(name = "id") UUID id,
             @RequestParam(name = "replacedByPlanId", required = false) UUID replacedByPlanId) {
         UUID data = archiveSubscriptionPlanUseCase.execute(new ArchiveSubscriptionPlanCommand(id, replacedByPlanId));
-        return ResponseEntity.ok(ApiResponse.success("Lưu trữ gói đăng ký thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Subscription plan archived successfully", data));
     }
 
     /**
-     * Chỉ (hoặc chỉ lại) gói thay thế cho một gói ĐÃ lưu trữ -- đường sửa cho những gói bị lưu trữ
-     * mà quên chọn gói thay thế. Xem UpdateSubscriptionPlanReplacementUseCase.
+     * Sets (or re-sets) the replacement plan of an ALREADY archived plan -- the repair path for plans that were archived
+     * without choosing a replacement. See UpdateSubscriptionPlanReplacementUseCase.
      *
-     * <p>replacedByPlanId BẮT BUỘC ở đây, khác với endpoint lưu trữ nơi nó tùy chọn: gọi vào đây mà
-     * không kèm gói thay thế thì không có việc gì để làm.
+     * <p>replacedByPlanId is REQUIRED here, unlike the archive endpoint where it is optional: calling this
+     * without a replacement plan leaves nothing to do.
      */
     @PatchMapping("/{id}/replacement")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -118,42 +118,42 @@ public class RestSubscriptionController {
             @RequestParam(name = "replacedByPlanId") UUID replacedByPlanId) {
         UUID data = updateSubscriptionPlanReplacementUseCase.execute(
             new UpdateSubscriptionPlanReplacementCommand(id, replacedByPlanId));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật gói thay thế thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Replacement plan updated successfully", data));
     }
 
-    // PATCH chứ không phải POST: xuất bản là đổi MỘT trường status của gói đã tồn tại (DRAFT ->
-    // ACTIVE), không tạo ra tài nguyên mới nào. Cũng vì thế mà idempotent theo nghĩa người dùng
-    // quan tâm -- bấm hai lần thì lần sau báo "chỉ xuất bản được gói nháp" chứ không sinh thêm gì.
+    // PATCH rather than POST: publishing changes ONE status field of an existing plan (DRAFT ->
+    // ACTIVE) and creates no new resource. It is also idempotent in the sense users care about --
+    // pressing twice reports "only draft plans can be published" the second time and creates nothing more.
     @PatchMapping("/{id}/publish")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishPlan(@PathVariable(name = "id") UUID id) {
         UUID data = publishSubscriptionPlanUseCase.execute(new PublishSubscriptionPlanCommand(id));
-        return ResponseEntity.ok(ApiResponse.success("Xuất bản gói đăng ký thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Subscription plan published successfully", data));
     }
 
     @DeleteMapping("/{id}/draft")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteDraftPlan(@PathVariable(name = "id") UUID id) {
         deleteDraftSubscriptionPlanUseCase.execute(new DeleteDraftSubscriptionPlanCommand(id));
-        return ResponseEntity.ok(ApiResponse.success("Xóa gói nháp thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Draft plan deleted successfully"));
     }
 
     /**
-     * Trường báo sẽ không mua tiếp sau khi kỳ hiện tại kết thúc. KHÔNG cắt quyền dùng và không hoàn
-     * tiền -- xem CancelSchoolSubscriptionUseCase. Không nhận id nào: kỳ đang chạy của trường suy ra
-     * từ token.
+     * The school announces it will not buy again after the current term ends. Does NOT cut off access and does not
+     * refund -- see CancelSchoolSubscriptionUseCase. Takes no id: the school's running term is derived
+     * from the token.
      */
     @PatchMapping("/cancellation")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> cancelSubscription() {
         UUID data = cancelSchoolSubscriptionUseCase.execute(null);
-        return ResponseEntity.ok(ApiResponse.success("Đã ghi nhận yêu cầu không gia hạn gói", data));
+        return ResponseEntity.ok(ApiResponse.success("Non-renewal request for the plan recorded", data));
     }
 
-    // Chỉ SYSTEM_ADMIN -- khác cancel/renew, đây là hành động cưỡng chế, School Admin không được tự làm.
+    // SYSTEM_ADMIN only -- unlike cancel/renew, this is an enforcement action, a School Admin may not do it themselves.
     /**
-     * Cưỡng chế cắt quyền dùng NGAY. PATCH vì đây là đổi trạng thái của một gói đã tồn tại, không
-     * tạo tài nguyên mới. Không nhận schoolId: gói đã biết nó thuộc trường nào.
+     * Enforces cutting off access IMMEDIATELY. PATCH because this changes the status of an existing plan, it does not
+     * create a new resource. Takes no schoolId: the plan already knows which school it belongs to.
      */
     @PatchMapping("/{id}/suspension")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
@@ -162,7 +162,7 @@ public class RestSubscriptionController {
             @RequestBody @Valid SuspendSubscriptionRequest request) {
         UUID data = forceSuspendSubscriptionUseCase.execute(
             new ForceSuspendSubscriptionCommand(id, request.reason()));
-        return ResponseEntity.ok(ApiResponse.success("Đình chỉ gói đăng ký thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Subscription suspended successfully", data));
     }
 
     @DeleteMapping("/{id}/suspension")
@@ -172,7 +172,7 @@ public class RestSubscriptionController {
             @RequestBody @Valid UnsuspendSubscriptionRequest request) {
         UUID data = unsuspendSubscriptionUseCase.execute(
             new UnsuspendSubscriptionCommand(id, request.note()));
-        return ResponseEntity.ok(ApiResponse.success("Gỡ đình chỉ gói đăng ký thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Subscription unsuspended successfully", data));
     }
 
     // The two READ paths for allocated quota (GET .../teachers/assessment-quota and GET .../students/practice-quota)
@@ -187,7 +187,7 @@ public class RestSubscriptionController {
             @Valid @RequestBody AllocateQuotaRequest request) {
         QuotaUserAllocationSummaryResponse data = allocateAssessmentQuotaToTeachersUseCase.execute(
             AllocateQuotaRequest.toAllocateAssessmentQuotaCommand(schoolId, request));
-        return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức thi cho giáo viên thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Exam quota allocated to the teacher successfully", data));
     }
 
     @PutMapping("/schools/{schoolId}/students/practice-quota")
@@ -197,26 +197,26 @@ public class RestSubscriptionController {
             @Valid @RequestBody AllocateQuotaRequest request) {
         QuotaUserAllocationSummaryResponse data = allocatePracticeQuotaToStudentsUseCase.execute(
             AllocateQuotaRequest.toAllocatePracticeQuotaCommand(schoolId, request));
-        return ResponseEntity.ok(ApiResponse.success("Phân bổ hạn mức luyện tập cho học sinh thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Practice quota allocated to the student successfully", data));
     }
 
 
     /**
-     * Đặt trần phân phối cho MỘT loại hạn mức của trường.
+     * Sets the distribution cap for ONE quota type of a school.
      *
-     * <p>Chính sách thuộc về TRƯỜNG, không thuộc kỳ đăng ký -- nên đường dẫn cũng theo trường, không
-     * theo subscription. Bản ghi hạn mức được dựng lại mỗi kỳ, đặt chính sách ở đó là để nó biến mất
-     * sau mỗi lần gia hạn (xem V5).
+     * <p>The policy belongs to the SCHOOL, not to the subscription term -- so the path follows the school too, not
+     * the subscription. The quota record is rebuilt every term, and putting the policy there would make it vanish
+     * after every renewal (see V5).
      */
     /**
-     * Chuyển tiền từ ví tự nạp của trường sang ví hạn mức của {@code quotaType}.
+     * Moves money from the school's self-funded balance to the quota balance of {@code quotaType}.
      *
-     * <p>POST chứ không PUT: đây là một phép CỘNG DỒN, không phải đặt một giá trị. Gọi hai lần là nạp
-     * hai lần -- khác hẳn endpoint chia hạn mức ngay trên (đặt số tuyệt đối nên bấm lại vô hại) và
-     * khác endpoint đặt trần. Giao diện phải chặn bấm đúp; chưa có khoá idempotency ở tầng này.
+     * <p>POST rather than PUT: this is an ACCUMULATING operation, not setting a value. Calling it twice funds
+     * twice -- unlike the quota split endpoint just above (which sets an absolute number, so pressing again is harmless)
+     * and unlike the cap endpoint. The UI must block double clicks; there is no idempotency key at this layer yet.
      *
-     * <p>Thao tác MỘT CHIỀU và không hoàn lại được: tiền đã vào ví hạn mức thì không quay về ví tự
-     * nạp, cũng không chuyển sang loại quota kia. Xem FundQuotaFromBalanceUseCase.
+     * <p>The operation is ONE-WAY and cannot be refunded: money that has entered the quota balance does not return to the
+     * self-funded balance, nor move to the other quota type. See FundQuotaFromBalanceUseCase.
      */
     @PostMapping("/schools/{schoolId}/quota-funding/{quotaType}")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
@@ -226,7 +226,7 @@ public class RestSubscriptionController {
             @Valid @RequestBody FundQuotaFromBalanceRequest request) {
         QuotaFundingResponse data = fundQuotaFromBalanceUseCase.execute(
             new FundQuotaFromBalanceCommand(schoolId, quotaType, request.amountVnd(), request.reason()));
-        return ResponseEntity.ok(ApiResponse.success("Nạp tiền vào hạn mức thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Quota funded successfully", data));
     }
 
     @PutMapping("/schools/{schoolId}/quota-policies/{quotaType}")
@@ -237,6 +237,6 @@ public class RestSubscriptionController {
             @Valid @RequestBody SetQuotaDistributionPolicyRequest request) {
         BigDecimal data = setQuotaDistributionPolicyUseCase.execute(
             new SetQuotaDistributionPolicyCommand(schoolId, quotaType, request.distributableRatio()));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trần phân phối hạn mức thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Quota distribution cap updated successfully", data));
     }
 }

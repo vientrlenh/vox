@@ -185,7 +185,7 @@ public class RecordAssessmentAttemptEvaluationHumanGuardTests {
 
         useCase.execute(command());
 
-        // Chỉ điểm NGƯỜI mới được bảo vệ; AI chấm lại chính bản AI của nó là bình thường.
+        // Only a PERSON's score is protected; the AI re-grading its own AI version is normal.
         verify(assessmentItemEvaluationRepository).save(any());
     }
 

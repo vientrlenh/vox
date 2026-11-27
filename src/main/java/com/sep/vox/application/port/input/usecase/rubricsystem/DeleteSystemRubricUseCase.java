@@ -55,20 +55,20 @@ public class DeleteSystemRubricUseCase implements IUseCase<DeleteSystemRubricCom
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
     }
 
     private Rubric loadSystemOwnedRubric(UUID rubricId) {
         Rubric rubric = rubricRepository.findById(rubricId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric hệ thống này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This system Rubric was not found."));
 
         // Hard rule: a System Admin must never delete a school's rubric.
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: System Admin không thể can thiệp vào Rubric của các trường học.");
+            throw new ForbiddenException("Action denied: a System Admin cannot interfere with the Rubrics of schools.");
         }
         return rubric;
     }
@@ -78,7 +78,7 @@ public class DeleteSystemRubricUseCase implements IUseCase<DeleteSystemRubricCom
                 .anyMatch(v -> v.getStatus() != RubricStatus.DRAFT);
 
         if (hasLockedVersion) {
-            throw new IllegalArgumentException("Không thể xóa Rubric này vì bên trong đang có phiên bản đã được Ban hành (PUBLISHED) hoặc Lưu trữ (ARCHIVED).");
+            throw new IllegalArgumentException("Cannot delete this Rubric because it contains a published (PUBLISHED) or archived (ARCHIVED) version.");
         }
     }
 

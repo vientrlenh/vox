@@ -8,10 +8,10 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record ClassTestQuestionRequest(
-    @NotNull(message = "questionId là bắt buộc")
+    @NotNull(message = "questionId is required")
     UUID questionId,
 
-    @NotNull(message = "weight là bắt buộc")
+    @NotNull(message = "weight is required")
     BigDecimal weight
 ) {
 

@@ -24,15 +24,15 @@ import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.SupportedLanguageRepository;
 
 /**
- * Nhập ngân hàng câu hỏi.
+ * Imports question banks.
  *
- * <p>Phạm vi sở hữu suy từ chính phiên import chứ không lấy từ file: {@code session.schoolId} có
- * giá trị thì đây là ngân hàng của trường đó, {@code null} thì là ngân hàng hệ thống. Quyền đã
- * được chốt ở bước preview, nên file không có cách nào tự nâng phạm vi của mình.
+ * <p>The ownership scope is derived from the import session itself, not from the file: if
+ * {@code session.schoolId} has a value this is that school's bank, {@code null} means a system bank.
+ * Permission was settled at the preview step, so the file has no way to raise its own scope.
  *
- * <p>Upsert theo {@code code} trong phạm vi đó. Trạng thái ngân hàng KHÔNG bị import ghi đè, cùng
- * lý do với chủ đề: một lần import lỡ tay không được kéo ngân hàng đang PUBLISHED về DRAFT và làm
- * biến mất câu hỏi khỏi tầm nhìn của giáo viên.
+ * <p>Upsert by {@code code} within that scope. The bank status is NOT overwritten by import, for the same
+ * reason as topics: a careless import must not pull a PUBLISHED bank back to DRAFT and make the questions
+ * disappear from the teachers' view.
  */
 @Service
 @RequiredArgsConstructor
@@ -114,7 +114,7 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
             row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
             return true;
         } catch (Exception ex) {
-            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            errors.add(error("general", "Background processing error: " + ex.getMessage()));
             markInvalid(row, errors);
             return false;
         }
@@ -131,13 +131,13 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
 
     private void validateRequiredFields(BankFields fields, Set<String> codesInThisFile, List<Map<String, String>> errors) {
         if (isBlank(fields.code())) {
-            errors.add(error("code", "Thiếu mã ngân hàng câu hỏi."));
+            errors.add(error("code", "Question bank code is missing."));
         }
         if (isBlank(fields.name())) {
-            errors.add(error("name", "Thiếu tên ngân hàng câu hỏi."));
+            errors.add(error("name", "Question bank name is missing."));
         }
         if (errors.isEmpty() && !codesInThisFile.add(normalizeCode(fields.code()))) {
-            errors.add(error("code", "Mã ngân hàng '" + fields.code() + "' bị lặp ngay trong file."));
+            errors.add(error("code", "Bank code '" + fields.code() + "' is repeated within the file."));
         }
     }
 
@@ -150,10 +150,10 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
             if (!isBlank(languageValue)) {
                 languageId = resolveLanguageId(languageValue);
                 if (languageId == null) {
-                    errors.add(error("language", "Không tìm thấy ngôn ngữ '" + languageValue + "'."));
+                    errors.add(error("language", "Language not found: '" + languageValue + "'."));
                 }
             } else if (existing == null) {
-                errors.add(error("language", "Thiếu ngôn ngữ (bắt buộc khi tạo ngân hàng mới)."));
+                errors.add(error("language", "Language is missing (required when creating a new bank)."));
             }
         }
         return languageId;
@@ -185,7 +185,7 @@ public class QuestionBankImportCommitHandler implements ImportCommitHandler {
         return existing;
     }
 
-    /** Nhận cả mã ("en", "vi") lẫn tên đầy đủ, vì người soạn file gõ kiểu nào cũng có. */
+    /** Accepts both the code ("en", "vi") and the full name, because the file author may type either. */
     private UUID resolveLanguageId(String value) {
         return supportedLanguageRepository.findByCode(value)
             .or(() -> supportedLanguageRepository.findByName(value))

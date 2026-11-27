@@ -54,7 +54,7 @@ public class UpdateSchoolRubricVersionUseCase
 
         String safeName = normalizeRequiredText(
                 command.name(),
-                "Tên phiên bản Rubric không được để trống."
+                "The Rubric version name must not be empty."
         );
         boolean descriptionProvided = isDescriptionProvided(command);
         String safeDescription = normalizeDescription(command);
@@ -88,46 +88,46 @@ public class UpdateSchoolRubricVersionUseCase
 
     private void requireActiveSchoolMember(UUID currentUserId, UUID schoolId) {
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
                 .orElseThrow(() ->
-                        new ForbiddenException("Tài khoản chưa được liên kết với trường học.")
+                        new ForbiddenException("The account is not linked to a school.")
                 );
         if (!schoolUser.getSchoolId().equals(schoolId)) {
             throw new ForbiddenException(
-                    "Không có quyền cập nhật dữ liệu của trường học khác."
+                    "You are not allowed to update data of another school."
             );
         }
         School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Không tìm thấy trường học.")
+                        new ResourceNotFoundException("School not found.")
                 );
         if (!school.isActive()) {
-            throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
+            throw new ForbiddenException("This school is disabled.");
         }
     }
 
     private RubricVersion loadDraftVersionOwnedBySchool(UpdateSchoolRubricVersionCommand command) {
         RubricVersion version = rubricVersionRepository.findById(command.versionId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Không tìm thấy Rubric Version.")
+                        new ResourceNotFoundException("Rubric Version not found.")
                 );
         if (version.getStatus() != RubricStatus.DRAFT) {
             throw new IllegalArgumentException(
-                    "Chỉ có thể cập nhật Rubric Version ở trạng thái DRAFT."
+                    "Only a Rubric Version in DRAFT status can be updated."
             );
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc.")
+                        new ResourceNotFoundException("Parent Rubric not found.")
                 );
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL
                 || !rubric.getSchoolId().equals(command.schoolId())) {
             throw new ForbiddenException(
-                    "Rubric Version này không thuộc trường học của bạn."
+                    "This Rubric Version does not belong to your school."
             );
         }
         return version;
@@ -144,7 +144,7 @@ public class UpdateSchoolRubricVersionUseCase
         if (finalEffectiveTo != null
                 && finalEffectiveFrom.isAfter(finalEffectiveTo)) {
             throw new IllegalArgumentException(
-                    "Ngày bắt đầu hiệu lực không được lớn hơn ngày kết thúc hiệu lực."
+                    "The effective start date must not be later than the effective end date."
             );
         }
     }
@@ -157,7 +157,7 @@ public class UpdateSchoolRubricVersionUseCase
                 ? command.scoringScaleMax() : version.getScoringScaleMax();
         if (finalScoreMin.compareTo(finalScoreMax) > 0) {
             throw new IllegalArgumentException(
-                    "Điểm tối thiểu không được lớn hơn điểm tối đa."
+                    "The minimum score must not be greater than the maximum score."
             );
         }
 
@@ -192,7 +192,7 @@ public class UpdateSchoolRubricVersionUseCase
             );
         } catch (DataConflictException e) {
             throw new IllegalArgumentException(
-                    "Không thể cập nhật Rubric Version do dữ liệu bị trùng hoặc không hợp lệ."
+                    "Cannot update the Rubric Version because the data is duplicated or invalid."
             );
         }
     }

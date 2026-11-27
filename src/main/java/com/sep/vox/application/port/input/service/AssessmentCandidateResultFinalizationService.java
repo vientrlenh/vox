@@ -50,10 +50,10 @@ public class AssessmentCandidateResultFinalizationService {
     }
 
     /**
-     * Bài vừa bị vô hiệu vì phát hiện vi phạm muộn -> đóng (REJECTED) mọi đơn phúc khảo còn
-     * đang xử lý của kết quả này. Nếu không đóng, đơn sẽ treo và lúc publish sẽ ép kết quả về
-     * RELEASED, "hồi sinh" bài đã bị vô hiệu. REJECTED không đốt lượt phúc khảo (chỉ PUBLISHED
-     * mới tính) nên không ảnh hưởng hạn mức nếu về sau kết quả được khôi phục.
+     * An assessment just invalidated because of a late-detected violation -> close (REJECTED) every appeal of this result that is
+     * still being processed. If not closed, the appeal would hang and at publish time would force the result back to
+     * RELEASED, "resurrecting" an invalidated assessment. REJECTED does not burn an appeal attempt (only PUBLISHED
+     * counts), so it does not affect the quota if the result is restored later.
      */
     private void closeOpenAppeals(UUID candidateResultId, UUID actingUserId, Instant now) {
         if (candidateResultId == null) {
@@ -65,7 +65,7 @@ public class AssessmentCandidateResultFinalizationService {
                 continue;
             }
             appeal.setStatus(AssessmentAppealStatus.REJECTED);
-            appeal.setDecisionNote("Đơn phúc khảo bị đóng do bài thi đã bị vô hiệu vì phát hiện vi phạm.");
+            appeal.setDecisionNote("The appeal was closed because the assessment was invalidated after a violation was detected.");
             appeal.setResolvedBy(actingUserId);
             appeal.setResolvedAt(now);
             assessmentResultAppealRepository.save(appeal);
@@ -103,7 +103,7 @@ public class AssessmentCandidateResultFinalizationService {
             result.setStatus(passed ? AssessmentCandidateResultStatus.PASSED : AssessmentCandidateResultStatus.FAILED);
             return true;
         }
-        // APPEALED, RE_GRADING, RETAKE_REQUIRED, PASSED/FAILED (đã chốt trước đó) - ngoài phạm vi, giữ nguyên.
+        // APPEALED, RE_GRADING, RETAKE_REQUIRED, PASSED/FAILED (already finalized earlier) - out of scope, left unchanged.
         return false;
     }
 }

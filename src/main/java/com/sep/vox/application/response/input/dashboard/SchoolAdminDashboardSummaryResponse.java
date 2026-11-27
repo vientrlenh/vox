@@ -14,7 +14,7 @@ public record SchoolAdminDashboardSummaryResponse (
     SchoolFundingResponse funding,
     UnscoredWorkloadResponse unscored,
     List<AssessmentAwaitingPublishResponse> assessmentsAwaitingPublish,
-    /** Số ngày đơn khiếu nại chờ lâu nhất đã chờ; null khi hàng đợi sạch. */
+    /** The number of days the longest-waiting complaint has waited; null when the queue is clean. */
     Integer oldestPendingAppealDays
 ) {
 

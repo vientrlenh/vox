@@ -58,11 +58,11 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
     // Separate REQUIRES_NEW transaction for the ConsumeQuotaService call -- see the full reason where it is used below.
     private final RequiresNewTransactionPort requiresNewTransactionPort;
 
-    // CẢNH BÁO: lời gọi execute(...) bên dưới là SELF-INVOCATION -- không đi qua proxy, nên
-    // @Transactional trên overload kia KHÔNG có tác dụng ở đường này; transaction đang chạy là
-    // transaction của CHÍNH method này. Hiện vô hại vì hai annotation cùng cấu hình, nhưng đổi
-    // overload kia sang REQUIRES_NEW/readOnly thì thay đổi đó chỉ có hiệu lực ở đường gọi trực tiếp
-    // (/internal/practice-sessions/{id}/turns) và im lặng không xảy ra gì ở đây.
+    // WARNING: the call to execute(...) below is a SELF-INVOCATION -- it does not go through the proxy, so the
+    // @Transactional on the other overload has NO effect on this path; the running transaction is the one of THIS
+    // very method. Harmless for now because both annotations have the same configuration, but if the other overload
+    // is changed to REQUIRES_NEW/readOnly, that change only takes effect on the direct path
+    // (/internal/practice-sessions/{id}/turns) and silently does nothing here.
     @Override
     @Transactional
     public SubmitTurnResult execute(SubmitPracticeTurnCommand input) {
@@ -88,7 +88,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         // Load the session EVEN when this turn is silent: the client must still see the correct total
         // "spoken" on the progress bar, not an empty box each time the student taps the mic and says nothing.
         PracticeSession session = practiceSessionRepository.findById(turn.getSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên luyện."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice session not found."));
         SpokenTurnOutcome outcome = recordSpokenSeconds(studentId, turn, session, turnWrite.created());
         SubmitTurnResultDto result = buildTurnResult(studentId, turn, session, responseId, turnId, corrections, outcome);
         if (turnWrite.created() && result.evaluationQueued()) {
@@ -173,7 +173,7 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
         if (quotaExhausted) {
             // What was spoken must be recorded. Running out of money only means the session stops AFTER this turn.
             log.info(
-                "Hết hạn mức lẫn số dư PRACTICE ở phiên {} -- vẫn ghi lượt {} rồi đóng phiên.",
+                "PRACTICE quota and balance both exhausted in session {} -- still recording turn {}, then closing the session.",
                 turn.getSessionId(),
                 turn.getTurnOrder()
             );
@@ -263,30 +263,31 @@ public class SubmitPracticeTurnUseCase implements IUseCase<SubmitPracticeTurnCom
 
     private void requireOwnedInProgress(UUID sessionId, UUID studentId) {
         if (!practiceSessionRepository.existsByIdAndStudentIdAndStatus(sessionId, studentId, "IN_PROGRESS")) {
-            throw new ResourceNotFoundException("Phiên luyện không còn hoạt động.");
+            throw new ResourceNotFoundException("The practice session is no longer active.");
         }
     }
 
     private UUID activeSubscriptionId(UUID studentId) {
         return schoolSubscriptionRepository.findActiveSubscriptionIdForUser(studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đang hoạt động."));
+            .orElseThrow(() -> new ResourceNotFoundException("No active subscription found."));
     }
 
     /**
-     * Ngưỡng tin cậy chỉ áp cho những dòng sửa do LLM PHÁN ĐOÁN (ngữ pháp, dùng từ) -- ở đó
-     * điểm tin cậy nói lên model chắc tới đâu. Dòng phát âm thì khác hẳn: nó là SỐ ĐO của
-     * Azure (điểm chính xác từng âm vị), không tự xưng độ tin cậy nào cả nên luôn về 0.0 và bị
-     * ngưỡng này loại sạch. Kết quả là thẻ sửa lỗi lúc đang nói thì hiện lỗi phát âm (đi thẳng
-     * qua WebSocket), nhưng mở lại sau buổi thì chúng biến mất -- chưa từng được ghi xuống.
+     * The confidence threshold only applies to correction lines that the LLM JUDGED (grammar, word choice) -- there
+     * the confidence score says how sure the model is. Pronunciation lines are different: they are MEASUREMENTS from
+     * Azure (accuracy score per phoneme) and claim no confidence of their own, so it is always 0.0 and this threshold
+     * drops all of them. The result: the correction cards shown while speaking do include pronunciation errors
+     * (going straight through the WebSocket), but when the session is reopened afterwards they vanish -- they were
+     * never written down.
      */
     private static final String MEASURED_CATEGORY = "pronunciation";
     private static final double MIN_JUDGED_CONFIDENCE = 0.8;
 
     /**
-     * Trần số dòng lưu cho MỘT lượt. Rộng hơn con số 3 cũ vì trần này chỉ chi phối bản LƯU
-     * (để xem lại sau buổi), không chi phối thẻ hiện lúc đang nói -- thẻ đó do Python đẩy
-     * thẳng qua WebSocket, không đi qua đây. Xem lại thì càng đủ càng tốt; giữ trần chỉ để
-     * chặn ghi vô hạn.
+     * The ceiling of lines stored for ONE turn. Wider than the old figure 3 because this ceiling only governs the
+     * STORED copy (for reviewing after the session), not the cards shown while speaking -- those are pushed by Python
+     * straight through the WebSocket and do not pass here. For review the fuller the better; the ceiling is kept only
+     * to stop unbounded writes.
      */
     private static final int MAX_STORED_CORRECTIONS = 8;
 

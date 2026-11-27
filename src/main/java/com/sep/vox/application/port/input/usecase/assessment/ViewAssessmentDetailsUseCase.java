@@ -43,10 +43,10 @@ public class ViewAssessmentDetailsUseCase implements IUseCase<ViewAssessmentDeta
                 .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Assessment assessment = assessmentRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         if (!hasAccess(assessment.getId(), assessment.getSchoolId(), assessment.getStatus(), currentUserId, currentSchoolId, schoolAdmin)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         return AssessmentDtoMapper.toDto(assessment);

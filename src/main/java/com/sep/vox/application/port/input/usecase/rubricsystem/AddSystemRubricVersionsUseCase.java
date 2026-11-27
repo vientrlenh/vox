@@ -58,14 +58,14 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
 
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
     }
 
     private Rubric loadSystemOwnedRubric(UUID rubricId) {
-        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Bộ Rubric này thuộc trường học. System Admin không được phép thêm Version.");
+            throw new ForbiddenException("This Rubric belongs to a school. A System Admin is not allowed to add a Version.");
         }
         return rubric;
     }
@@ -73,13 +73,13 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
     private void requireNewVersionWithValidScale(AddSystemRubricVersionsCommand.RubricVersionItemCommand vCmd,
                                                  Set<Integer> existingVersions, Set<Integer> incomingVersions) {
         if (!incomingVersions.add(vCmd.version())) {
-            throw new IllegalArgumentException("Hệ thống lỗi: Bạn đang gửi nhiều dữ liệu có cùng số Version (" + vCmd.version() + ").");
+            throw new IllegalArgumentException("System error: you are sending several records with the same Version number (" + vCmd.version() + ").");
         }
         if (existingVersions.contains(vCmd.version())) {
-            throw new IllegalArgumentException("Hệ thống lỗi: Version " + vCmd.version() + " đã tồn tại trong bộ Rubric này.");
+            throw new IllegalArgumentException("System error: Version " + vCmd.version() + " already exists in this Rubric.");
         }
         if (vCmd.scoringScaleMin().compareTo(vCmd.scoringScaleMax()) > 0) {
-            throw new IllegalArgumentException("Version " + vCmd.version() + ": Điểm sàn không được lớn hơn điểm trần.");
+            throw new IllegalArgumentException("Version " + vCmd.version() + ": the floor score must not be greater than the ceiling score.");
         }
     }
 
@@ -90,7 +90,7 @@ public class AddSystemRubricVersionsUseCase implements IUseCase<AddSystemRubricV
 
         Instant validFrom = vCmd.effectiveFrom() != null ? vCmd.effectiveFrom() : now;
         if (vCmd.effectiveTo() != null && vCmd.effectiveTo().isBefore(validFrom)) {
-            throw new IllegalArgumentException("Version " + vCmd.version() + ": Ngày kết thúc không được nằm trước ngày bắt đầu.");
+            throw new IllegalArgumentException("Version " + vCmd.version() + ": the end date must not be before the start date.");
         }
 
         String safeCode = rubric.getCode() + "_V" + vCmd.version();

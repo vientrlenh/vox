@@ -10,26 +10,26 @@ import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.domain.common.PageResult;
 
 /**
- * Hai câu hỏi của cùng MỘT tập bài: "toàn trường còn bao nhiêu bài chưa có điểm" và "kỳ nào sắp công
- * bố mà còn bài trống".
+ * Two questions about the SAME set of submissions: "how many submissions in the whole school still have no score" and
+ * "which assessment is about to publish while still having empty submissions".
  *
- * <p>Đặt chung một cổng vì hai câu phải chạy trên cùng một vị từ. Tách ra hai nơi thì thẻ tổng nói 37
- * còn thẻ kỳ thi cộng lại ra 41, và không ai biết bên nào đúng.
+ * <p>Put in one port because the two must run on the same predicate. Split into two places, the total card says 37
+ * while the assessment cards add up to 41, and nobody knows which side is right.
  *
- * <p>Phạm vi là kỳ thi TẬP TRUNG. Bài kiểm tra trên lớp do chính giáo viên ra đề điều phối và có màn
- * riêng ({@code classTestGradingStats}); gộp vào đây sẽ khiến con số trên trang tổng quan không khớp
- * với bảng điều phối mà nó dẫn tới.
+ * <p>The scope is CENTRALIZED assessments. In-class tests are coordinated by the teacher who wrote them and have their own screen
+ * ({@code classTestGradingStats}); merging them in would make the number on the overview page disagree
+ * with the dispatch table it links to.
  */
 public interface SchoolWorkloadQueryRepository {
 
     /**
-     * @param now mốc để xét quá hạn. Truyền vào chứ không tự lấy {@code Instant.now()}: hai câu của
-     *            cổng này phải dùng CÙNG một mốc, nếu không một bài có thể vừa "đang trong hạn" ở
-     *            thẻ tổng vừa "quá hạn" ở thẻ kỳ thi trong cùng một lần tải trang.
+     * @param now the moment used to judge overdue. Passed in rather than taking {@code Instant.now()} itself: the two queries of
+     *            this port must use the SAME moment, otherwise one submission could be both "within the deadline" on the
+     *            total card and "overdue" on the assessment card in the same page load.
      */
     SchoolUnscoredWorkloadDto countUnscored(UUID schoolId, Instant now);
 
-    /** Kỳ nào còn nhiều bài trống nhất xếp trước — đó là kỳ dễ gây thiệt hại nhất khi bấm công bố. */
+    /** The assessment with the most empty submissions comes first -- it is the one that does the most damage when publish is clicked. */
     List<AssessmentAwaitingPublishDto> findAssessmentsAwaitingPublish(UUID schoolId, Instant now, int limit);
 
     /**
@@ -49,13 +49,13 @@ public interface SchoolWorkloadQueryRepository {
         UUID schoolId, UUID assessmentId, Boolean retryLeft, int page, int size);
 
     /**
-     * Số bài của hai nhóm định mức, ĐÃ áp bộ lọc kỳ thi nhưng CHƯA áp bộ lọc định mức.
+     * The number of submissions in the two quota groups, with the assessment filter ALREADY applied but the quota filter NOT yet applied.
      *
-     * <p>Hai con số này đứng trên chính hai nút lọc, nên chúng phải dự đoán đúng kết quả của cú bấm:
-     * lấy tổng toàn trường trong khi danh sách đang lọc theo một kỳ sẽ cho ra nút ghi 9 mà bấm vào
-     * chỉ có 3 dòng.
+     * <p>These two numbers sit on the filter buttons themselves, so they must predict the result of the click correctly:
+     * taking the school-wide total while the list is filtered to one assessment would give a button that says 9 but shows
+     * only 3 rows when clicked.
      *
-     * @return {@code [số bài còn lượt AI, số bài hết lượt AI]}
+     * @return {@code [submissions with AI attempts left, submissions out of AI attempts]}
      */
     int[] countAiFailuresByAllowance(UUID schoolId, UUID assessmentId);
 }

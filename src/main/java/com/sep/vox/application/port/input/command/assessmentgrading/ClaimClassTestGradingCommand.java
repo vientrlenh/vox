@@ -6,11 +6,11 @@ import java.util.UUID;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
 
 /**
- * Giáo viên tạo bài kiểm tra trên lớp tự nhận chấm một loạt bài.
+ * The teacher who created a class test claims the grading of a batch of submissions themselves.
  *
- * <p>Vòng {@code INITIAL} thường đã được mở tự động; lệnh này dành cho hai vòng còn
- * lại ({@code SPOT_CHECK} soi lại bài đã công bố, {@code REMEDIATION} soi lại bài bị
- * vô hiệu), và cho trường hợp bài {@code INITIAL} chưa có phân công vì lý do nào đó.
+ * <p>The {@code INITIAL} round is usually opened automatically; this command is for the other two
+ * rounds ({@code SPOT_CHECK} re-examining a published submission, {@code REMEDIATION} re-examining a submission
+ * that was invalidated), and for the case where an {@code INITIAL} submission has no assignment for some reason.
  */
 public record ClaimClassTestGradingCommand(
     UUID assessmentId,

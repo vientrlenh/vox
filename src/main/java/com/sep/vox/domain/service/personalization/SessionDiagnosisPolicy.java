@@ -1,42 +1,42 @@
 package com.sep.vox.domain.service.personalization;
 
 public final class SessionDiagnosisPolicy {
-    // Hai phần trong cùng một file vì cùng trả lời MỘT câu hỏi: buổi vừa rồi nói lên điều gì
-    // về sở thích của học sinh. diagnose() lo phần "vì sao bỏ dở", signal() lo phần "mạnh tới
-    // đâu", và cả hai cùng chảy vào InterestVectorService.recordSessionOutcome. Tách ra hai
-    // lớp thì mỗi lần chỉnh mức tín hiệu lại phải mở hai file để đối chiếu bảng giá trị.
+    // Two parts in one file because they answer the SAME question: what the session just now says
+    // about the student's interests. diagnose() handles the "why they gave up" part, signal() handles "how strong
+    // it is", and both flow into InterestVectorService.recordSessionOutcome. Split into two
+    // classes, every adjustment of the signal levels would mean opening two files to cross-check the table of values.
 
     private SessionDiagnosisPolicy() {
     }
 
     /**
-     * Suy luận lý do học sinh bỏ dở phiên luyện tập, dựa trên điểm gần nhất và tín hiệu
-     * xin trợ giúp/tạm dừng lâu trong phiên.
+     * Infers the reason a student abandoned a practice session, based on the latest score and the signals of
+     * asking for help / long pauses during the session.
      *
-     * <p><b>Hai tham số hành vi giờ mới thật sự có dữ liệu.</b> Trước đây client gửi cứng
-     * {@code 0} cho cả hai, nên luật này thoái hoá thành một ngưỡng điểm thuần: vế
-     * {@code helpRequestCount == 0 && longPauseCount <= 1} luôn đúng và vế
-     * {@code helpRequestCount >= 1 || longPauseCount >= 2} luôn sai, tức "chán" bị suy ra từ
-     * ĐIỂM CAO chứ không từ hành vi. Nguồn hiện tại:
+     * <p><b>The two behaviour parameters now really have data.</b> Previously the client hard-coded
+     * {@code 0} for both, so this rule degenerated into a pure score threshold: the branch
+     * {@code helpRequestCount == 0 && longPauseCount <= 1} was always true and the branch
+     * {@code helpRequestCount >= 1 || longPauseCount >= 2} always false, i.e. "bored" was inferred from a
+     * HIGH SCORE and not from behaviour. Current sources:
      *
      * <ul>
-     *   <li>{@code helpRequestCount} — số lần học sinh bấm nút "Gợi ý" trong phiên. Tín hiệu
-     *       chủ động: chính em nói rằng em bí.</li>
-     *   <li>{@code longPauseCount} — số lượt mà sau khi AI đọc xong câu hỏi, VAD không báo
-     *       {@code vad_speech_start} nào trong 10 giây. Đếm tối đa một lần mỗi lượt.</li>
+     *   <li>{@code helpRequestCount} — the number of times the student pressed the "Hint" button in the session. An
+     *       active signal: the student themself says they are stuck.</li>
+     *   <li>{@code longPauseCount} — the number of turns in which, after the AI finished reading the question, VAD reported no
+     *       {@code vad_speech_start} within 10 seconds. Counted at most once per turn.</li>
      * </ul>
      *
-     * <p>Chỉ gọi ở đường học sinh TỰ bấm kết thúc. Đường dọn phiên rớt mạng
-     * ({@code PracticeSessionCleanupService}) không có hai con số này nên trả thẳng
-     * {@code UNKNOWN} thay vì đoán -- xem chú thích ở đó.
+     * <p>Only called on the path where the student ends the session THEMSELVES. The cleanup path for dropped-network sessions
+     * ({@code PracticeSessionCleanupService}) does not have these two numbers so it returns
+     * {@code UNKNOWN} directly instead of guessing -- see the note there.
      *
-     * <p>Sức mạnh của tín hiệu ấy do {@link #signal} quyết định -- xem javadoc ở đó.
+     * <p>The strength of that signal is decided by {@link #signal} -- see the javadoc there.
      *
-     * <p><b>Kết quả đi đâu:</b> {@code practice_sessions.abandon_diagnosis}, và nơi tiêu thụ
-     * DUY NHẤT có tác dụng là cổng vào của
-     * {@code InterestVectorService.recordSessionOutcome} -- phiên không hoàn thành chỉ được
-     * ghi tín hiệu sở thích khi chẩn đoán là {@code BORED}. {@code TOO_HARD} cố ý KHÔNG ghi
-     * gì: bỏ vì khó không có nghĩa là không thích.
+     * <p><b>Where the result goes:</b> {@code practice_sessions.abandon_diagnosis}, and the ONLY consumer with any effect
+     * is the gate of
+     * {@code InterestVectorService.recordSessionOutcome} -- an incomplete session only gets
+     * an interest signal recorded when the diagnosis is {@code BORED}. {@code TOO_HARD} deliberately records
+     * NOTHING: giving up because it is hard does not mean not liking it.
      */
     public static String diagnose(
             Double normalizedScore,
@@ -94,15 +94,15 @@ public final class SessionDiagnosisPolicy {
         return "UNKNOWN";
     }
 
-    /** Từ mốc này trở lên là tín hiệu đầy đủ, y như trước khi có thang. */
+    /** From this threshold up the signal is full, exactly as before the scale existed. */
     public static final int FULL_SIGNAL_SECONDS = 120;
 
     /**
-     * @param origin nguồn chủ đề vào phiên: học sinh tự tìm ({@code KEYWORD}), hệ thống thăm dò
-     *               ({@code EXPLORATION}/{@code RANDOM}/{@code EPSILON}), hay được đề xuất.
-     * @param spokenSeconds số giây VAD nghe thấy tiếng -- cùng con số quota trừ, KHÔNG phải
-     *                      thời lượng phiên (thời lượng gồm cả lúc AI nói và lúc ngồi nghĩ).
-     *                      Bằng 0 ở phiên bỏ dở, và khi đó hàm trả đúng mức cũ.
+     * @param origin where the topic entered the session from: the student searched for it ({@code KEYWORD}), the system probed it
+     *               ({@code EXPLORATION}/{@code RANDOM}/{@code EPSILON}), or it was suggested.
+     * @param spokenSeconds seconds in which VAD heard speech -- the same number quota deducts, NOT the
+     *                      session duration (duration includes when the AI speaks and when the student sits thinking).
+     *                      Equals 0 for an abandoned session, in which case the function returns exactly the old level.
      */
     public static double signal(String origin, int spokenSeconds) {
         double abandoned = abandonedSignal(origin);
@@ -118,21 +118,21 @@ public final class SessionDiagnosisPolicy {
     }
 
     /**
-     * Mức đầy đủ theo nguồn -- giữ nguyên bảng cũ.
+     * Full level by source -- keeps the old table unchanged.
      *
-     * <p>{@code EPSILON} xếp CÙNG NHÓM với {@code EXPLORATION} (sửa 2026-08-06). Trước đó nó
-     * không có case nên rơi vào {@code default} và nhận 0,95 -- y hệt học sinh tự chọn, đúng
-     * cái "dương giả" mà chú thích ở {@code BuildPracticePaperUseCase.resolveOrigin} tưởng là
-     * đã tránh được.
+     * <p>{@code EPSILON} is put in the SAME GROUP as {@code EXPLORATION} (fixed 2026-08-06). Before that it
+     * had no case so it fell into {@code default} and got 0.95 -- identical to a student's own choice, exactly the
+     * "false positive" that the comment at {@code BuildPracticePaperUseCase.resolveOrigin} thought it had
+     * avoided.
      *
-     * <p>Vì sao cùng nhóm: cả hai đều là HỆ THỐNG đưa chủ đề tới, không phải bằng chứng học
-     * sinh vốn thích nó. Với ε-greedy thì đây còn là điều kiện để phép đo có nghĩa -- nếu điểm
-     * của slot thăm dò bằng điểm của slot khai thác thì chính thứ mà thăm dò sinh ra để đo lại
-     * bị nhiễu bởi ưu thế của lựa chọn có sẵn.
+     * <p>Why the same group: in both cases the SYSTEM brings the topic, which is not evidence that the
+     * student liked it to begin with. For ε-greedy this is also a condition for the measurement to mean something -- if the score
+     * of an exploration slot equals that of an exploitation slot, then the very thing exploration exists to measure
+     * is contaminated by the advantage of the existing choice.
      *
-     * <p>Chấp nhận đánh đổi: chủ đề chỉ từng vào phiên qua đường thăm dò thì lần đầu tối đa chỉ
-     * được 0,60. Muốn lên cao hơn thì lần sau em phải CHỦ ĐỘNG chọn lại -- đúng thứ ta muốn coi
-     * là bằng chứng thật.
+     * <p>Accepted trade-off: a topic that has only ever entered a session through the exploration path gets at most
+     * 0.60 the first time. To go higher the student must ACTIVELY choose it again next time -- exactly what we want to treat
+     * as real evidence.
      */
     private static double fullSignal(String origin) {
         return switch (origin == null ? "" : origin) {
@@ -143,12 +143,12 @@ public final class SessionDiagnosisPolicy {
     }
 
     /**
-     * Mức của phiên bỏ dở -- cũng giữ nguyên bảng cũ, và chỉ tới được khi
-     * {@link SessionDiagnosisPolicy} kết luận {@code BORED}.
+     * Level for an abandoned session -- also keeps the old table unchanged, and is only reached when
+     * {@link SessionDiagnosisPolicy} concludes {@code BORED}.
      *
-     * <p>Thăm dò bị phạt NHẸ NHẤT (0,10 so với 0,20 của tự tìm) vì cùng một logic với
-     * {@link #fullSignal}: hệ thống tự đưa chủ đề tới thì việc học sinh bỏ ngang nói ít về em
-     * ấy hơn là khi chính em gõ từ khoá đi tìm rồi vẫn bỏ.
+     * <p>Exploration is penalised LEAST (0.10 versus 0.20 for self-searched) by the same logic as
+     * {@link #fullSignal}: when the system brings the topic itself, a student quitting says less about them
+     * than when they typed the keyword themselves to search and still quit.
      */
     private static double abandonedSignal(String origin) {
         return switch (origin == null ? "" : origin) {

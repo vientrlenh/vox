@@ -52,7 +52,7 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
 
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.ASSESSMENT_POLICY);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên trống hoặc không chứa dữ liệu.");
+            throw new IllegalArgumentException("The uploaded file is empty or contains no data.");
         }
 
         Instant now = Instant.now();
@@ -69,19 +69,19 @@ public class PreviewSchoolAssessmentPolicyImportFromFileUseCase implements IUseC
 
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Account not found."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Your account has been locked.");
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not assigned to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không được quyền nạp file cho một trường học khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to upload a file for another school.");
         }
 
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+            throw new ForbiddenException("Action denied: this school has been deactivated in the system.");
         }
     }
 

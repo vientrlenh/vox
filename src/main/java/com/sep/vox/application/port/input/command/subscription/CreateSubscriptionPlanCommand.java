@@ -6,12 +6,12 @@ import java.util.List;
 import com.sep.vox.domain.model.subscription.SubscriptionPlanPeriod;
 
 /**
- * Không còn serviceFeeRatio: phí dịch vụ đã thành config TOÀN HỆ THỐNG
- * (vox.quota.selling-price.service-fee-ratio) và được cộng thành một dòng riêng trên ĐƠN HÀNG, chứ
- * không lưu theo từng gói cũng không gộp vào tỷ giá -- xem {@code QuotaPricingPort#serviceFeeRatio()}.
+ * No serviceFeeRatio any more: the service fee became a SYSTEM-WIDE config
+ * (vox.quota.selling-price.service-fee-ratio) and is added as a separate line on the ORDER, and is
+ * neither stored per plan nor folded into the exchange rate -- see {@code QuotaPricingPort#serviceFeeRatio()}.
  *
- * <p>Chu kỳ gói = periodType x periodCount (vd. MONTH x 12) thay cho validityDays cũ: gói tính theo
- * tháng/năm thì ngày hết hạn phải rơi đúng ngày tương ứng, cộng thô theo số ngày sẽ lệch dần.
+ * <p>Plan cycle = periodType x periodCount (e.g. MONTH x 12) replacing the old validityDays: for a plan counted in
+ * months/years the end date must land on the matching calendar date, and adding a raw number of days drifts further off.
  */
 public record CreateSubscriptionPlanCommand(
     String name,

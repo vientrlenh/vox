@@ -53,13 +53,13 @@ public class CreateFrameworkResultBandsUseCase
             List<FrameworkResultBand> savedBands = frameworkResultBandRepository.saveAll(bandsToSave);
             return savedBands.stream().map(frb -> frb.getId()).collect(Collectors.toList());
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này", e);
+            throw new IllegalArgumentException("The result code or label already exists for this version", e);
         }
     }
 
     private FrameworkVersion getVersion(CreateFrameworkResultBandsCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
     }
 
     private void validateRequest(CreateFrameworkResultBandsCommand command, FrameworkVersion version) {
@@ -75,18 +75,18 @@ public class CreateFrameworkResultBandsUseCase
         requireOrdersContinuousFromOne(allOrders);
 
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeIn(command.versionId(), requestCodes))
-            throw new IllegalArgumentException("Mã kết quả đã tồn tại");
+            throw new IllegalArgumentException("Result code already exists");
 
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelIn(command.versionId(), requestLabels))
-            throw new IllegalArgumentException("Nhãn kết quả đã tồn tại");
+            throw new IllegalArgumentException("Result label already exists");
     }
 
     private void requireDraftVersionOfFramework(CreateFrameworkResultBandsCommand command, FrameworkVersion version) {
         if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể thêm mức kết quả khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Result bands can only be added while the version is in DRAFT status");
     }
 
     private void requireUniqueBand(CreateFrameworkResultBandsCommand.ResultBandItemCommand bandCmd,
@@ -95,20 +95,20 @@ public class CreateFrameworkResultBandsUseCase
         String safeLabel = StringNormalization.trimAndCollapseSpaces(bandCmd.label());
 
         if (!requestCodes.add(safeCode)) {
-            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp mã kết quả: " + safeCode);
+            throw new IllegalArgumentException("The submitted data repeats the result code: " + safeCode);
         }
         if (!requestLabels.add(safeLabel)) {
-            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp nhãn kết quả: " + safeLabel);
+            throw new IllegalArgumentException("The submitted data repeats the result label: " + safeLabel);
         }
         if (!allOrders.add(bandCmd.order())) {
-            throw new IllegalArgumentException("Thứ tự mức kết quả bị trùng lặp: " + bandCmd.order());
+            throw new IllegalArgumentException("Duplicate result band order: " + bandCmd.order());
         }
     }
 
     private void requireOrdersContinuousFromOne(Set<Integer> allOrders) {
         for (int i = 1; i <= allOrders.size(); i++) {
             if (!allOrders.contains(i)) {
-                throw new IllegalArgumentException("Thứ tự mức kết quả phải tăng dần liên tục từ 1, không được bỏ số");
+                throw new IllegalArgumentException("Result band order must increase continuously from 1 without skipping a number");
             }
         }
     }

@@ -48,7 +48,7 @@ public class RestAssessmentScheduleController {
             @Valid @RequestBody CreateAssessmentScheduleRequest request) {
         AssessmentScheduleDto data = createAssessmentScheduleUseCase.execute(CreateAssessmentScheduleRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo ca thi thành công", data));
+            .body(ApiResponse.success("Schedule created successfully", data));
     }
 
     @PatchMapping("/{scheduleId}/status")
@@ -59,7 +59,7 @@ public class RestAssessmentScheduleController {
             @Valid @RequestBody UpdateAssessmentScheduleStatusRequest request) {
         AssessmentScheduleDto data = updateAssessmentScheduleStatusUseCase.execute(
             UpdateAssessmentScheduleStatusRequest.toCommand(assessmentId, scheduleId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái ca thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Schedule status updated successfully", data));
     }
 
     @DeleteMapping("/{scheduleId}")
@@ -68,7 +68,7 @@ public class RestAssessmentScheduleController {
             @PathVariable("assessmentId") UUID assessmentId,
             @PathVariable("scheduleId") UUID scheduleId) {
         deleteAssessmentScheduleUseCase.execute(new DeleteAssessmentScheduleCommand(assessmentId, scheduleId));
-        return ResponseEntity.ok(ApiResponse.success("Xoá ca thi thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Schedule deleted successfully"));
     }
 
     @PostMapping("/{scheduleId}/proctors")
@@ -80,7 +80,7 @@ public class RestAssessmentScheduleController {
         AssessmentScheduleProctorDto data = addAssessmentScheduleProctorUseCase.execute(
             AddAssessmentScheduleProctorRequest.toCommand(assessmentId, scheduleId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Thêm giám thị thành công", data));
+            .body(ApiResponse.success("Proctor added successfully", data));
     }
 
     @DeleteMapping("/{scheduleId}/proctors/{proctorId}")
@@ -90,6 +90,6 @@ public class RestAssessmentScheduleController {
             @PathVariable("scheduleId") UUID scheduleId,
             @PathVariable("proctorId") UUID proctorId) {
         removeAssessmentScheduleProctorUseCase.execute(new DeleteAssessmentScheduleProctorCommand(assessmentId, scheduleId, proctorId));
-        return ResponseEntity.ok(ApiResponse.success("Gỡ giám thị thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Proctor removed successfully"));
     }
 }

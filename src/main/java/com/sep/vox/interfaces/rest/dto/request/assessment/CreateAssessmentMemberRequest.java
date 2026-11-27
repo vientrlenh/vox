@@ -8,10 +8,10 @@ import com.sep.vox.domain.model.assessment.AssessmentMemberRole;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateAssessmentMemberRequest(
-    @NotNull(message = "UserId là bắt buộc")
+    @NotNull(message = "UserId is required")
     UUID userId,
 
-    @NotNull(message = "Role là bắt buộc")
+    @NotNull(message = "Role is required")
     AssessmentMemberRole role
 ) {
 

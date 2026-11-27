@@ -8,8 +8,8 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
 public record BulkCreateSchoolClassUsersRequest(
-    @NotEmpty(message = "Danh sách người dùng không được để trống")
-    @Size(max = 200, message = "Chỉ có thể thêm tối đa 200 người dùng mỗi lần")
+    @NotEmpty(message = "User list must not be blank")
+    @Size(max = 200, message = "At most 200 users can be added at a time")
     List<UUID> userIds
 ) {
 

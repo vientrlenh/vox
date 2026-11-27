@@ -7,7 +7,7 @@ import java.util.Map;
 import jakarta.validation.constraints.NotEmpty;
 
 public record AcceptQuestionImportRequest(
-    @NotEmpty(message = "Mapping import khong duoc de trong")
+    @NotEmpty(message = "Import mapping must not be blank")
     Map<String, String> confirmedMapping
 ) {
 

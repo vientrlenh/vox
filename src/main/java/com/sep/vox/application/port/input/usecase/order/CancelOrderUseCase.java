@@ -42,7 +42,7 @@ import com.sep.vox.domain.repository.PaymentRecordRepository;
 @Slf4j
 public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
 
-    private static final String CANCELLATION_REASON = "Trường chủ động hủy đơn";
+    private static final String CANCELLATION_REASON = "The school cancelled the order itself";
 
     private final OrderRepository orderRepository;
     private final PaymentRecordRepository paymentRecordRepository;
@@ -56,13 +56,13 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         // order as PENDING, one closes it CANCELLED and the other closes it SUCCESS -- the write order decides the outcome, and one
         // of the two outcomes is wrong.
         Order order = orderRepository.findByIdForUpdate(input.orderId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng"));
+            .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
         if (!order.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new IllegalArgumentException("Đơn hàng không còn ở trạng thái chờ thanh toán, không thể hủy.");
+            throw new IllegalArgumentException("The order is no longer awaiting payment, so it cannot be cancelled.");
         }
 
         closeLivePaymentAttempt(order);
@@ -70,7 +70,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
-        log.info("Trường {} hủy đơn {}", order.getSchoolId(), order.getId());
+        log.info("School {} cancelled order {}", order.getSchoolId(), order.getId());
         return order.getId();
     }
 
@@ -102,7 +102,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
     private void requireNotPaidAndNotJustOpened(PaymentLinkRemoteStatus remoteStatus, PaymentRecord attempt) {
         if (remoteStatus == PaymentLinkRemoteStatus.PAID) {
             throw new IllegalArgumentException(
-                "Đơn hàng này đã được thanh toán, hệ thống đang ghi nhận. Không thể hủy.");
+                "This order has already been paid and the system is recording it. It cannot be cancelled.");
         }
 
         // An attempt that was just opened but the gateway says does not exist: most likely another tab's
@@ -112,7 +112,7 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
         if (remoteStatus == PaymentLinkRemoteStatus.NOT_FOUND
                 && !attempt.canRetireOnGatewayNotFound(Instant.now())) {
             throw new IllegalArgumentException(
-                "Đơn hàng vừa mở một phiên thanh toán mà cổng chưa xác nhận. Vui lòng thử lại sau vài phút.");
+                "The order has just opened a payment session that the gateway has not confirmed yet. Please try again in a few minutes.");
         }
     }
 
@@ -123,35 +123,35 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
             // PaymentProcessPort.cancelPaymentLink. We accept making the school wait for expiry (at most 24
             // hours, and that deadline is already shown on the order) instead of opening a payment for a closed order.
             throw new IllegalArgumentException(
-                "Đơn hàng đang có một phiên thanh toán chờ xử lý mà cổng không cho hủy sớm. "
-                    + "Vui lòng hoàn tất phiên đó hoặc đợi đơn hết hạn.");
+                "The order has a pending payment session that the gateway does not let you cancel early. "
+                    + "Please complete that session or wait for the order to expire.");
         }
     }
 
     /**
-     * Đóng dòng thanh toán của đơn đang bị hủy.
+     * Closes the payment record of the order being cancelled.
      *
-     * <p>ĐIỀU GIỮ CHO CHỖ NÀY AN TOÀN là khóa đơn ở {@code execute}, KHÔNG phải lần đọc lại dưới đây.
-     * {@code OrderSettlementService.settlePaid} -- đường DUY NHẤT đẩy một lần thử sang PAID -- mở đầu
-     * bằng {@code findByIdForUpdate} trên chính đơn này, nên suốt lúc ta còn giữ khóa thì nó nằm chờ,
-     * không thể chốt xen vào giữa hai lần gọi mạng ở trên.
+     * <p>WHAT KEEPS THIS SAFE is the order lock in {@code execute}, NOT the re-read below.
+     * {@code OrderSettlementService.settlePaid} -- the ONLY path that moves an attempt to PAID -- starts with
+     * {@code findByIdForUpdate} on this very order, so as long as we hold the lock it waits and cannot settle in
+     * between the two network calls above.
      *
-     * <p>Lần đọc lại ở đây KHÔNG tự nó chống được gì: {@code findPendingByOrderId} phía trên đã nạp
-     * đúng dòng này vào persistence context, nên {@code findById} lấy lại bản trong bộ nhớ chứ không
-     * chạm DB -- hai chốt bên dưới vì thế luôn nhìn thấy trạng thái của lần đọc đầu. Giữ lại vì chúng
-     * rẻ và vì chúng nói đúng ý định, nhưng ĐỪNG dựa vào chúng: ai thêm một đường ghi payment_records
-     * mà không đi qua khóa đơn thì phải khóa lại ở đây, không phải trông vào lần đọc này.
+     * <p>The re-read here does NOT protect anything by itself: {@code findPendingByOrderId} above already loaded
+     * this row into the persistence context, so {@code findById} returns the in-memory copy without touching the
+     * DB -- the two guards below therefore always see the state of the first read. They are kept because they are
+     * cheap and because they state the intent, but do NOT rely on them: whoever adds a path that writes
+     * payment_records without going through the order lock must lock again here, not count on this read.
      *
-     * <p>({@code failAttempt} có ghi payment_records mà không giữ khóa đơn, nhưng nó chỉ chuyển sang
-     * trạng thái thất bại -- trùng đúng thứ ta sắp ghi, nên vô hại.)
+     * <p>({@code failAttempt} does write payment_records without holding the order lock, but it only moves to the
+     * failed status -- the same thing we are about to write, so it is harmless.)
      */
     private void markAttemptFailed(Order order, UUID attemptId) {
         PaymentRecord current = paymentRecordRepository.findById(attemptId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lần thanh toán của đơn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Payment attempt of the order not found"));
 
         if (current.getStatus() == PaymentStatus.PAID) {
             throw new IllegalArgumentException(
-                "Đơn hàng này vừa được thanh toán, hệ thống đang ghi nhận. Không thể hủy.");
+                "This order has just been paid and the system is recording it. It cannot be cancelled.");
         }
         if (current.isSettled()) {
             return;
@@ -159,17 +159,18 @@ public class CancelOrderUseCase implements IUseCase<CancelOrderCommand, UUID> {
 
         current.setStatus(PaymentStatus.FAILED);
         paymentRecordRepository.save(current);
-        log.info("Đóng lần thanh toán {} của đơn {} do trường hủy đơn", attemptId, order.getId());
+        log.info("Closing payment attempt {} of order {} because the school cancelled the order", attemptId, order.getId());
     }
 
     /**
-     * Cổng đã chốt là phiên này không ra tiền -- không cần hủy thêm.
+     * The gateway has settled that this session will not bring in money -- no further cancellation is needed.
      *
-     * <p>NOT_FOUND phải nằm ở đây (đã qua ân hạn, chỗ gọi kiểm trước): thiếu nó thì một dòng mồ côi
-     * rơi xuống nhánh "phiên vẫn sống" bên dưới, mà gọi hủy một mã cổng không biết thì
-     * cancelPaymentLink trả false (PayOS nuốt lỗi rồi trả false, SePay vốn luôn trả false) -- trường
-     * nhận câu "đợi đơn hết hạn" trong khi chính dòng mồ côi ấy đang chặn expireIfOverdue, nên đơn
-     * sẽ không bao giờ hết hạn. Đường thoát thủ công mà hỏng thì chỉ còn sửa tay dưới DB.
+     * <p>NOT_FOUND must be handled here (after the grace period, which the caller checks beforehand): without it an
+     * orphan row falls into the "session still alive" branch below, and asking the gateway to cancel a code it does
+     * not know makes cancelPaymentLink return false (PayOS swallows the error and returns false, SePay always
+     * returns false) -- the school then gets the "wait for the order to expire" message while that very orphan row
+     * is blocking expireIfOverdue, so the order never expires. And when the manual escape route is broken, the only
+     * fix left is editing the DB by hand.
      */
     private boolean isAlreadyDead(PaymentLinkRemoteStatus status) {
         if (status == null) {

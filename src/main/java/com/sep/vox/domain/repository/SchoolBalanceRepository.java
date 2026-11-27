@@ -7,38 +7,38 @@ import java.util.UUID;
 import com.sep.vox.domain.model.school.SchoolBalance;
 
 /**
- * Mỗi trường đúng MỘT dòng số dư (uq_school_balances_school), nên mọi lần cộng/trừ đều tranh chấp
- * trên cùng một dòng.
+ * Each school has EXACTLY ONE balance row (uq_school_balances_school), so every credit/debit contends
+ * on the same row.
  *
- * <p>CỐ Ý không có {@code tryDebit}/{@code credit} dạng "UPDATE ... WHERE" không khóa: mọi biến động
- * số dư đều phải kèm một SchoolBalanceEntry, mà entry có cột {@code balance_after_vnd NOT NULL}.
- * Một câu UPDATE cộng trừ tại chỗ không trả về số dư SAU khi trừ, còn SELECT lại sau đó thì có thể
- * đã thấy kết quả của một giao dịch khác chen vào -- hai bút toán sẽ ghi cùng một balanceAfter và
- * phá bất biến SUM(entries.amountVnd) = balanceVnd.
+ * <p>DELIBERATELY has no unlocked "UPDATE ... WHERE" style {@code tryDebit}/{@code credit}: every balance change
+ * must come with a SchoolBalanceEntry, and the entry has the column {@code balance_after_vnd NOT NULL}.
+ * An in-place UPDATE that adds or subtracts does not return the balance AFTER the subtraction, while a SELECT afterwards may
+ * already see the result of another transaction slipping in -- two entries would record the same balanceAfter and
+ * break the invariant SUM(entries.amountVnd) = balanceVnd.
  *
- * <p>Vì vậy đường ghi DUY NHẤT là: {@link #findBySchoolIdForUpdateOrCreate} (khóa dòng) -> tính số dư
- * mới trong Java -> {@link #save} + ghi entry, tất cả trong cùng transaction. Khóa chỉ giữ trên một
- * dòng của một trường trong vài câu lệnh, không phải điểm nghẽn ở quy mô này.
+ * <p>So the ONLY write path is: {@link #findBySchoolIdForUpdateOrCreate} (lock the row) -> compute the new
+ * balance in Java -> {@link #save} + write the entry, all in the same transaction. The lock is held only on one
+ * row of one school for a few statements, which is not a bottleneck at this scale.
  */
 public interface SchoolBalanceRepository {
     Optional<SchoolBalance> findById(UUID id);
 
     /**
-     * Chỉ đọc (vd guard kiểm tra đủ tiền). Muốn GHI thì phải qua
+     * Read only (e.g. a guard checking there is enough money). To WRITE you must go through
      * {@link #findBySchoolIdForUpdateOrCreate}.
      */
     Optional<SchoolBalance> findBySchoolId(UUID schoolId);
 
     /**
-     * Khóa dòng số dư (SELECT ... FOR UPDATE) tới hết transaction, dựng sẵn dòng nếu trường chưa từng
-     * có. Bắt buộc dùng trước mọi thay đổi số dư -- xem javadoc của interface.
+     * Locks the balance row (SELECT ... FOR UPDATE) until the end of the transaction, building the row if the school has never
+     * had one. Mandatory before any balance change -- see the javadoc of the interface.
      *
-     * <p>Việc TẠO được gộp vào đây chứ không để chỗ gọi tự {@code orElseGet(emptyFor(...))}: khóa
-     * hàng không khóa được một dòng chưa tồn tại, nên mỗi chỗ gọi tự dựng là một cửa sổ tranh chấp
-     * riêng, và cả hai đường ghi (nạp tiền lẫn trừ vượt hạn mức) đều đã từng mở đúng cửa sổ đó.
+     * <p>CREATING is folded in here instead of letting callers do {@code orElseGet(emptyFor(...))} themselves: a row
+     * lock cannot lock a row that does not exist yet, so each caller building it itself is a separate
+     * race window, and both write paths (top-up and overage charge) once opened exactly that window.
      *
-     * <p>Trả về thẳng SchoolBalance chứ không Optional: sau lời gọi này dòng chắc chắn tồn tại, nên
-     * một Optional chỉ mời chỗ gọi viết lại đúng nhánh "chưa có thì tạo" vừa được dẹp.
+     * <p>Returns SchoolBalance directly rather than Optional: after this call the row certainly exists, so
+     * an Optional would only invite callers to rewrite the very "create if missing" branch that was just removed.
      */
     SchoolBalance findBySchoolIdForUpdateOrCreate(UUID schoolId, Instant now);
 

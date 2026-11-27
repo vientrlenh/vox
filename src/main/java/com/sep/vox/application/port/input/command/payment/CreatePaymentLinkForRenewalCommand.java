@@ -2,10 +2,10 @@ package com.sep.vox.application.port.input.command.payment;
 
 import java.util.UUID;
 
-// acceptedPlanId: bắt buộc phải khớp với gói mà PreviewRenewalUseCase trả về KHI VÀ CHỈ KHI gói
-// hiện tại của subscription đã bị archive và có gói thay thế (renewalPlan != gói hiện tại) — tức
-// là trường phải xem trước và xác nhận gói mới trước khi hệ thống tạo payment link. Null nếu gói
-// không đổi (không cần xác nhận gì thêm).
+// acceptedPlanId: must match the plan that PreviewRenewalUseCase returned IF AND ONLY IF the subscription's
+// current plan has been archived and has a replacement plan (renewalPlan != current plan) -- that is, the
+// school must preview and confirm the new plan before the system creates the payment link. Null if the plan
+// is unchanged (nothing more to confirm).
 public record CreatePaymentLinkForRenewalCommand(
     UUID schoolId,
     UUID subscriptionId,

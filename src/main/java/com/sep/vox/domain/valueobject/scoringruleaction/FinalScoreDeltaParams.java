@@ -7,7 +7,7 @@ public record FinalScoreDeltaParams(
 ) implements ScoringRuleActionParams {
     public FinalScoreDeltaParams {
         if (delta == null || delta.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("Delta không được để trống hoặc bằng 0");
+            throw new IllegalArgumentException("The delta must not be blank or 0");
         }
     }
 }

@@ -32,6 +32,6 @@ public class ViewGradingTaskDetailUseCase implements IUseCase<UUID, GradingTaskD
     public GradingTaskDetailInfo execute(UUID assignmentId) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         return assessmentGradingQueryRepository.findTaskDetail(assignmentId, currentUserId)
-            .orElseThrow(() -> new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này."));
+            .orElseThrow(() -> new ForbiddenException("SECURITY: You are not assigned to grade this submission."));
     }
 }

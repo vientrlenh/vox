@@ -8,12 +8,10 @@ import java.util.UUID;
 
 public class PreviewRubricCriterionImportCommandMapper {
 
-    // Dành cho System Admin
     public static PreviewRubricCriterionImportCommand fromSystemRequest(UUID versionId, MultipartFile file) {
         return new PreviewRubricCriterionImportCommand(null, versionId, toUploadedFile(file));
     }
 
-    // Dành cho School Admin (Chuẩn bị sẵn)
     public static PreviewRubricCriterionImportCommand fromSchoolRequest(UUID schoolId, UUID versionId, MultipartFile file) {
         return new PreviewRubricCriterionImportCommand(schoolId, versionId, toUploadedFile(file));
     }
@@ -22,7 +20,7 @@ public class PreviewRubricCriterionImportCommandMapper {
         try {
             return new UploadedFile(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
         } catch (IOException e) {
-            throw new IllegalArgumentException("Hệ thống không thể xử lý dữ liệu từ file tải lên.");
+            throw new IllegalArgumentException("The system cannot process the data from the uploaded file.");
         }
     }
 }

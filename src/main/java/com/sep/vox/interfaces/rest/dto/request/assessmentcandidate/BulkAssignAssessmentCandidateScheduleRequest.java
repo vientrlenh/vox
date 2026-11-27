@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotEmpty;
 
 /** {@code scheduleId} is deliberately not required: empty means removing the whole group from the exam slot. */
 public record BulkAssignAssessmentCandidateScheduleRequest(
-    @NotEmpty(message = "Danh sách thí sinh không được để trống")
+    @NotEmpty(message = "Candidate list must not be blank")
     List<UUID> candidateIds,
     UUID scheduleId
 ) {

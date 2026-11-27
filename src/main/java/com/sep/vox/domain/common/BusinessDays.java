@@ -4,15 +4,16 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 /**
- * "Đã chờ bao nhiêu ngày" cho các thẻ hàng đợi.
+ * "How many days has it been waiting" for queue cards.
  *
- * <p>Đếm theo NGÀY LỊCH giờ nghiệp vụ, không phải elapsed chia 24 giờ: đơn nộp 23:00 hôm qua mà bây
- * giờ là 01:00 thì người trực đọc là "đã sang ngày thứ hai", trong khi phép chia cho 24 giờ vẫn trả
- * 0 và làm thẻ trông như hàng đợi vẫn sạch.
+ * <p>Counts BUSINESS-TIME CALENDAR DAYS, not elapsed time divided by 24 hours: for an application submitted at
+ * 23:00 yesterday, the person on duty reading it at 01:00 sees "second day", while dividing by 24 hours still
+ * returns 0 and makes the card look as if the queue were clean.
  *
- * <p>Mọi thẻ đếm ngày chờ phải đi qua đây. Ba chỗ đang dùng — đơn đăng ký trường chờ duyệt, đơn khiếu
- * nại chờ xử lý, bài chưa có điểm — và ba bản sao của cùng một phép tính chỉ cần lệch một chi tiết
- * (múi giờ, hay ngày lịch với 24 giờ) là ba màn hình đếm ngày theo ba kiểu.
+ * <p>Every card that counts waiting days must go through here. Three places use it today — school registrations
+ * awaiting review, appeals awaiting handling, and sessions without a score — and three copies of the same
+ * calculation need to differ in only one detail (time zone, or calendar days versus 24 hours) for three screens
+ * to count days in three different ways.
  */
 public final class BusinessDays {
 
@@ -20,12 +21,12 @@ public final class BusinessDays {
     }
 
     /**
-     * Số ngày lịch từ {@code from} tới {@code now}, theo {@link ZoneConstant#BUSINESS_ZONE}.
+     * Number of calendar days from {@code from} to {@code now}, in {@link ZoneConstant#BUSINESS_ZONE}.
      *
-     * @param from mốc bắt đầu; null nghĩa là KHÔNG CÓ GÌ ĐANG CHỜ và trả về null.
-     * @return null khi {@code from} null — null KHÁC 0, và ở những thẻ này 0 lại là trạng thái tốt
-     *         nhất ("vừa nộp hôm nay"), nên gộp hai cái sẽ vẽ hàng đợi rỗng y hệt hàng đợi vừa nhận
-     *         việc.
+     * @param from start moment; null means NOTHING IS WAITING and null is returned.
+     * @return null when {@code from} is null — null is NOT 0, and on these cards 0 is the best state
+     *         ("just submitted today"), so merging the two would draw an empty queue exactly like a queue that
+     *         just received work.
      */
     public static Integer waitedDaysSince(Instant from, Instant now) {
         if (from == null) {

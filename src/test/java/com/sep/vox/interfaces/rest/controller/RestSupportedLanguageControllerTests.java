@@ -89,7 +89,7 @@ class RestSupportedLanguageControllerTests {
         MvcTestResult result = mvc.delete().uri("/api/v1/supported-languages/{id}", id).exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Xóa ngôn ngữ thành công");
+            .extractingPath("$.message").isEqualTo("Language deleted successfully");
         verify(deleteSupportedLanguageUseCase).execute(new DeleteSupportedLanguageCommand(id));
     }
 

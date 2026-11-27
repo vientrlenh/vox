@@ -8,10 +8,10 @@ import com.sep.vox.domain.model.question.QuestionCollaboratorPermission;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateQuestionCollaboratorRequest(
-    @NotNull(message = "ID người cộng tác không được để trống")
+    @NotNull(message = "Collaborator ID must not be blank")
     UUID userId,
 
-    @NotNull(message = "Quyền cộng tác không được để trống")
+    @NotNull(message = "Collaboration permission must not be blank")
     QuestionCollaboratorPermission permission
 ) {
 

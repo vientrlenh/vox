@@ -47,10 +47,10 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         if (assessment.getKind() != AssessmentKind.CENTRALIZED) {
-            throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra tập trung");
+            throw new ForbiddenException("Only applies to a centralized assessment");
         }
 
         applyBlueprintSelection(input, assessment, currentUserId);
@@ -78,22 +78,22 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
 
     private void requireValidBlueprintSelection(AttachAssessmentBlueprintCommand input) {
         if (input.blueprintId() == null && input.blueprintVersionId() == null && input.newBlueprint() == null) {
-            throw new IllegalArgumentException("Phải cung cấp blueprintId, blueprintVersionId hoặc newBlueprint");
+            throw new IllegalArgumentException("blueprintId, blueprintVersionId or newBlueprint must be provided");
         }
         if (input.blueprintId() != null && input.newBlueprint() != null) {
-            throw new IllegalArgumentException("Chỉ được cung cấp blueprintId hoặc newBlueprint, không được cung cấp cả hai");
+            throw new IllegalArgumentException("Only one of blueprintId or newBlueprint may be provided, not both");
         }
     }
 
     private void attachExistingBlueprint(AttachAssessmentBlueprintCommand input, Assessment assessment, boolean canAttach) {
         if (!canAttach) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment blueprint not found"));
         if (!assessment.getSchoolId().equals(blueprint.getSchoolId())) {
-            throw new IllegalArgumentException("Blueprint không thuộc cùng trường với bài kiểm tra");
+            throw new IllegalArgumentException("The blueprint does not belong to the same school as the assessment");
         }
 
         if (!input.blueprintId().equals(assessment.getBlueprintId())) {
@@ -105,7 +105,7 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
 
     private void attachNewBlueprint(AttachAssessmentBlueprintCommand input, Assessment assessment, boolean canAttach) {
         if (!canAttach) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         requireNoExistingPapers(assessment.getId());
         AssessmentBlueprint createdBlueprint = createInlineBlueprint(input.newBlueprint(), assessment.getSchoolId(), assessment.getLanguageId());
@@ -115,19 +115,19 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
 
     private void pinBlueprintVersion(AttachAssessmentBlueprintCommand input, Assessment assessment, boolean isChair) {
         if (!isChair) {
-            throw new ForbiddenException("Chỉ CHAIR được chốt version blueprint");
+            throw new ForbiddenException("Only the CHAIR may lock the blueprint version");
         }
         if (assessment.getBlueprintId() == null) {
-            throw new IllegalArgumentException("Bài kiểm tra chưa gắn blueprint");
+            throw new IllegalArgumentException("The assessment has no blueprint attached");
         }
 
         AssessmentBlueprintVersion version = assessmentBlueprintVersionRepository.findById(input.blueprintVersionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy version blueprint"));
+            .orElseThrow(() -> new ResourceNotFoundException("Blueprint version not found"));
         requirePublishedVersionOfAttachedBlueprint(version, assessment);
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             version.getTotalTimeLimitSeconds(),
-            "Phiên bản blueprint " + version.getCode()
+            "Blueprint version " + version.getCode()
         );
 
         if (!input.blueprintVersionId().equals(assessment.getBlueprintVersionId())) {
@@ -138,17 +138,17 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
 
     private void requirePublishedVersionOfAttachedBlueprint(AssessmentBlueprintVersion version, Assessment assessment) {
         if (!version.getBlueprintId().equals(assessment.getBlueprintId())) {
-            throw new IllegalArgumentException("Version không thuộc blueprint đang gắn vào exam");
+            throw new IllegalArgumentException("The version does not belong to the blueprint attached to the assessment");
         }
         if (version.getStatus() != AssessmentBlueprintVersionStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được chốt version đã PUBLISHED");
+            throw new IllegalArgumentException("Only a PUBLISHED version may be locked");
         }
     }
 
     private void requireNoExistingPapers(UUID assessmentId) {
         if (assessmentPaperRepository.existsByAssessmentId(assessmentId)) {
             throw new IllegalArgumentException(
-                "Kỳ thi đã có mã đề — phải xóa hết mã đề hiện có trước khi đổi blueprint hoặc chốt sang phiên bản khác");
+                "The assessment already has papers: delete every existing paper before changing the blueprint or locking another version");
         }
     }
 
@@ -158,12 +158,12 @@ public class AttachAssessmentBlueprintUseCase implements IUseCase<AttachAssessme
             UUID assessmentLanguageId) {
         String name = StringNormalization.trimAndCollapseSpaces(command.name());
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Tên blueprint là bắt buộc");
+            throw new IllegalArgumentException("The blueprint name is required");
         }
         // Grade level is a shared catalog: it only has to exist, it no longer belongs to a school.
         if (command.gradeLevelId() != null
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-            throw new ResourceNotFoundException("Không tìm thấy khối lớp");
+            throw new ResourceNotFoundException("Grade level not found");
         }
         AssessmentBlueprint blueprint = AssessmentBlueprint.create(
             schoolId,

@@ -3,12 +3,13 @@ package com.sep.vox.application.port.output;
 import java.math.BigDecimal;
 
 /**
- * Hằng số giá tĩnh trong .env mà application cần đọc -- là mức FALLBACK khi chưa có lần calibrate
- * nào thành công. Giá trị thật bind từ application.yaml ({@code vox.quota.*}) ở
- * QuotaPricingProperties.
+ * The static price constants in .env that the application needs to read -- the FALLBACK level when
+ * no calibration has succeeded yet. The real values are bound from application.yaml
+ * ({@code vox.quota.*}) in QuotaPricingProperties.
  *
- * <p>Khác QuotaPricingPort: port kia trả về giá ĐANG áp dụng (đã chọn giữa số calibrate và số tĩnh),
- * còn interface này chỉ đưa ra số tĩnh thô cho QuotaPricingCalibrationService làm mốc so sánh.
+ * <p>Different from QuotaPricingPort: that port returns the price CURRENTLY in effect (already chosen
+ * between the calibrated and the static numbers), while this interface only exposes the raw static
+ * numbers for QuotaPricingCalibrationService to use as a comparison baseline.
  */
 public interface QuotaPricingConfigPort {
 

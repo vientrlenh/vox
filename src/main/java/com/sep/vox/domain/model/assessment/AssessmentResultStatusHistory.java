@@ -29,7 +29,7 @@ public class AssessmentResultStatusHistory {
 
     public AssessmentResultStatusHistory() {}
 
-    /** Trạng thái không đổi mà điểm đổi cũng là một sự kiện đáng ghi (hậu kiểm sửa điểm). */
+    /** A score change with an unchanged status is also an event worth recording (a spot check correcting the score). */
     public boolean isScoreOnlyChange() {
         return fromStatus == toStatus;
     }

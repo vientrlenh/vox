@@ -60,8 +60,8 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 
 /**
- * Tập trung vào guard khung giờ ca thi ở action SCHEDULE. validatePlanLimits chạy trước nên phải
- * stub đủ subscription/plan/quota để đi qua được.
+ * Focuses on the assessment schedule time-window guard of the SCHEDULE action. validatePlanLimits runs first, so
+ * enough subscription/plan/quota must be stubbed to get past it.
  */
 class UpdateAssessmentStatusUseCaseTests {
 
@@ -146,7 +146,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("thời gian đóng bài");
+            .hasMessageContaining("closing time");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -181,7 +181,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Còn 1 ca thi chưa được công bố");
+            .hasMessageContaining("There are still 1 assessment schedules not published");
         assertThat(schedule.getStatus()).isEqualTo(AssessmentScheduleStatus.DRAFT);
         verify(assessmentScheduleRepository, never()).save(any());
         verify(assessmentRepository, never()).save(any());
@@ -194,12 +194,12 @@ class UpdateAssessmentStatusUseCaseTests {
         AssessmentSchedule schedule = schedule(AssessmentScheduleStatus.DRAFT, open, open.plus(2, ChronoUnit.HOURS));
         when(assessmentScheduleRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(schedule));
         givenScheduleReady(schedule);
-        doThrow(new BusinessRuleViolationException("Đã vượt quá hạn mức"))
+        doThrow(new BusinessRuleViolationException("The quota has been exceeded"))
             .when(classTestTokenQuotaGuardService).requireWithinTokenQuota(assessment);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(BusinessRuleViolationException.class)
-            .hasMessageContaining("vượt quá hạn mức");
+            .hasMessageContaining("quota has been exceeded");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 
@@ -213,7 +213,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Ca thi chưa được chọn phòng");
+            .hasMessageContaining("The assessment schedule has no room selected");
     }
 
     @Test
@@ -226,7 +226,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Ca thi chưa có giám khảo");
+            .hasMessageContaining("The assessment schedule has no proctor");
     }
 
     @Test
@@ -242,7 +242,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Còn 1 học sinh chưa được xếp vào ca thi");
+            .hasMessageContaining("There are still 1 students not placed in an assessment schedule");
     }
 
     @Test
@@ -258,10 +258,10 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Còn 1 học sinh chưa được gán đề");
+            .hasMessageContaining("There are still 1 students not assigned a paper");
     }
 
-    // --- Kỳ thi tập trung: trước đây lên lịch được khi chưa có gì, bài "đã lên lịch" mà không ai thi được ---
+    // --- Centralized assessment: it used to be schedulable with nothing in it, a "scheduled" assessment nobody could take ---
 
     @Test
     void should_reject_schedule_when_centralized_assessment_has_no_schedule() {
@@ -270,7 +270,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa có ca thi");
+            .hasMessageContaining("has no assessment schedule");
     }
 
     @Test
@@ -283,7 +283,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa có thí sinh");
+            .hasMessageContaining("has no candidate");
     }
 
     @Test
@@ -296,7 +296,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa có mã đề");
+            .hasMessageContaining("has no paper");
     }
 
     /**
@@ -316,7 +316,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Còn 1 ca thi chưa được công bố");
+            .hasMessageContaining("There are still 1 assessment schedules not published");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -361,11 +361,11 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Quyền truy cập bị từ chối");
+            .hasMessageContaining("Access denied");
         verify(assessmentRepository, never()).save(any());
     }
 
-    // --- Ca đã huỷ/dời không còn diễn ra, nên không được tham gia bất kỳ điều kiện lên lịch nào ---
+    // --- A cancelled/moved assessment schedule no longer takes place, so it must not count in any scheduling condition ---
 
     /**
      * A session can be cancelled straight from DRAFT, before any room or proctor is assigned. If
@@ -416,7 +416,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa có ca thi");
+            .hasMessageContaining("has no assessment schedule");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -445,7 +445,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("chưa có lịch");
+            .hasMessageContaining("has no schedule");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -462,7 +462,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "SCHEDULE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không hợp lệ cho action này");
+            .hasMessageContaining("not valid for this action");
     }
 
     @Test
@@ -473,7 +473,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "CANCEL", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không hợp lệ cho action này");
+            .hasMessageContaining("not valid for this action");
         assertThat(assessment.getStatus()).isEqualTo(AssessmentStatus.RESULTS_PUBLISHED);
         verify(assessmentRepository, never()).save(any());
     }
@@ -486,7 +486,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "CANCEL", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không hợp lệ cho action này");
+            .hasMessageContaining("not valid for this action");
         verify(assessmentRepository, never()).save(any());
     }
 
@@ -548,7 +548,7 @@ class UpdateAssessmentStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentStatusCommand(assessmentId, "CLOSE", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("2 học sinh đang làm bài");
+            .hasMessageContaining("2 students taking the assessment");
         assertThat(ongoing.getStatus()).isEqualTo(AssessmentScheduleStatus.PUBLISHED);
         verify(assessmentScheduleRepository, never()).save(any());
     }
@@ -648,7 +648,7 @@ class UpdateAssessmentStatusUseCaseTests {
         when(assessmentPaperRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(new AssessmentPaper()));
     }
 
-    /** Hạ người gọi từ quản trị trường xuống giáo viên chỉ giữ vai trò CHAIR của chính kỳ thi đó. */
+    /** Demotes the caller from school admin to a teacher who only holds the CHAIR role of that very assessment. */
     private void givenCallerIsChairInsteadOfSchoolAdmin() {
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(userId)).thenReturn(List.of(
             new UserRoleInfo(UUID.randomUUID(), userId, UUID.randomUUID(), Instant.now(), "TEACHER", "Giáo viên")
@@ -700,7 +700,7 @@ class UpdateAssessmentStatusUseCaseTests {
         return schedule;
     }
 
-    /** Ca thi đã có giám khảo và toàn bộ học sinh đã được xếp ca + gán đề. */
+    /** Every assessment schedule has a proctor and every student has been placed in a schedule and assigned a paper. */
     private void givenScheduleReady(AssessmentSchedule schedule) {
         when(assessmentScheduleProctorRepository.countByScheduleId(schedule.getId())).thenReturn(1L);
         when(assessmentCandidateRepository.findByAssessmentId(assessmentId)).thenReturn(List.of(assignedCandidate(schedule.getId())));

@@ -51,7 +51,7 @@ public class AwsS3StorageService implements StoragePort {
                 response.eTag()
             );
         } catch (S3Exception e) {
-            throw new IllegalStateException("Khong the tai tep len S3: " + errorMessageOf(e));
+            throw new IllegalStateException("Could not upload the file to S3: " + errorMessageOf(e));
         }
     }
 
@@ -77,7 +77,7 @@ public class AwsS3StorageService implements StoragePort {
                 .key(buildObjectKey(key))
                 .build());
         } catch (S3Exception e) {
-            throw new IllegalStateException("Khong the xoa tep tren S3: " + errorMessageOf(e));
+            throw new IllegalStateException("Could not delete the file from S3: " + errorMessageOf(e));
         }
     }
 
@@ -105,7 +105,7 @@ public class AwsS3StorageService implements StoragePort {
     public PresignedUpload presignUpload(String key, String contentType, Duration ttl) {
         validateKey(key);
         if (ttl == null || ttl.isNegative() || ttl.isZero()) {
-            throw new IllegalArgumentException("Thời hạn presigned URL không hợp lệ");
+            throw new IllegalArgumentException("Invalid presigned URL expiry");
         }
 
         String objectKey = buildObjectKey(key);
@@ -122,7 +122,7 @@ public class AwsS3StorageService implements StoragePort {
             PresignedPutObjectRequest presigned = s3Presigner.presignPutObject(presignRequest);
             return new PresignedUpload(presigned.url().toString(), resolveUrl(objectKey));
         } catch (S3Exception e) {
-            throw new IllegalStateException("Khong the tao presigned upload URL: " + errorMessageOf(e));
+            throw new IllegalStateException("Could not create presigned upload URL: " + errorMessageOf(e));
         }
     }
 
@@ -130,10 +130,10 @@ public class AwsS3StorageService implements StoragePort {
     public String presignRead(String bucket, String key, Duration ttl) {
         validateKey(key);
         if (!hasText(bucket)) {
-            throw new IllegalArgumentException("Bucket khong duoc de trong khi tao presigned read URL");
+            throw new IllegalArgumentException("Bucket must not be blank when creating a presigned read URL");
         }
         if (ttl == null || ttl.isNegative() || ttl.isZero()) {
-            throw new IllegalArgumentException("Thời hạn presigned URL không hợp lệ");
+            throw new IllegalArgumentException("Invalid presigned URL expiry");
         }
 
         try {
@@ -149,7 +149,7 @@ public class AwsS3StorageService implements StoragePort {
                 .build();
             return s3Presigner.presignGetObject(presignRequest).url().toString();
         } catch (S3Exception e) {
-            throw new IllegalStateException("Khong the tao presigned read URL: " + errorMessageOf(e));
+            throw new IllegalStateException("Could not create presigned read URL: " + errorMessageOf(e));
         }
     }
 
@@ -171,20 +171,20 @@ public class AwsS3StorageService implements StoragePort {
 
     private String requiredBucket() {
         if (!hasText(properties.getBucket())) {
-            throw new IllegalStateException("Cau hinh bucket S3 chua duoc thiet lap");
+            throw new IllegalStateException("The S3 bucket configuration has not been set");
         }
         return properties.getBucket();
     }
 
     private void validateKey(String key) {
         if (!hasText(key)) {
-            throw new IllegalArgumentException("Storage key khong duoc de trong");
+            throw new IllegalArgumentException("Storage key must not be blank");
         }
     }
 
     private void validateFile(UploadedFile file) {
         if (file == null || file.content() == null || file.content().length == 0 || file.size() <= 0) {
-            throw new IllegalArgumentException("File tai len khong hop le");
+            throw new IllegalArgumentException("Uploaded file is invalid");
         }
     }
 

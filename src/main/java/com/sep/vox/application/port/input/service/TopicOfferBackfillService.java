@@ -15,17 +15,17 @@ import com.sep.vox.domain.repository.LearnerProfileRepository;
 import com.sep.vox.domain.repository.PracticeTopicRepository;
 
 /**
- * Bổ sung kho chủ đề luyện tập khi danh sách đề xuất còn thưa -- chạy NỀN.
+ * Tops up the practice topic bank when the suggestion list is sparse -- runs in the BACKGROUND.
  *
- * Vì sao không sinh ngay trong request: {@code TopicSuggestionService.synchronousOffers} gọi
- * LLM đề xuất chủ đề rồi index sang vector store, hàng chục giây. Lúc kho còn trống (học sinh
- * mới, hoặc vừa dựng lại dữ liệu) thì LẦN NÀO mở màn chọn chủ đề cũng rơi vào đường đó, nên
- * request đầu tiên sau khi làm xong quiz luôn timeout -- đúng lúc học sinh hào hứng nhất.
+ * Why not generate right in the request: {@code TopicSuggestionService.synchronousOffers} calls the
+ * LLM to propose topics and then indexes them into the vector store, taking tens of seconds. While the bank is still empty (a new
+ * student, or data just rebuilt), EVERY time the topic-picker screen opens it falls onto that path, so the
+ * first request after finishing the quiz always times out -- right when the student is most excited.
  *
- * Đổi hình dạng thay vì nới trần: trả về ngay những gì đang có (kể cả rỗng), sinh chạy nền,
- * client hiện "đang tổng hợp, quay lại sau 1-2 phút". Chủ đề sinh xong được ghi thẳng vào kho
- * ({@code createTopic} bên trong synchronousOffers), nên lần mở sau đường xếp hạng thông
- * thường tự thấy chúng -- không cần pha hai hay endpoint hỏi lại.
+ * Change the shape instead of raising the cap: return immediately what already exists (even empty), generate in the background,
+ * the client shows "compiling, come back in 1-2 minutes". Topics, once generated, are written straight into the bank
+ * ({@code createTopic} inside synchronousOffers), so the next time the screen opens the normal ranking
+ * path sees them by itself -- no phase two or re-ask endpoint needed.
  */
 @Service
 @RequiredArgsConstructor
@@ -101,7 +101,7 @@ public class TopicOfferBackfillService {
             return;
         }
         if (!hasCompletedInterestQuiz(studentId)) {
-            log.debug("Bỏ lượt bổ sung chủ đề: học sinh {} chưa nộp quiz sở thích.", studentId);
+            log.debug("Skipping the topic top-up: student {} has not submitted the interest quiz.", studentId);
             return;
         }
         String key = IN_FLIGHT_KEY_PREFIX + studentId;
@@ -112,7 +112,7 @@ public class TopicOfferBackfillService {
         try {
             backfillOffers(studentId);
         } catch (RuntimeException exception) {
-            log.warn("Bổ sung chủ đề thất bại cho học sinh {}", studentId, exception);
+            log.warn("Topic top-up failed for student {}", studentId, exception);
         } finally {
             cacheManagerPort.deleteIfValueMatches(key, token);
         }
@@ -127,7 +127,7 @@ public class TopicOfferBackfillService {
         int requested = pool < POOL_TARGET ? BACKFILL_COUNT_BUILDING : BACKFILL_COUNT_STEADY;
         List<PracticePlanningResponses.PracticeTopicOffer> created = topicSuggestionService.synchronousOffers(studentId, requested);
         log.info(
-            "Đã bổ sung {}/{} chủ đề cho học sinh {} (kho hiện có {}).",
+            "Topped up {}/{} topics for student {} (the bank now has {}).",
             created.size(), requested, studentId, pool
         );
     }

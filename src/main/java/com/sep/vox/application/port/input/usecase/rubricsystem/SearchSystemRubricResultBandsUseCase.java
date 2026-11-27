@@ -34,14 +34,14 @@ public class SearchSystemRubricResultBandsUseCase implements IUseCase<SearchSyst
     @Transactional(readOnly = true)
     public PageResult<RubricResultBandDto> execute(SearchSystemRubricResultBandsQuery query) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account has been locked.");
 
-        RubricVersion version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
-        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+        RubricVersion version = rubricVersionRepository.findById(query.versionId()).orElseThrow(() -> new ResourceNotFoundException("Rubric version not found."));
+        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("BẢO MẬT: Dữ liệu thuộc về Trường học. Bạn không có quyền truy cập.");
+            throw new ForbiddenException("SECURITY: this data belongs to a School. You are not allowed to access it.");
         }
 
         PageResult<RubricResultBand> pageResult = rubricResultBandRepository.searchRubricResultBands(query.versionId(), query.keyword(), query.page(), query.size());

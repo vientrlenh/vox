@@ -42,7 +42,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
     @Transactional
     public UUID execute(UpdateSubscriptionPlanCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
         requireDraft(plan);
         PlanEdits edits = validatedEdits(input);
@@ -70,7 +70,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
     private void requireDraft(SubscriptionPlan plan) {
         if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
             throw new IllegalArgumentException(
-                "Chỉ có thể chỉnh sửa gói khi đang ở trạng thái nháp. Gói đã xuất bản thì phải lưu trữ và tạo gói mới thay thế.");
+                "A plan can only be edited while it is in DRAFT status. A published plan must be archived and replaced by a new plan.");
         }
     }
 
@@ -126,11 +126,12 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
     }
 
     /**
-     * Tên gói hiện thẳng lên trang bán hàng nên phải gom khoảng trắng thừa: "Gói  Cơ   bản " và
-     * "Gói Cơ bản" là cùng một gói, để nguyên thì admin nhìn danh sách tưởng có hai gói khác nhau.
+     * The plan name goes straight onto the sales page, so extra whitespace has to be collapsed: "Basic  Plan " and
+     * "Basic Plan" are the same plan, and left as they are an admin looking at the list would think there are two
+     * different plans.
      *
-     * <p>Chuỗi rỗng/toàn khoảng trắng bị từ chối chứ không lặng lẽ bỏ qua: cột name là NOT NULL và
-     * người gửi rõ ràng đang CÓ ý sửa tên -- coi như "không sửa" thì họ tưởng đã xóa được tên.
+     * <p>An empty/all-whitespace string is rejected rather than silently ignored: the name column is NOT NULL and
+     * the sender clearly INTENDS to edit the name -- treating it as "no edit" would make them think the name was cleared.
      */
     private static String normalizedName(String name) {
         if (name == null) {
@@ -138,10 +139,10 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         }
         String normalized = StringNormalization.trimAndCollapseSpaces(name);
         if (normalized.isEmpty()) {
-            throw new IllegalArgumentException("Tên gói không được để trống");
+            throw new IllegalArgumentException("The plan name must not be empty");
         }
         if (normalized.length() > MAX_NAME_LENGTH) {
-            throw new IllegalArgumentException("Tên gói không được vượt quá " + MAX_NAME_LENGTH + " ký tự");
+            throw new IllegalArgumentException("The plan name must not exceed " + MAX_NAME_LENGTH + " characters");
         }
         return normalized;
     }
@@ -152,46 +153,46 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
         }
         String normalized = StringNormalization.trimAndCollapseSpaces(tagline);
         if (normalized.isEmpty()) {
-            throw new IllegalArgumentException("Mô tả gói không được để trống");
+            throw new IllegalArgumentException("The plan description must not be empty");
         }
         if (normalized.length() > MAX_TAGLINE_LENGTH) {
-            throw new IllegalArgumentException("Mô tả gói không được vượt quá " + MAX_TAGLINE_LENGTH + " ký tự");
+            throw new IllegalArgumentException("The plan description must not exceed " + MAX_TAGLINE_LENGTH + " characters");
         }
         return normalized;
     }
 
     /**
-     * price_vnd là numeric(15,0) -- SCALE 0 chứ không phải làm tròn cho đẹp. Gửi 100000.5 xuống thì
-     * Postgres LÀM TRÒN IM LẶNG thành 100001: gói niêm yết một giá mà thu một giá khác, không có lỗi
-     * nào báo ra. Chặn ở đây để admin biết mình vừa gõ thừa phần thập phân.
+     * price_vnd is numeric(15,0) -- SCALE 0, not rounding for looks. Sending 100000.5 down makes Postgres ROUND
+     * SILENTLY to 100001: the plan is listed at one price and charged at another, with no error shown. Rejected here
+     * so the admin knows they just typed an extra decimal part.
      */
     private static void validatePriceVnd(BigDecimal priceVnd) {
         if (priceVnd == null) {
             return;
         }
         if (priceVnd.signum() < 0) {
-            throw new IllegalArgumentException("Giá gói không được âm");
+            throw new IllegalArgumentException("The plan price must not be negative");
         }
         if (priceVnd.stripTrailingZeros().scale() > 0) {
-            throw new IllegalArgumentException("Giá gói phải là số nguyên VND, không có phần thập phân");
+            throw new IllegalArgumentException("The plan price must be a whole VND amount with no decimal part");
         }
         if (priceVnd.compareTo(MAX_PRICE_VND) > 0) {
-            throw new IllegalArgumentException("Giá gói vượt quá giới hạn cho phép (tối đa 999.999.999.999.999 VND)");
+            throw new IllegalArgumentException("The plan price exceeds the allowed limit (maximum 999,999,999,999,999 VND)");
         }
     }
 
-    // Khớp CHECK chk_subscription_plans_period_count_positive dưới DB -- chặn ở đây để ra thông báo
-    // đọc được thay vì một ConstraintViolationException từ tầng JDBC.
+    // Matches the CHECK chk_subscription_plans_period_count_positive in the DB -- rejected here to give a readable
+    // message instead of a ConstraintViolationException from the JDBC layer.
     private static void validatePeriodCount(Integer periodCount) {
         if (periodCount != null && periodCount < 1) {
-            throw new IllegalArgumentException("Số chu kỳ của gói phải lớn hơn 0");
+            throw new IllegalArgumentException("The number of plan cycles must be greater than 0");
         }
     }
 
-    // Khớp CHECK chk_subscription_plans_max_time_per_attempt_min_positive dưới DB.
+    // Matches the CHECK chk_subscription_plans_max_time_per_attempt_min_positive in the DB.
     private static void validateMaxTimePerAttemptMin(Integer maxTimePerAttemptMin) {
         if (maxTimePerAttemptMin != null && maxTimePerAttemptMin < 1) {
-            throw new IllegalArgumentException("Số phút của một bài kiểm tra phải lớn hơn 0");
+            throw new IllegalArgumentException("The number of minutes of a test must be greater than 0");
         }
     }
 
@@ -213,7 +214,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
     // field from the input entirely.
     private static void requireAtLeastOneQuota(List<UpdateSubscriptionPlanQuotaCommand> quotas) {
         if (quotas.isEmpty()) {
-            throw new IllegalArgumentException("Gói phải có ít nhất một hạn mức");
+            throw new IllegalArgumentException("A plan must have at least one quota");
         }
     }
 
@@ -226,7 +227,7 @@ public class UpdateSubscriptionPlanUseCase implements IUseCase<UpdateSubscriptio
             // depends on the order Postgres returns them in.
             if (includedAmountByQuotaType.containsKey(quotaType)) {
                 throw new IllegalArgumentException(
-                    "Loại hạn mức \"" + quotaType + "\" bị khai báo nhiều lần trong cùng một gói");
+                    "Quota type \"" + quotaType + "\" is declared more than once in the same plan");
             }
             quotaAmountValidator.requireValidIncludedAmount(quotaType, quota.includedAmountVnd());
             includedAmountByQuotaType.put(quotaType, quota.includedAmountVnd());

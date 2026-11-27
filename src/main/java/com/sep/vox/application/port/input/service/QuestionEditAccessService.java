@@ -39,9 +39,9 @@ public class QuestionEditAccessService {
 
     public QuestionAsset requireAssetOf(Question question, UUID assetId) {
         QuestionAsset asset = questionAssetRepository.findById(assetId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài nguyên câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question asset not found"));
         if (!asset.getQuestionId().equals(question.getId())) {
-            throw new ForbiddenException("Tài nguyên không thuộc câu hỏi này");
+            throw new ForbiddenException("The asset does not belong to this question");
         }
         return asset;
     }
@@ -77,7 +77,7 @@ public class QuestionEditAccessService {
                 && !immutable
                 && question.getStatus() != QuestionStatus.DRAFT
                 && question.getStatus() != QuestionStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException("Chỉ được sửa câu hỏi của mình khi ở trạng thái DRAFT hoặc REVISION_REQUESTED");
+            throw new ForbiddenException("You may only edit your own question when it is in DRAFT or REVISION_REQUESTED status");
         }
         return immutable;
     }
@@ -105,19 +105,19 @@ public class QuestionEditAccessService {
 
         if (bank.getOwnerType() == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
+                throw new ForbiddenException("Access denied");
             }
         } else if (!teacher || currentSchoolId == null || !currentSchoolId.equals(bank.getSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
     private EditAccess requireEditAccess(Question question, UUID currentUserId) {
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         EditAccess access = resolveEditAccess(question, bank, currentUserId);
         if (!access.allowed()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return access;
     }

@@ -15,12 +15,12 @@ import jakarta.validation.constraints.Size;
  * SUBMIT/APPROVE/REJECT and no note is needed either.
  */
 public record BulkUpdateQuestionScopeStatusRequest(
-    @NotEmpty(message = "Danh sách không được để trống")
-    @Size(max = 200, message = "Chỉ được cập nhật tối đa 200 mục mỗi lần")
+    @NotEmpty(message = "List must not be blank")
+    @Size(max = 200, message = "At most 200 items can be updated at a time")
     List<UUID> ids,
 
-    @NotBlank(message = "Action là bắt buộc")
-    @Pattern(regexp = "PUBLISH|ARCHIVE", message = "Action không hợp lệ")
+    @NotBlank(message = "Action is required")
+    @Pattern(regexp = "PUBLISH|ARCHIVE", message = "Action is invalid")
     String action
 ) {
 }

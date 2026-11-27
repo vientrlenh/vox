@@ -10,15 +10,15 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.domain.model.metering.QuotaType;
 
 /**
- * Quy ước tiêu tiền của ví hạn mức: <b>tiền GÓI tiêu trước, tiền TỰ NẠP tiêu sau.</b>
+ * Spending convention of the quota wallet: <b>PLAN money is spent first, SELF-FUNDED money after.</b>
  *
- * <p>Không cột nào ghi lại từng đồng đã tiêu thuộc nguồn nào, nên phải chọn một quy ước -- và quy ước
- * này có lợi cho nhà trường: định mức gói dù sao cũng hết hạn cuối kỳ, còn tiền trường tự bỏ ra thì
- * không nên bốc hơi trước nó. Nó cũng khớp thứ tự mà ConsumeQuotaService vốn đã tiêu ở cấp trên (hạn
- * mức trước, ví sau).
+ * <p>No column records which source each spent dong belongs to, so a convention has to be chosen -- and this
+ * one favours the school: the plan allowance expires at the end of the period anyway, while money the school put in
+ * itself should not evaporate before it. It also matches the order in which ConsumeQuotaService already spends at the
+ * higher level (quota first, balance after).
  *
- * <p>Con số này quyết định trường được mang bao nhiêu tiền sang kỳ mới, nên sai ở đây là mất tiền
- * thật của khách -- xem OrderSettlementService.seedQuotaRecords.
+ * <p>This figure decides how much money the school carries into the new period, so a mistake here loses a customer's
+ * real money -- see OrderSettlementService.seedQuotaRecords.
  */
 class SchoolSubscriptionQuotaRecordTests {
 

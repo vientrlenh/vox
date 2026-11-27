@@ -63,14 +63,14 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
             .filter(key -> !validHeaders.contains(key))
             .toList();
         if (!invalidKeys.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
+            throw new IllegalArgumentException("Mapping contains a column that does not exist in the file: " + String.join(", ", invalidKeys));
         }
         List<String> invalidValues = confirmedMapping.values().stream()
             .map(value -> value == null ? null : value.strip())
             .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
         if (!invalidValues.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa trường hệ thống không hợp lệ: " + String.join(", ", invalidValues));
+            throw new IllegalArgumentException("Mapping contains an invalid system field: " + String.join(", ", invalidValues));
         }
     }
 
@@ -136,7 +136,7 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
             row.setStatus(ImportRowStatus.IMPORTED);
             return outcome;
         } catch (DataConflictException | IllegalArgumentException exception) {
-            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã lớp đã tồn tại hoặc không hợp lệ"))));
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Class code already exists or is invalid"))));
             row.setStatus(ImportRowStatus.FAILED);
             return RowOutcome.INVALID;
         }
@@ -223,14 +223,14 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
             Map<String, SupportedLanguage> languagesByCode,
             Map<String, SchoolGrade> gradesByCode) {
         List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
-        addMissingError(errors, mappedData, "code", "Mã lớp không được để trống");
-        addMissingError(errors, mappedData, "name", "Tên lớp không được để trống");
-        addMissingError(errors, mappedData, "languageCode", "Mã ngôn ngữ không được để trống");
-        addMissingError(errors, mappedData, "schoolGradeCode", "Mã khối không được để trống");
+        addMissingError(errors, mappedData, "code", "Class code must not be blank");
+        addMissingError(errors, mappedData, "name", "Class name must not be blank");
+        addMissingError(errors, mappedData, "languageCode", "Language code must not be blank");
+        addMissingError(errors, mappedData, "schoolGradeCode", "Grade code must not be blank");
 
         String code = mappedData.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
-            errors.add(error("code", "Mã lớp bị trùng trong file import"));
+            errors.add(error("code", "Class code is duplicated in the import file"));
         }
 
         addLanguageErrors(errors, mappedData.get("languageCode"), languagesByCode);
@@ -245,9 +245,9 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
         }
         SupportedLanguage language = languagesByCode.get(languageCode);
         if (language == null) {
-            errors.add(error("languageCode", "Không tìm thấy ngôn ngữ"));
+            errors.add(error("languageCode", "Language not found"));
         } else if (!language.isActive()) {
-            errors.add(error("languageCode", "Ngôn ngữ không hoạt động"));
+            errors.add(error("languageCode", "Language is not active"));
         }
     }
 
@@ -258,9 +258,9 @@ public class SchoolClassImportCommitHandler implements ImportCommitHandler {
         }
         SchoolGrade schoolGrade = gradesByCode.get(schoolGradeCode);
         if (schoolGrade == null) {
-            errors.add(error("schoolGradeCode", "Không tìm thấy khối học"));
+            errors.add(error("schoolGradeCode", "Grade not found"));
         } else if (schoolGrade.getStatus() != SchoolGradeStatus.ACTIVE) {
-            errors.add(error("schoolGradeCode", "Khối học không hoạt động"));
+            errors.add(error("schoolGradeCode", "Grade is not active"));
         }
     }
 

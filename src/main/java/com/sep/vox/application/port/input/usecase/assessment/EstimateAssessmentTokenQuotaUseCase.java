@@ -15,9 +15,9 @@ import com.sep.vox.application.response.input.assessment.AssessmentTokenEstimate
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 /**
- * Cảnh báo ước lượng chi phí AI NGAY LÚC TẠO bài thi (trước publish) -- không throw, chỉ để FE
- * hiện banner cảnh báo sớm. Việc CHẶN thật vẫn nằm ở ClassTestTokenQuotaGuardService.requireWithinTokenQuota,
- * gọi lúc publish/sửa/thêm thí sinh.
+ * Warns about the estimated AI cost RIGHT WHEN an assessment is created (before publish). It never throws; it only
+ * lets the frontend show an early warning banner. The real BLOCKING still lives in
+ * ClassTestTokenQuotaGuardService.requireWithinTokenQuota, called on publish, edit and adding candidates.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,10 +31,10 @@ public class EstimateAssessmentTokenQuotaUseCase implements IUseCase<EstimateAss
     @Transactional(readOnly = true)
     public AssessmentTokenEstimateResponse execute(EstimateAssessmentTokenQuotaQuery input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         if (!userContextPort.isSystemAdmin() && !assessment.getSchoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         return classTestTokenQuotaGuardService.estimateTokenQuota(assessment);

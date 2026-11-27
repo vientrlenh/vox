@@ -53,7 +53,7 @@ public final class SubscriptionPlanMapper {
         try {
             return SubscriptionPlanPeriod.valueOf(periodType);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại chu kỳ khi chuyển đổi sang domain model không hợp lệ: " + periodType);
+            throw new IllegalArgumentException("Invalid period type when converting to the domain model: " + periodType);
         }
     }
 
@@ -63,7 +63,7 @@ public final class SubscriptionPlanMapper {
         try {
             return SubscriptionPlanStatus.valueOf(status);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái khi chuyển đổi sang domain model không hợp lệ: " + status);
+            throw new IllegalArgumentException("Invalid status when converting to the domain model: " + status);
         }
     }
 

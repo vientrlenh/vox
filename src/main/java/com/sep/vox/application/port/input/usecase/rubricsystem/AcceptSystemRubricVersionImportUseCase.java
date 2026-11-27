@@ -66,19 +66,19 @@ public class AcceptSystemRubricVersionImportUseCase implements IUseCase<AcceptSy
 
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
     }
 
     private ImportSession loadPreviewedSession(AcceptSystemRubricVersionImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import (Session ID không hợp lệ)."));
+                .orElseThrow(() -> new ResourceNotFoundException("Import session not found (invalid session ID)."));
 
         if (session.getType() != ImportType.RUBRIC_VERSION || session.getImportedEntityId() == null) {
-            throw new IllegalArgumentException("Phiên làm việc này không phải là Import Rubric Version.");
+            throw new IllegalArgumentException("This session is not a Rubric Version import.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Chỉ có thể Accept những phiên làm việc đang ở trạng thái PREVIEWED.");
+            throw new IllegalArgumentException("Only sessions in PREVIEWED status can be accepted.");
         }
         return session;
     }
@@ -86,9 +86,9 @@ public class AcceptSystemRubricVersionImportUseCase implements IUseCase<AcceptSy
     // Security: the parent rubric must be a SYSTEM rubric.
     private void requireSystemOwnedRubric(ImportSession session) {
         UUID rubricId = session.getImportedEntityId();
-        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+        Rubric rubric = rubricRepository.findById(rubricId).orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này thuộc trường học. System Admin không được phép can thiệp.");
+            throw new ForbiddenException("Security: this Rubric belongs to a school. A System Admin is not allowed to interfere.");
         }
     }
 }

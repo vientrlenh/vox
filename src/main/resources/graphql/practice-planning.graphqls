@@ -3,35 +3,35 @@
     searchPracticeTopics(keyword: String!): TopicSearchResult!
 
     """
-    Tìm chủ đề theo NGỮ NGHĨA (vector). Bổ sung cho `searchPracticeTopics`, không thay thế.
+    Find topics by MEANING (vector). Complements `searchPracticeTopics`, does not replace it.
 
-    Trả rỗng khi dịch vụ AI không sẵn sàng -- client phải chịu được điều đó và vẫn hiện kết quả
-    của `searchPracticeTopics`. `matchPercent` ở đây là độ tương đồng ngữ nghĩa, dùng để hiện
-    nhãn "gần nghĩa".
+    Returns empty when the AI service is not available -- the client must tolerate that and still show the results
+    of `searchPracticeTopics`. `matchPercent` here is semantic similarity, used to show the
+    "close in meaning" label.
     """
     searchPracticeTopicsSemantic(keyword: String!): [PracticeTopicOffer!]!
     mySavedTopics: [PracticeTopicOffer!]!
     myPracticeDashboardStats: PracticeDashboardStats!
-    "Hỏi lại kết quả dựng đề đã khởi động bởi buildPracticePaper (xem PracticePaperDraft)."
+    "Polls the paper-building result started by buildPracticePaper (see PracticePaperDraft)."
     practicePaperDraft(draftId: ID!): PracticePaperDraft!
 }
 
 extend type Mutation {
     """
-    Khởi động dựng đề. Trả về NGAY: nếu kho câu hỏi đã có câu phù hợp thì
-    status=READY kèm luôn paper; nếu phải nhờ AI sinh câu mới (chậm) thì
-    status=PREPARING và client hỏi lại bằng practicePaperDraft(draftId).
+    Starts building the paper. Returns IMMEDIATELY: if the question bank already has suitable questions then
+    status=READY with the paper included; if the AI has to generate new questions (slow) then
+    status=PREPARING and the client polls with practicePaperDraft(draftId).
     """
     buildPracticePaper(input: StartPracticeSessionInput!): PracticePaperDraft!
     pickRandomTopic: PracticeTopicOffer!
     saveTopic(topicId: ID!): Boolean!
     unsaveTopic(topicId: ID!): Boolean!
     """
-    Học sinh bấm loại một thẻ chủ đề đang được chào ("không thích cái này").
+    The student dismisses a topic card that is being offered ("I don't like this").
 
-    Ghi tín hiệu sở thích âm 0,15 -- bằng đúng mức "bỏ dở vì chán" -- rồi tính lại điểm quan
-    tâm ngay. Khác `excludeTopicIds` của practiceTopicOffers: cái đó chỉ giấu thẻ trong lượt
-    duyệt hiện tại, còn cái này DẠY hệ thống nên có hiệu lực ở mọi lần mở sau.
+    Records a negative interest signal of 0.15 -- exactly the level of "abandoned out of boredom" -- then recomputes the interest
+    score immediately. Different from `excludeTopicIds` of practiceTopicOffers: that only hides the card in the current
+    browsing round, while this TEACHES the system so it takes effect on every later open.
     """
     dismissTopicOffer(topicId: ID!): Boolean!
 }
@@ -39,11 +39,11 @@ extend type Mutation {
 type PracticePaperDraft {
     draftId: ID!
     status: PracticePaperDraftStatus!
-    "Chỉ có khi status=FAILED -- thông báo đọc được để hiện thẳng cho học sinh."
+    "Only present when status=FAILED -- a readable message to show directly to the student."
     reason: String
-    "Chỉ có khi status=READY."
+    "Only present when status=READY."
     paper: PracticePaper
-    "Chỉ có khi status=FAILED. Mã lỗi máy đọc được (vd BUSINESS_RULE_VIOLATION) để client phân biệt lỗi tạm thời với lỗi nghiệp vụ không đáng cho thử lại."
+    "Only present when status=FAILED. A machine-readable error code (e.g. BUSINESS_RULE_VIOLATION) so the client can tell a transient error from a business error that is not worth retrying."
     errorCode: String
 }
 
@@ -56,9 +56,9 @@ enum PracticePaperDraftStatus {
 input StartPracticeSessionInput {
     topicId: ID!
     """
-    Bậc học sinh CHỌN cho phiên này, lấy từ thang bậc của khung đang áp. Trước đây hệ thống
-    tự suy ra bậc từ bài chấm + hiệu năng gần đây; giờ đó là lựa chọn của người học, và bậc
-    chỉ còn nghĩa "độ khó tôi muốn hôm nay" chứ không phải một tuyên bố về trình độ.
+    The level the student CHOOSES for this session, taken from the level scale of the framework in effect. Previously the system
+    inferred the level from graded work + recent performance; now it is the learner's choice, and the level
+    only means "the difficulty I want today", not a statement about proficiency.
     """
     targetFrameworkBandId: ID!
     origin: String!
@@ -79,10 +79,10 @@ type PracticeTopicOffer {
 }
 
 """
-Chỉ còn một rổ. BY_GOAL và BY_WEAKNESS đã bỏ cùng hồ sơ điểm yếu: xếp hạng chủ đề giờ dựa
-hoàn toàn vào sở thích, kho câu còn lại và mức khớp chương trình.
+Only one basket remains. BY_GOAL and BY_WEAKNESS were removed together with the weakness profile: topic ranking is now based
+entirely on interests, remaining question stock and curriculum match.
 
-Giữ lại enum (thay vì bỏ hẳn tham số) để client cũ gửi `bucket: FOR_YOU` không bị lỗi schema.
+The enum is kept (instead of dropping the parameter) so old clients sending `bucket: FOR_YOU` do not get a schema error.
 """
 enum TopicOfferBucket {
     FOR_YOU
@@ -105,7 +105,7 @@ type PracticePaper {
     origin: String!
     plannedSeconds: Int!
     reservedQuotaSeconds: Int!
-    "Trần nói của cả phiên (giây): chỗ hẹp hơn giữa hạn mức gói và trần bậc. Khác plannedSeconds ở trên -- cái kia là tổng dự trù của các câu trong ĐỀ này."
+    "Speaking ceiling for the whole session (seconds): the narrower of the plan quota and the level ceiling. Different from plannedSeconds above -- that one is the total planned for the questions in THIS paper."
     sessionBudgetSeconds: Int!
     questions: [PracticePaperQuestion!]!
 }

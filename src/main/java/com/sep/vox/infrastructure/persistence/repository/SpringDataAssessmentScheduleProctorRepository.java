@@ -40,7 +40,7 @@ public interface SpringDataAssessmentScheduleProctorRepository extends JpaReposi
         @Param("end") Instant end,
         @Param("excludeScheduleId") UUID excludeScheduleId);
 
-    /** Cùng phép lọc như trên nhưng cho cả một nhóm giáo viên, và trả về ca thi đang vướng. */
+    /** Same filter as above but for a whole group of teachers, and returns the conflicting schedule. */
     @Query("""
         SELECT p.teacherId, s.id, s.startDate, s.endDate
         FROM AssessmentScheduleProctorJpaEntity p

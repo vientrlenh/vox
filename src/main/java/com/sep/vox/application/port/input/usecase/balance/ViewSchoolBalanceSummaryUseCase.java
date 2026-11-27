@@ -15,16 +15,16 @@ import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 
 /**
- * Cộng dồn sổ cái ví theo một khoảng thời gian.
+ * Sums up the balance ledger over a time range.
  *
- * <p>Năm lượt cộng dồn riêng chứ không một câu GROUP BY: mỗi lượt dùng lại đúng
- * {@code sumAmountBySchoolIdAndEntryTypeInRange} đã có sẵn (đã COALESCE về 0, đã theo khoảng nửa mở),
- * và cả năm đều chạy trên {@code idx_school_balance_entries_school_occurred}. Thêm một câu SQL mới
- * chỉ để gộp năm phép cộng vào một lượt quét là đổi một thứ đang đúng lấy một thứ phải kiểm lại.
+ * <p>Five separate sums rather than one GROUP BY: each one reuses the existing
+ * {@code sumAmountBySchoolIdAndEntryTypeInRange} (already COALESCEd to 0, already half-open on the range), and
+ * all five run on {@code idx_school_balance_entries_school_occurred}. Adding a new SQL statement just to merge
+ * five sums into one scan would trade something that is correct for something that has to be re-verified.
  *
- * <p>Phải cộng dồn ĐỦ mọi loại của {@code SchoolBalanceEntryType}: ô tổng trên trang sao kê tồn tại
- * để giải thích mọi thay đổi của số dư, nên bỏ sót một loại là để lại một khoảng tụt không ai giải
- * thích được. QUOTA_FUNDING từng bị bỏ sót đúng như vậy.
+ * <p>It must sum EVERY type of {@code SchoolBalanceEntryType}: the totals box on the statement page exists to
+ * explain every change of the balance, so missing one type leaves a drop that nobody can explain.
+ * QUOTA_FUNDING was missed in exactly that way once.
  */
 @Service
 @RequiredArgsConstructor

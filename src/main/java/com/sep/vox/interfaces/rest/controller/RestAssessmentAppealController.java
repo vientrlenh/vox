@@ -51,7 +51,7 @@ public class RestAssessmentAppealController {
     private final AssignAssessmentAppealReviewerUseCase assignAssessmentAppealReviewerUseCase;
     private final WithdrawAssessmentAppealUseCase withdrawAssessmentAppealUseCase;
 
-    @Operation(summary = "Học sinh nộp đơn phúc khảo cho một hoặc nhiều phần thi")
+    @Operation(summary = "Student files an appeal for one or more sections of an assessment")
     @PostMapping
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<UUID>> createAppeal(
@@ -59,18 +59,18 @@ public class RestAssessmentAppealController {
         CreateAssessmentAppealCommand command = CreateAssessmentAppealRequest.toCommand(request);
         UUID appealId = createAssessmentAppealUseCase.execute(command);
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Gửi đơn phúc khảo thành công!", appealId));
+            .body(ApiResponse.success("Appeal submitted successfully!", appealId));
     }
 
-    @Operation(summary = "Học sinh rút đơn phúc khảo khi đơn còn chờ duyệt. Lượt phúc khảo được hoàn lại.")
+    @Operation(summary = "Student withdraws an appeal while it is still pending approval. The appeal attempt is refunded.")
     @PostMapping("/{appealId}/withdraw")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<UUID>> withdrawAppeal(@PathVariable("appealId") UUID appealId) {
         return ResponseEntity.ok(
-            ApiResponse.success("Rút đơn phúc khảo thành công!", withdrawAssessmentAppealUseCase.execute(appealId)));
+            ApiResponse.success("Appeal withdrawn successfully!", withdrawAssessmentAppealUseCase.execute(appealId)));
     }
 
-    @Operation(summary = "Duyệt đơn phúc khảo và đặt hạn xử lý")
+    @Operation(summary = "Approves an appeal and sets its processing deadline")
     @PostMapping("/{appealId}/approve")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> approveAppeal(
@@ -78,19 +78,19 @@ public class RestAssessmentAppealController {
             @Valid @RequestBody ApproveAssessmentAppealRequest request) {
         ApproveAssessmentAppealCommand command = ApproveAssessmentAppealRequest.toCommand(appealId, request);
         UUID responseId = approveAssessmentAppealUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Duyệt đơn phúc khảo thành công!", responseId));
+        return ResponseEntity.ok(ApiResponse.success("Appeal approved successfully!", responseId));
     }
 
-    @Operation(summary = "Giáo viên phụ trách bài trên lớp duyệt đơn và tự nhận chấm trong một thao tác. "
-        + "Hạn xử lý mặc định T+3 lúc 17:00. Trả về id dòng phân công vừa mở.")
+    @Operation(summary = "The teacher in charge of the class test approves the appeal and claims the grading in one step. "
+        + "The default processing deadline is T+3 at 17:00. Returns the id of the assignment row that was just opened.")
     @PostMapping("/{appealId}/approve-and-claim")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> approveAndClaimAppeal(@PathVariable("appealId") UUID appealId) {
         return ResponseEntity.ok(ApiResponse.success(
-            "Đã duyệt và nhận chấm phúc khảo!", approveAndClaimAssessmentAppealUseCase.execute(appealId)));
+            "Appeal approved and grading claimed!", approveAndClaimAssessmentAppealUseCase.execute(appealId)));
     }
 
-    @Operation(summary = "Từ chối đơn phúc khảo (bắt buộc nêu lý do)")
+    @Operation(summary = "Rejects an appeal (a reason is required)")
     @PostMapping("/{appealId}/reject")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> rejectAppeal(
@@ -98,11 +98,11 @@ public class RestAssessmentAppealController {
             @Valid @RequestBody RejectAssessmentAppealRequest request) {
         RejectAssessmentAppealCommand command = RejectAssessmentAppealRequest.toCommand(appealId, request);
         UUID responseId = rejectAssessmentAppealUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Từ chối đơn phúc khảo thành công!", responseId));
+        return ResponseEntity.ok(ApiResponse.success("Appeal rejected successfully!", responseId));
     }
 
-    @Operation(summary = "Giao MỘT giáo viên chấm phúc khảo. Người đã từng chấm bài này bị từ chối, "
-        + "trừ khi truyền `overrideReason` — lý do đó được ghi lại trên đơn.")
+    @Operation(summary = "Assigns ONE teacher to grade the appeal. Anyone who already graded this result is refused, "
+        + "unless `overrideReason` is passed -- that reason is recorded on the appeal.")
     @PostMapping("/{appealId}/reviewer")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> assignReviewer(
@@ -110,6 +110,6 @@ public class RestAssessmentAppealController {
             @Valid @RequestBody AssignAssessmentAppealReviewerRequest request) {
         AssignAssessmentAppealReviewerCommand command = AssignAssessmentAppealReviewerRequest.toCommand(appealId, request);
         UUID assignmentId = assignAssessmentAppealReviewerUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Phân công người chấm phúc khảo thành công!", assignmentId));
+        return ResponseEntity.ok(ApiResponse.success("Appeal grader assigned successfully!", assignmentId));
     }
 }

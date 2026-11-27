@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record AddAssessmentScheduleProctorRequest(
-    @NotNull(message = "Giáo viên là bắt buộc")
+    @NotNull(message = "Teacher is required")
     UUID teacherId
 ) {
 

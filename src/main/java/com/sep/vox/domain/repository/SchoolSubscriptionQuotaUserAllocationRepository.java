@@ -19,26 +19,26 @@ public interface SchoolSubscriptionQuotaUserAllocationRepository {
     boolean tryConsume(UUID id, BigDecimal amount);
 
     /**
-     * Tổng phần đã hứa cho từng người mà họ CHƯA tiêu, kẹp về 0 theo TỪNG DÒNG. Không bao giờ null --
-     * trường chưa chia cho ai trả về 0.
+     * Sum of what has been promised to each person that they have NOT yet spent, clamped to 0 PER ROW. Never null --
+     * a school that has distributed to nobody returns 0.
      *
-     * <p>Đây là con số duy nhất đem trừ khỏi ví trường được mà không trừ trùng. Cộng thẳng
-     * {@code allocatedAmountVnd} là sai: phần người ta đã tiêu đã nằm trong {@code used_amount_vnd}
-     * của ví rồi -- xem ConsumeQuotaService.consumeUserAllocation.
+     * <p>This is the only figure that can be subtracted from the school wallet without double-subtracting. Adding up
+     * {@code allocatedAmountVnd} directly is wrong: the part people already spent is already in the wallet's
+     * {@code used_amount_vnd} -- see ConsumeQuotaService.consumeUserAllocation.
      */
     BigDecimal sumUnusedAllocation(UUID schoolSubscriptionId, QuotaType quotaType);
 
     /**
-     * Tổng đã chia cho những người CÒN đủ điều kiện nhận (đang ACTIVE, còn thuộc trường, còn đúng vai
-     * trò). Đây là con số đem so với trần phân phối -- xem javadoc ở tầng Spring Data cho lý do vì sao
-     * cộng tất là sai. Không bao giờ null.
+     * Total distributed to people who STILL qualify (ACTIVE, still belonging to the school, still in the right
+     * role). This is the figure compared against the distribution ceiling -- see the javadoc at the Spring Data layer for why
+     * adding everything is wrong. Never null.
      */
     BigDecimal sumAllocatedForEligibleUsers(
         UUID schoolSubscriptionId, QuotaType quotaType, UUID schoolId, UUID roleId, String userStatus);
 
     /**
-     * Tổng đã chia trên MỌI dòng, kể cả người không còn đủ điều kiện. Chỉ để hiện phần chênh so với
-     * {@link #sumAllocatedForEligibleUsers}, KHÔNG dùng để chặn. Không bao giờ null.
+     * Total distributed over EVERY row, including people who no longer qualify. Only to show the difference against
+     * {@link #sumAllocatedForEligibleUsers}, NOT to be used for blocking. Never null.
      */
     BigDecimal sumAllocated(UUID schoolSubscriptionId, QuotaType quotaType);
 

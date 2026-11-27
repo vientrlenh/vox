@@ -25,35 +25,35 @@ class PageArgumentsTests {
     void should_reject_page_zero() {
         assertThatThrownBy(() -> PageArguments.validate(0, 20))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Số trang");
+            .hasMessageContaining("page number");
     }
 
     @Test
     void should_reject_negative_page() {
         assertThatThrownBy(() -> PageArguments.validate(-1, 20))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Số trang");
+            .hasMessageContaining("page number");
     }
 
     @Test
     void should_reject_a_missing_page() {
         assertThatThrownBy(() -> PageArguments.validate(null, 20))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Số trang");
+            .hasMessageContaining("page number");
     }
 
     @Test
     void should_reject_a_missing_size() {
         assertThatThrownBy(() -> PageArguments.validate(1, null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Kích cỡ trang");
+            .hasMessageContaining("page size");
     }
 
     @Test
     void should_reject_size_zero() {
         assertThatThrownBy(() -> PageArguments.validate(1, 0))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Kích cỡ trang");
+            .hasMessageContaining("page size");
     }
 
     /** The upper bound replaces the {@code Math.min(size, MAX)} that was removed from the repositories. */
@@ -61,7 +61,7 @@ class PageArgumentsTests {
     void should_reject_a_size_above_the_cap() {
         assertThatThrownBy(() -> PageArguments.validate(1, PageArguments.MAX_PAGE_SIZE + 1))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Kích cỡ trang");
+            .hasMessageContaining("page size");
     }
 
     @Test

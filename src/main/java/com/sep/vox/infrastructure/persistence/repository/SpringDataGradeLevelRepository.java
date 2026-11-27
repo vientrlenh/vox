@@ -20,7 +20,7 @@ public interface SpringDataGradeLevelRepository extends JpaRepository<GradeLevel
     boolean existsByCode(String code);
     boolean existsByOrder(int order);
 
-    // Nhận codes đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    // Receives codes already uppercased by the Impl; the entity side still wraps UPPER() in case old data has inconsistent case.
     @Query("SELECT gl FROM GradeLevelJpaEntity gl WHERE UPPER(gl.code) IN :codes")
     List<GradeLevelJpaEntity> findByCodeIn(@Param("codes") Collection<String> codes);
 

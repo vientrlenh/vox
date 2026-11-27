@@ -36,12 +36,12 @@ import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 /**
- * Đường thoát THỦ CÔNG khi trường đặt nhầm đơn. Nó là chốt cuối: nếu nó không đóng được đơn thì chỉ
- * còn sửa tay dưới DB, vì đơn đăng ký còn mở chặn trường đặt đơn mới
- * (uq_orders_one_open_subscription_order).
+ * The MANUAL escape route when a school placed an order by mistake. It is the last gate: if it cannot close the
+ * order, the only fix left is editing the DB by hand, because an open subscription order blocks the school from
+ * placing a new one (uq_orders_one_open_subscription_order).
  *
- * <p>Quy tắc xuyên suốt: chỉ đóng đơn khi CHẮC CHẮN không còn đường nào ra tiền. Nên hai phía đều
- * phải kiểm -- không được đóng khi phiên còn sống, và không được từ chối khi phiên đã chết.
+ * <p>The rule throughout: close the order only when it is CERTAIN that no path can still bring in money. So both
+ * sides must be checked -- never close while the session is alive, and never refuse while the session is dead.
  */
 class CancelOrderUseCaseTests {
 
@@ -100,25 +100,25 @@ class CancelOrderUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CancelOrderCommand(ORDER_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("thử lại sau vài phút");
+            .hasMessageContaining("try again in a few minutes");
 
         assertThat(justOpened.getStatus()).isEqualTo(PaymentStatus.PENDING);
         verify(orderRepository, never()).save(any());
     }
 
-    /** Cổng nói đã thu tiền: tuyệt đối không đóng đơn, nếu không là thu tiền xong không giao gì. */
+    /** The gateway says the money was collected: never close the order, otherwise the payment is taken and nothing is delivered. */
     @Test
     void should_refuse_to_cancel_a_paid_order() {
         givenPendingAttempt(Instant.now().minus(10, ChronoUnit.MINUTES), PaymentLinkRemoteStatus.PAID);
 
         assertThatThrownBy(() -> useCase.execute(new CancelOrderCommand(ORDER_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã được thanh toán");
+            .hasMessageContaining("already been paid");
 
         verify(orderRepository, never()).save(any());
     }
 
-    /** Phiên còn sống mà cổng không cho hủy (SePay luôn rơi vào đây): không đóng đơn. */
+    /** The session is still alive and the gateway does not allow cancelling it (SePay always lands here): do not close the order. */
     @Test
     void should_refuse_to_cancel_when_a_live_session_cannot_be_closed() {
         givenPendingAttempt(Instant.now().minus(10, ChronoUnit.MINUTES), PaymentLinkRemoteStatus.PENDING);
@@ -126,7 +126,7 @@ class CancelOrderUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new CancelOrderCommand(ORDER_ID)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("cổng không cho hủy sớm");
+            .hasMessageContaining("gateway does not let you cancel early");
 
         verify(orderRepository, never()).save(any());
     }

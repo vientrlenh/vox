@@ -19,7 +19,7 @@ import jakarta.validation.constraints.NotEmpty;
  * of a running endpoint is not changed just to merge names.
  */
 public record AcceptImportRequest(
-    @NotEmpty(message = "Mapping import không được để trống")
+    @NotEmpty(message = "Import mapping must not be blank")
     Map<String, String> confirmedMapping
 ) {
 

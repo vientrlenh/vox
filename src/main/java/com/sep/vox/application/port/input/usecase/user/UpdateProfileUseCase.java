@@ -27,13 +27,13 @@ import com.sep.vox.domain.valueobject.FullName;
 import com.sep.vox.domain.valueobject.Phone;
 
 /**
- * Người dùng tự sửa hồ sơ của mình. Trước đây gói {@code usecase/user} chỉ có ba use case ĐỌC, nên
- * {@code users.avatar_url} thực tế luôn null: {@code OAuth2LoginUseCase} có nhận {@code avatarUrl}
- * trong command nhưng KHÔNG dùng tới, còn lại chỉ {@code CreateSchoolUseCase} ghi được một lần lúc
- * tạo trường. Đây là đường ghi đầu tiên sau khi tài khoản đã tồn tại.
+ * Lets users edit their own profile. Previously the {@code usecase/user} package had only three READ use cases,
+ * so {@code users.avatar_url} was in practice always null: {@code OAuth2LoginUseCase} receives {@code avatarUrl}
+ * in its command but does NOT use it, and the only writer was {@code CreateSchoolUseCase}, once at school
+ * creation. This is the first write path after the account already exists.
  *
- * <p>Chuẩn hóa và kiểm trùng bám theo {@code UpdateSchoolUserUseCase} để hai đường sửa cùng một
- * bảng không lệch luật nhau (họ tên không được rỗng, số điện thoại không được rỗng và không trùng).
+ * <p>Normalization and duplicate checks follow {@code UpdateSchoolUserUseCase} so that the two paths that edit
+ * the same table do not drift apart (full name must not be empty, phone number must not be empty or duplicated).
  */
 @Service
 @RequiredArgsConstructor
@@ -51,9 +51,9 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         User target = userRepository.findByIdForUpdate(callerId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (target.getStatus() != UserStatus.ACTIVE) {
-            throw new ForbiddenException("Tài khoản không ở trạng thái hoạt động");
+            throw new ForbiddenException("The account is not active");
         }
 
         applyProvidedFields(target, input);
@@ -61,7 +61,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
         try {
             userRepository.saveAndFlush(target);
         } catch (DataConflictException e) {
-            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Phone number already exists");
         }
 
         return UserDtoMapper.toUserDto(target);
@@ -73,7 +73,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
                 && !input.addressProvided()
                 && !input.dateOfBirthProvided()
                 && !input.avatarUrlProvided()) {
-            throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
+            throw new IllegalArgumentException("At least one field must be provided to update");
         }
     }
 
@@ -102,7 +102,7 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
     private void applyFullName(User target, UpdateProfileCommand input) {
         String normalized = StringNormalization.trimAndCollapseSpaces(input.fullName());
         if (normalized == null || normalized.isBlank()) {
-            throw new IllegalArgumentException("Họ tên không được để trống");
+            throw new IllegalArgumentException("Full name must not be empty");
         }
         target.setFullName(new FullName(normalized));
     }
@@ -110,37 +110,37 @@ public class UpdateProfileUseCase implements IUseCase<UpdateProfileCommand, User
     private void applyPhone(User target, UpdateProfileCommand input) {
         String normalized = StringNormalization.normalizePhone(input.phone());
         if (normalized == null || normalized.isBlank()) {
-            throw new IllegalArgumentException("Số điện thoại không được để trống");
+            throw new IllegalArgumentException("Phone number must not be empty");
         }
         Optional<User> existing = userRepository.findByPhone(normalized);
         if (existing.isPresent() && !existing.get().getId().equals(target.getId())) {
-            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Phone number already exists");
         }
         target.setPhone(new Phone(normalized));
     }
 
     /**
-     * Học sinh KHÔNG tự đổi ảnh đại diện của mình; ảnh của học sinh do trường đặt qua
+     * Students do NOT change their own avatar; a student's photo is set by the school through
      * {@code updateSchoolUser}.
      *
-     * <p>Lý do thuộc về nghiệp vụ chứ không phải kỹ thuật: ở sản phẩm này ảnh chân dung là dữ liệu
-     * ĐỊNH DANH. Màn {@code TeacherProctorAttendancePage} để giám thị điểm danh "Có mặt", gắn cờ
-     * phiên thi, chặn thí sinh và kết thúc bài thi -- một tấm ảnh do chính thí sinh tự chọn sẽ trông
-     * như bằng chứng nhận dạng trong khi thực chất là lời tự khai, tức là tệ hơn không có ảnh. Thêm
-     * nữa người dùng ở đây là học sinh phổ thông, và repo chưa có bất kỳ công cụ kiểm duyệt ảnh nào.
+     * <p>The reason is a business one, not a technical one: in this product the portrait photo is IDENTITY
+     * data. The {@code TeacherProctorAttendancePage} screen lets the proctor mark "Present", flag the
+     * session, block the candidate and end the exam -- a photo the candidate chose themselves would look like
+     * identification evidence while actually being a self-declaration, which is worse than no photo. Besides,
+     * the users here are high school students, and the repo has no image moderation tool yet.
      *
-     * <p>Viết dạng allowlist (phải là một trong ba vai) thay vì {@code isStudent()} là có chủ đích:
-     * tài khoản không mang vai nào cũng bị từ chối, thay vì lọt qua vì "không phải học sinh".
+     * <p>Written as an allowlist (must be one of three roles) instead of {@code isStudent()} on purpose: an
+     * account with no role at all is rejected too, instead of slipping through as "not a student".
      */
     private String resolveAvatarUrl(String rawUrl) {
         boolean mayManageOwnAvatar = userContextPort.isSystemAdmin()
             || userContextPort.isSchoolAdmin()
             || userContextPort.isTeacher();
         if (!mayManageOwnAvatar) {
-            throw new ForbiddenException("Ảnh đại diện của học sinh do nhà trường cập nhật");
+            throw new ForbiddenException("A student's avatar is updated by the school");
         }
 
-        // null/rỗng = yêu cầu GỠ ảnh; phân biệt được với "không gửi trường" nhờ cờ avatarUrlProvided.
+        // null/empty = request to REMOVE the photo; told apart from "field not sent" by the avatarUrlProvided flag.
         return AvatarUrlPolicy.normalizeOrThrow(avatarConfigPort.allowedHosts(), rawUrl);
     }
 }

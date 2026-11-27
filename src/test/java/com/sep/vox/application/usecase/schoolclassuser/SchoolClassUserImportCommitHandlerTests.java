@@ -340,7 +340,7 @@ class SchoolClassUserImportCommitHandlerTests {
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
         assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
-        assertThat(rows.get(1).getErrorsJson()).contains("trùng");
+        assertThat(rows.get(1).getErrorsJson()).contains("duplicated");
     }
 
     @Test
@@ -483,6 +483,6 @@ class SchoolClassUserImportCommitHandlerTests {
         assertThat(result.created()).isZero();
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.FAILED);
-        assertThat(rows.get(0).getErrorsJson()).contains("Thành viên lớp học đã tồn tại hoặc không hợp lệ");
+        assertThat(rows.get(0).getErrorsJson()).contains("Class member already exists or is invalid");
     }
 }

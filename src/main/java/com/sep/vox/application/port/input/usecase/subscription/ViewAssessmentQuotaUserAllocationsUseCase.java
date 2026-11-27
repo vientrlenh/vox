@@ -11,7 +11,7 @@ import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPa
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 
-/** Đường đọc của màn chia hạn mức thi cho giáo viên -- có phân trang và tìm kiếm theo tên. */
+/** The read path of the screen where a teacher divides the assessment quota -- paginated, searchable by name. */
 @Service
 @RequiredArgsConstructor
 public class ViewAssessmentQuotaUserAllocationsUseCase

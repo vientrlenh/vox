@@ -37,29 +37,29 @@ public class ReportAiUsageUseCase implements IUseCase<ReportAiUsageCommand, Void
     private final RecordAiUsageUseCase recordAiUsageUseCase;
 
     /**
-     * CỐ Ý KHÔNG @Transactional: mỗi usage event phải đứng độc lập, đúng như đường Kafka
-     * (AiUsageRecordedConsumer không @Transactional nên vòng lặp của nó cũng cho mỗi event một
-     * transaction riêng của RecordAiUsageUseCase).
+     * DELIBERATELY NOT @Transactional: every usage event must stand on its own, exactly like the Kafka path
+     * (AiUsageRecordedConsumer is not @Transactional, so its loop also gives every event its own
+     * transaction in RecordAiUsageUseCase).
      *
-     * <p>Gói cả lô vào một transaction thì một event hỏng sẽ kéo theo những event ĐÃ GHI ĐƯỢC trong
-     * cùng request. Nguồn gọi đường này là desktop app, báo cáo kiểu best-effort và KHÔNG retry
-     * (LocalAvatarSpeaker.ReportTtsUsageBestEffortAsync nuốt lỗi rồi thôi) -- lô bị loại là chi phí
-     * thật biến mất vĩnh viễn, không có lần thử thứ hai nào.
+     * <p>Wrapping the whole batch in one transaction would let one bad event drag down the events that WERE successfully recorded in the
+     * same request. The caller of this path is the desktop app, which reports best-effort and does NOT retry
+     * (LocalAvatarSpeaker.ReportTtsUsageBestEffortAsync swallows the error and moves on) -- a rejected batch is real cost
+     * that disappears for good, with no second attempt.
      *
-     * <p>Hai bước kiểm tra quyền bên dưới chỉ ĐỌC nên không cần transaction bao ngoài.
+     * <p>The two permission checks below only READ, so no outer transaction is needed.
      */
     @Override
     public Void execute(ReportAiUsageCommand input) {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
 
         AssessmentSession session = assessmentSessionRepository.findByIdAndResumable(input.assessmentSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi hoặc phiên thi đã kết thúc"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found or already ended"));
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy học viên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
         if (!candidate.getStudentId().equals(userId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         for (RecordAiUsageCommand item : input.usageEvents()) {

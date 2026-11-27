@@ -19,11 +19,11 @@ import com.sep.vox.application.query.repository.QuestionQueryRepository;
 import com.sep.vox.domain.model.question.QuestionStatus;
 
 /**
- * Đếm câu hỏi theo status trong phạm vi người gọi được xem.
+ * Counts questions by status within the scope the caller may see.
  *
- * <p>Phần dựng ngữ cảnh (systemAdmin / currentSchoolId / schoolAdmin) giống hệt
- * {@link ViewQuestionsUseCase} một cách CÓ CHỦ Ý -- ba biến này là đầu vào của bộ điều kiện
- * truy cập, lệch một biến là con số đếm không còn khớp danh sách.
+ * <p>The context setup (systemAdmin / currentSchoolId / schoolAdmin) is IDENTICAL to
+ * {@link ViewQuestionsUseCase} ON PURPOSE -- these three variables feed the access
+ * condition, and if one of them differs the counts no longer match the list.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,12 +58,12 @@ public class ViewQuestionStatusCountsUseCase
     }
 
     /**
-     * {@code GROUP BY} chỉ trả về status thực sự có câu hỏi. Trả nguyên vậy ra ngoài thì
-     * biểu đồ phía client sẽ đổi số cột theo dữ liệu, và "không có câu DRAFT nào" trở nên
-     * không phân biệt được với "chưa tải xong".
+     * {@code GROUP BY} only returns statuses that actually have questions. Passing that out as is would make the
+     * client chart change its number of columns with the data, and "no DRAFT question" would become
+     * indistinguishable from "not loaded yet".
      *
-     * <p>Thứ tự bám theo thứ tự khai báo của {@link QuestionStatus} -- đó cũng là thứ tự
-     * vòng đời của câu hỏi, nên client hiển thị thẳng theo thứ tự nhận được là hợp lý.
+     * <p>The order follows the declaration order of {@link QuestionStatus} -- which is also the
+     * lifecycle order of a question, so it makes sense for the client to display it in the order received.
      */
     private List<QuestionStatusCountInfo> fillMissingStatuses(List<QuestionStatusCountInfo> counted) {
         Map<QuestionStatus, Long> countByStatus = counted.stream()

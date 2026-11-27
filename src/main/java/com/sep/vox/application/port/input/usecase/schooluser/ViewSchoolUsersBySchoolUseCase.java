@@ -64,14 +64,14 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
         UUID schoolId = userContextPort.getCurrentSchoolId();
 
         if (schoolId == null || !input.schoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bạn không có quyền xem danh sách người dùng của trường này");
+            throw new ForbiddenException("You are not allowed to view the user list of this school");
         }
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+            throw new UnauthorizedException("The user status is invalid");
         }
         if (!schoolUserRepository.existsBySchoolIdAndUserId(input.schoolId(), callerId)) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
+            throw new ForbiddenException("The access permission is invalid");
         }
     }
 
@@ -104,7 +104,7 @@ public class ViewSchoolUsersBySchoolUseCase implements IUseCase<ViewSchoolUsersB
         }
 
         return roleRepository.findByCode(normalized.toUpperCase())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò"))
+            .orElseThrow(() -> new ResourceNotFoundException("Role not found"))
             .getId();
     }
 }

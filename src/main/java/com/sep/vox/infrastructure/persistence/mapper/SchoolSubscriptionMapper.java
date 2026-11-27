@@ -50,7 +50,7 @@ public final class SchoolSubscriptionMapper {
         try {
             return SchoolSubscriptionStatus.valueOf(status);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái đơn đăng ký của trường không hợp lệ: " + status);
+            throw new IllegalArgumentException("Invalid school subscription status: " + status);
         }
     }
 

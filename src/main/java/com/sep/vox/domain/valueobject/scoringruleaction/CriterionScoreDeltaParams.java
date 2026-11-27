@@ -8,10 +8,10 @@ public record CriterionScoreDeltaParams(
 ) implements ScoringRuleActionParams {
     public CriterionScoreDeltaParams {
         if (criterionCode == null || criterionCode.isBlank()) {
-            throw new IllegalArgumentException("Code của tiêu chí không được để trống");
+            throw new IllegalArgumentException("The criterion code must not be blank");
         }
         if (delta == null || delta.compareTo(BigDecimal.ZERO) == 0) {
-            throw new IllegalArgumentException("Delta không được để trống hoặc bằng 0");
+            throw new IllegalArgumentException("The delta must not be blank or 0");
         }
     }
 }

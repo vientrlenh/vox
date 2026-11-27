@@ -52,35 +52,35 @@ public class ArchiveSystemRubricVersionUseCase implements IUseCase<ArchiveSystem
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
     }
 
     private RubricVersion loadSystemOwnedVersion(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Rubric version was not found."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Không thể can thiệp vào phiên bản của trường học.");
+            throw new ForbiddenException("Action denied: cannot interfere with a version of a school.");
         }
         return version;
     }
 
     private void requireArchivable(RubricVersion version) {
         if (version.getStatus() != RubricStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể lưu trữ (ARCHIVE) phiên bản đang ở trạng thái PUBLISHED.");
+            throw new IllegalArgumentException("Only a version in PUBLISHED status can be archived (ARCHIVE).");
         }
 
         // Archiving unconditionally would leave an active Policy pointing at an ARCHIVED version. Symmetric
         // with existsOtherActiveByRubricVersionId on the Policy archive side (ArchiveSystemAssessmentPolicyUseCase).
         if (assessmentPolicyRepository.existsActiveByRubricVersionId(version.getId())) {
             throw new IllegalArgumentException(
-                    "Không thể lưu trữ phiên bản này vì còn Assessment Policy đang DRAFT/PUBLISHED sử dụng. "
-                            + "Hãy lưu trữ các Assessment Policy đó trước.");
+                    "Cannot archive this version because a DRAFT/PUBLISHED Assessment Policy still uses it. "
+                            + "Archive those Assessment Policies first.");
         }
     }
 }

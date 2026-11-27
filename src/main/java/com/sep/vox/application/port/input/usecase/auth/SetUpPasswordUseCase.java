@@ -32,12 +32,12 @@ public class SetUpPasswordUseCase implements IUseCase<SetUpPasswordCommand, Void
         
         int updatedTokenRows = passwordSetUpTokenRepository.updateUsedToken(input.userId(), hashedToken, now);
         if (updatedTokenRows == 0) {
-            throw new IllegalArgumentException("Token không hợp lệ hoặc đã hết hạn");
+            throw new IllegalArgumentException("The token is invalid or has expired");
         }
 
         String passwordHash = passwordEncoderPort.hash(input.password());
         User user = userRepository.findById(input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tỉm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.updatePasswordAndActivate(passwordHash);
         userRepository.save(user);
 

@@ -10,11 +10,11 @@ public record PracticePaperDto(
     int plannedSeconds,
     int reservedQuotaSeconds,
     /**
-     * Ngân sách nói của CẢ phiên (giây): chỗ hẹp hơn giữa hạn mức gói và trần bậc.
+     * Speaking budget for the WHOLE session (seconds): the narrower of the plan quota and the band ceiling.
      *
-     * Khác {@code plannedSeconds} ngay bên trên: cái kia là tổng dự trù của các câu trong
-     * đề này, cái này là trần cho toàn phiên. Client cần nó ngay từ lúc mở đề để vẽ thanh
-     * "đã nói / ngân sách" -- câu đầu tiên chưa nộp lượt nào nên chưa có nguồn nào khác.
+     * Different from {@code plannedSeconds} just above: that one is the planned total of the questions in this
+     * paper, this one is the ceiling for the whole session. The client needs it as soon as the paper opens to draw the
+     * "spoken / budget" bar -- the first question has not submitted any turn yet, so no other source exists.
      */
     int sessionBudgetSeconds,
     List<PracticePaperQuestionDto> questions

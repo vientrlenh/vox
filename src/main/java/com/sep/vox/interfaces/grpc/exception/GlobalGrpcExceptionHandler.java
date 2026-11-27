@@ -41,8 +41,8 @@ public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler{
 
     private @Nullable String descriptionOf(Throwable exception) {
         return switch (exception) {
-            case AccessDeniedException _ -> "Quyền truy cập bị từ chối";
-            case AuthenticationException _ -> "Trạng thái đăng nhập không hợp lệ";
+            case AccessDeniedException _ -> "Access denied";
+            case AuthenticationException _ -> "Invalid authentication state";
             default -> exception.getMessage();
         };
     }

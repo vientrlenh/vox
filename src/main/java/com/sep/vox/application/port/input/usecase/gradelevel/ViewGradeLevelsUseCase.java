@@ -36,7 +36,7 @@ public class ViewGradeLevelsUseCase implements IUseCase<ViewGradeLevelsQuery, Pa
     public PageResult<GradeLevelDto> execute(ViewGradeLevelsQuery input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
 
         // Soft-deleted grade levels are hidden by default: without a status filter only ACTIVE is returned.

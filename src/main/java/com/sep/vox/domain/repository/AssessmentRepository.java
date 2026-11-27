@@ -32,7 +32,7 @@ public interface AssessmentRepository {
     boolean existsByBlueprintId(UUID blueprintId);
     boolean existsByBlueprintIdAndKindAndStatusNot(UUID blueprintId, AssessmentKind kind, AssessmentStatus status);
     boolean existsSubmittedSessionByAssessmentId(UUID assessmentId);
-    /** Bài thi đang có bài chờ soát điểm AI mà chưa nhắc lần nào. */
+    /** Assessments that have results awaiting AI score review and have never been reminded. */
     List<Assessment> findDueForHumanGradingNotice();
 
     List<Assessment> findByStatusAndOpenAtBefore(AssessmentStatus status, Instant time);

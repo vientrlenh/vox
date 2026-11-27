@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Test;
 import com.sep.vox.domain.service.assessment.GradingScopeKind;
 
 /**
- * Mặc định của màn chấm bài khi client không nói rõ loại bài.
+ * Default of the grading screen when the client does not state the assessment kind.
  *
- * <p>Bảng điều phối của nhà trường là chỗ duy nhất còn gọi mà không truyền loại bài, và
- * để trống ở đó chính là lỗi trộn kỳ thi tập trung với bài kiểm tra trên lớp.
+ * <p>The school dispatch board is the only place that still calls without passing the kind, and
+ * leaving it blank there is exactly the bug of mixing centralized assessments with class tests.
  */
 class GradingScopeKindTests {
 
@@ -28,7 +28,7 @@ class GradingScopeKindTests {
         assertThat(GradingScopeKind.orCentralized(" CENTRALIZED ")).isEqualTo("CENTRALIZED");
     }
 
-    /** Rơi về mặc định lúc này là im lặng đưa nhầm dữ liệu của loại bài kia. */
+    /** Falling back to the default now would silently hand over the data of the other kind. */
     @Test
     void should_reject_a_kind_that_does_not_exist() {
         assertThatThrownBy(() -> GradingScopeKind.orCentralized("MOCK_TEST"))

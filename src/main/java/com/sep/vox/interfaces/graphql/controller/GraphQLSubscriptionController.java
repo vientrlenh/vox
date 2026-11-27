@@ -108,8 +108,8 @@ public class GraphQLSubscriptionController {
     }
 
     /**
-     * Giá vốn hiện hành, đọc thẳng từ cổng pricing -- không có use case vì không có quyết định nghiệp
-     * vụ nào ở giữa, chỉ là ba giá trị cấu hình mà QuotaPricingPort đã tự lo fallback.
+     * Current cost price, read straight from the pricing port -- no use case because there is no business
+     * decision in between, just three configuration values for which QuotaPricingPort already handles the fallback.
      */
     @QueryMapping(name = "quotaPricing")
     public QuotaPricingResponse quotaPricing() {

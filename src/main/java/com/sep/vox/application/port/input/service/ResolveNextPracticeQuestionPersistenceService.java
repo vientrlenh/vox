@@ -10,8 +10,8 @@ import com.sep.vox.domain.model.personalization.PracticePaperItem;
 import com.sep.vox.domain.repository.PracticePaperItemRepository;
 import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
 
-/** Phase 3 (ghi kết quả) của ResolveNextPracticeQuestionUseCase -- bean riêng vì self-invocation
- * trong cùng class sẽ bỏ qua proxy AOP, @Transactional sẽ không có tác dụng nếu gọi qua this. */
+/** Phase 3 (write the result) of ResolveNextPracticeQuestionUseCase -- a separate bean because self-invocation
+ * within the same class bypasses the AOP proxy, so @Transactional would have no effect if called through this. */
 @Service
 @RequiredArgsConstructor
 public class ResolveNextPracticeQuestionPersistenceService {

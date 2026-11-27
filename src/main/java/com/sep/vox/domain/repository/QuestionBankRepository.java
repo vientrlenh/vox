@@ -29,11 +29,11 @@ public interface QuestionBankRepository {
         int size
     );
     /**
-     * Ngân hàng câu hỏi trong đúng một phạm vi sở hữu, để import đối chiếu trùng {@code code}.
+     * Question banks in exactly one ownership scope, so import can check for duplicate {@code code}.
      *
-     * <p>{@code schoolId} phải là {@code null} khi {@code ownerType} là {@code SYSTEM} — ngân hàng
-     * hệ thống không thuộc trường nào. Không dùng {@code findAccessible} cho việc này: hàm đó phân
-     * trang và trộn cả quyền truy cập, còn ở đây cần trọn danh sách của MỘT phạm vi.
+     * <p>{@code schoolId} must be {@code null} when {@code ownerType} is {@code SYSTEM} — a system bank
+     * belongs to no school. Do not use {@code findAccessible} for this: that function paginates and mixes in access rights,
+     * while here the full list of ONE scope is needed.
      */
     List<QuestionBank> findByOwnerScope(QuestionBankOwnerType ownerType, UUID schoolId);
 

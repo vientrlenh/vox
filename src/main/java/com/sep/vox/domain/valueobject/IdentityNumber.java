@@ -8,7 +8,7 @@ public record IdentityNumber(String value) {
 
     public IdentityNumber {
         if (value != null && !VIETNAMESE_IDENTITY_NUMBER_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Định dạng mã định danh không hợp lệ");
+            throw new IllegalArgumentException("The identity number format is invalid");
         }
     }
 }

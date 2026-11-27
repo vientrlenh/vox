@@ -14,8 +14,8 @@ import com.sep.vox.domain.model.framework.FrameworkVersionStatus;
 import com.sep.vox.domain.repository.FrameworkRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
-// Query gốc cho School Admin: chỉ được xem danh sách FrameworkVersion đã PUBLISHED
-// (đối xứng với ViewSchoolFrameworkCriteriaUseCase).
+// Root query for School Admin: may only see the list of PUBLISHED FrameworkVersion
+// (symmetric with ViewSchoolFrameworkCriteriaUseCase).
 @Service
 @RequiredArgsConstructor
 public class ViewSchoolFrameworkVersionsUseCase implements IUseCase<ViewFrameworkVersionsQuery, PageResult<FrameworkVersionDto>> {
@@ -26,7 +26,7 @@ public class ViewSchoolFrameworkVersionsUseCase implements IUseCase<ViewFramewor
     @Override
     public PageResult<FrameworkVersionDto> execute(ViewFrameworkVersionsQuery input) {
         frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework not found"));
 
         PageResult<FrameworkVersion> result = frameworkVersionRepository.findByFrameworkIdAndStatus(
             input.frameworkId(), FrameworkVersionStatus.PUBLISHED, input.page(), input.size());

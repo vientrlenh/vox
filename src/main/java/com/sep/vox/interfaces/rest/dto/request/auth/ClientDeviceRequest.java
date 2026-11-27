@@ -8,15 +8,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ClientDeviceRequest(
-    @NotBlank(message = "ID của thiết bị không được để trống")
-    @Size(max = 255, message = "ID của thiết bị không được vuợt quá 255 ký tự")
+    @NotBlank(message = "Device ID must not be blank")
+    @Size(max = 255, message = "Device ID must not exceed 255 characters")
     String deviceId, 
     
-    @NotBlank(message = "Tên thiết bị không được để trống")
-    @Size(max = 255, message = "Tên thiết bị không được vuợt quá 255 ký tự")
+    @NotBlank(message = "Device name must not be blank")
+    @Size(max = 255, message = "Device name must not exceed 255 characters")
     String deviceName,
 
-    @NotNull(message = "Nền tảng của thiết bị không được để trống")
+    @NotNull(message = "Device platform must not be blank")
     SessionPlatform platform
 ) {
 

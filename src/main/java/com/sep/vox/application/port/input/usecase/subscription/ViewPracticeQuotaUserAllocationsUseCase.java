@@ -11,7 +11,7 @@ import com.sep.vox.application.response.input.subscription.QuotaUserAllocationPa
 import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.user.SchoolRoleCodes;
 
-/** Đường đọc của màn chia hạn mức luyện nói cho học sinh -- có phân trang và tìm kiếm theo tên. */
+/** The read path of the screen where students are given a speaking-practice quota -- paginated, searchable by name. */
 @Service
 @RequiredArgsConstructor
 public class ViewPracticeQuotaUserAllocationsUseCase

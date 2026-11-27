@@ -84,16 +84,16 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!schoolAdmin || currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return currentSchoolId;
     }
 
     private void requireBlueprintInSchool(UUID blueprintId, UUID currentSchoolId) {
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(blueprintId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment blueprint not found"));
         if (!currentSchoolId.equals(blueprint.getSchoolId())) {
-            throw new ForbiddenException("Blueprint không thuộc trường hiện tại");
+            throw new ForbiddenException("The blueprint does not belong to the current school");
         }
     }
 
@@ -127,10 +127,10 @@ public class CreateAssessmentUseCase implements IUseCase<CreateAssessmentCommand
      */
     private void validateOpenClose(Instant open, Instant close, UUID schoolId) {
         if (open == null || close == null) {
-            throw new IllegalArgumentException("Kỳ thi phải có thời gian mở bài và đóng bài");
+            throw new IllegalArgumentException("An assessment must have an opening time and a closing time");
         }
         if (!open.isBefore(close)) {
-            throw new IllegalArgumentException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+            throw new IllegalArgumentException("The opening time must be earlier than the closing time");
         }
         subscriptionPeriodGuardService.requireWithinSubscriptionPeriod(schoolId, open, close);
     }

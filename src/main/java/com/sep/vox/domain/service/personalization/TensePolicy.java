@@ -4,17 +4,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Thì đích của một câu luyện: chọn ở đâu, và bậc nào thì được dùng thì nào.
+ * The target tense of a practice question: where it is chosen, and which tense is allowed at which band.
  *
- * <p>Đây là thứ thay cho việc nhắm nhãn con điểm yếu (đã gỡ). Trước nói "em yếu
- * tense_control", giờ nói "ô này luyện quá khứ" -- nhắm rõ hơn, và nguồn là CHỦ ĐỀ chứ không
- * phải hồ sơ học sinh.
+ * <p>This replaces targeting the weakness sub-label (removed). It used to say "the student is weak at
+ * tense_control", now it says "this slot practises the past" -- more precise, and the source is the TOPIC and not
+ * the student profile.
  *
- * <p><b>Không ép được thì bằng cách ra lệnh.</b> Bảo mô hình "viết câu luyện quá khứ đơn" thì
- * nó viết câu <em>nói về</em> quá khứ mà học sinh vẫn trả lời được bằng hiện tại. Thứ ép được
- * là mốc thời gian trong chính câu hỏi -- "What <b>did</b> you do last weekend?" thì quá khứ
- * là bắt buộc. Ràng buộc đó nằm ở prompt soạn câu bên Python; lớp này chỉ quyết định
- * <em>nhắm thì nào</em>.
+ * <p><b>What cannot be forced by instruction is forced by construction.</b> Telling the model "write a simple past practice question" makes
+ * it write a sentence <em>about</em> the past that the student can still answer in the present. What can be forced
+ * is the time marker inside the question itself -- "What <b>did</b> you do last weekend?" makes the past
+ * mandatory. That constraint lives in the sentence-writing prompt on the Python side; this class only decides
+ * <em>which tense to aim at</em>.
  */
 public final class TensePolicy {
 
@@ -24,32 +24,32 @@ public final class TensePolicy {
     public static final String PERFECT = "PERFECT";
     public static final String CONDITIONAL = "CONDITIONAL";
 
-    /** Chủ đề nghiêng hẳn về một phía thời gian -- do topicGenerationGraph gắn lúc soạn. */
+    /** A topic leaning entirely to one side of time -- attached by topicGenerationGraph when composing. */
     public static final String AFFORDANCE_PAST = "PAST";
     public static final String AFFORDANCE_FUTURE = "FUTURE";
     public static final String AFFORDANCE_MIXED = "MIXED";
 
     /**
-     * Thang khó thô của khung Robinson chỉ sinh được 6 mức -- xem {@code raw_difficulty} bên
-     * Python. Hai hằng số này phải khớp với nó.
+     * The coarse Robinson difficulty scale only produces 6 levels -- see {@code raw_difficulty} on the
+     * Python side. These two constants must match it.
      */
     private static final int RAW_MIN = 1;
     private static final int RAW_MAX = 6;
 
     /**
-     * Mức khó thô THẤP NHẤT mà một câu mang thì này có thể đạt được. Suy thẳng từ công thức
+     * The LOWEST coarse difficulty that a question with this tense can reach. Derived directly from the formula
      * {@code raw = 1 + (not here_and_now) + (num_elements >= 4) + reasoning_weight
      * + (abstractness == "abstract")}:
      *
      * <ul>
-     *   <li>quá khứ / tương lai / hoàn thành ⇒ câu KHÔNG neo vào hiện tại ⇒ {@code +1}</li>
-     *   <li>điều kiện ⇒ {@code reasoning_type = hypothetical} ⇒ {@code +2}, cộng cả
-     *       {@code here_and_now = False} nữa</li>
+     *   <li>past / future / perfect ⇒ the question is NOT anchored in the present ⇒ {@code +1}</li>
+     *   <li>conditional ⇒ {@code reasoning_type = hypothetical} ⇒ {@code +2}, plus
+     *       {@code here_and_now = False} as well</li>
      * </ul>
      *
-     * <p>Vì sao phải chặn: xin {@code rank = 1} kèm {@code CONDITIONAL} là yêu cầu TỰ MÂU
-     * THUẪN -- không tổ hợp đặc trưng Robinson nào thoả cả hai. Không chặn thì hoặc câu bị loại
-     * ở khâu sau (tốn một lượt LLM cho không), hoặc tệ hơn là lọt vào kho với {@code rank} sai.
+     * <p>Why block it: asking for {@code rank = 1} together with {@code CONDITIONAL} is a SELF-CONTRADICTORY
+     * request -- no combination of Robinson features satisfies both. Without blocking, either the question is dropped
+     * at a later stage (wasting an LLM call), or worse, slips into the pool with the wrong {@code rank}.
      */
     private static final Map<String, Integer> RAW_FLOOR = Map.of(
         PRESENT, 1,
@@ -60,8 +60,8 @@ public final class TensePolicy {
     );
 
     /**
-     * Thứ tự xoay vòng cho chủ đề {@code MIXED}: dễ trước, khó sau. Chỉ là thứ tự ưu tiên khi
-     * rải qua các ô, không phải điểm số.
+     * Rotation order for a {@code MIXED} topic: easy first, hard after. Only a priority order when
+     * spreading across slots, not a score.
      */
     private static final List<String> ROTATION = List.of(PRESENT, PAST, FUTURE, PERFECT, CONDITIONAL);
 
@@ -69,8 +69,8 @@ public final class TensePolicy {
     }
 
     /**
-     * Những thì mà bậc này với tới được. Không bao giờ rỗng: {@link #PRESENT} có sàn 1 nên
-     * luôn hợp lệ.
+     * The tenses this band can reach. Never empty: {@link #PRESENT} has a floor of 1 so it is
+     * always valid.
      */
     public static List<String> allowedFor(int targetRank, int bandCount) {
         int raw = rawForRank(targetRank, bandCount);
@@ -80,21 +80,21 @@ public final class TensePolicy {
     }
 
     /**
-     * Thì cho ô thứ {@code slotIndex} của phiên.
+     * The tense for slot {@code slotIndex} of the session.
      *
-     * <p>Chủ đề nói trước, xoay vòng nói sau. Chủ đề "Lịch sử trường em" mà ô 2 đòi tương lai
-     * thì câu sinh ra gượng -- <em>"What will your school's history be like?"</em> vô nghĩa;
-     * xoay vòng mù không biết điều đó.
+     * <p>The topic speaks first, rotation after. For a topic "My school's history", if slot 2 demands the future
+     * the generated question is awkward -- <em>"What will your school's history be like?"</em> is meaningless;
+     * blind rotation does not know that.
      *
-     * <p>Chu kỳ CỐ ĐỊNH chứ không ngẫu nhiên, cùng nguyên tắc với
-     * {@code PracticeFocusInfo.criterionForSlot}: cùng học sinh ở cùng ô luôn ra cùng thì, nên
-     * lỗi tái hiện được và "một buổi phủ nhiều khung thời gian" là điều chắc chắn xảy ra chứ
-     * không phải may rủi.
+     * <p>The cycle is FIXED, not random, by the same principle as
+     * {@code PracticeFocusInfo.criterionForSlot}: the same student at the same slot always gets the same tense, so
+     * bugs are reproducible and "one session covers many time frames" is certain to happen rather
+     * than a matter of luck.
      *
-     * <p>Chủ đề nghiêng về một thì mà bậc không cho phép (ví dụ chủ đề lịch sử ở bậc 1, nơi chỉ
-     * {@link #PRESENT} hợp lệ) thì bậc THẮNG: lùi về xoay vòng trong tập hợp lệ. Ép bằng được
-     * thì đích sẽ tạo ra một câu tự mâu thuẫn về độ khó, còn hỏi chủ đề lịch sử bằng thì hiện
-     * tại thì vẫn tự nhiên.
+     * <p>A topic leaning to a tense the band does not allow (e.g. a history topic at band 1, where only
+     * {@link #PRESENT} is valid) lets the band WIN: fall back to rotating within the valid set. Forcing the
+     * target would produce a question that contradicts itself on difficulty, while asking about a history topic in the present
+     * tense is still natural.
      */
     public static String forSlot(
             String temporalAffordance,
@@ -114,11 +114,11 @@ public final class TensePolicy {
     }
 
     /**
-     * Bậc của khung -> mức khó thô Robinson. Nghịch đảo của {@code difficulty_rank} bên Python
-     * ({@code raw_for_rank}); với thang 6 bậc là phép đồng nhất.
+     * Framework band -> coarse Robinson difficulty. The inverse of {@code difficulty_rank} on the Python side
+     * ({@code raw_for_rank}); for a 6-band scale it is the identity.
      *
-     * <p>Không viết cứng theo 6: trường đổi sang IELTS 9 bậc thì hằng số 6 sẽ nói sai sàn của
-     * mọi thì mà không báo lỗi.
+     * <p>Not hard-coded to 6: if a school switches to IELTS 9 bands the constant 6 would state the floor of
+     * every tense wrongly without any error.
      */
     private static int rawForRank(int rank, int bandCount) {
         int safeBandCount = Math.max(1, bandCount);

@@ -30,22 +30,22 @@ public class ResetPasswordUseCase implements IUseCase<ResetPasswordCommand, Void
         ResetPasswordCommand command = normalize(input);
 
         if (!userRepository.existsByEmailAndStatus(command.email(), UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+            throw new UnauthorizedException("Password change request failed");
         }
         String key = resetPasswordKey(command); 
         String otpHash = cacheManagerPort.get(key);
         if (otpHash == null) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+            throw new UnauthorizedException("Password change request failed");
         }
         String hashedFromRequest = oneTimePasswordPort.hash(command.otp());
         if (!otpHash.equals(hashedFromRequest)) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+            throw new UnauthorizedException("Password change request failed");
         }
         
         String passwordHash = passwordEncoderPort.hash(command.password());
         int updatedRows = userRepository.changeUserPassword(command.email(), passwordHash);
         if (updatedRows == 0) {
-            throw new UnauthorizedException("Yêu cầu thay đổi mật khẩu thất bại");
+            throw new UnauthorizedException("Password change request failed");
         }
         cacheManagerPort.delete(key);
         return null;

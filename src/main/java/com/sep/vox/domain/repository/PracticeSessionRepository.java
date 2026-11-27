@@ -22,16 +22,16 @@ public interface PracticeSessionRepository {
     void refreshOverallScore(UUID sessionId);
 
     /**
-     * Đánh dấu phiên VẪN CÒN SỐNG -- đặt {@code last_heartbeat_at} về hiện tại.
+     * Marks the session as STILL ALIVE -- sets {@code last_heartbeat_at} to now.
      *
-     * <p>Trước 2026-08-12 cột này chỉ được ghi ĐÚNG MỘT LẦN lúc tạo phiên rồi không nơi nào cập
-     * nhật (setter có nhưng không ai gọi). Mà PracticeSessionHeartbeatCleanupJob đóng mọi phiên
-     * có nhịp cũ hơn ngưỡng, và job chạy mỗi 30 giây -- nên MỌI phiên luyện đều bị đóng ở khoảng
-     * phút thứ 3, bất kể học sinh đang nói. Sau đó mọi lượt nộp trả 404 "Phiên luyện không còn
-     * hoạt động" (đo được trên production: phiên 681cdd72 mở 09:46:48, nộp lượt 09:52:11 -> 404).
+     * <p>Before 2026-08-12 this column was written EXACTLY ONCE when the session was created and never updated anywhere
+     * (the setter existed but nobody called it). Yet PracticeSessionHeartbeatCleanupJob closes every session
+     * whose heartbeat is older than the threshold, and the job runs every 30 seconds -- so EVERY practice session was closed at around
+     * the 3rd minute, regardless of whether the student was speaking. After that every turn submission returned 404 "Practice session is no
+     * longer active" (measured on production: session 681cdd72 opened 09:46:48, turn submitted 09:52:11 -> 404).
      *
-     * <p>Chỉ UPDATE một cột chứ không nạp entity rồi save: chạy trên đường realtime nóng, và
-     * không được ghi đè các cột mà luồng chấm đang cập nhật song song.
+     * <p>Only UPDATEs one column instead of loading the entity and saving: it runs on the hot realtime path, and
+     * must not overwrite the columns that the grading flow is updating in parallel.
      */
     void touchHeartbeat(UUID sessionId);
 }

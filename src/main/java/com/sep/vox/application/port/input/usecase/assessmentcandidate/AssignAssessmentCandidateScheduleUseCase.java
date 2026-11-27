@@ -45,7 +45,7 @@ public class AssignAssessmentCandidateScheduleUseCase
     @Transactional
     public AssessmentCandidateDto execute(AssignAssessmentCandidateScheduleCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -68,9 +68,9 @@ public class AssignAssessmentCandidateScheduleUseCase
 
     private AssessmentCandidate requireCandidateOf(Assessment assessment, UUID candidateId) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(candidateId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         if (!candidate.getAssessmentId().equals(assessment.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Candidate not found");
         }
         return candidate;
     }
@@ -91,12 +91,12 @@ public class AssignAssessmentCandidateScheduleUseCase
     }
     private AssessmentSchedule requireAssignableSchedule(Assessment assessment, UUID scheduleId) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(scheduleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (!schedule.getAssessmentId().equals(assessment.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Assessment schedule not found");
         }
         if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
-            throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalArgumentException("Candidates can only be placed in an assessment schedule that is a draft or published");
         }
         return schedule;
     }

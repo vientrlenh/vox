@@ -21,7 +21,7 @@ public interface RubricRepository {
 
     boolean existsByOwnerTypeAndLanguageId(String ownerType, UUID languageId);
 
-    /** Chặn trùng mã trong cùng phạm vi -- soi đúng unique index của bảng rubrics. */
+    /** Blocks duplicate codes within the same scope -- matches exactly the unique index of the rubrics table. */
     boolean existsByOwnerTypeAndSchoolIdAndLanguageIdAndFrameworkIdAndCode(
             String ownerType, UUID schoolId, UUID languageId, UUID frameworkId, String code);
 

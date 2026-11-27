@@ -1,6 +1,6 @@
 """
-COMPARING đã bị bỏ cùng bước admin công bố: chỉ còn MỘT người chấm, và người đó nộp
-điểm là công bố luôn. WITHDRAWN là học sinh tự rút khi đơn còn PENDING.
+COMPARING was removed together with the admin publish step: there is now only ONE reviewer, and when that person submits
+a score it is published right away. WITHDRAWN is when the student withdraws while the appeal is still PENDING.
 """
 enum AppealStatus {
     PENDING
@@ -16,7 +16,7 @@ type AppealStats {
     processing: Int!   # APPROVED + GRADING
     published: Int!
     rejected: Int!
-    "Học sinh tự rút — tách khỏi rejected vì đó là quyết định của học sinh"
+    "The student withdraws on their own -- kept apart from rejected because it is the student's decision"
     withdrawn: Int!
 }
 
@@ -39,19 +39,19 @@ type AppealTurn {
     durationSeconds: Int
 }
 
-"Một phần thi được phúc khảo, kèm dữ liệu để đối chiếu."
+"One part of an exam under appeal, with the data to compare against."
 type AppealItem {
     appealItemId: ID!
     paperItemId: ID!
     partLabel: String
     """
-    Điểm tiêu chí của bản chấm đang có hiệu lực: vòng đầu là bản AI, vòng phúc khảo
-    sau là bản chấm tay của vòng trước. Khớp với originalScore hiển thị cạnh nó.
+    Criterion scores of the grading currently in effect: in the first round it is the AI grading, in the appeal round
+    it is the previous round's manual grading. Matches the originalScore shown next to it.
     """
     baselineScores: [AppealCriterionScore!]!
-    "Luôn lấy từ bản AI — chỉ bản AI mới có lượt nói"
+    "Always taken from the AI version -- only the AI version has speaking turns"
     turns: [AppealTurn!]!
-    "Điểm công bố cho phần này; null khi chưa công bố"
+    "Score published for this part; null when not yet published"
     finalScore: Float
 }
 
@@ -130,38 +130,38 @@ type AppealDetail {
 }
 
 """
-Ứng viên cho picker phân công. Người xung đột lợi ích KHÔNG bị lọc bỏ mà mang cờ
-`conflicted` — admin cần thấy họ để hiểu vì sao lựa chọn hẹp, và vẫn override được.
+Candidates for the assignment picker. People with a conflict of interest are NOT filtered out but carry the flag
+`conflicted` -- the admin needs to see them to understand why the choice is narrow, and can still override.
 """
 type AppealReviewerLite {
     id: ID!
     name: String!
-    "Số phân công đang mở đang giữ, gộp cả bốn vòng"
+    "Number of open assignments held, across all four rounds"
     load: Int!
-    "Đã từng ghi điểm tay cho chính bài này"
+    "Has previously entered a manual score for this very submission"
     conflicted: Boolean!
     """
-    Hồ sơ giám khảo, nạp qua DataLoader `userById`. Dùng cho ảnh đại diện trong picker phân công.
+    Examiner profile, loaded through the `userById` DataLoader. Used for the avatar in the assignment picker.
 
-    An toàn với luật ẩn danh vì type này CHỈ xuất hiện trong `appealReviewers` -- truy vấn của
-    school admin lúc chọn người chấm. Nó KHÔNG nằm trong AppealSummaryPage/AppealDetail, tức là
-    không với tới được từ `myAppeals` của học sinh. Đừng thêm field kiểu này vào hai type kia.
+    Safe with respect to the anonymity rule because this type appears ONLY in `appealReviewers` -- the school
+    admin's query when choosing a reviewer. It is NOT in AppealSummaryPage/AppealDetail, so it
+    cannot be reached from the student's `myAppeals`. Do not add fields of this kind to those two types.
     """
     user: User
 }
 
 extend type Query {
-    "Danh sách đơn phúc khảo của trường. Phân trang 0-based."
+    "The school's list of appeals. Pagination is 0-based."
     appeals(status: AppealStatus, keyword: String, page: Int = 1, size: Int = 20): AppealSummaryPage!
 
     """
-    Đơn phúc khảo của MỘT kỳ thi, cho chủ tịch kỳ thi đó. Tách khỏi `appeals` vì màn đó
-    quét toàn trường -- nới nó ra là mở dữ liệu phúc khảo của cả trường cho một giáo viên.
+    Appeals of ONE exam, for the chair of that exam. Separate from `appeals` because that screen
+    scans the whole school -- widening it would open the school's appeal data to a single teacher.
 
-    Nhận mọi loại kỳ thi (trước đây tên là `classTestAppeals` và chỉ nhận bài trên lớp):
-    chủ tịch kỳ thi tập trung là người bấm nút công bố kết quả, mà đơn phúc khảo còn mở là
-    một trong hai thứ chặn nút đó. Chỉ trả DANH SÁCH -- quyền duyệt/từ chối đơn và quyền
-    mở chi tiết đơn vẫn thuộc nhà trường.
+    Accepts every kind of exam (previously named `classTestAppeals` and accepting only class tests):
+    the chair of a centralized exam is the person who presses the publish-results button, and an open appeal is
+    one of the two things that block that button. Returns only the LIST -- the right to approve/reject appeals and the right to
+    open appeal details still belong to the school.
     """
     assessmentAppeals(
         assessmentId: ID!,
@@ -173,25 +173,25 @@ extend type Query {
 
     appealStats: AppealStats!
 
-    "Chốt quyền nằm trong use case: school admin cùng trường, hoặc giáo viên tạo bài kiểm tra trên lớp đó."
+    "The permission check lives in the use case: a school admin of the same school, or the teacher who created the class test for that class."
     appeal(id: ID!): AppealDetail!
 
     """
-    Danh sách đơn phúc khảo của học sinh đang đăng nhập. Dùng chung type AppealSummaryPage
-    với school admin -- FE (web/mobile) KHÔNG được hỏi/hiện reviewerName cho học sinh
-    (blind re-evaluation), nhưng chặn ở tầng UI thay vì tầng schema.
+    List of appeals of the logged-in student. Shares the AppealSummaryPage type
+    with the school admin -- the FE (web/mobile) must NOT query/show reviewerName to students
+    (blind re-evaluation), but this is blocked at the UI layer instead of the schema layer.
     """
     myAppeals(status: AppealStatus, page: Int = 1, size: Int = 20): AppealSummaryPage!
 
     """
-    Chi tiết một đơn thuộc học sinh đang đăng nhập. Dùng chung type AppealDetail với school
-    admin -- cùng lưu ý như myAppeals, FE không được hỏi/hiện field reviewer.
+    Details of one appeal belonging to the logged-in student. Shares the AppealDetail type with the school
+    admin -- same caveat as myAppeals, the FE must not query/show the reviewer field.
     """
     myAppeal(id: ID!): AppealDetail!
 
     """
-    Ứng viên chấm phúc khảo cho một đơn. `appealId` là bắt buộc về mặt nghiệp vụ —
-    cờ `conflicted` tính theo bài thi của đơn đó, bỏ trống thì mọi người đều hiện
+    Appeal-review candidates for one appeal. `appealId` is required in business terms --
+    the `conflicted` flag is computed against that appeal's exam submission, and when it is omitted everyone shows up
     `conflicted: false`.
     """
     appealReviewers(appealId: ID, keyword: String): [AppealReviewerLite!]!

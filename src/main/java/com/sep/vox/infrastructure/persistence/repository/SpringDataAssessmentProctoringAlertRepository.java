@@ -40,11 +40,11 @@ public interface SpringDataAssessmentProctoringAlertRepository extends JpaReposi
         @Param("alertTypes") Collection<String> alertTypes);
 
     /**
-     * Mọi cảnh báo của một ca thi, gộp qua tất cả phiên thi trong ca.
+     * All alerts of an assessment schedule, merged across all sessions in the schedule.
      *
-     * <p>Bảng cảnh báo chỉ biết tới phiên thi, còn ca thi thì nằm cách đó hai chặng
-     * (phiên -> thí sinh -> ca), nên phải viết JPQL thay vì dựa vào tên phương thức. Dùng subquery
-     * chứ không join thẳng để kết quả không nhân bản nếu chặng giữa trả về nhiều hàng.
+     * <p>The alert table only knows the session, while the schedule is two hops away
+     * (session -> candidate -> schedule), so JPQL must be written instead of relying on the method name. A subquery is used
+     * rather than a direct join so that the result is not duplicated if the middle hop returns several rows.
      */
     @Query("""
         SELECT alert FROM AssessmentProctoringAlertJpaEntity alert

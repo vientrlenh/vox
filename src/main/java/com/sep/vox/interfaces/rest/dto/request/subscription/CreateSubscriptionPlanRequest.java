@@ -15,29 +15,29 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSubscriptionPlanRequest(
-    @NotBlank(message = "Tên gói đăng ký không được để trống")
-    @Size(max = 255, message = "Tên gói đăng ký không được vượt quá 255 ký tự")
+    @NotBlank(message = "Subscription plan name must not be blank")
+    @Size(max = 255, message = "Subscription plan name must not exceed 255 characters")
     String name, 
     
-    @NotBlank(message = "Mô tả gói không được để trống")
-    @Size(max = 2048, message = "Mô tả gói không được vượt quá 2048 ký tự")
+    @NotBlank(message = "Plan description must not be blank")
+    @Size(max = 2048, message = "Plan description must not exceed 2048 characters")
     String tagline,
 
-    @NotNull(message = "Giá tiền của gói đăng ký không được để trống")
+    @NotNull(message = "Price of the subscription plan must not be blank")
     BigDecimal priceVnd,
 
-    @NotNull(message = "Kiểu giai đoạn của gói đăng ký không được để trống")
+    @NotNull(message = "Phase type of the subscription plan must not be blank")
     SubscriptionPlanPeriod periodType,
 
-    @NotNull(message = "Số lượng thời gian giai đoạn gói đăng ký không được để trống")
-    @Min(value = 1, message = "Số lượng thời gian giai đoạn gói đăng ký không được nhỏ hơn 1")
+    @NotNull(message = "Duration amount of the subscription plan phase must not be blank")
+    @Min(value = 1, message = "Duration amount of the subscription plan phase must not be less than 1")
     Integer periodCount,
 
-    @NotNull(message = "Số phút của một bài kiểm tra không được để trống")
-    @Min(value = 1, message = "Số phút của một bài kiểm tra không được nhỏ hơn 1")
+    @NotNull(message = "Minutes of a class test must not be blank")
+    @Min(value = 1, message = "Minutes of a class test must not be less than 1")
     Integer maxTimePerAttemptMin,
 
-    @NotEmpty(message = "Danh sách các quota cho gói đăng ký không được để trống")
+    @NotEmpty(message = "Quota list of the subscription plan must not be blank")
     @Valid
     List<CreateSubscriptionPlanQuotaRequest> quotas
 ) {

@@ -8,10 +8,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateAssessmentBlueprintSectionItemRequest(
-    @NotNull(message = "Thứ tự section là bắt buộc")
+    @NotNull(message = "Section order is required")
     Integer order,
 
-    @NotBlank(message = "Tiêu đề section là bắt buộc")
+    @NotBlank(message = "Section title is required")
     String title,
 
     String instruction,

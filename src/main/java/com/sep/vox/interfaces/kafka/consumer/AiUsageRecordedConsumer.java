@@ -116,25 +116,25 @@ public class AiUsageRecordedConsumer {
 
     private UUID parseUuid(String value, String fieldName) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " không được để trống");
+            throw new IllegalArgumentException(fieldName + " must not be blank");
         }
 
         try {
             return UUID.fromString(value.trim());
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(fieldName + " không đúng định dạng UUID");
+            throw new IllegalArgumentException(fieldName + " is not a valid UUID");
         }
     }
 
     private AiUsageType parseUsageType(String value) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException("type không được để trống");
+            throw new IllegalArgumentException("type must not be blank");
         }
 
         try {
             return AiUsageType.valueOf(StringNormalization.normalizeCode(value));
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("type không hợp lệ: " + value);
+            throw new IllegalArgumentException("type is invalid: " + value);
         }
     }
 
@@ -146,7 +146,7 @@ public class AiUsageRecordedConsumer {
         try {
             return Instant.parse(value.trim());
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("occurredAt không đúng định dạng ISO-8601");
+            throw new IllegalArgumentException("occurredAt is not in ISO-8601 format");
         }
     }
 }

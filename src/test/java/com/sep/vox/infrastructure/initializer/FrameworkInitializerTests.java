@@ -26,12 +26,12 @@ import com.sep.vox.domain.valueobject.framework.FrameworkCriterionCode;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * {@code ApplicationRunner} KHÔNG được gọi trong {@code @SpringBootTest} -- đó là lý do một
- * bản {@code FrameworkInitializer} chỉ có {@code throw new UnsupportedOperationException}
- * vẫn để toàn bộ suite xanh. Nghĩa là không có lưới nào khác đỡ cho lớp này ngoài chính nó.
+ * {@code ApplicationRunner} is NOT called in {@code @SpringBootTest} -- which is why a
+ * {@code FrameworkInitializer} containing only {@code throw new UnsupportedOperationException}
+ * would still leave the whole suite green. Meaning no other net supports this class besides itself.
  *
- * <p>Vì vậy ở đây gọi thẳng {@code run(null)} trên bean thật, với DB thật: khoá ngoại, ràng
- * buộc unique và phần serialize signals sang JSON chỉ lộ lỗi khi có lượt ghi thật sự.
+ * <p>So here {@code run(null)} is called directly on the real bean, with a real DB: foreign keys, unique
+ * constraints and the serialization of signals to JSON only reveal errors when a real write happens.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
@@ -61,16 +61,16 @@ class FrameworkInitializerTests {
     private FrameworkCriterionBandRepository frameworkCriterionBandRepository;
 
     /**
-     * Kết quả quan trọng nhất: sau khi chạy, luyện tập phải tra ra được một bản đang hiệu
-     * lực. Thiếu bất kỳ điều kiện nào trong findActiveVersionId (PUBLISHED, framework active,
-     * effectiveFrom đã tới) thì mọi phiên luyện tập đều không vào được.
+     * The most important outcome: after running, practice must be able to look up an active version. If any condition in
+     * findActiveVersionId is missing (PUBLISHED, framework active,
+     * effectiveFrom reached) then no practice session can be entered.
      */
     @Test
     void should_seed_a_framework_version_that_practice_can_actually_resolve() throws Exception {
         frameworkInitializer.run(null);
 
         assertThat(frameworkVersionRepository.findActiveVersionId(null))
-            .as("luyện tập phải tra ra được bản đang hiệu lực")
+            .as("practice must be able to look up the active version")
             .isPresent();
     }
 

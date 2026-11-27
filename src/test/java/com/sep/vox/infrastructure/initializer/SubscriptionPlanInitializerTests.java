@@ -21,20 +21,20 @@ import com.sep.vox.domain.repository.SubscriptionPlanRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Thang gói khởi tạo là thứ mọi buổi demo bắt đầu từ đó, nên hai điều phải chắc: nó dựng ĐỦ sáu gói
- * với đúng con số, và chạy lại lần thứ hai KHÔNG nhân đôi danh mục.
+ * The initial plan ladder is where every demo starts, so two things must be certain: it builds ALL six plans
+ * with exactly the right numbers, and running a second time does NOT double the catalog.
  *
- * <p>Initializer là {@code ApplicationRunner} nên nó đã chạy xong lúc context khởi động -- test này
- * chỉ soi kết quả, rồi gọi {@code run()} thêm một lần nữa để kiểm tính bất biến.
+ * <p>The initializer is an {@code ApplicationRunner} so it has already finished when the context starts -- this test
+ * only inspects the result, then calls {@code run()} once more to check idempotence.
  *
- * <p>KHÔNG có {@code @Transactional}: dữ liệu được ghi lúc khởi động context, ngoài mọi transaction
- * của test, nên gói một transaction quanh test chẳng dọn được gì mà chỉ gây hiểu nhầm.
+ * <p>NO {@code @Transactional}: the data is written at context startup, outside any transaction
+ * of the test, so wrapping the test in a transaction would clean nothing up and only mislead.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
 class SubscriptionPlanInitializerTests {
 
-    /** Ngân sách AI mỗi loại hạn mức, tính bằng USD -- nguồn duy nhất sinh ra cả hạn mức lẫn giá. */
+    /** AI budget of each quota type, in USD -- the only source that produces both quota and price. */
     private static final Map<String, Integer> EXPECTED_QUOTA_USD = Map.of(
         "Gói dùng thử 7 ngày", 20,
         "Gói 1 tháng", 85,
@@ -62,7 +62,7 @@ class SubscriptionPlanInitializerTests {
         "Gói 2 năm", 2
     );
 
-    /** Thang giá DEMO -- cố ý rẻ hơn hẳn chi phí AI mà gói cấp, xem javadoc của PlanSeed. */
+    /** DEMO price ladder -- intentionally much cheaper than the AI cost the plan grants, see the javadoc of PlanSeed. */
     private static final Map<String, Integer> EXPECTED_PRICE_VND = Map.of(
         "Gói dùng thử 7 ngày", 10_000,
         "Gói 1 tháng", 20_000,
@@ -96,25 +96,25 @@ class SubscriptionPlanInitializerTests {
 
         EXPECTED_QUOTA_USD.forEach((name, quotaUsd) -> {
             SubscriptionPlan plan = byName.get(name);
-            assertThat(plan).as("gói %s", name).isNotNull();
+            assertThat(plan).as("plan %s", name).isNotNull();
 
             // A FLAT exchange rate of 26,000, not multiplied by (1 + serviceFeeRatio). The margin
             // lives in the service-fee line on the order and must not be baked into the exchange
             // rate -- that is exactly what V2 got rid of.
             BigDecimal expectedQuotaVnd = BigDecimal.valueOf(quotaUsd).multiply(USD_TO_VND);
 
-            assertThat(plan.getPeriodType()).as("loại chu kỳ %s", name).isEqualTo(EXPECTED_PERIOD_TYPE.get(name));
-            assertThat(plan.getPeriodCount()).as("số chu kỳ %s", name).isEqualTo(EXPECTED_PERIOD_COUNT.get(name));
+            assertThat(plan.getPeriodType()).as("period type %s", name).isEqualTo(EXPECTED_PERIOD_TYPE.get(name));
+            assertThat(plan.getPeriodCount()).as("period count %s", name).isEqualTo(EXPECTED_PERIOD_COUNT.get(name));
 
             List<SubscriptionPlanQuota> quotas = subscriptionPlanQuotaRepository.findBySubscriptionPlanId(plan.getId());
-            assertThat(quotas).as("hạn mức gói %s", name).hasSize(2);
+            assertThat(quotas).as("quota of plan %s", name).hasSize(2);
             assertThat(quotas).extracting(q -> q.getQuotaType())
                 .containsExactlyInAnyOrder(QuotaType.ASSESSMENT, QuotaType.PRACTICE);
             // The two kinds receive EQUAL amounts -- the two wallets cannot be spent across, so a
             // skewed ratio makes one wallet run out early while the other is untouched.
             for (SubscriptionPlanQuota quota : quotas) {
                 assertThat(quota.getIncludedAmountVnd())
-                    .as("hạn mức %s của gói %s", quota.getQuotaType(), name)
+                    .as("quota %s of plan %s", quota.getQuotaType(), name)
                     .isEqualByComparingTo(expectedQuotaVnd);
             }
         });
@@ -126,9 +126,9 @@ class SubscriptionPlanInitializerTests {
 
         EXPECTED_PRICE_VND.forEach((name, price) -> {
             SubscriptionPlan plan = byName.get(name);
-            assertThat(plan).as("gói %s", name).isNotNull();
+            assertThat(plan).as("plan %s", name).isNotNull();
             assertThat(plan.getPriceVnd())
-                .as("giá gói %s", name)
+                .as("price of plan %s", name)
                 .isEqualByComparingTo(BigDecimal.valueOf(price));
 
             // The price must NOT follow the quota: selling at exactly the AI cost would put the
@@ -136,7 +136,7 @@ class SubscriptionPlanInitializerTests {
             // subscription flow.
             BigDecimal quotaVnd = BigDecimal.valueOf(EXPECTED_QUOTA_USD.get(name)).multiply(USD_TO_VND);
             assertThat(plan.getPriceVnd())
-                .as("gói %s phải bán rẻ hơn hẳn hạn mức nó cấp", name)
+                .as("plan %s must sell far cheaper than the quota it grants", name)
                 .isLessThan(quotaVnd);
         });
     }
@@ -147,7 +147,7 @@ class SubscriptionPlanInitializerTests {
 
         initializer.run(new DefaultApplicationArguments());
 
-        assertThat(activePlansByName()).as("chạy lại không được nhân đôi danh mục").hasSize(before);
+        assertThat(activePlansByName()).as("running again must not double the catalog").hasSize(before);
     }
 
     @Test
@@ -166,7 +166,7 @@ class SubscriptionPlanInitializerTests {
             BigDecimal cheaper = byName.get(ladder[i - 1]).getPriceVnd();
             BigDecimal pricier = byName.get(ladder[i]).getPriceVnd();
             assertThat(pricier)
-                .as("%s phải đắt hơn %s", ladder[i], ladder[i - 1])
+                .as("%s must be more expensive than %s", ladder[i], ladder[i - 1])
                 .isGreaterThan(cheaper);
         }
     }

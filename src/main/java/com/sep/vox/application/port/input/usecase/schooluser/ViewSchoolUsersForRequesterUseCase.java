@@ -69,10 +69,10 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
 
     private void requireCallerBelongsToSchool(UUID callerId, UUID schoolId) {
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+            throw new UnauthorizedException("The user status is invalid");
         }
         if (!schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
+            throw new ForbiddenException("The access permission is invalid");
         }
     }
 
@@ -89,7 +89,7 @@ public class ViewSchoolUsersForRequesterUseCase implements IUseCase<ViewSchoolUs
             .filter(r -> "TEACHER".equals(r.roleCode()))
             .map(r -> r.roleId())
             .findFirst()
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
+            .orElseThrow(() -> new ForbiddenException("The access permission is invalid"));
         return new RoleFilter(teacherRoleId, callerId);
     }
 

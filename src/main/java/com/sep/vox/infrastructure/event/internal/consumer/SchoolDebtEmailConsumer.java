@@ -39,10 +39,10 @@ import com.sep.vox.domain.repository.UserRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Mail cho 3 sự kiện nợ hạn mức AI (mục 13, AI_USAGE_QUOTA_USD_MIGRATION.md), mirror đúng cách
- * {@link InvoiceEmailConsumer} tách riêng consumer group mail khỏi consumer group in-app
- * ({@link NotificationPushedEventConsumer}) trên CÙNG topic {@code school-debt}. Người nhận lấy
- * thẳng từ payload (đã chốt lúc publish), không truy vấn lại.
+ * Emails for the 3 AI quota debt events (section 13, AI_USAGE_QUOTA_USD_MIGRATION.md), mirroring the way
+ * {@link InvoiceEmailConsumer} separates the mail consumer group from the in-app consumer group
+ * ({@link NotificationPushedEventConsumer}) on the SAME topic {@code school-debt}. Recipients are taken
+ * straight from the payload (fixed at publish time), not queried again.
  */
 @Component
 @RequiredArgsConstructor
@@ -100,7 +100,7 @@ public class SchoolDebtEmailConsumer {
     }
 
     private void skipWithoutRecipients(UUID eventId, String eventType, Acknowledgment ack) {
-        log.warn("Skip mail, không có người nhận: eventId={}, eventType={}", eventId, eventType);
+        log.warn("Skip mail, no recipient: eventId={}, eventType={}", eventId, eventType);
         markProcessed(eventId);
         ack.acknowledge();
     }
@@ -110,7 +110,7 @@ public class SchoolDebtEmailConsumer {
 
         if (failed > 0) {
             throw new IllegalStateException(
-                "Gửi mail nợ hạn mức thất bại cho " + failed + " người nhận: eventId=" + eventId);
+                "Failed to send the quota debt email to " + failed + " recipients: eventId=" + eventId);
         }
 
         markProcessed(eventId);
@@ -130,7 +130,7 @@ public class SchoolDebtEmailConsumer {
         for (UUID recipientId : mail.recipientIds()) {
             User recipient = userRepository.findById(recipientId).orElse(null);
             if (recipient == null) {
-                log.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
+                log.warn("Skipping a recipient that no longer exists: eventId={}, userId={}", eventId, recipientId);
                 continue;
             }
             try {
@@ -151,7 +151,7 @@ public class SchoolDebtEmailConsumer {
             case EventTypeConstant.SCHOOL_SUBSCRIPTION_SUSPENDED -> renderSuspendedMail(value, eventId);
             case EventTypeConstant.SCHOOL_SUBSCRIPTION_UNSUSPENDED -> renderUnsuspendedMail(value, eventId);
             default -> throw new IllegalStateException(
-                "eventType không được xử lý: eventId=" + eventId + ", eventType=" + eventType);
+                "Unhandled eventType: eventId=" + eventId + ", eventType=" + eventType);
         };
     }
 
@@ -159,7 +159,7 @@ public class SchoolDebtEmailConsumer {
         SchoolDebtCapExceededPayloadV1 payload = parse(value, SchoolDebtCapExceededPayloadV1.class, eventId);
         return new Mail(
             payload.systemAdminIds(),
-            "Cảnh báo: nợ hạn mức AI vượt trần",
+            "Warning: AI quota debt exceeds the cap",
             renderCapExceeded(payload, eventId)
         );
     }
@@ -168,7 +168,7 @@ public class SchoolDebtEmailConsumer {
         SchoolLockedDueToDebtPayloadV1 payload = parse(value, SchoolLockedDueToDebtPayloadV1.class, eventId);
         return new Mail(
             payload.schoolAdminIds(),
-            "Trường đang bị khóa do nợ hạn mức AI",
+            "The school is locked due to AI quota debt",
             mailTemplatePort.renderSchoolLockedDueToDebtEmail(schoolNameOf(payload.schoolId(), eventId))
         );
     }
@@ -177,7 +177,7 @@ public class SchoolDebtEmailConsumer {
         SchoolDebtClearedPayloadV1 payload = parse(value, SchoolDebtClearedPayloadV1.class, eventId);
         return new Mail(
             payload.schoolAdminIds(),
-            "Trường đã hết nợ hạn mức AI",
+            "The school has cleared its AI quota debt",
             mailTemplatePort.renderSchoolDebtClearedEmail(schoolNameOf(payload.schoolId(), eventId))
         );
     }
@@ -186,7 +186,7 @@ public class SchoolDebtEmailConsumer {
         SchoolSubscriptionSuspendedPayloadV1 payload = parse(value, SchoolSubscriptionSuspendedPayloadV1.class, eventId);
         return new Mail(
             payload.schoolAdminIds(),
-            "Gói subscription bị đình chỉ",
+            "Subscription plan suspended",
             mailTemplatePort.renderSchoolSubscriptionSuspendedEmail(
                 schoolNameOf(payload.schoolId(), eventId), payload.reason())
         );
@@ -196,7 +196,7 @@ public class SchoolDebtEmailConsumer {
         SchoolSubscriptionUnsuspendedPayloadV1 payload = parse(value, SchoolSubscriptionUnsuspendedPayloadV1.class, eventId);
         return new Mail(
             payload.schoolAdminIds(),
-            "Gói subscription đã được gỡ đình chỉ",
+            "Subscription plan unsuspended",
             mailTemplatePort.renderSchoolSubscriptionUnsuspendedEmail(schoolNameOf(payload.schoolId(), eventId))
         );
     }
@@ -221,7 +221,7 @@ public class SchoolDebtEmailConsumer {
         return schoolRepository.findById(schoolId)
             .map(school -> school.getName())
             .orElseThrow(() -> new IllegalStateException(
-                "Không tìm thấy trường: eventId=" + eventId + ", schoolId=" + schoolId));
+                "School not found: eventId=" + eventId + ", schoolId=" + schoolId));
     }
 
     private String quotaLabel(QuotaType quotaType) {
@@ -229,13 +229,13 @@ public class SchoolDebtEmailConsumer {
             return "--";
         }
         return switch (quotaType) {
-            case ASSESSMENT -> "Bài kiểm tra";
-            case PRACTICE -> "Lượt ôn luyện cá nhân";
+            case ASSESSMENT -> "Assessment";
+            case PRACTICE -> "Personal practice session";
         };
     }
 
-    // Làm tròn về ĐỒNG trước khi hiện: nợ được lưu ở scale 6 để không mất khoản lẻ lúc cộng dồn,
-    // nhưng "12.345,678901 ₫" trong email gửi admin thì chỉ gây khó đọc.
+    // Round to the DONG before showing: debt is stored at scale 6 so no fractions are lost when accumulating,
+    // but "12.345,678901 ₫" in an email sent to the admin is just hard to read.
     private String formatVnd(BigDecimal amountVnd) {
         return amountVnd == null
             ? "--"
@@ -246,7 +246,7 @@ public class SchoolDebtEmailConsumer {
         try {
             return jsonMapper.readValue(value, type);
         } catch (Exception e) {
-            throw new IllegalStateException("Payload sai định dạng: eventId=" + eventId, e);
+            throw new IllegalStateException("Malformed payload: eventId=" + eventId, e);
         }
     }
 

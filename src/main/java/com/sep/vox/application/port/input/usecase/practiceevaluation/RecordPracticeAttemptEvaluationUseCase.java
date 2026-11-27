@@ -69,7 +69,7 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
                 : criterion.criterionCode().trim().toUpperCase(Locale.ROOT);
             if (code.isBlank()) {
                 log.warn(
-                    "Bỏ qua một tiêu chí không có mã ở bản chấm luyện tập {}",
+                    "Skipping a criterion without a code in practice grading result {}",
                     input.practiceResponseId()
                 );
                 continue;
@@ -89,15 +89,15 @@ public class RecordPracticeAttemptEvaluationUseCase implements IUseCase<RecordPr
             if (sessionId == null) {
                 return;
             }
-            // MỘT câu UPDATE, không nạp entity rồi save lại -- xem chú thích dài ở
-            // SpringDataPracticeSessionRepository.refreshOverallScore. Tóm tắt: save() ghi đè
-            // cả dòng nên có thể xoá mất graded_seconds mà lượt nộp song song vừa cộng vào,
-            // và nó giữ khoá dòng tới cuối transaction dài này khiến claim() phải xếp hàng.
+            // ONE UPDATE statement, not loading the entity and saving it back -- see the long note at
+            // SpringDataPracticeSessionRepository.refreshOverallScore. In short: save() overwrites the whole row, so it
+            // could wipe graded_seconds that a parallel submission just added, and it holds the row lock until the end
+            // of this long transaction, making claim() queue up.
             practiceSessionRepository.refreshOverallScore(sessionId);
         } catch (RuntimeException exception) {
-            // Điểm đã chấm là dữ liệu chính; tổng hợp lại điểm phiên là phần phái sinh, lần
-            // chấm sau bù được. Không để nó kéo đổ cả việc ghi bản chấm.
-            log.warn("Không tính lại được điểm phiên từ response {}.", responseId, exception);
+            // The graded score is the primary data; recomputing the session score is derived, and the next grading
+            // makes up for it. Do not let it bring down the writing of the grading result.
+            log.warn("Could not recalculate the session score from response {}.", responseId, exception);
         }
     }
 

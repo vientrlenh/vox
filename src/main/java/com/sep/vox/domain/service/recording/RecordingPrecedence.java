@@ -19,11 +19,11 @@ public final class RecordingPrecedence {
     }
 
     /**
-     * Nguồn nào đáng tin hơn khi một phiên thi có nhiều bản ghi. Rank cao hơn thì được chọn làm
-     * bản chuẩn.
+     * Which source is more trustworthy when an assessment session has several recordings. A higher rank is chosen as
+     * the canonical recording.
      *
-     * <p>SERVER_WATCHDOG xếp cuối vì đó là ca duy nhất không ai xác nhận stream kết thúc sạch:
-     * nó ghép những gì đã nhận được từ một client đã im lặng, nên độ đầy đủ là không xác định.
+     * <p>SERVER_WATCHDOG ranks last because it is the only case where nobody confirmed the stream ended cleanly:
+     * it stitches together what was received from a client that went silent, so completeness is undetermined.
      */
     private static final Map<String, Integer> SOURCE_RANK = Map.of(
         "DESKTOP_SEGMENT_UPLOAD", 3,
@@ -32,15 +32,15 @@ public final class RecordingPrecedence {
     );
 
     /**
-     * Nguồn không rõ hoặc null xếp dưới mọi nguồn đã biết. Các hàng ghi trước khi có cột source
-     * rơi vào nhóm này: chúng vẫn hiện ra và vẫn mở được, chỉ không được ưu tiên làm bản chuẩn
-     * khi đã có một bản biết rõ mình từ đâu.
+     * An unknown or null source ranks below every known source. Rows written before the source column existed
+     * fall into this group: they still show up and can still be opened, they are just not preferred as the canonical
+     * recording once there is one whose origin is known.
      */
     public static int rankOf(String source) {
         return source == null ? 0 : SOURCE_RANK.getOrDefault(source, 0);
     }
 
-    /** Trạng thái mà bản ghi thực sự trỏ tới một file mở được. */
+    /** Statuses in which the record really points at a file that can be opened. */
     public static boolean hasRecording(AssessmentRecordingAssemblyStatus status) {
         return status == AssessmentRecordingAssemblyStatus.READY
             || status == AssessmentRecordingAssemblyStatus.PARTIAL;
@@ -54,22 +54,22 @@ public final class RecordingPrecedence {
     }
 
     /**
-     * Thứ tự chọn bản chuẩn: có file mở được trước, rồi mới tới độ tin cậy của nguồn. Bản lớn
-     * nhất theo thứ tự này là bản chuẩn của nhóm.
+     * The order for choosing the canonical recording: one with an openable file first, then the reliability of the source. The
+     * largest in this order is the canonical recording of the group.
      *
-     * <p>Vế đầu phải đứng trước vế sau: một FAILED từ nguồn ưu tiên cao không được làm bản chuẩn
-     * khi vẫn còn một READY từ nguồn thấp hơn. Một cái nhãn hỏng không hơn được một file xem được.
+     * <p>The first clause must come before the second: a FAILED from a high-priority source must not become the canonical one
+     * while a READY from a lower source still exists. A broken label does not beat a viewable file.
      */
     public static final Comparator<AssessmentRecording> CANONICAL_ORDER =
         Comparator.<AssessmentRecording, Boolean>comparing(recording -> hasRecording(recording.getStatus()))
             .thenComparingInt(recording -> rankOf(recording.getSource()));
 
     /**
-     * Có nên giữ nguyên hàng hiện có và bỏ qua event vừa tới hay không.
+     * Whether to keep the existing row and ignore the event that just arrived.
      *
-     * <p>Chỉ còn là luật trong phạm vi một hàng: từ khi source là một phần khoá tra cứu, hai vế
-     * luôn thuộc cùng một nguồn, nên ở đây không còn chuyện nguồn này ghi đè nguồn kia. Việc so
-     * sánh giữa các nguồn đã chuyển sang {@link #CANONICAL_ORDER} ở đường đọc.
+     * <p>Now only a rule within a single row: since source became part of the lookup key, both sides
+     * always belong to the same source, so there is no more case of one source overwriting another. The comparison
+     * across sources moved to {@link #CANONICAL_ORDER} on the read path.
      */
     public static boolean shouldKeepExisting(
         AssessmentRecordingAssemblyStatus existingStatus,
@@ -78,11 +78,11 @@ public final class RecordingPrecedence {
         if (!isTerminal(existingStatus)) {
             return false;
         }
-        // Không hạ cấp một kết quả cuối về lại "đang xử lý".
+        // Do not downgrade a final result back to "processing".
         if (incomingStatus == AssessmentRecordingAssemblyStatus.PROCESSING) {
             return true;
         }
-        // Một thất bại không được xoá một bản ghi đang dùng được bằng cái nhãn hỏng của chính nó.
+        // A failure must not erase a usable record with its own broken label.
         return hasRecording(existingStatus) && !hasRecording(incomingStatus);
     }
 }

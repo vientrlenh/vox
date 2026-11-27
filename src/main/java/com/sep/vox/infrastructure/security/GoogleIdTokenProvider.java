@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.security;
 
+import java.net.URL;
 import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
@@ -21,18 +22,18 @@ import com.sep.vox.application.response.output.VerifiedGoogleIdentity;
 import com.sep.vox.infrastructure.properties.GoogleIdTokenProperties;
 
 /**
- * Kiểm chứng ID token Google bằng {@link NimbusJwtDecoder}, không bằng thư viện của Google.
+ * Verifies a Google ID token with {@link NimbusJwtDecoder}, not with Google's library.
  *
- * <p>Lý do chọn Nimbus: nó đã có sẵn trên classpath qua {@code spring-boot-starter-oauth2-client}
- * -- cùng thư viện mà chính luồng redirect của web đang dùng để kiểm token. Bản của Google
- * ({@code GoogleIdTokenVerifier}) chỉ tới đây theo đường phụ thuộc BẮC CẦU của
- * {@code firebase-admin}, tức là một thứ có thể biến mất trong một lần nâng phiên bản firebase mà
- * không ai đọc changelog -- và thứ biến mất khi đó là cửa xác thực.
+ * <p>Why Nimbus: it is already on the classpath through {@code spring-boot-starter-oauth2-client}
+ * -- the same library that the web redirect flow itself uses to verify tokens. Google's version
+ * ({@code GoogleIdTokenVerifier}) only arrives here through a BRIDGING dependency of
+ * {@code firebase-admin}, meaning something that could disappear in a firebase version upgrade
+ * without anyone reading the changelog -- and what would disappear then is the authentication gate.
  *
- * <p>Bộ khoá công khai của Google xoay định kỳ; {@code NimbusJwtDecoder} tự tải lại và tự cache nên
- * ở đây không có gì phải làm thêm. Decoder dựng MỘT LẦN trong constructor chứ không mỗi lần gọi:
- * dựng lại mỗi request nghĩa là tải lại JWK set mỗi lần đăng nhập, biến mỗi lần bấm nút thành một
- * vòng mạng ra ngoài internet.
+ * <p>Google's public key set rotates periodically; {@code NimbusJwtDecoder} reloads and caches it by itself so
+ * nothing more needs to be done here. The decoder is built ONCE in the constructor and not on each call:
+ * rebuilding on every request means reloading the JWK set on every login, turning every button press into
+ * a network round trip out to the internet.
  */
 @Component
 @Slf4j
@@ -55,11 +56,11 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
         // The real rejection lives in verify(), where a real person is trying to log in and can be told about the error.
         if (allowedAudiences.isEmpty()) {
             log.warn(
-                "app.oauth2.google.allowed-audiences đang trống -- đăng nhập Google từ ứng dụng "
-                    + "native (Flutter/WPF) sẽ bị từ chối toàn bộ. Đặt biến môi trường "
-                    + "GOOGLE_ALLOWED_AUDIENCES gồm client ID WEB (Flutter gửi cái này qua "
-                    + "serverClientId) và client ID DESKTOP (WPF). Luồng đăng nhập Google của web "
-                    + "KHÔNG bị ảnh hưởng.");
+                "app.oauth2.google.allowed-audiences is empty -- Google sign-in from native apps "
+                    + "(Flutter/WPF) will be rejected entirely. Set the environment variable "
+                    + "GOOGLE_ALLOWED_AUDIENCES to include the WEB client ID (Flutter sends this through "
+                    + "serverClientId) and the DESKTOP client ID (WPF). The web Google sign-in flow "
+                    + "is NOT affected.");
         }
 
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(properties.jwkSetUri()).build();
@@ -82,28 +83,28 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
     @Override
     public VerifiedGoogleIdentity verify(String idToken) {
         if (idToken == null || idToken.isBlank()) {
-            throw new UnauthorizedException("Đăng nhập Google thất bại");
+            throw new UnauthorizedException("Google sign-in failed");
         }
 
         if (allowedAudiences.isEmpty()) {
             log.error(
-                "Từ chối đăng nhập Google: app.oauth2.google.allowed-audiences chưa được cấu hình.");
-            throw new UnauthorizedException("Đăng nhập Google chưa được cấu hình trên hệ thống");
+                "Rejected Google sign-in: app.oauth2.google.allowed-audiences is not configured.");
+            throw new UnauthorizedException("Google sign-in is not configured on the system");
         }
 
         Jwt jwt;
         try {
             jwt = jwtDecoder.decode(idToken);
         } catch (JwtException e) {
-            log.warn("ID token Google không hợp lệ: {}", e.getMessage());
-            throw new UnauthorizedException("Đăng nhập Google thất bại");
+            log.warn("Invalid Google ID token: {}", e.getMessage());
+            throw new UnauthorizedException("Google sign-in failed");
         }
 
         String email = jwt.getClaimAsString(CLAIM_EMAIL);
         if (email == null || email.isBlank()) {
             // The token is valid but carries no email scope, so there is nothing to look the user up with.
-            log.warn("ID token Google hợp lệ nhưng thiếu claim email -- client thiếu scope?");
-            throw new UnauthorizedException("Đăng nhập Google thất bại");
+            log.warn("Valid Google ID token but missing the email claim -- is the client missing a scope?");
+            throw new UnauthorizedException("Google sign-in failed");
         }
 
         return new VerifiedGoogleIdentity(
@@ -132,46 +133,46 @@ public class GoogleIdTokenProvider implements GoogleIdTokenVerifierPort {
     }
 
     /**
-     * Google phát {@code iss} theo hai dạng cho cùng một token, có và không có {@code https://}.
+     * Google issues {@code iss} in two forms for the same token, with and without {@code https://}.
      *
-     * <p>Vì thế không dùng được {@code JwtIssuerValidator} của Spring: nó nhận đúng MỘT giá trị, và
-     * chọn dạng nào cũng từ chối phân nửa số token thật.
+     * <p>So Spring's {@code JwtIssuerValidator} cannot be used: it accepts exactly ONE value, and
+     * whichever form is chosen it rejects half of the real tokens.
      *
-     * <p>Đọc claim thô bằng {@code getClaimAsString} chứ KHÔNG bằng {@code jwt.getIssuer()}.
-     * {@code getIssuer()} trả về {@link java.net.URL} nên nó ném
-     * {@code IllegalArgumentException: Unable to convert claim 'iss' ... to URL} với đúng cái dạng
-     * {@code accounts.google.com} (không có scheme) mà hàm này sinh ra để chấp nhận -- tức là phép
-     * kiểm sẽ nổ ở chính ca nó tồn tại để xử lý. {@code getClaimAsString} không đụng tới URL nên
-     * đúng với cả hai dạng.
+     * <p>Reads the raw claim with {@code getClaimAsString} and NOT with {@code jwt.getIssuer()}.
+     * {@code getIssuer()} returns a {@link URL} so it throws
+     * {@code IllegalArgumentException: Unable to convert claim 'iss' ... to URL} on exactly the form
+     * {@code accounts.google.com} (no scheme) that this function exists to accept -- i.e. the
+     * check would blow up in the very case it exists to handle. {@code getClaimAsString} does not touch URL so it is
+     * correct for both forms.
      *
-     * <p>Để mức gói (không private) để test gọi thẳng được: dựng một {@link Jwt} bằng builder rẻ hơn
-     * nhiều so với ký thật một token và host một JWK set chỉ để chốt một phép so chuỗi.
+     * <p>Package-private (not private) so tests can call it directly: building a {@link Jwt} with a builder is much cheaper
+     * than really signing a token and hosting a JWK set just to pin down a string comparison.
      */
     static OAuth2TokenValidator<Jwt> issuerValidator(List<String> allowedIssuers) {
         return jwt -> allowedIssuers.contains(jwt.getClaimAsString(JwtClaimNames.ISS))
             ? OAuth2TokenValidatorResult.success()
             : OAuth2TokenValidatorResult.failure(
-                new OAuth2Error("invalid_issuer", "ID token không do Google phát hành", null));
+                new OAuth2Error("invalid_issuer", "The ID token was not issued by Google", null));
     }
 
     /**
-     * Phép kiểm QUAN TRỌNG NHẤT của lớp này.
+     * The MOST IMPORTANT check of this class.
      *
-     * <p>Ba phép kiểm kia (chữ ký, iss, hạn dùng) chỉ trả lời "Google có thật sự phát token này
-     * không". Chúng KHÔNG trả lời "Google phát nó cho ỨNG DỤNG NÀO". Thiếu phép kiểm aud, một ID
-     * token hoàn toàn thật mà Google cấp cho một app bất kỳ của một lập trình viên bất kỳ sẽ qua
-     * được cửa này -- nghĩa là bất kỳ ai cũng đăng nhập được vào bất kỳ tài khoản nào, chỉ cần biết
-     * email. Đây là lỗ hổng kinh điển của kiểu đăng nhập "gửi ID token lên server".
+     * <p>The other three checks (signature, iss, expiry) only answer "did Google really issue this token".
+     * They do NOT answer "which APP did Google issue it for". Without the aud check, a completely genuine ID
+     * token that Google issued to ANY app of ANY developer would pass this gate
+     * -- meaning anyone could sign in to any account, as long as they know the
+     * email. This is the classic hole of the "send the ID token to the server" style of sign-in.
      *
-     * <p>Mức gói, cùng lý do với {@link #issuerValidator(List)} -- và ở đây thì càng đáng: đây là
-     * phép kiểm mà một bản refactor vô tình làm hỏng sẽ không gây ra triệu chứng nào cả. Mọi lần
-     * đăng nhập thật vẫn chạy đúng; chỉ có cửa là mở toang.
+     * <p>Package-private, same reason as {@link #issuerValidator(List)} -- and even more so here: this is
+     * a check that an accidental refactor can break without causing any symptom. Every real
+     * sign-in still works correctly; only the gate is wide open.
      */
     static OAuth2TokenValidator<Jwt> audienceValidator(List<String> allowedAudiences) {
         return jwt -> jwt.getAudience() != null
                 && jwt.getAudience().stream().anyMatch(allowedAudiences::contains)
             ? OAuth2TokenValidatorResult.success()
             : OAuth2TokenValidatorResult.failure(
-                new OAuth2Error("invalid_audience", "ID token không dành cho ứng dụng này", null));
+                new OAuth2Error("invalid_audience", "The ID token is not intended for this application", null));
     }
 }

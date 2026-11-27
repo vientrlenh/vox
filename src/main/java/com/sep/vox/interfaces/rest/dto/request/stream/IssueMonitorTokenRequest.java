@@ -8,10 +8,10 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record IssueMonitorTokenRequest(
-    @NotNull(message = "Id của kỳ thi là bắt buộc")
+    @NotNull(message = "Assessment ID is required")
     UUID assessmentId,
 
-    @NotNull(message = "Danh sách lịch thi là bắt buộc")
+    @NotNull(message = "Schedule list is required")
     List<UUID> scheduleIds
 ) {
 

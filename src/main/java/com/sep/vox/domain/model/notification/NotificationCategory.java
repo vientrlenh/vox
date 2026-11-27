@@ -15,13 +15,12 @@ public enum NotificationCategory {
     SYSTEM;
 
     /**
-     * Cầu nối giữa {@code eventType} của outbox và nhóm tuỳ chọn nhận thông báo.
+     * Bridge between the outbox {@code eventType} and the notification preference group.
      *
-     * <p>Chỉ chứa những eventType thực sự sinh notification. Các loại vắng mặt đều có chủ
-     * ý: {@code UserCreated} và {@code RegisterFormRejected} gửi tới người chưa từng đăng
-     * nhập, còn hai event OTP thì gửi tới người đang đứng ngoài phiên đăng nhập. Cả bốn
-     * đều chưa có thiết bị nào để đẩy -- xem consumer-groups.notification.topic trong
-     * application.yaml, nơi các topic đó cũng không được đăng ký.
+     * <p>Contains only the eventTypes that really produce a notification. The absent ones are absent on purpose:
+     * {@code UserCreated} and {@code RegisterFormRejected} go to people who have never logged in, and the two OTP
+     * events go to people who are outside a login session. None of the four has a device to push to -- see
+     * consumer-groups.notification.topic in application.yaml, where those topics are not registered either.
      */
     private static final Map<String, NotificationCategory> BY_EVENT_TYPE = Map.ofEntries(
         Map.entry(EventTypeConstant.ASSESSMENT_APPEAL_PUBLISHED, ASSESSMENT_APPEAL),
@@ -53,15 +52,15 @@ public enum NotificationCategory {
     );
 
     /**
-     * @throws IllegalArgumentException khi eventType chưa được khai báo. Ném thay vì trả
-     *         về SYSTEM: một eventType lạ nghĩa là ai đó thêm event mới mà quên ánh xạ,
-     *         và nuốt lỗi ở đây sẽ biến nó thành thông báo sai nhóm -- người dùng đã tắt
-     *         nhóm đó vẫn bị làm phiền, còn lập trình viên thì không hề hay biết.
+     * @throws IllegalArgumentException when the eventType is not declared. Thrown instead of returning SYSTEM: an
+     *         unknown eventType means someone added a new event and forgot the mapping, and swallowing the error here
+     *         would turn it into a notification of the wrong group -- users who turned that group off would still be
+     *         disturbed, and the developer would never know.
      */
     public static NotificationCategory of(String eventType) {
         NotificationCategory category = BY_EVENT_TYPE.get(eventType);
         if (category == null) {
-            throw new IllegalArgumentException("Chưa ánh xạ NotificationCategory cho eventType=" + eventType);
+            throw new IllegalArgumentException("No NotificationCategory mapping for eventType=" + eventType);
         }
         return category;
     }
@@ -70,7 +69,7 @@ public enum NotificationCategory {
         return BY_EVENT_TYPE.containsKey(eventType);
     }
 
-    /** Dùng cho validator lúc khởi động, xem NotificationCategoryMappingValidator. */
+    /** Used by the validator at startup, see NotificationCategoryMappingValidator. */
     public static Set<String> mappedEventTypes() {
         return BY_EVENT_TYPE.keySet();
     }

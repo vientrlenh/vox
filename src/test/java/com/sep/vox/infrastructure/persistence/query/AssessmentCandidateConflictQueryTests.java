@@ -24,10 +24,10 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Câu truy vấn phát hiện học sinh bị xếp hai ca thi trùng giờ.
+ * The query that detects a student scheduled into two assessment slots that overlap in time.
  *
- * <p>Chạy trên Postgres thật vì JPQL trả {@code List<Object[]>} với join không mapping —
- * compiler không kiểm được gì, và biên nửa mở {@code [start, end)} là chỗ rất dễ sai.
+ * <p>Runs on a real Postgres because the JPQL returns {@code List<Object[]>} with an unmapped join --
+ * the compiler checks nothing, and the half-open boundary {@code [start, end)} is very easy to get wrong.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
@@ -43,7 +43,7 @@ class AssessmentCandidateConflictQueryTests {
     private final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
     private final UUID schoolId = UUID.randomUUID();
 
-    /** Khung giờ đang được cân nhắc xếp học sinh vào: 08:00–10:00. */
+    /** The time window under consideration for placing the student: 08:00-10:00. */
     private Instant windowStart;
     private Instant windowEnd;
 

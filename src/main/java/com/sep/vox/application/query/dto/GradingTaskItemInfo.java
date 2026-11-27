@@ -7,15 +7,15 @@ import java.util.UUID;
 import com.sep.vox.domain.dto.QuestionAssetDto;
 
 /**
- * MỘT CÂU HỎI cần chấm: lượt nói để nghe, điểm đang có hiệu lực để tham chiếu, và
- * bằng chứng của bản AI để giáo viên chấm trên cùng dữ liệu mà AI đã dùng.
+ * ONE QUESTION to grade: the speaking turn to listen to, the score currently in effect for reference,
+ * and the evidence of the AI grade so the teacher grades on the same data the AI used.
  *
- * <p>{@code partLabel} là tiêu đề section nên nhiều câu dùng chung một nhãn —
- * {@code sectionId} + {@code orderInSection} là thứ phân biệt chúng.
+ * <p>{@code partLabel} is the section title, so many questions share one label --
+ * {@code sectionId} + {@code orderInSection} is what tells them apart.
  *
- * <p>Các trường {@code ai*} lấy từ bản AI, KHÔNG phải bản đang hiệu lực: sau khi chấm
- * tay, bản hiệu lực là bản HUMAN (không có turn/signals/rationale của AI) nhưng vòng
- * phúc khảo vẫn phải đọc được bằng chứng gốc. Bài chưa có bản AI thì để null/false/rỗng.
+ * <p>The {@code ai*} fields come from the AI grade, NOT the grade in effect: after manual grading the
+ * effective grade is the HUMAN one (without the AI's turn/signals/rationale), but the appeal round must
+ * still be able to read the original evidence. A submission without an AI grade leaves null/false/empty.
  */
 public record GradingTaskItemInfo(
     UUID paperItemId,
@@ -37,16 +37,17 @@ public record GradingTaskItemInfo(
      */
     String questionText,
     /**
-     * Tài nguyên đi kèm câu hỏi (ảnh / audio / video / đoạn văn), {@code null} khi câu không có.
+     * The resource that comes with the question (image / audio / video / passage), {@code null} when the question has none.
      *
-     * <p>Thiếu trường này thì giáo viên chấm một câu tả tranh chỉ thấy đề bài
-     * "Describe the picture." cùng transcript của thí sinh, mà KHÔNG có tấm ảnh — không có cách
-     * nào biết thí sinh tả đúng hay bịa. Với câu nghe còn nặng hơn: không nghe được đoạn thí sinh
-     * đã nghe thì không chấm nổi phần nội dung.
+     * <p>Without this field, a teacher grading a describe-the-picture question sees only the prompt
+     * "Describe the picture." and the candidate's transcript, WITHOUT the picture -- no way to tell
+     * whether the candidate described it correctly or made it up. For a listening question it is worse:
+     * if the teacher cannot hear the passage the candidate heard, the content part cannot be graded.
      *
-     * <p>Quan trọng hơn kể từ khi AI chỉ biết asset qua {@code transcript}/{@code description} do
-     * người soạn gõ: con người là lớp kiểm tra cuối cho đúng loại sai sót đó, mà lớp đó đang bị
-     * bịt mắt. Đây cũng là chỗ duy nhất phát hiện được ca asset hỏng không phát được ở máy thí sinh.
+     * <p>It matters even more since the AI only knows the asset through the {@code transcript}/{@code description}
+     * typed by the author: a human is the last line of defense against exactly that kind of mistake, and
+     * that line is blindfolded. This is also the only place that can detect a broken asset that does not
+     * play on the candidate's machine.
      */
     QuestionAssetDto asset,
     BigDecimal currentItemScore,

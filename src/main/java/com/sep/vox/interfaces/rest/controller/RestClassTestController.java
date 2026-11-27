@@ -64,7 +64,7 @@ public class RestClassTestController {
     public ResponseEntity<ApiResponse<CreateClassTestResponse>> create(@Valid @RequestBody CreateClassTestRequest request) {
         CreateClassTestResponse data = createClassTestUseCase.execute(CreateClassTestRequest.toCommand(request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo bài kiểm tra trên lớp thành công", data));
+            .body(ApiResponse.success("Class test created successfully", data));
     }
 
     @PutMapping("/{assessmentId}")
@@ -73,7 +73,7 @@ public class RestClassTestController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody UpdateAssessmentRequest request) {
         AssessmentDto data = updateAssessmentUseCase.execute(UpdateAssessmentRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật bài kiểm tra trên lớp thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Class test updated successfully", data));
     }
 
     @PutMapping("/{assessmentId}/questions")
@@ -82,7 +82,7 @@ public class RestClassTestController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody UpdateClassTestQuestionsRequest request) {
         AssessmentDto data = updateClassTestQuestionsUseCase.execute(UpdateClassTestQuestionsRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật danh sách câu hỏi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Question list updated successfully", data));
     }
 
     @PatchMapping("/{assessmentId}/status")
@@ -91,14 +91,14 @@ public class RestClassTestController {
             @PathVariable("assessmentId") UUID assessmentId,
             @Valid @RequestBody UpdateAssessmentStatusRequest request) {
         AssessmentDto data = updateAssessmentStatusUseCase.execute(UpdateAssessmentStatusRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái bài kiểm tra trên lớp thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Class test status updated successfully", data));
     }
 
     @DeleteMapping("/{assessmentId}")
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<ApiResponse<DeleteAssessmentResponse>> delete(@PathVariable("assessmentId") UUID assessmentId) {
         DeleteAssessmentResponse data = deleteAssessmentUseCase.execute(new DeleteAssessmentCommand(assessmentId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa bài kiểm tra trên lớp thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Class test deleted successfully", data));
     }
 
     @PostMapping("/{assessmentId}/sections")
@@ -108,7 +108,7 @@ public class RestClassTestController {
             @Valid @RequestBody CreateClassTestSectionRequest request) {
         AssessmentDto data = createClassTestSectionUseCase.execute(CreateClassTestSectionRequest.toCommand(assessmentId, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo section thành công", data));
+            .body(ApiResponse.success("Section created successfully", data));
     }
 
     @PutMapping("/{assessmentId}/sections/{sectionId}")
@@ -120,7 +120,7 @@ public class RestClassTestController {
         AssessmentDto data = updateClassTestSectionUseCase.execute(
             UpdateClassTestSectionRequest.toCommand(assessmentId, sectionId, request)
         );
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật section thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Section updated successfully", data));
     }
 
     @DeleteMapping("/{assessmentId}/sections/{sectionId}")
@@ -129,7 +129,7 @@ public class RestClassTestController {
             @PathVariable("assessmentId") UUID assessmentId,
             @PathVariable("sectionId") UUID sectionId) {
         AssessmentDto data = deleteClassTestSectionUseCase.execute(new DeleteClassTestSectionCommand(assessmentId, sectionId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa section thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Section deleted successfully", data));
     }
 
     @PatchMapping("/{assessmentId}/blueprint")
@@ -138,13 +138,13 @@ public class RestClassTestController {
             @PathVariable("assessmentId") UUID assessmentId,
             @RequestBody ChangeClassTestBlueprintRequest request) {
         AssessmentDto data = changeClassTestBlueprintUseCase.execute(ChangeClassTestBlueprintRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint cho bài kiểm tra trên lớp thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Blueprint of the class test updated successfully", data));
     }
 
     /**
-     * Giáo viên tạo bài tự nhận chấm. Đặt ở đây thay vì nới quyền của
-     * {@code /api/v1/grading-assignments}: chỗ đó nới là mở cho mọi giáo viên trên mọi
-     * kỳ thi, còn ở đây phạm vi đóng đúng bằng bài mà người gọi làm CHAIR.
+     * A teacher creates a self-claimed grading. It is placed here instead of widening the permission of
+     * {@code /api/v1/grading-assignments}: widening it there would be open to every teacher on every
+     * assessment, while here the scope is closed to exactly the results where the caller is CHAIR.
      */
     @PostMapping("/{assessmentId}/grading/claim")
     @PreAuthorize("hasRole('TEACHER')")
@@ -153,6 +153,6 @@ public class RestClassTestController {
             @Valid @RequestBody ClaimClassTestGradingRequest request) {
         List<UUID> data = claimClassTestGradingUseCase.execute(
             ClaimClassTestGradingRequest.toCommand(assessmentId, request));
-        return ResponseEntity.ok(ApiResponse.success("Nhận chấm bài thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Grading claimed successfully", data));
     }
 }

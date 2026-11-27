@@ -49,7 +49,7 @@ public class LoginUseCase implements IUseCase<LoginCommand, LoginResponse> {
 
         UUID userId = authenticationManagerPort.setAuthenticationAndGetUserId(command.login(), command.password());
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         List<String> userRoles = getUserRoles(user.getId());
         

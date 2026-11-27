@@ -6,19 +6,19 @@ import java.util.UUID;
 
 import com.sep.vox.domain.model.assessment.AssessmentResultStatusHistory;
 
-/** Nhật ký đổi trạng thái bài thi — chỉ ghi thêm và đọc, không sửa, không xoá. */
+/** Log of assessment result status changes — append and read only, never edited or deleted. */
 public interface AssessmentResultStatusHistoryRepository {
 
     AssessmentResultStatusHistory save(AssessmentResultStatusHistory history);
 
     List<AssessmentResultStatusHistory> saveAll(List<AssessmentResultStatusHistory> histories);
 
-    /** Dòng thời gian của một bài, cũ trước — thứ tự đọc tự nhiên của người xem. */
+    /** Timeline of a result, oldest first — the natural reading order for a viewer. */
     List<AssessmentResultStatusHistory> findByCandidateResultIdOrderByCreatedAtAsc(UUID candidateResultId);
 
-    /** Batch cho màn danh sách; gọi một lần thay vì lặp từng bài. */
+    /** Batch for list screens; call once instead of looping per result. */
     List<AssessmentResultStatusHistory> findByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 
-    /** Chỉ dùng khi xoá hẳn phiên thi; không phải đường sửa nhật ký. */
+    /** Only used when an assessment session is deleted outright; not a way to edit the log. */
     void deleteByCandidateResultIdIn(Collection<UUID> candidateResultIds);
 }

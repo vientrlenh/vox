@@ -16,7 +16,7 @@ import com.sep.vox.domain.valueobject.rubric.RubricCriterionExamples;
 @RequiredArgsConstructor
 public class RubricCriterionExamplesNormalizer {
 
-    private static final String INVALID_FORMAT_MESSAGE = "Định dạng JSON của phần Examples không hợp lệ.";
+    private static final String INVALID_FORMAT_MESSAGE = "The JSON format of the Examples section is invalid.";
 
     private final JsonSerializationPort jsonSerializationPort;
 

@@ -9,12 +9,12 @@ public interface ExchangeRateSnapshotRepository {
     ExchangeRateSnapshot save(ExchangeRateSnapshot snapshot);
 
     /**
-     * Lần fetch gần nhất đã thành công CHO ĐÚNG ĐỒNG TIỀN NÀY -- rỗng nếu chưa có lần nào.
+     * The latest successful fetch FOR EXACTLY THIS CURRENCY -- empty if there has never been one.
      *
-     * <p>Bắt buộc lọc theo currencyCode chứ không lấy bừa bản ghi mới nhất: bảng lưu tỷ giá quy về VND
-     * của NHIỀU đồng tiền (cột currency_code), nên "mới nhất" không kèm điều kiện sẽ trả về đồng tiền
-     * nào vừa được job chạy sau cùng. Hôm nay chỉ có USD nên chưa sai, nhưng thêm đồng thứ hai là giá
-     * bán quota lặng lẽ nhảy sang tỷ giá của đồng đó -- không có lỗi nào báo ra.
+     * <p>Filtering by currencyCode is mandatory instead of taking the newest record blindly: the table stores rates converting to VND
+     * for MULTIPLE currencies (column currency_code), so "latest" without a condition returns whichever currency
+     * the job ran last. Today there is only USD so nothing is wrong yet, but once a second currency is added the quota
+     * selling price silently jumps to the rate of that currency -- no error is reported.
      */
     Optional<ExchangeRateSnapshot> findLatest(CurrencyCode currencyCode);
 }

@@ -133,8 +133,8 @@ public class GraphQLPracticePlanningController {
     }
 
     /**
-     * Query RIÊNG, không gộp vào searchPracticeTopics: hai nguồn chênh nhau hàng chục lần về độ
-     * trễ, nên client bắn song song rồi vẽ dần thay vì chờ cả hai.
+     * A SEPARATE query, not merged into searchPracticeTopics: the two sources differ by tens of times in
+     * latency, so the client fires them in parallel and draws progressively instead of waiting for both.
      */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -156,9 +156,9 @@ public class GraphQLPracticePlanningController {
     }
 
     /**
-     * Pha 1 của dựng đề 2 pha: khởi động rồi trả về ngay (READY nếu kho có sẵn câu, PREPARING
-     * nếu phải nhờ AI sinh). Việc dựng chạy trên executor riêng nên thread request + connection
-     * DB được trả về sớm thay vì bị giữ suốt 10-20s chờ LLM.
+     * Phase 1 of the 2-phase paper build: starts and returns immediately (READY if the bank already has questions,
+     * PREPARING if the AI must generate them). The build runs on a dedicated executor so the request thread + DB
+     * connection are returned early instead of being held for the 10-20s of waiting for the LLM.
      */
     @MutationMapping
     @PreAuthorize("hasRole('STUDENT')")
@@ -177,7 +177,7 @@ public class GraphQLPracticePlanningController {
         );
     }
 
-    /** Pha 2: client hỏi lại kết quả dựng đề đã khởi động ở pha 1. */
+    /** Phase 2: the client asks again for the result of the paper build started in phase 1. */
     @QueryMapping
     @PreAuthorize("hasRole('STUDENT')")
     public PracticePaperDraft practicePaperDraft(@Argument("draftId") UUID draftId) {

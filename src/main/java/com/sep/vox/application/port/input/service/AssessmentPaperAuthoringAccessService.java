@@ -35,22 +35,22 @@ public class AssessmentPaperAuthoringAccessService {
     private final UserRoleQueryRepository userRoleQueryRepository;
 
     /**
-     * @param schoolAdmin người gọi là quản trị trường <b>của chính trường kỳ thi</b> — quản trị trường
-     *                    khác trường không có quyền gì ở đây.
+     * @param schoolAdmin the caller is the school admin <b>of the assessment's own school</b> — a school admin
+     *                    of another school has no rights here.
      */
     public record PaperActor(boolean schoolAdmin, boolean chair, boolean author, boolean reviewer) {
 
-        /** Tạo mã đề, gán câu hỏi, sửa section, xoá mã đề. */
+        /** Create a paper, assign questions, edit a section, delete a paper. */
         public boolean canAuthor() {
             return schoolAdmin || chair || author;
         }
 
-        /** Duyệt / trả về sửa lại. Chủ tịch có toàn quyền của người duyệt. */
+        /** Approve / send back for rework. The chair has all the reviewer's rights. */
         public boolean canReview() {
             return schoolAdmin || chair || reviewer;
         }
 
-        /** Khoá / mở lại mã đề — bước quyết định cuối, không mở cho người ra đề lẫn người duyệt. */
+        /** Lock / reopen a paper — the final deciding step, not open to the author or the reviewer. */
         public boolean canDecide() {
             return schoolAdmin || chair;
         }
@@ -72,11 +72,11 @@ public class AssessmentPaperAuthoringAccessService {
         );
     }
 
-    /** Ném {@link ForbiddenException} nếu người gọi không được soạn nội dung mã đề của kỳ thi này. */
+    /** Throws {@link ForbiddenException} if the caller may not author the paper content of this assessment. */
     public PaperActor requireCanAuthor(Assessment assessment, UUID userId) {
         PaperActor actor = resolve(assessment, userId);
         if (!actor.canAuthor()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return actor;
     }

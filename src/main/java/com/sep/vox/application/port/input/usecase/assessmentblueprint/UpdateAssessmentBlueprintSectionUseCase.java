@@ -34,13 +34,13 @@ public class UpdateAssessmentBlueprintSectionUseCase implements IUseCase<UpdateA
         AssessmentBlueprintSection section = editable.section();
         AssessmentBlueprintVersion version = editable.version();
         if (version.getStatus() != AssessmentBlueprintVersionStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được sửa section khi version đang DRAFT");
+            throw new IllegalArgumentException("A section can only be edited while the version is DRAFT");
         }
 
         if (command.order() != section.getOrder()) {
             List<AssessmentBlueprintSection> siblings = assessmentBlueprintSectionRepository.findByBlueprintVersionId(version.getId());
             if (siblings.stream().anyMatch(s -> !s.getId().equals(section.getId()) && s.getOrder() == command.order())) {
-                throw new IllegalArgumentException("Thứ tự section đã tồn tại trong version này");
+                throw new IllegalArgumentException("The section order already exists in this version");
             }
         }
 

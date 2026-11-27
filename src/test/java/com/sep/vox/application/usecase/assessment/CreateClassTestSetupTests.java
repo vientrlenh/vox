@@ -61,8 +61,8 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 import com.sep.vox.domain.valueobject.ClassCode;
 
 /**
- * Bài kiểm tra trên lớp giờ đi cùng quy trình với kỳ thi tập trung: tạo bài chỉ dựng "vỏ" (chưa có
- * mã đề nào), còn soạn đề / chọn phòng / xếp ca / lên lịch là các bước riêng sau đó.
+ * A class test now follows the same workflow as a centralized assessment: creating it only builds the "shell" (no
+ * paper yet), while authoring the paper / choosing rooms / placing candidates / scheduling are separate steps afterwards.
  */
 class CreateClassTestSetupTests {
 
@@ -171,8 +171,8 @@ class CreateClassTestSetupTests {
     }
 
     /**
-     * Soi hạn gói theo trường của LỚP chứ không phải trường lấy từ token người gọi: giáo viên có thể
-     * dạy lớp thuộc trường khác, và bài kiểm tra tiêu quota của trường sở hữu lớp.
+     * The plan term is checked against the school of the CLASS, not the school taken from the caller's token: a teacher
+     * may teach a class that belongs to another school, and the assessment consumes the quota of the school that owns the class.
      */
     @Test
     void should_check_subscription_period_against_school_of_the_class() {
@@ -186,14 +186,14 @@ class CreateClassTestSetupTests {
 
     @Test
     void should_reject_when_window_falls_outside_subscription_period() {
-        doThrow(new IllegalArgumentException("Thời gian đóng bài phải nằm trong hạn gói dịch vụ của trường"))
+        doThrow(new IllegalArgumentException("The closing time must be within the school's subscription plan term"))
             .when(subscriptionPeriodGuardService).requireWithinSubscriptionPeriod(any(), any(), any());
 
         assertThatThrownBy(() -> useCase.execute(command(null, null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("hạn gói dịch vụ");
-        // Chặn trước khi dựng bất cứ thứ gì: tạo bài trên lớp còn kéo theo ca thi, CHAIR và cả danh
-        // sách thí sinh, để lọt là phải dọn tay.
+            .hasMessageContaining("subscription plan term");
+        // Blocked before anything is built: creating a class test also pulls in assessment schedules, a CHAIR and the
+        // candidate list, and letting it through would mean cleaning up by hand.
         verify(assessmentRepository, never()).save(any());
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
@@ -233,8 +233,8 @@ class CreateClassTestSetupTests {
     }
 
     /**
-     * Luật "không gác hai ca trùng giờ" quét toàn trường, nên bài trên lớp tự gán giáo viên tạo bài
-     * làm giám thị cũng có thể đâm vào một ca của kỳ thi tập trung.
+     * The rule "no proctoring two assessment schedules at the same time" scans the whole school, so a class test that
+     * assigns its creating teacher as proctor can also collide with a schedule of a centralized assessment.
      */
     @Test
     void should_reject_when_creating_teacher_already_proctors_an_overlapping_schedule() {
@@ -268,7 +268,7 @@ class CreateClassTestSetupTests {
     void should_reject_stream_permission_without_stream_types() {
         assertThatThrownBy(() -> useCase.execute(command(null, AssessmentStreamTypePermission.ALL, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Không thể đặt quyền stream khi không yêu cầu stream nào");
+            .hasMessageContaining("Stream permission cannot be set when no stream is requested");
     }
 
     @Test

@@ -38,19 +38,19 @@ public class UpdateAssessmentPaperSectionUseCase implements IUseCase<UpdateAsses
     public AssessmentPaperSectionDto execute(UpdateAssessmentPaperSectionCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaperSection section = assessmentPaperSectionRepository.findById(input.sectionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phần trong đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Section not found in the paper"));
         if (!section.getPaperId().equals(input.paperId())) {
-            throw new ResourceNotFoundException("Không tìm thấy phần trong đề thi");
+            throw new ResourceNotFoundException("Section not found in the paper");
         }
         AssessmentPaper paper = assessmentPaperRepository.findById(input.paperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         if (assessment.getKind() == AssessmentKind.CENTRALIZED && paper.getStatus() == AssessmentPaperStatus.LOCKED) {
-            throw new IllegalArgumentException("Đề thi đã bị khoá, không thể sửa");
+            throw new IllegalArgumentException("The paper is locked and cannot be edited");
         }
         if (assessment.getStatus() == AssessmentStatus.IN_PROGRESS) {
-            throw new IllegalArgumentException("Không thể sửa khi bài kiểm tra đang diễn ra");
+            throw new IllegalArgumentException("Cannot edit while the assessment is in progress");
         }
         assessmentPaperAuthoringAccessService.requireCanAuthor(assessment, currentUserId);
 

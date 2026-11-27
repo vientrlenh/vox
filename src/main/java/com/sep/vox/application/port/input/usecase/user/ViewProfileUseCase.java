@@ -24,7 +24,7 @@ public class ViewProfileUseCase implements IUseCase<Void, UserDto>{
     public UserDto execute(Void input) {
         UUID userId = userContextPort.getCurrentAuthenticatedUserId();
         User user = userRepository.findByIdAndStatus(userId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested user was not found"));
         
         return UserDtoMapper.toUserDto(user);
     }

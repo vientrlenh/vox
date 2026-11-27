@@ -14,14 +14,14 @@ import com.sep.vox.application.query.dto.NotificationDto;
 import com.sep.vox.domain.repository.NotificationRepository;
 
 /**
- * Đọc đúng một thông báo của chính người đang đăng nhập.
+ * Reads exactly ONE notification of the logged-in user.
  *
- * <p>Sinh ra cho luồng bấm vào thông báo đẩy: lúc đó client chỉ cầm mỗi id trên URL, chưa
- * có danh sách nào trong tay, nên phải hỏi lại server payload để biết mở màn hình nào.
+ * <p>Made for the tap-a-push-notification flow: at that moment the client only holds the id from the URL and has no
+ * list yet, so it must ask the server for the payload to know which screen to open.
  *
- * <p>Lọc theo {@code userId} ngay trong truy vấn chứ không kiểm sau khi lấy: hai cách đều
- * chặn được người này đọc thông báo của người kia, nhưng cách này còn không phân biệt được
- * "id không tồn tại" với "id của người khác" -- kẻ dò id không học được gì từ phản hồi.
+ * <p>Filters by {@code userId} inside the query instead of checking after the fetch: both ways stop one user reading
+ * another's notification, but this one also cannot tell "the id does not exist" from "the id belongs to someone
+ * else" -- someone probing ids learns nothing from the response.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,6 +36,6 @@ public class ViewMyNotificationUseCase implements IUseCase<ViewMyNotificationQue
 
         return notificationRepository.findByIdAndUserId(input.id(), userId)
             .map(NotificationDtoMapper::toNotificationDto)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông báo"));
+            .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
     }
 }

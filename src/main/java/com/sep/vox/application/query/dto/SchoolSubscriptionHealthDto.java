@@ -1,24 +1,24 @@
 package com.sep.vox.application.query.dto;
 
 /**
- * Phân loại TỪNG TRƯỜNG theo tình trạng gói dịch vụ tại một ngày, mỗi trường rơi vào đúng một nhóm.
+ * Classifies EACH SCHOOL by the state of its service plan on one date, each school falling into exactly one bucket.
  *
- * <p>Phải phân loại theo trường chứ không đếm theo dòng {@code school_subscriptions}: một trường có
- * nhiều kỳ thuê bao trong lịch sử, nên đếm dòng sẽ vừa cộng trùng vừa xếp một trường đang dùng tốt
- * vào nhóm "đã hết hạn" chỉ vì kỳ năm ngoái của nó đã hết.
+ * <p>It must be classified per school rather than counted per {@code school_subscriptions} row: a school
+ * has many subscription periods in its history, so counting rows would both double-count and put a
+ * school that is using the service fine into the "expired" bucket just because last year's period has ended.
  *
- * <p>"Còn hiệu lực" gồm cả {@code CANCELLED}: trạng thái đó chỉ tắt gia hạn tự động, trường vẫn dùng
- * được tới hết {@code endDate} — xem {@code SchoolSubscriptionStatus}. Chỉ {@code SUSPENDED} mới là
- * mất quyền dùng ngay.
+ * <p>"In effect" includes {@code CANCELLED}: that status only turns off auto-renewal, and the school
+ * can keep using the service until the end of {@code endDate} -- see {@code SchoolSubscriptionStatus}.
+ * Only {@code SUSPENDED} means losing access immediately.
  */
 public record SchoolSubscriptionHealthDto(
-    /** Trường có kỳ thuê bao phủ ngày đang xét. */
+    /** Schools that have a subscription period covering the date being examined. */
     long subscribedSchools,
-    /** Tập con của {@code subscribedSchools}: kỳ phủ hiện tại sắp hết trong ngưỡng cảnh báo. */
+    /** A subset of {@code subscribedSchools}: the current covering period ends within the warning threshold. */
     long expiringSoonSchools,
-    /** Từng có gói nhưng hiện không kỳ nào phủ, và không bị đình chỉ. */
+    /** Once had a plan but no period covers it now, and it is not suspended. */
     long lapsedSchools,
-    /** Bị system admin đình chỉ và hiện không có kỳ nào phủ. */
+    /** Suspended by a system admin and no period covers it now. */
     long suspendedSchools
 ) {
 }

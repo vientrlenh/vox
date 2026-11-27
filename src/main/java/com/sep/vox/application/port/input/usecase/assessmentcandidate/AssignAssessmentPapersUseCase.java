@@ -50,7 +50,7 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
     @Transactional
     public AssignAssessmentPapersResponse execute(AssignAssessmentPapersCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         UUID currentUserId = authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -71,7 +71,7 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
     private Set<UUID> requireAllPapersLocked(Assessment assessment) {
         List<AssessmentPaper> papers = assessmentPaperRepository.findByAssessmentId(assessment.getId());
         if (papers.isEmpty() || papers.stream().anyMatch(paper -> paper.getStatus() != AssessmentPaperStatus.LOCKED)) {
-            throw new IllegalArgumentException("Tất cả mã đề của kỳ thi phải được khoá trước khi phân đề");
+            throw new IllegalArgumentException("Every paper of the assessment must be locked before papers are assigned");
         }
         return papers.stream()
             .map(paper -> paper.getId())
@@ -94,10 +94,10 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
         Set<UUID> lockedPaperIds) {
         for (AssessmentPaperAssignmentItem assignment : assignments) {
             if (!candidatesById.containsKey(assignment.candidateId())) {
-                throw new IllegalArgumentException("Thí sinh không thuộc kỳ thi này");
+                throw new IllegalArgumentException("The candidate does not belong to this assessment");
             }
             if (assignment.paperId() == null || !lockedPaperIds.contains(assignment.paperId())) {
-                throw new IllegalArgumentException("Mã đề không hợp lệ hoặc chưa được khoá");
+                throw new IllegalArgumentException("The paper is invalid or not locked yet");
             }
         }
     }
@@ -133,6 +133,6 @@ public class AssignAssessmentPapersUseCase implements IUseCase<AssignAssessmentP
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return currentUserId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

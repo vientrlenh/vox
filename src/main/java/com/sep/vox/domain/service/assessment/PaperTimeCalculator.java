@@ -64,11 +64,11 @@ public final class PaperTimeCalculator {
     }
 
     /**
-     * Chỉ phần sinh chi phí AI, KHÔNG gồm thời lượng media.
+     * Only the part that generates AI cost, NOT including the media duration.
      *
-     * <p>Tách hẳn thành entry riêng thay vì cho gọi {@link #breakdownOf} với map rỗng: map rỗng sẽ
-     * dựng ra một breakdown mà {@code totalSeconds} nói dối (bằng billable, thiếu media), và người
-     * gọi nhầm sau này không có cách nào biết.
+     * <p>Made a separate entry instead of letting callers pass an empty map to {@link #breakdownOf}: an empty map would
+     * build a breakdown whose {@code totalSeconds} lies (equal to billable, missing media), and a later
+     * caller by mistake would have no way to know.
      */
     public static int billableSecondsOf(Collection<Question> questions) {
         int seconds = 0;
@@ -78,16 +78,16 @@ public final class PaperTimeCalculator {
         return seconds;
     }
 
-    /** Công thức gốc, viết đúng MỘT lần trong toàn repo. */
+    /** The original formula, written EXACTLY ONCE in the whole repo. */
     private static int billableSecondsOfOne(Question question) {
         return question.getPreparationTimeSeconds() + question.getMaxResponseSeconds();
     }
 
     /**
-     * Gom kết quả {@code QuestionAssetRepository#findByQuestionIdIn} thành map để truyền vào
-     * {@link #breakdownOf}. Mỗi câu hỏi có tối đa một asset
-     * ({@code uk_question_assets_question_id} unique trên riêng {@code question_id}) nên map một-một
-     * là đủ; hàm gộp chỉ để phòng dữ liệu cũ lỡ có hai dòng, lấy dòng đầu thay vì ném lỗi.
+     * Collects the result of {@code QuestionAssetRepository#findByQuestionIdIn} into a map to pass to
+     * {@link #breakdownOf}. Each question has at most one asset
+     * ({@code uk_question_assets_question_id} is unique on {@code question_id} alone) so a one-to-one map
+     * is enough; the merge function only guards against old data that accidentally has two rows, taking the first instead of throwing.
      */
     public static Map<UUID, QuestionAsset> indexByQuestionId(Collection<QuestionAsset> assets) {
         Map<UUID, QuestionAsset> byQuestionId = new HashMap<>();
@@ -98,7 +98,7 @@ public final class PaperTimeCalculator {
     }
 
     /**
-     * Cả hai số. {@code assetByQuestionId} dựng bằng {@link #indexByQuestionId}.
+     * Both numbers. {@code assetByQuestionId} is built with {@link #indexByQuestionId}.
      */
     public static PaperTimeBreakdown breakdownOf(
             Collection<Question> questions,
@@ -113,9 +113,9 @@ public final class PaperTimeCalculator {
     }
 
     /**
-     * Lọc theo {@code type}, KHÔNG theo "durationSeconds khác null": {@code duration_seconds} là cột
-     * dùng chung cho mọi loại asset, nên một con số lạc trên tấm ảnh sẽ kéo dài cả ca thi. Ảnh và
-     * đoạn văn hiện suốt lúc chuẩn bị nên đã nằm trong {@code preparationTimeSeconds} rồi.
+     * Filters by {@code type}, NOT by "durationSeconds is not null": {@code duration_seconds} is a column
+     * shared by every asset type, so a stray number on an image would stretch the whole schedule. Images and
+     * paragraphs are shown throughout the preparation time so they are already inside {@code preparationTimeSeconds}.
      */
     public static int mediaSecondsOf(QuestionAsset asset) {
         if (asset == null || asset.getDurationSeconds() == null) {

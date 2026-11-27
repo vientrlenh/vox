@@ -93,7 +93,7 @@ public class ApproveRejectAssessmentAppealUseCaseTests {
         assertThatThrownBy(() -> approveUseCase.execute(
             new ApproveAssessmentAppealCommand(appealId, Instant.now().minus(1, ChronoUnit.DAYS))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("tương lai");
+            .hasMessageContaining("in the future");
 
         verify(assessmentResultAppealRepository, never()).save(any());
     }
@@ -141,7 +141,7 @@ public class ApproveRejectAssessmentAppealUseCaseTests {
 
         assertThatThrownBy(() -> rejectUseCase.execute(new RejectAssessmentAppealCommand(appealId, "  ")))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("lý do");
+            .hasMessageContaining("reason");
 
         verify(assessmentResultAppealRepository, never()).save(any());
         verify(outboxRepository, never()).save(any());
@@ -151,7 +151,7 @@ public class ApproveRejectAssessmentAppealUseCaseTests {
     void should_reject_reject_when_appeal_not_pending() {
         when(assessmentAppealAccessService.load(appealId)).thenReturn(context(AssessmentAppealStatus.GRADING));
 
-        assertThatThrownBy(() -> rejectUseCase.execute(new RejectAssessmentAppealCommand(appealId, "lý do")))
+        assertThatThrownBy(() -> rejectUseCase.execute(new RejectAssessmentAppealCommand(appealId, "reason")))
             .isInstanceOf(IllegalArgumentException.class);
     }
 }

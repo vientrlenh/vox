@@ -324,7 +324,7 @@ class ViewTeacherDashboardUseCaseTests {
         TeacherDashboardSummaryResponse result = useCase.execute(null);
 
         assertThat(result.classScoreStats()).hasSize(1);
-        assertThat(result.classScoreStats().get(0).className()).isEqualTo("Không xác định");
+        assertThat(result.classScoreStats().get(0).className()).isEqualTo("Unknown");
         assertThat(result.classScoreStats().get(0).averageScore()).isNull();
         assertThat(result.classScoreStats().get(0).totalCandidates()).isZero();
     }

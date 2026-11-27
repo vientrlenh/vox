@@ -71,15 +71,15 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
 
     private QuestionBank loadBankOfPublishedTopic(CreateSystemQuestionBankQuestionCommand command) {
         QuestionBank questionBank = questionBankRepository.findById(command.questionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         QuestionTopic questionTopic = questionTopicRepository.findById(command.questionTopicId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question topic not found"));
 
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalArgumentException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+            throw new IllegalArgumentException("The topic does not belong to the selected question bank");
         }
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được tạo câu hỏi trong chủ đề đã PUBLISHED");
+            throw new IllegalArgumentException("Questions can only be created in a PUBLISHED topic");
         }
         return questionBank;
     }
@@ -156,7 +156,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
 
     private void validateResponseDurationRange(CreateSystemQuestionBankQuestionCommand command) {
         if (command.minResponseSeconds() > command.maxResponseSeconds()) {
-            throw new IllegalArgumentException("Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa");
+            throw new IllegalArgumentException("The minimum answer time must not be greater than the maximum answer time");
         }
     }
 
@@ -164,7 +164,7 @@ public class CreateSystemQuestionBankQuestionUseCase implements IUseCase<CreateS
         Set<Integer> orders = new HashSet<Integer>();
         for (CreateQuestionAssetCommand asset : assets) {
             if (!orders.add(asset.order())) {
-                throw new IllegalArgumentException("Thứ tự tài nguyên câu hỏi không được trùng lặp");
+                throw new IllegalArgumentException("Question asset order must not be duplicated");
             }
         }
     }

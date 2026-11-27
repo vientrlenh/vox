@@ -83,7 +83,7 @@ public class PreviewQuestionImportFromFileUseCase
      */
     private boolean requireValidSelection(PreviewQuestionImportFromFileCommand input) {
         if (input == null || input.file() == null) {
-            throw new IllegalArgumentException("File import không được để trống");
+            throw new IllegalArgumentException("The import file must not be empty");
         }
         // Leaving BOTH empty means bulk mode: every row of the file declares its own bank code and topic code,
         // so one file can spread over several topics. Declaring one without the other has no clear intent,
@@ -91,7 +91,7 @@ public class PreviewQuestionImportFromFileUseCase
         boolean bulkMode = input.questionBankId() == null && input.questionTopicId() == null;
         if (!bulkMode && (input.questionBankId() == null || input.questionTopicId() == null)) {
             throw new IllegalArgumentException(
-                "Phải chọn cả ngân hàng câu hỏi và chủ đề, hoặc bỏ trống cả hai để import hàng loạt");
+                "Select both the question bank and the topic, or leave both empty for a bulk import");
         }
         return bulkMode;
     }
@@ -110,22 +110,22 @@ public class PreviewQuestionImportFromFileUseCase
             return null;
         }
         if (currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         return currentSchoolId;
     }
 
     private UUID resolveSelectedSessionSchoolId(PreviewQuestionImportFromFileCommand input, UUID currentUserId) {
         QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
         QuestionTopic questionTopic = questionTopicRepository.findById(input.questionTopicId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question topic not found"));
 
         if (!questionTopic.getQuestionBankId().equals(questionBank.getId())) {
-            throw new IllegalArgumentException("Chủ đề không thuộc ngân hàng câu hỏi đã chọn");
+            throw new IllegalArgumentException("The topic does not belong to the selected question bank");
         }
         if (questionTopic.getStatus() != QuestionTopicStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể import câu hỏi vào chủ đề đang ở trạng thái PUBLISHED");
+            throw new IllegalArgumentException("Questions can only be imported into a topic in PUBLISHED status");
         }
         questionEditAccessService.requireCreationAccess(questionBank, currentUserId);
         return questionBank.getOwnerType() == QuestionBankOwnerType.SCHOOL

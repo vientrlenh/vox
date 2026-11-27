@@ -11,9 +11,9 @@ public record AiUsageRecordedEventDto(
     String turnId,
     List<AiUsageEventItemDto> usageEvents
 ) {
-    // type = "LLM_TOKEN" | "DURATION" (khớp tên AiUsageType). provider dùng chung cho cả hai loại
-    // (vd "anthropic"/"openai" cho LLM_TOKEN, "azure_stt"/"elevenlabs_tts" cho DURATION) -- không tách
-    // riêng field "service" để tránh 2 field loại trừ lẫn nhau.
+    // type = "LLM_TOKEN" | "DURATION" (matches the AiUsageType names). provider is shared by both kinds
+    // (e.g. "anthropic"/"openai" for LLM_TOKEN, "azure_stt"/"elevenlabs_tts" for DURATION) -- no separate
+    // "service" field, to avoid 2 fields that exclude each other.
     public record AiUsageEventItemDto(
         String usageEventId,
         String type,

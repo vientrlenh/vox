@@ -56,7 +56,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         UUID schoolId = session.getSchoolId();
         UUID currentUserId = session.createdByUserId()
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+                .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         Map<String, String> mapping = jsonSerializationPort.toStringMap(session.getConfirmedMappingJson());
         validateMappingKeys(rows, mapping);
         return commitRowsAndCountOutcomes(rows, mapping, schoolId, currentUserId);
@@ -71,14 +71,14 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             .filter(key -> !validHeaders.contains(key))
             .toList();
         if (!invalidKeys.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
+            throw new IllegalArgumentException("Mapping contains a column that does not exist in the file: " + String.join(", ", invalidKeys));
         }
         List<String> invalidValues = confirmedMapping.values().stream()
             .map(value -> value == null ? null : value.strip())
             .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
         if (!invalidValues.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa trường hệ thống không hợp lệ: " + String.join(", ", invalidValues));
+            throw new IllegalArgumentException("Mapping contains an invalid system field: " + String.join(", ", invalidValues));
         }
     }
 
@@ -142,7 +142,7 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             row.setStatus(ImportRowStatus.IMPORTED);
             return outcome;
         } catch (DataConflictException | IllegalArgumentException exception) {
-            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Thành viên lớp học đã tồn tại hoặc không hợp lệ"))));
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("email", "Class member already exists or is invalid"))));
             row.setStatus(ImportRowStatus.FAILED);
             return RowOutcome.INVALID;
         }
@@ -229,13 +229,13 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
             Map<String, User> usersByEmail, Map<String, SchoolClass> classesByCode,
             Map<UUID, SchoolUser> schoolUsersByUserId) {
         List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
-        addMissingError(errors, mappedData, "email", "Email không được để trống");
-        addMissingError(errors, mappedData, "classCode", "Mã lớp không được để trống");
+        addMissingError(errors, mappedData, "email", "Email must not be blank");
+        addMissingError(errors, mappedData, "classCode", "Class code must not be blank");
 
         String email = mappedData.get("email");
         String classCode = mappedData.get("classCode");
         if (isPresent(email) && isPresent(classCode) && !seenMemberships.add(new MembershipKey(email, classCode))) {
-            errors.add(error("email", "Người dùng và lớp học bị trùng trong file import"));
+            errors.add(error("email", "The user and class pair is duplicated in the import file"));
         }
 
         User user = resolveUser(email, schoolId, usersByEmail, schoolUsersByUserId, errors);
@@ -250,15 +250,15 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
         }
         User user = usersByEmail.get(email);
         if (user == null) {
-            errors.add(error("email", "Không tìm thấy người dùng"));
+            errors.add(error("email", "User not found"));
             return null;
         }
         if (!user.canBeAssignedToSchoolClass()) {
-            errors.add(error("email", "Người dùng đã bị khoá hoặc vô hiệu hoá"));
+            errors.add(error("email", "The user is locked or deactivated"));
         }
         SchoolUser schoolUser = schoolUsersByUserId.get(user.getId());
         if (schoolUser == null || !Objects.equals(schoolUser.getSchoolId(), schoolId)) {
-            errors.add(error("email", "Người dùng không thuộc trường hiện tại"));
+            errors.add(error("email", "The user does not belong to the current school"));
         }
         return user;
     }
@@ -270,9 +270,9 @@ public class SchoolClassUserImportCommitHandler implements ImportCommitHandler {
         }
         SchoolClass schoolClass = classesByCode.get(classCode);
         if (schoolClass == null) {
-            errors.add(error("classCode", "Không tìm thấy lớp học"));
+            errors.add(error("classCode", "Class not found"));
         } else if (schoolClass.getStatus() != SchoolClassStatus.ACTIVE) {
-            errors.add(error("classCode", "Lớp học không hoạt động"));
+            errors.add(error("classCode", "Class is not active"));
         }
         return schoolClass;
     }

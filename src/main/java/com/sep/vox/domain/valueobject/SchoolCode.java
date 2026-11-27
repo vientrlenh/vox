@@ -8,7 +8,7 @@ public record SchoolCode(String value) {
 
     public SchoolCode {
         if (value != null && !UPPERCASE_CODE_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Định dạng mã trường không hợp lệ");
+            throw new IllegalArgumentException("The school code format is invalid");
         }
     }
 }

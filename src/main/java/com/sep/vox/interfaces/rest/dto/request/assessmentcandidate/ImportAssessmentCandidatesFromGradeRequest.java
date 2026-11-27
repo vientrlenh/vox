@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record ImportAssessmentCandidatesFromGradeRequest(
-    @NotNull(message = "Khối là bắt buộc")
+    @NotNull(message = "Grade is required")
     UUID schoolGradeId
 ) {
 

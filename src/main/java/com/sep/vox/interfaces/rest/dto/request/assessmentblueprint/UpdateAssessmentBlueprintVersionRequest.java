@@ -15,7 +15,7 @@ public record UpdateAssessmentBlueprintVersionRequest(
     Instant effectiveTo,
 
     @Valid
-    @NotEmpty(message = "Version phải có ít nhất một section")
+    @NotEmpty(message = "A version must have at least one section")
     List<AssessmentBlueprintSectionRequest> sections
 ) {
 

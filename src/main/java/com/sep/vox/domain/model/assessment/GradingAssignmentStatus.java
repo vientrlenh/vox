@@ -1,9 +1,9 @@
 package com.sep.vox.domain.model.assessment;
 
 /**
- * Vòng đời một phân công chấm bài. Cố ý chỉ có hai trạng thái: MVP nộp cả bài
- * trong một lần nên không tồn tại dữ liệu "đang chấm x/n" để IN_PROGRESS mô tả.
- * Gỡ phân công là xoá dòng, không phải một trạng thái.
+ * Lifecycle of a grading assignment. Deliberately only two statuses: the MVP submits the whole paper
+ * in one go, so there is no "grading x/n" data for IN_PROGRESS to describe.
+ * Removing an assignment deletes the row; it is not a status.
  */
 public enum GradingAssignmentStatus {
     ASSIGNED,

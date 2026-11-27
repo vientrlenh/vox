@@ -55,10 +55,10 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.valueobject.QuestionSelectionSpec;
 
 /**
- * Ô SELECTION ("chọn ngẫu nhiên") trong blueprint chỉ mô tả tiêu chí, người ra đề mới chọn câu cụ
- * thể. Guard cũ chặn theo cả mã đề ({@code kind != CLASS_TEST || blueprintId != null}) nên mọi kỳ
- * thi tập trung đều không gán được câu vào ô SELECTION — mã đề vĩnh viễn còn ô trống, không
- * SUBMIT/LOCK được và cả luồng thi đứng. Guard giờ xét theo từng ô: chỉ FIXED mới bị khoá.
+ * A SELECTION slot ("random pick") in the blueprint only describes criteria; the person authoring the paper picks the concrete
+ * question. The old guard blocked by the whole paper ({@code kind != CLASS_TEST || blueprintId != null}) so every
+ * centralized assessment could not assign a question to a SELECTION slot -- the paper was left with empty slots forever, could not be
+ * SUBMITTED/LOCKED and the whole assessment flow stalled. The guard now looks per slot: only FIXED is locked.
  */
 class AssignSelectionSlotQuestionTests {
 
@@ -153,7 +153,7 @@ class AssignSelectionSlotQuestionTests {
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("cố định theo blueprint");
+            .hasMessageContaining("fixed by the blueprint");
     }
 
     @Test
@@ -180,7 +180,7 @@ class AssignSelectionSlotQuestionTests {
         verify(assessmentBlueprintSlotRepository, never()).findById(any(UUID.class));
     }
 
-    /** Slot bị xoá khi version còn DRAFT: fail-closed sẽ làm mã đề kẹt vĩnh viễn, nên cho gán. */
+    /** The slot was deleted while the version is still DRAFT: fail-closed would leave the paper stuck forever, so assignment is allowed. */
     @Test
     void should_assign_a_question_when_the_blueprint_slot_row_no_longer_exists() {
         when(assessmentBlueprintSlotRepository.findById(SLOT_ID)).thenReturn(Optional.empty());
@@ -198,7 +198,7 @@ class AssignSelectionSlotQuestionTests {
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Chỉ được gán câu hỏi đã PUBLISHED");
+            .hasMessageContaining("Only a PUBLISHED question can be assigned");
     }
 
     @Test
@@ -210,7 +210,7 @@ class AssignSelectionSlotQuestionTests {
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không khớp tiêu chí");
+            .hasMessageContaining("does not match the criteria");
     }
 
     @Test
@@ -222,7 +222,7 @@ class AssignSelectionSlotQuestionTests {
 
         assertThatThrownBy(() -> useCase.execute(command()))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không thuộc chủ đề");
+            .hasMessageContaining("does not belong to the topic");
     }
 
     @Test
@@ -244,7 +244,7 @@ class AssignSelectionSlotQuestionTests {
             eq(QUESTION_ID), eq(ASSESSMENT_ID), eq(AssessmentSecurePoolReleaseMode.MANUAL), eq(TEACHER_ID));
     }
 
-    /** Câu hỏi của bài trên lớp tự mở khoá khi đóng bài — trước đây chỗ này hardcode MANUAL. */
+    /** Questions of a class test unlock themselves when the test closes -- this place used to hardcode MANUAL. */
     @Test
     void should_lock_class_test_questions_with_auto_release_after_close() {
         when(assessmentRepository.findById(ASSESSMENT_ID)).thenReturn(Optional.of(classTestAssessment(UUID.randomUUID())));

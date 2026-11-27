@@ -42,9 +42,9 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         Question question = questionRepository.findById(command.questionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question not found"));
         QuestionBank bank = questionBankRepository.findById(question.getQuestionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         validateCanAddCollaborator(question, bank, command, currentUserId);
 
@@ -64,11 +64,11 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
         validateSchoolQuestion(bank.getOwnerType());
 
         if (question.getStatus() == QuestionStatus.ARCHIVED) {
-            throw new IllegalArgumentException("Không thể thêm collaborator vào câu hỏi đã ARCHIVED");
+            throw new IllegalArgumentException("Cannot add a collaborator to an ARCHIVED question");
         }
 
         if (currentUserId.equals(command.userId())) {
-            throw new IllegalArgumentException("Không thể thêm chính mình làm collaborator");
+            throw new IllegalArgumentException("Cannot add yourself as a collaborator");
         }
 
         validateCollaboratorEligibility(bank, command);
@@ -77,29 +77,29 @@ public class CreateQuestionCollaboratorUseCase implements IUseCase<CreateQuestio
     private void validateCollaboratorEligibility(QuestionBank bank, CreateQuestionCollaboratorCommand command) {
         UUID schoolId = bank.getSchoolId();
         if (schoolId == null || !schoolUserRepository.existsBySchoolIdAndUserId(schoolId, command.userId())) {
-            throw new ForbiddenException("Người cộng tác phải thuộc cùng trường");
+            throw new ForbiddenException("The collaborator must belong to the same school");
         }
 
         boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(command.userId()).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));
         if (!isTeacher) {
-            throw new IllegalArgumentException("Chỉ có thể chia sẻ câu hỏi cho giáo viên");
+            throw new IllegalArgumentException("A question can only be shared with a teacher");
         }
 
         if (questionCollaboratorRepository.findByQuestionIdAndUserId(command.questionId(), command.userId()).isPresent()) {
-            throw new IllegalArgumentException("Người dùng này đã là collaborator của câu hỏi");
+            throw new IllegalArgumentException("This user is already a collaborator of the question");
         }
     }
 
     private void validateOwner(Question question, UUID currentUserId) {
         if (!question.isCreatedBy(currentUserId)) {
-            throw new ForbiddenException("Chỉ owner mới được quản lý collaborator");
+            throw new ForbiddenException("Only the owner can manage collaborators");
         }
     }
 
     private void validateSchoolQuestion(QuestionBankOwnerType ownerType) {
         if (ownerType != QuestionBankOwnerType.SCHOOL) {
-            throw new IllegalArgumentException("Chỉ question thuộc school bank mới dùng collaborator");
+            throw new IllegalArgumentException("Only a question in a school bank can have collaborators");
         }
     }
 }

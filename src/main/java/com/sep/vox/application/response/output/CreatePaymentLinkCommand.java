@@ -8,9 +8,9 @@ public record CreatePaymentLinkCommand(
     BigDecimal amount,
     String description,
     /**
-     * Hạn của link, LẤY TỪ orders.expires_at chứ không phải hằng số của adapter: link sống lâu hơn
-     * đơn thì trường trả tiền cho một đơn đã hết hạn, còn ngắn hơn đơn thì đơn vẫn khóa chỗ mà
-     * không còn cách nào trả.
+     * The link's expiry, TAKEN FROM orders.expires_at and not a constant of the adapter: a link that outlives the
+     * order makes the school pay for an expired order, while one shorter than the order leaves the order holding its slot
+     * with no way left to pay it.
      */
     Instant expiresAt
 ) {

@@ -31,18 +31,18 @@ import com.sep.vox.domain.repository.AssessmentPaperRepository;
 import com.sep.vox.domain.repository.AssessmentRepository;
 
 /**
- * Vòng đời một mã đề. Kỳ thi tập trung có hai đường đi, chọn theo <b>ai soạn ra mã đề đó</b>:
+ * The lifecycle of a paper. A centralized assessment has two paths, chosen by <b>who authored the paper</b>:
  *
  * <ul>
- *   <li><b>Có người thứ hai</b> — mã đề do người khác soạn: DRAFT → IN_REVIEW → APPROVED → LOCKED,
- *       với {@code requireNotAuthor} chặn người soạn tự duyệt bài của mình. Nhờ vậy trạng thái
- *       {@code APPROVED} luôn có nghĩa "đã qua mắt người thứ hai".</li>
- *   <li><b>Không có người thứ hai</b> — chủ tịch hội đồng hoặc quản trị trường tự soạn mã đề: đi tắt
- *       một bước DRAFT → LOCKED. Bắt họ bấm nộp duyệt rồi tự duyệt chính bài mình chỉ tạo ra một dấu
- *       {@code APPROVED} giả, còn cấm hẳn thì trường ít người không khoá nổi mã đề để phân đề.</li>
+ *   <li><b>There is a second person</b> -- the paper was authored by someone else: DRAFT → IN_REVIEW → APPROVED → LOCKED,
+ *       with {@code requireNotAuthor} blocking the author from approving their own paper. This way the
+ *       {@code APPROVED} status always means "a second pair of eyes has seen it".</li>
+ *   <li><b>There is no second person</b> -- the CHAIR or the school admin authors the paper: shortcut
+ *       one step, DRAFT → LOCKED. Forcing them to submit for review and then approve their own paper only creates a fake
+ *       {@code APPROVED} mark, while forbidding it outright means a small school cannot lock a paper to assign papers.</li>
  * </ul>
  *
- * <p>Bài trên lớp luôn đi đường tắt: giáo viên tạo bài vừa là CHAIR vừa là người soạn mọi mã đề.
+ * <p>A class test always takes the shortcut: the teacher who creates the test is both the CHAIR and the author of every paper.
  */
 @Service
 @RequiredArgsConstructor
@@ -63,9 +63,9 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
         UpdateAssessmentPaperStatusCommand command = normalize(input);
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentPaper paper = assessmentPaperRepository.findById(command.paperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
         Assessment assessment = assessmentRepository.findById(paper.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         PaperActor actor = assessmentPaperAuthoringAccessService.resolve(assessment, currentUserId);
 
         applyAction(command, paper, assessment, actor, currentUserId);
@@ -101,13 +101,13 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
             case "REQUEST_REVISION" -> requestRevision(command, paper, actor, currentUserId);
             case "LOCK" -> lock(paper, assessment, actor, currentUserId);
             case "REOPEN" -> reopen(paper, actor, currentUserId);
-            default -> throw new IllegalArgumentException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Invalid action");
         }
     }
 
     private void submit(AssessmentPaper paper, Assessment assessment, PaperActor actor) {
         requireCanAuthor(actor);
-        requireAllSlotsAssigned(paper, "Đề thi còn ô câu hỏi chưa được gán, không thể nộp duyệt");
+        requireAllSlotsAssigned(paper, "The paper has unassigned question slots, so it cannot be submitted for review");
         requirePaperWithinPlan(assessment, paper);
         requireTransition(paper, AssessmentPaperStatus.DRAFT, AssessmentPaperStatus.IN_REVIEW);
     }
@@ -123,7 +123,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
         requireCanReview(actor);
         requireNotAuthor(paper, currentUserId);
         if (command.note() == null || command.note().isBlank()) {
-            throw new IllegalArgumentException("Yêu cầu sửa lại bắt buộc phải có góp ý");
+            throw new IllegalArgumentException("A change request must include feedback");
         }
         requireTransition(paper, AssessmentPaperStatus.IN_REVIEW, AssessmentPaperStatus.DRAFT);
     }
@@ -132,7 +132,7 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
         requireCanDecide(actor);
         requirePaperWithinPlan(assessment, paper);
         if (isOneStepLock(assessment, paper, currentUserId)) {
-            requireAllSlotsAssigned(paper, "Mã đề còn ô câu hỏi chưa được gán, không thể khoá");
+            requireAllSlotsAssigned(paper, "The paper has unassigned question slots, so it cannot be locked");
             requireTransition(paper, AssessmentPaperStatus.DRAFT, AssessmentPaperStatus.LOCKED);
         } else {
             requireNotAuthor(paper, currentUserId);
@@ -164,8 +164,8 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
     }
 
     /**
-     * Đi tắt khi không có người thứ hai để duyệt: bài trên lớp (chỉ có một CHAIR), hoặc kỳ thi tập
-     * trung mà chính người quyết định là người soạn ra mã đề này.
+     * Shortcut when there is no second person to approve: a class test (only one CHAIR), or a centralized
+     * assessment where the decision maker is the person who authored this paper.
      */
     private boolean isOneStepLock(Assessment assessment, AssessmentPaper paper, UUID currentUserId) {
         return assessment.getKind() == AssessmentKind.CLASS_TEST || paper.isCreatedBy(currentUserId);
@@ -173,25 +173,25 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
 
     private void requireCanAuthor(PaperActor actor) {
         if (!actor.canAuthor()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
     private void requireCanReview(PaperActor actor) {
         if (!actor.canReview()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
     private void requireCanDecide(PaperActor actor) {
         if (!actor.canDecide()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 
     private void requireNotAuthor(AssessmentPaper paper, UUID currentUserId) {
         if (paper.isCreatedBy(currentUserId)) {
-            throw new ForbiddenException("Không được tự duyệt đề thi do chính mình tạo");
+            throw new ForbiddenException("You cannot approve a paper you created yourself");
         }
     }
 
@@ -205,13 +205,13 @@ public class UpdateAssessmentPaperStatusUseCase implements IUseCase<UpdateAssess
         assessmentTimeQuotaGuardService.requireWithinPlan(
             assessment.getSchoolId(),
             paper.getTimeDurationSeconds(),
-            "Mã đề " + paper.getCode()
+            "Paper " + paper.getCode()
         );
     }
 
     private void requireTransition(AssessmentPaper paper, AssessmentPaperStatus from, AssessmentPaperStatus to) {
         if (paper.getStatus() != from) {
-            throw new IllegalArgumentException("Trạng thái đề thi hiện tại không hợp lệ cho action này");
+            throw new IllegalArgumentException("The current paper status is not valid for this action");
         }
         paper.setStatus(to);
     }

@@ -41,11 +41,11 @@ public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssess
     @Transactional
     public UUID execute(ForceEndAssessmentSessionCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the assessment session not found"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of the session not found"));
 
         moderationAccessService.authorize(assessment, candidate);
         requireForceEndable(assessment, session);
@@ -76,11 +76,11 @@ public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssess
         // G.4: the only hard stop is RESULTS_PUBLISHED - before that (even after the assessment has closed) a late
         // violation can still be found by reviewing the log/video.
         if (assessment.getStatus() == AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalArgumentException("Kỳ thi đã công bố kết quả, không thể thay đổi nữa");
+            throw new IllegalArgumentException("The assessment results have been published, no further change is possible");
         }
         boolean isAlreadyGraded = session.getStatus() == AssessmentSessionStatus.GRADED;
         if (!isLiveSession(session) && !isAlreadyGraded) {
-            throw new IllegalArgumentException("Chỉ có thể buộc kết thúc phiên thi đang diễn ra hoặc đã chấm xong");
+            throw new IllegalArgumentException("Only a session that is in progress or already graded can be force-ended");
         }
     }
 
@@ -92,7 +92,7 @@ public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssess
     private String requireReason(String reason) {
         String normalizedReason = StringNormalization.trimAndCollapseSpaces(reason);
         if (normalizedReason == null || normalizedReason.isEmpty()) {
-            throw new IllegalArgumentException("Cần nhập lý do khi buộc kết thúc phiên thi");
+            throw new IllegalArgumentException("A reason is required when force-ending a session");
         }
         return normalizedReason;
     }
@@ -146,7 +146,7 @@ public class ForceEndAssessmentSessionUseCase implements IUseCase<ForceEndAssess
                 new AssessmentAttemptForceEndRequestedExternalEvent(session.getId().toString(), normalizedReason)
             );
         } catch (RuntimeException ex) {
-            log.warn("Không thể publish sự kiện buộc kết thúc cho session {}", session.getId(), ex);
+            log.warn("Cannot publish the force-end event for session {}", session.getId(), ex);
         }
     }
 }

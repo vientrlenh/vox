@@ -73,7 +73,7 @@ class GraphQLMyClassControllerTests {
     void my_classes_should_reject_invalid_paging() {
         assertThatThrownBy(() -> controller.myClasses(schoolId, null, null, 0, 10))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Số trang yêu cầu không hợp lệ");
+            .hasMessage("Requested page number is invalid");
         assertThatThrownBy(() -> controller.myClasses(schoolId, null, null, 1, 0))
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> controller.myClasses(schoolId, null, null, null, null))

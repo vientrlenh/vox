@@ -33,7 +33,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
     @Transactional
     public AssessmentSessionResponse execute(UpdateAssessmentSessionStatusCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.sessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
 
         if (isSubmittedAfterExpiry(session, input)) {
             return CreateAssessmentSessionUseCase.toResponse(session);
@@ -107,13 +107,13 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
     private void waiveFailedRoundCost(UUID sessionId) {
         int waived = aiUsageRecordRepository.markWaivedByAssessmentSessionId(sessionId, Instant.now());
         if (waived > 0) {
-            log.info("Miễn {} dòng chi phí AI của lượt chấm hỏng ở phiên {}", waived, sessionId);
+            log.info("Waived {} AI cost rows of the failed grading run in session {}", waived, sessionId);
         }
     }
 
     /**
-     * B.0: chỉ blockedAt quyết định hoãn/chấm ngay - flagged chỉ ảnh hưởng việc
-     * có tính vào kết quả chính thức hay không (mục G/I), không hoãn việc chấm AI.
+     * B.0: only blockedAt decides whether to postpone or grade right away -- flagged only affects whether
+     * it counts toward the official result (sections G/I), it does not postpone AI grading.
      */
     private boolean canSubmitImmediately(AssessmentSession session) {
         return assessmentCandidateRepository.findById(session.getCandidateId())
@@ -123,7 +123,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
 
     private void validateTransition(AssessmentSessionStatus from, AssessmentSessionStatus to) {
         if (from == null || to == null) {
-            throw new IllegalArgumentException("Trạng thái phiên thi không hợp lệ");
+            throw new IllegalArgumentException("Invalid assessment session status");
         }
         if (from == to) {
             return;
@@ -131,7 +131,7 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
         if (isAllowedTransition(from, to)) {
             return;
         }
-        throw new IllegalArgumentException("Không thể chuyển trạng thái phiên thi từ " + from + " sang " + to);
+        throw new IllegalArgumentException("Cannot change the assessment session status from " + from + " to " + to);
     }
 
     private boolean isAllowedTransition(AssessmentSessionStatus from, AssessmentSessionStatus to) {
@@ -145,9 +145,9 @@ public class UpdateAssessmentSessionStatusUseCase implements IUseCase<UpdateAsse
             case GRADING -> to == AssessmentSessionStatus.GRADED || to == AssessmentSessionStatus.GRADING_FAILED;
             case GRADING_FAILED -> to == AssessmentSessionStatus.GRADING;
             case GRADED -> to == AssessmentSessionStatus.GRADING;
-            // DELETED là điểm dừng, không đi tiếp đâu được: phục hồi một phiên đã xoá là thao tác
-            // sửa dữ liệu trực tiếp (xoá mềm không có đường phục hồi qua API), không phải một bước
-            // chuyển trạng thái bình thường.
+            // DELETED is a stopping point with no way forward: restoring a deleted session is a direct data
+            // fix (a soft delete has no restore path through the API), not a normal status
+            // transition.
             case DELETED -> false;
         };
     }

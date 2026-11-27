@@ -48,7 +48,7 @@ public final class PaymentRecordMapper {
         try {
             return PaymentMethod.valueOf(method);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Phương thức thanh toán khi chuyển đổi sang domain model không hợp lệ: " + method);
+            throw new IllegalArgumentException("Invalid payment method when converting to the domain model: " + method);
         }
     }
 
@@ -58,7 +58,7 @@ public final class PaymentRecordMapper {
         try {
             return PaymentProvider.valueOf(provider);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Cổng thanh toán khi chuyển đổi sang domain model không hợp lệ: " + provider);
+            throw new IllegalArgumentException("Invalid payment provider when converting to the domain model: " + provider);
         }
     }
 
@@ -68,7 +68,7 @@ public final class PaymentRecordMapper {
         try {
             return PaymentStatus.valueOf(status);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái thanh toán khi chuyển đổi sang domain model không hợp lệ: " + status);
+            throw new IllegalArgumentException("Invalid payment status when converting to the domain model: " + status);
         }
     }
 

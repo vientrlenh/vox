@@ -26,7 +26,7 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
-// Internal service-to-service use case (called sau khi pipeline chấm bài AI hoàn tất), không end-user-facing
+// Internal service-to-service use case (called after the AI grading pipeline finishes), not end-user-facing
 @Service
 @RequiredArgsConstructor
 public class CompleteAssessmentSessionGradingUseCase implements IUseCase<CompleteAssessmentSessionGradingCommand, Void> {
@@ -45,12 +45,12 @@ public class CompleteAssessmentSessionGradingUseCase implements IUseCase<Complet
     @Transactional
     public Void execute(CompleteAssessmentSessionGradingCommand input) {
         AssessmentSession session = assessmentSessionRepository.findById(input.assessmentSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
 
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         SchoolSubscription subscription = schoolSubscriptionRepository.findActiveBySchoolId(assessment.getSchoolId())
-            .orElseThrow(() -> new ResourceNotFoundException("Trường chưa có gói subscription đang hoạt động"));
+            .orElseThrow(() -> new ResourceNotFoundException("The school has no active subscription plan"));
 
         if (!claimGradedTransition(session)) {
             return null;
@@ -122,12 +122,12 @@ public class CompleteAssessmentSessionGradingUseCase implements IUseCase<Complet
     }
 
     /**
-     * Trừ hạn mức cho ca thi vừa chấm xong.
+     * Deducts the quota for the assessment schedule that has just been graded.
      *
-     * <p>KHÔNG còn tự báo cáo chuyển trạng thái nợ: việc đó đã chuyển vào
-     * {@code ConsumeQuotaService.chargeOverage}, nơi biết cả hai nguồn trừ tiền (ca thi và phiên
-     * luyện nói) và nơi dòng sự kiện commit cùng transaction với bút toán đã gây ra nó. Giữ ở đây
-     * nghĩa là đường luyện nói vĩnh viễn không có ai báo -- xem lịch sử của V4.
+     * <p>It no longer reports the debt state transition by itself: that moved into
+     * {@code ConsumeQuotaService.chargeOverage}, which knows both sources of charges (assessment schedules and
+     * speaking practice sessions) and where the event is committed in the same transaction as the ledger entry that caused it. Keeping it here
+     * would mean the speaking practice path would never be reported -- see the history of V4.
      */
     private void checkAndReportLockTransition(UUID subscriptionId, UUID schoolId, QuotaType quotaType,
             UUID assessmentSessionId, BigDecimal totalCostVnd, BigDecimal totalCostUsd, UUID userId, Instant now) {
@@ -139,18 +139,18 @@ public class CompleteAssessmentSessionGradingUseCase implements IUseCase<Complet
     }
 
     /**
-     * Tỷ giá THỰC TẾ đã áp cho cả phiên = tổng VND / tổng USD.
+     * The ACTUAL exchange rate applied to the whole session = total VND / total USD.
      *
-     * <p>Một phiên thi gồm nhiều lượt gọi AI, mỗi lượt đã chốt fx_rate_used riêng lúc phát sinh, nên
-     * phiên vắt qua ngày đổi tỷ giá sẽ có nhiều tỷ giá khác nhau. Bút toán trên sổ cái chỉ có MỘT cột
-     * fx_rate_used, và tỷ giá bình quân gia quyền này là con số duy nhất khiến
-     * {@code cost_usd * fx_rate_used} khớp lại đúng {@code amount_vnd} của chính bút toán đó -- lấy
-     * bừa tỷ giá của một lượt, hay tỷ giá mới nhất, đều làm phép đối soát ngược không ra.
+     * <p>An assessment session consists of many AI calls, each of which fixed its own fx_rate_used when it occurred, so a
+     * session that spans a day on which the rate changes has several different rates. The ledger entry has only ONE column
+     * fx_rate_used, and this weighted-average rate is the only number that makes
+     * {@code cost_usd * fx_rate_used} match the {@code amount_vnd} of that very entry -- taking an arbitrary
+     * rate of one call, or the latest rate, would break the reverse reconciliation.
      */
     private BigDecimal effectiveFxRate(BigDecimal totalCostVnd, BigDecimal totalCostUsd) {
         if (totalCostUsd.compareTo(BigDecimal.ZERO) <= 0) {
-            // Có cost_vnd mà không có cost_usd là dữ liệu hỏng, nhưng khoản chi vẫn phải được ghi
-            // nhận -- lấy tỷ giá hiện hành để bút toán có số hợp lệ thay vì chia cho 0.
+            // A cost_vnd without a cost_usd is corrupt data, but the expense must still be recorded --
+            // take the current rate so the ledger entry has a valid number instead of dividing by zero.
             return quotaPricingPort.usdToVndRate();
         }
         return totalCostVnd.divide(totalCostUsd, FX_RATE_SCALE, RoundingMode.HALF_UP);

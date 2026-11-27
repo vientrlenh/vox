@@ -1,5 +1,6 @@
 package com.sep.vox.infrastructure.persistence.query;
 
+import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -21,9 +22,9 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
     private EntityManager em;
 
     /**
-     * Một lượt quét bảng cho cả ba con số nhờ {@code COUNT(...) FILTER (WHERE ...)} của Postgres,
-     * thay vì ba câu COUNT riêng. Mệnh đề WHERE ngoài cùng vẫn cần: nó cho Postgres bỏ qua toàn bộ
-     * phiên đã kết thúc (GRADED / EXPIRED / GRADING_FAILED), vốn là phần lớn dần theo thời gian.
+     * One table scan for all three numbers thanks to Postgres {@code COUNT(...) FILTER (WHERE ...)},
+     * instead of three separate COUNT statements. The outermost WHERE clause is still needed: it lets Postgres skip every
+     * finished session (GRADED / EXPIRED / GRADING_FAILED), which makes up more and more of the table over time.
      */
     @Override
     public LiveSessionCountsDto countLiveSessions() {
@@ -41,12 +42,12 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
     }
 
     /**
-     * Gộp ngày ở DB chứ không nạp phiên về đếm trong Java: số phiên thi chỉ tăng theo thời gian, còn
-     * kết quả luôn là tối đa vài chục dòng.
+     * Groups by day in the DB instead of loading sessions to count in Java: the number of sessions only grows over time,
+     * while the result is always at most a few dozen rows.
      *
-     * <p>{@code submitted_at AT TIME ZONE :zone} đổi timestamptz sang giờ địa phương của múi truyền
-     * vào rồi mới cắt ngày — không dùng {@code date_trunc} trần như
-     * {@code JpaSchoolAiCostQueryRepository}, vì cắt trần là cắt theo UTC.
+     * <p>{@code submitted_at AT TIME ZONE :zone} converts the timestamptz to the local time of the zone passed
+     * in before truncating the day -- not a bare {@code date_trunc} like
+     * {@code JpaSchoolAiCostQueryRepository}, because a bare truncation cuts by UTC.
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -74,15 +75,15 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
     }
 
     /**
-     * COUNT của Postgres về tới đây có thể là {@code Long} hoặc {@code BigInteger} tùy phiên bản
-     * driver/Hibernate, nên ép qua {@link Number} thay vì cast thẳng — cùng loại bẫy đã gây
-     * ClassCastException ở {@code JpaSchoolAiCostQueryRepository}.
+     * The Postgres COUNT arriving here can be a {@code Long} or a {@code BigInteger} depending on the
+     * driver/Hibernate version, so it is forced through {@link Number} instead of a direct cast -- the same kind of trap that caused
+     * a ClassCastException in {@code JpaSchoolAiCostQueryRepository}.
      */
     private static long toLong(Object value) {
         return value == null ? 0L : ((Number) value).longValue();
     }
 
-    /** Cột {@code date} về dưới dạng {@link LocalDate} hoặc {@link java.sql.Date} tùy phiên bản. */
+    /** The {@code date} column arrives as a {@link LocalDate} or a {@link Date} depending on the version. */
     private static LocalDate toLocalDate(Object value) {
         if (value instanceof LocalDate localDate) {
             return localDate;
@@ -90,6 +91,6 @@ public class JpaPlatformOperationalHealthQueryRepository implements PlatformOper
         if (value instanceof java.sql.Date sqlDate) {
             return sqlDate.toLocalDate();
         }
-        throw new IllegalStateException("Không đọc được cột ngày kiểu " + value.getClass());
+        throw new IllegalStateException("Cannot read a date column of type " + value.getClass());
     }
 }

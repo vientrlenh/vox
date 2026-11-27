@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record RejectAssessmentAppealRequest(
-    @NotBlank(message = "Phải nêu lý do từ chối đơn phúc khảo")
-    @Size(max = 512, message = "Lý do từ chối tối đa 512 ký tự")
+    @NotBlank(message = "The reason for rejecting the appeal must be stated")
+    @Size(max = 512, message = "Rejection reason must not exceed 512 characters")
     String reason
 ) {
 

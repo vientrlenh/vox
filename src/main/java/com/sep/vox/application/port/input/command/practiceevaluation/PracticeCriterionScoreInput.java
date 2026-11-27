@@ -1,5 +1,5 @@
 package com.sep.vox.application.port.input.command.practiceevaluation;
 
-/** Python vẫn có thể gửi matchedBandCode, nhưng luyện tập không xếp loại nên không nhận. */
+/** Python may still send matchedBandCode, but practice does not assign bands so it is not accepted. */
 public record PracticeCriterionScoreInput(String criterionCode, Double score) {
 }

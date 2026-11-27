@@ -34,12 +34,12 @@ import com.sep.vox.domain.repository.AssessmentItemEvaluationTurnRepository;
 import com.sep.vox.domain.repository.RubricCriterionRepository;
 
 /**
- * Sau khi giáo viên chấm lại, bản đang hiệu lực là bản HUMAN — không có turn, không có
- * signals/validity/confidence. Đọc mọi thứ theo bản ấy là màn kết quả của học sinh mất
- * nội dung câu hỏi, audio, transcript và toàn bộ phân tích của AI.
+ * After a teacher re-grades, the effective version is the HUMAN one -- it has no turn and no
+ * signals/validity/confidence. Reading everything from that version makes the student's result screen lose
+ * the question content, the audio, the transcript and the whole AI analysis.
  *
- * <p>Ranh giới cần giữ đúng: điểm và rationale theo tiêu chí là của GIÁO VIÊN, còn lượt
- * nói và bằng chứng là của bản AI.
+ * <p>The boundary to keep: the score and the per-criterion rationale belong to the TEACHER, while the speaking
+ * turns and the evidence belong to the AI version.
  */
 class ViewAssessmentItemResponseEvaluationUseCaseTests {
 
@@ -76,7 +76,7 @@ class ViewAssessmentItemResponseEvaluationUseCaseTests {
         );
         when(rubricCriterionRepository.findById(any())).thenReturn(Optional.empty());
         when(assessmentItemEvaluationTurnRepository.findByEvaluationId(any())).thenReturn(List.of());
-        // Không có lượt gốc: các ca sẵn có kiểm bản AI, nhánh lùi phải đứng yên.
+        // No original turn: the existing cases check the AI version, so the fallback branch must stay still.
         when(assessmentItemResponseTurnRepository.findByAssessmentItemResponseId(any())).thenReturn(List.of());
         when(assessmentItemCriterionScoreRepository.findByEvaluationId(any())).thenReturn(List.of());
     }
@@ -207,7 +207,7 @@ class ViewAssessmentItemResponseEvaluationUseCaseTests {
             .thenReturn(Optional.of(aiEvaluation()));
     }
 
-    /** Bản AI sau khi bị chấm lại: SUPERSEDED nhưng dữ liệu còn nguyên. */
+    /** The AI version after being re-graded: SUPERSEDED but the data is intact. */
     private AssessmentItemEvaluation aiEvaluation() {
         return AssessmentItemEvaluation.builder()
                 .id(AI_EVALUATION_ID)
@@ -234,7 +234,7 @@ class ViewAssessmentItemResponseEvaluationUseCaseTests {
                 .build();
     }
 
-    /** Bản chấm tay: mọi cột AI đều null, không sinh turn nào. */
+    /** The manual grading version: every AI column is null, no turn is generated. */
     private AssessmentItemEvaluation humanEvaluation() {
         return AssessmentItemEvaluation.builder()
                 .id(HUMAN_EVALUATION_ID)

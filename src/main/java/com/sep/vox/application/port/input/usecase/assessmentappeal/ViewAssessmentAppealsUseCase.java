@@ -28,7 +28,7 @@ public class ViewAssessmentAppealsUseCase implements IUseCase<SearchAssessmentAp
         UUID currentUserId = assessmentAppealAccessService.requireActiveUserId();
         UUID schoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
+            .orElseThrow(() -> new ForbiddenException("The account does not belong to any school."));
         return assessmentAppealQueryRepository.searchAppeals(
             schoolId, null, input.status(), input.keyword(), input.page(), input.size());
     }

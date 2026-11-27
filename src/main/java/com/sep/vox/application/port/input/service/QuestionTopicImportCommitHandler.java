@@ -24,16 +24,16 @@ import com.sep.vox.domain.repository.QuestionBankRepository;
 import com.sep.vox.domain.repository.QuestionTopicRepository;
 
 /**
- * Nhập chủ đề câu hỏi vào MỘT ngân hàng.
+ * Imports question topics into ONE bank.
  *
- * <p>Ngân hàng đích ghim ở {@code session.importedEntityId} ngay lúc preview, đúng cách
- * {@code RubricVersionImportCommitHandler} ghim rubricId — file Excel không cần (và không được)
- * chứa id ngân hàng, nên không có đường nào để một dòng lạc sang ngân hàng khác.
+ * <p>The target bank is pinned in {@code session.importedEntityId} at preview time, the same way
+ * {@code RubricVersionImportCommitHandler} pins the rubricId — the Excel file does not need to (and must not)
+ * contain the bank id, so there is no way for a row to stray into another bank.
  *
- * <p>Upsert theo {@code code} trong phạm vi ngân hàng: chạy lại cùng một file là cập nhật, không
- * đẻ thêm bản trùng. Trạng thái chủ đề KHÔNG bị import ghi đè — {@code UpdateQuestionTopicStatusUseCase}
- * là nơi duy nhất đổi trạng thái, để một lần import lỡ tay không kéo chủ đề đang PUBLISHED về DRAFT
- * và làm hỏng các đề thi đang trỏ vào nó.
+ * <p>Upsert by {@code code} within the bank: re-running the same file updates, it does not spawn duplicates.
+ * The topic status is NOT overwritten by import — {@code UpdateQuestionTopicStatusUseCase} is the only place
+ * that changes the status, so a careless import cannot pull a PUBLISHED topic back to DRAFT and break the
+ * assessment papers that point at it.
  */
 @Service
 @RequiredArgsConstructor
@@ -78,10 +78,10 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
     private UUID requirePinnedQuestionBankId(ImportSession session) {
         UUID questionBankId = session.getImportedEntityId();
         if (questionBankId == null) {
-            throw new ResourceNotFoundException("Phiên import không ghim ngân hàng câu hỏi đích");
+            throw new ResourceNotFoundException("The import session does not pin a target question bank");
         }
         questionBankRepository.findById(questionBankId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi khi xử lý ngầm"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found during background processing"));
         return questionBankId;
     }
 
@@ -122,7 +122,7 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
             row.setMappedDataJson(jsonSerializationPort.toJson(mappedData));
             return true;
         } catch (Exception ex) {
-            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            errors.add(error("general", "Background processing error: " + ex.getMessage()));
             markInvalid(row, errors);
             return false;
         }
@@ -130,13 +130,13 @@ public class QuestionTopicImportCommitHandler implements ImportCommitHandler {
 
     private void validateRequiredFields(String code, String name, Set<String> codesInThisFile, List<Map<String, String>> errors) {
         if (isBlank(code)) {
-            errors.add(error("code", "Thiếu mã chủ đề."));
+            errors.add(error("code", "Topic code is missing."));
         }
         if (isBlank(name)) {
-            errors.add(error("name", "Thiếu tên chủ đề."));
+            errors.add(error("name", "Topic name is missing."));
         }
         if (errors.isEmpty() && !codesInThisFile.add(normalizeCode(code))) {
-            errors.add(error("code", "Mã chủ đề '" + code + "' bị lặp ngay trong file."));
+            errors.add(error("code", "Topic code '" + code + "' is repeated within the file."));
         }
     }
 

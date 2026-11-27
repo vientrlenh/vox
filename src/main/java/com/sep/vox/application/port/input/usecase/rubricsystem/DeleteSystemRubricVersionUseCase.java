@@ -47,24 +47,24 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
 
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
     }
 
     private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
+                .orElseThrow(() -> new ResourceNotFoundException("Version not found."));
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Không thể can thiệp vào phiên bản của trường học.");
+            throw new ForbiddenException("Cannot interfere with a version of a school.");
         }
 
         // Hard delete is only allowed for DRAFT; other statuses use the separate Archive function.
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xóa phiên bản đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu phiên bản đã PUBLISHED.");
+            throw new IllegalArgumentException("Only a version in DRAFT status can be deleted. Use the Archive function if the version is PUBLISHED.");
         }
         return version;
     }
@@ -76,7 +76,7 @@ public class DeleteSystemRubricVersionUseCase implements IUseCase<DeleteSystemRu
         if (assessmentPolicyRepository.existsPublishedByRubricVersionId(version.getId())
                 || assessmentPolicyRepository.existsNotPublishedByRubricVersionId(version.getId())) {
             throw new IllegalArgumentException(
-                    "Không thể xóa phiên bản này vì đang có Assessment Policy sử dụng. Hãy xóa hoặc lưu trữ các chính sách đó trước.");
+                    "Cannot delete this version because an Assessment Policy is using it. Delete or archive those policies first.");
         }
     }
 }

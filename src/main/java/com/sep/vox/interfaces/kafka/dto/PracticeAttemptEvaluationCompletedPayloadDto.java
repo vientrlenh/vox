@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public record PracticeAttemptEvaluationCompletedPayloadDto(
     ValidityResultDto validity,
-    /** Cần cho việc suy điểm yếu phát âm: word_feedback đi tới từng âm vị. */
+    /** Needed to infer pronunciation weaknesses: word_feedback goes down to each phoneme. */
     List<TurnDetailDto> turns,
     Map<String, CriterionScoreDto> criteria,
     EvaluationSignalsDto signals,

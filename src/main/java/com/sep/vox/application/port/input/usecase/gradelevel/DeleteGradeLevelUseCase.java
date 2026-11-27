@@ -34,13 +34,13 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
         requireActiveSystemAdmin();
 
         GradeLevel gradeLevel = gradeLevelRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Khối học sinh với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("Grade level not found for the given ID."));
 
         // A grade level that was already soft-deleted (INACTIVE) counts as non-existent.
         // Do NOT deleteById here: this runs inside @Transactional, so the throw rolls back
         // and the hard delete would never really happen (an old bug).
         if (gradeLevel.getStatus() != GradeLevelStatus.ACTIVE) {
-            throw new ResourceNotFoundException("Không tìm thấy khối học.");
+            throw new ResourceNotFoundException("Grade level not found.");
         }
 
         rejectWhenUsedBySchools(gradeLevel);
@@ -55,10 +55,10 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
     private void requireActiveSystemAdmin() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
         if (!userContextPort.isSystemAdmin()) {
-            throw new ForbiddenException("Chỉ quản trị hệ thống mới được xóa khối học.");
+            throw new ForbiddenException("Only a system admin can delete a grade level.");
         }
     }
 
@@ -68,7 +68,7 @@ public class DeleteGradeLevelUseCase implements IUseCase<DeleteGradeLevelCommand
         boolean isUsed = schoolGradeRepository.existsByGradeLevelIdAndStatusNot(
                 gradeLevel.getId(), SchoolGradeStatus.ARCHIVED.name());
         if (isUsed) {
-            throw new IllegalArgumentException("Không thể xóa vì Khối này đang được các trường sử dụng.");
+            throw new IllegalArgumentException("Cannot delete because schools are using this grade level.");
         }
     }
 }

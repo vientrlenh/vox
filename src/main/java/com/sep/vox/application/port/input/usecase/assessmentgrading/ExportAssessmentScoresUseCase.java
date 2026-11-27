@@ -39,8 +39,8 @@ public class ExportAssessmentScoresUseCase implements IUseCase<ExportAssessmentS
     private static final DateTimeFormatter LOCAL_TIME_FORMAT =
         DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(DateMapper.DEFAULT_INPUT_ZONE);
     private static final String HEADER = String.join(",",
-        "Mã bài", "Họ tên", "Email", "Lớp", "Kỳ thi", "Ca thi", "Điểm", "Xếp loại",
-        "Trạng thái", "Vòng chấm cuối", "Kết luận", "Người chấm", "Thời điểm công bố");
+        "Result code", "Full name", "Email", "Class", "Assessment", "Schedule", "Score", "Result band",
+        "Status", "Last grading round", "Conclusion", "Grader", "Released at");
 
     private final AssessmentScoreExportSupport assessmentScoreExportSupport;
 
@@ -82,25 +82,25 @@ public class ExportAssessmentScoresUseCase implements IUseCase<ExportAssessmentS
     }
 
     /**
-     * MỌI mốc thời gian trong file đều đi qua đây: đổi về giờ Việt Nam trước khi in.
-     * Container chạy UTC nên format thẳng sẽ lệch 7 tiếng — cùng lỗi với hai listener
-     * mail. Không giữ biến thể in ISO thô: hai cột thời gian hai định dạng trong cùng
-     * một file là thứ người đọc không có cách nào tự nhận ra.
+     * EVERY timestamp in the file goes through here: converted to Vietnam time before printing.
+     * The container runs UTC so formatting directly would be off by 7 hours -- the same bug as the two mail
+     * listeners. No raw ISO variant is kept: two time columns in two formats in the same
+     * file is something the reader has no way to notice by themselves.
      */
     private String localTime(Instant value) {
         return value == null ? "" : LOCAL_TIME_FORMAT.format(value);
     }
 
     /**
-     * Bọc mọi ô trong dấu nháy kép và nhân đôi nháy bên trong (RFC 4180). Tên học sinh
-     * và lý do đều có thể chứa dấu phẩy hoặc xuống dòng; không bọc thì một cái tên là
-     * đủ làm lệch toàn bộ cột của file.
+     * Wraps every cell in double quotes and doubles the quotes inside (RFC 4180). Student names
+     * and reasons can contain a comma or a line break; without wrapping, a single name is
+     * enough to shift all the columns of the file.
      *
-     * <p>Ô mở đầu bằng {@code = + - @} (kể cả sau tab/CR) được prefix thêm một dấu nháy
-     * đơn: đây là dữ liệu người dùng nhập, không phải công thức, nhưng Excel diễn giải
-     * nó là công thức và CHẠY ngay khi mở file — {@code HYPERLINK}/{@code DDE} đủ để rò
-     * bảng điểm ra ngoài. Người mở file là school admin, tài khoản quyền cao nhất trong
-     * trường.
+     * <p>A cell starting with {@code = + - @} (even after a tab/CR) gets an extra single quote
+     * prefix: this is user-entered data, not a formula, but Excel interprets
+     * it as a formula and RUNS it when the file is opened -- {@code HYPERLINK}/{@code DDE} is enough to leak
+     * the score sheet. The person opening the file is a school admin, the highest-privilege account in the
+     * school.
      */
     private String quote(String value) {
         if (value == null) {

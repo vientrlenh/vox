@@ -48,15 +48,15 @@ public class AssessmentDirectoryAccessService {
     private final UserContextPort userContextPort;
 
     /**
-     * @param schoolWide true = toàn bộ trường của kỳ thi; false = chỉ những lớp mà
-     *                   {@code callerId} là thành viên.
+     * @param schoolWide true = the whole school of the assessment; false = only the classes of which
+     *                   {@code callerId} is a member.
      */
     public record AssessmentDirectoryScope(UUID callerId, UUID schoolId, boolean schoolWide) {
     }
 
     public Assessment requireAssessment(UUID assessmentId) {
         return assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
     }
 
     public AssessmentDirectoryScope resolveByAssessmentId(UUID assessmentId) {
@@ -78,15 +78,15 @@ public class AssessmentDirectoryAccessService {
             return new AssessmentDirectoryScope(
                 currentUserId, assessment.getSchoolId(), assessment.getKind() != AssessmentKind.CLASS_TEST);
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 
     /**
-     * Các lớp đang hoạt động mà người gọi là thành viên, trong trường của kỳ thi.
-     * Chỉ có nghĩa khi {@code scope.schoolWide()} là false.
+     * The active classes of which the caller is a member, within the school of the assessment.
+     * Only meaningful when {@code scope.schoolWide()} is false.
      */
     public List<UUID> callerClassIds(AssessmentDirectoryScope scope) {
-        // findByUserId là 1-based (PageRequest.of(page - 1, size)) → trang đầu là 1, KHÔNG phải 0.
+        // findByUserId is 1-based (PageRequest.of(page - 1, size)) → the first page is 1, NOT 0.
         return schoolClassRepository
             .findByUserId(scope.schoolId(), scope.callerId(), null, SchoolClassStatus.ACTIVE, 1, MAX_CLASSES)
             .content()

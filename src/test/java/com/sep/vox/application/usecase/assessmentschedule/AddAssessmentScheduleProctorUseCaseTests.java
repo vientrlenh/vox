@@ -64,8 +64,8 @@ class AddAssessmentScheduleProctorUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
-        // Validator thật chạy trên proctor repository đã mock: luật "không gác hai ca trùng giờ"
-        // được test qua chính use case thay vì phải tin một mock trả sẵn.
+        // The real validator runs on the mocked proctor repository: the rule "do not proctor two schedules at the same time"
+        // is tested through the use case itself instead of trusting a canned mock.
         useCase = new AddAssessmentScheduleProctorUseCase(
             assessmentRepository, assessmentScheduleRepository, assessmentScheduleProctorRepository,
             new AssessmentScheduleProctorConflictValidator(assessmentScheduleProctorRepository),
@@ -134,13 +134,13 @@ class AddAssessmentScheduleProctorUseCaseTests {
     @Test
     void should_reject_when_teacher_already_proctors_an_overlapping_schedule() {
         givenTeacherIsEligible();
-        // Ca thi khác (kỳ thi nào cũng được) đè lên khung giờ của ca đang xếp.
+        // Another schedule (of any assessment) overlaps the time window of the schedule being arranged.
         when(assessmentScheduleProctorRepository.existsOverlappingAssignment(teacherId, start, end, scheduleId))
             .thenReturn(true);
 
         assertThatThrownBy(() -> useCase.execute(new AddAssessmentScheduleProctorCommand(assessmentId, scheduleId, teacherId)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("khoảng thời gian này");
+            .hasMessageContaining("in this time range");
         verify(assessmentScheduleProctorRepository, never()).save(any());
     }
 
@@ -167,7 +167,7 @@ class AddAssessmentScheduleProctorUseCaseTests {
         verify(assessmentScheduleProctorRepository).save(any(AssessmentScheduleProctor.class));
     }
 
-    /** Luật quét toàn trường nên phép kiểm tra không được kèm ràng buộc kỳ thi nào cả. */
+    /** The rule scans the whole school, so the check must not carry any assessment constraint. */
     @Test
     void should_check_conflicts_across_all_assessments_of_the_teacher() {
         givenTeacherIsEligible();

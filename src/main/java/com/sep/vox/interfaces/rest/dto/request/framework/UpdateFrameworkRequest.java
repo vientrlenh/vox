@@ -6,11 +6,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record UpdateFrameworkRequest(
-    @NotBlank(message = "Tên framework không được để trống")
-    @Size(max = 255, message = "Tên framework không được vượt quá 255 ký tự")
+    @NotBlank(message = "Framework name must not be blank")
+    @Size(max = 255, message = "Framework name must not exceed 255 characters")
     String name,
 
-    @Size(max = 2048, message = "Mô tả không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Description must not exceed 2048 characters")
     String description
 ) {
 

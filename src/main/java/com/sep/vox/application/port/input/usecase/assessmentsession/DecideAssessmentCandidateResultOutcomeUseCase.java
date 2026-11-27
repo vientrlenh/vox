@@ -31,11 +31,11 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
- * G.3 addendum: khi assessmentPolicy không có passingScore, finalizeForPublish chốt kết quả
- * ở FINAL thay vì tự suy ra PASSED/FAILED (không có ngưỡng để so sánh). Use case này cho phép
- * nhà trường tự quyết định thủ công FINAL -> PASSED hoặc FINAL -> FAILED sau khi kỳ thi đã
- * RESULTS_PUBLISHED. Chỉ áp dụng cho FINAL - không đổi lại PASSED/FAILED đã chốt (dù tự động
- * hay thủ công), tránh việc chốt đi chốt lại nhiều lần.
+ * G.3 addendum: when the assessmentPolicy has no passingScore, finalizeForPublish settles the result
+ * at FINAL instead of deriving PASSED/FAILED (there is no threshold to compare with). This use case lets
+ * the school decide manually FINAL -> PASSED or FINAL -> FAILED after the assessment has
+ * RESULTS_PUBLISHED. Only applies to FINAL -- an already settled PASSED/FAILED (whether automatic
+ * or manual) cannot be changed again, to avoid settling over and over.
  */
 @Service
 @RequiredArgsConstructor
@@ -55,13 +55,13 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
     @Transactional
     public UUID execute(DecideAssessmentCandidateResultOutcomeCommand input) {
         AssessmentCandidateResult result = assessmentCandidateResultRepository.findById(input.candidateResultId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Submission result not found"));
         AssessmentSession session = assessmentSessionRepository.findById(result.getSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi của kết quả này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session of this result not found"));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của kết quả này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of this result not found"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi của kết quả này"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment of this result not found"));
 
         moderationAccessService.authorize(assessment, candidate);
         requireDecidable(input, assessment, result);
@@ -81,14 +81,14 @@ public class DecideAssessmentCandidateResultOutcomeUseCase
     private void requireDecidable(
         DecideAssessmentCandidateResultOutcomeCommand input, Assessment assessment, AssessmentCandidateResult result) {
         if (assessment.getStatus() != AssessmentStatus.RESULTS_PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể chốt đậu/rớt sau khi kỳ thi đã công bố kết quả");
+            throw new IllegalArgumentException("Pass/fail can only be decided after the assessment results have been published");
         }
         if (result.getStatus() != AssessmentCandidateResultStatus.FINAL) {
-            throw new IllegalArgumentException("Chỉ có thể chốt đậu/rớt cho kết quả đang ở trạng thái FINAL");
+            throw new IllegalArgumentException("Pass/fail can only be decided for a result in the FINAL status");
         }
         if (input.decision() != AssessmentCandidateResultStatus.PASSED
                 && input.decision() != AssessmentCandidateResultStatus.FAILED) {
-            throw new IllegalArgumentException("Quyết định không hợp lệ, chỉ chấp nhận PASSED hoặc FAILED");
+            throw new IllegalArgumentException("Invalid decision, only PASSED or FAILED is accepted");
         }
     }
 

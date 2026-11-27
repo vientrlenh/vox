@@ -67,20 +67,20 @@ class TeacherGradingAssessmentPickerQueryTests {
     void seed() {
         schoolId = UUID.randomUUID();
 
-        // Kỳ thi giữa kỳ: 2 bài còn phải chấm + 1 bài đã chấm xong, giao gần đây nhất.
+        // Midterm assessment: 2 results still to grade + 1 already graded, assigned most recently.
         midtermAssessmentId = seedAssessment("CENTRALIZED", "Kỳ thi giữa kỳ");
         seedAssignment(midtermAssessmentId, teacherId, "ASSIGNED", now);
         seedAssignment(midtermAssessmentId, teacherId, "ASSIGNED", now);
         seedAssignment(midtermAssessmentId, teacherId, "COMPLETED", now);
 
-        // Kỳ thi cuối kỳ: chấm xong sạch, giao từ lâu.
+        // Final assessment: fully graded, assigned long ago.
         finalAssessmentId = seedAssessment("CENTRALIZED", "Kỳ thi cuối kỳ");
         seedAssignment(finalAssessmentId, teacherId, "COMPLETED", longAgo);
 
-        // Bài kiểm tra trên lớp có màn riêng — không được lọt vào dropdown này.
+        // In-class tests have their own screen -- they must not get into this dropdown.
         seedAssignment(seedAssessment("CLASS_TEST", "Kiểm tra 15 phút"), teacherId, "ASSIGNED", now);
 
-        // Kỳ thi của giáo viên khác, cùng trường.
+        // Another teacher's assessment, same school.
         otherTeacherAssessmentId = seedAssessment("CENTRALIZED", "Kỳ thi của người khác");
         seedAssignment(otherTeacherAssessmentId, otherTeacherId, "ASSIGNED", now);
 
@@ -96,8 +96,8 @@ class TeacherGradingAssessmentPickerQueryTests {
     }
 
     /**
-     * Chấm xong bài cuối cùng mà kỳ thi biến mất khỏi dropdown ngay dưới tay là lỗi:
-     * giáo viên vẫn phải xem lại được những bài mình đã chấm.
+     * An assessment vanishing from the dropdown right under the teacher's hand after grading its last result is a bug:
+     * a teacher must still be able to review the results they already graded.
      */
     @Test
     void should_still_list_an_assessment_whose_assignments_are_all_completed() {
@@ -128,7 +128,7 @@ class TeacherGradingAssessmentPickerQueryTests {
             });
     }
 
-    /** Kỳ thi vừa được giao là kỳ thi đang chấm dở — thứ giáo viên tìm trước nhất. */
+    /** An assessment that was just assigned is one being graded -- what a teacher looks for first. */
     @Test
     void should_order_assessments_by_the_most_recent_assignment_first() {
         assertThat(pickerFor(teacherId))

@@ -43,15 +43,15 @@ public class RecordAiUsageUseCase implements IUseCase<RecordAiUsageCommand, Void
 
     private void requireRequiredUsageFields(RecordAiUsageCommand input) {
         if (input.usageEventId() == null) {
-            throw new IllegalArgumentException("Thiếu usageEventId trong dữ liệu usage");
+            throw new IllegalArgumentException("usageEventId is missing from the usage data");
         }
         if (input.assessmentSessionId() == null) {
-            throw new IllegalArgumentException("Thiếu assessmentSessionId trong dữ liệu usage");
+            throw new IllegalArgumentException("assessmentSessionId is missing from the usage data");
         }
         // Block early instead of letting an NPE happen in the multiplication in saveUsageRecord: cost_vnd is NOT NULL, so a row missing
         // costUsd cannot be written, and swallowing it silently means losing a real charge entirely.
         if (input.costUsd() == null) {
-            throw new IllegalArgumentException("Thiếu costUsd trong dữ liệu usage");
+            throw new IllegalArgumentException("costUsd is missing from the usage data");
         }
     }
 

@@ -93,7 +93,7 @@ class ViewMyClassMembersUseCaseTests {
             () -> useCase.execute(new ViewMyClassMembersQuery(classId, null, null, 1, 20))
         );
 
-        assertThat(exception.getMessage()).isEqualTo("Không tìm thấy lớp học");
+        assertThat(exception.getMessage()).isEqualTo("Class not found");
         verify(schoolClassUserRepository, never()).findBySchoolClassId(classId, null, null, 1, 20);
     }
 

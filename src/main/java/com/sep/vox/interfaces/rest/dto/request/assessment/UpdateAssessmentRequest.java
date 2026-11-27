@@ -22,10 +22,10 @@ public record UpdateAssessmentRequest(
     Instant closeAt,
     UUID assessmentPolicyId,
 
-    @Min(value = 1, message = "Số lượt thi tối đa phải lớn hơn 0")
+    @Min(value = 1, message = "Maximum number of attempts must be greater than 0")
     Integer maxAttempt,
 
-    @Min(value = 1, message = "Thời lượng bài thi phải lớn hơn 0 giây")
+    @Min(value = 1, message = "Assessment duration must be greater than 0 seconds")
     Integer assessmentTimeDurationSecond,
 
     ResultDecisionMethod resultDecisionMethod,
@@ -47,9 +47,9 @@ public record UpdateAssessmentRequest(
      * AI confidence threshold as a PERCENTAGE (0-100). Empty = KEEP the current value, like every
      * other field of the update command -- so there is currently no way to clear a threshold back to "not set".
      */
-    @DecimalMin(value = "0.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
-    @DecimalMax(value = "100.0", message = "Ngưỡng tin cậy phải từ 0 đến 100")
-    @Digits(integer = 3, fraction = 2, message = "Ngưỡng tin cậy tối đa 2 chữ số thập phân")
+    @DecimalMin(value = "0.0", message = "Confidence threshold must be between 0 and 100")
+    @DecimalMax(value = "100.0", message = "Confidence threshold must be between 0 and 100")
+    @Digits(integer = 3, fraction = 2, message = "Confidence threshold must have at most 2 decimal places")
     BigDecimal aiConfidenceThresholdPercent
 ) {
 

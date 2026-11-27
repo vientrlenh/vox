@@ -31,21 +31,21 @@ import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignalImportan
 import com.sep.vox.domain.valueobject.framework.FrameworkCriterionSignals;
 
 /**
- * Dựng sẵn Khung năng lực ngoại ngữ 6 bậc dùng cho Việt Nam (KNLNNVN) để hệ thống chấm được
- * ngay từ lần khởi động đầu.
+ * Builds the Vietnamese 6-level foreign language proficiency framework (KNLNNVN) up front so the system can grade
+ * from the very first startup.
  *
- * <p>Không có bản này thì {@code FrameworkVersionRepository.findActiveVersionId} trả rỗng và
- * mọi phiên luyện tập đều không vào được -- nên đây là dữ liệu bắt buộc, không phải demo.
+ * <p>Without it {@code FrameworkVersionRepository.findActiveVersionId} returns empty and
+ * every practice session cannot be entered -- so this is required data, not a demo.
  *
- * <p>Bản dựng ra đã ở trạng thái PUBLISHED và thoả đúng những điều kiện mà
- * {@code UpdateFrameworkVersionStatusUseCase} bắt buộc khi xuất bản: đủ và chỉ 5 tiêu chí
- * theo {@code FrameworkCriterionCode.ALLOWED_CODES}, mỗi tiêu chí có đủ 6 bậc, mỗi bậc
- * có ít nhất một dấu hiệu tích cực và một dấu hiệu tiêu cực. Ghi thẳng qua repository là
- * đường tắt vòng qua use case đó, nên các bất biến phải được giữ bằng tay ở đây.
+ * <p>The built version is already PUBLISHED and satisfies exactly the conditions that
+ * {@code UpdateFrameworkVersionStatusUseCase} requires on publishing: exactly the 5 criteria
+ * of {@code FrameworkCriterionCode.ALLOWED_CODES}, every criterion has all 6 bands, every band
+ * has at least one positive signal and one negative signal. Writing straight through the repository is a
+ * shortcut around that use case, so the invariants must be kept by hand here.
  *
- * <p>Số bậc KHÔNG bị đóng cứng ở đâu khác trong hệ: thang bậc được suy từ
- * {@code result_band_order} (xem {@code LearnerProfileRepository.findFrameworkBandCount}),
- * nên mã bậc ở đây chỉ mang vai trò định danh, không mang ngữ nghĩa thứ tự.
+ * <p>The number of bands is NOT hardcoded anywhere else in the system: the band scale is derived from
+ * {@code result_band_order} (see {@code LearnerProfileRepository.findFrameworkBandCount}),
+ * so the band code here only serves as an identifier and carries no ordering semantics.
  */
 @Component
 @Order(4)
@@ -143,7 +143,7 @@ public class FrameworkInitializer implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
         if (frameworkRepository.findByCode(FRAMEWORK_CODE).isPresent()) {
-            log.info("Framework {} đã tồn tại. Bỏ qua khởi tạo khung đánh giá", FRAMEWORK_CODE);
+            log.info("Framework {} already exists. Skipping assessment framework initialization", FRAMEWORK_CODE);
             return;
         }
 
@@ -154,7 +154,7 @@ public class FrameworkInitializer implements ApplicationRunner {
 
         frameworkCriterionBandRepository.saveAll(buildCriterionBands(criteria, resultBands));
 
-        log.info("Đã khởi tạo framework {} ({}) với {} tiêu chí và {} thang kết quả",
+        log.info("Initialized framework {} ({}) with {} criteria and {} result bands",
             FRAMEWORK_CODE, FRAMEWORK_VERSION_CODE, criteria.size(), resultBands.size());
     }
 
@@ -883,22 +883,22 @@ public class FrameworkInitializer implements ApplicationRunner {
 
     private record BandSeed(String code, String label, String description, int order) {}
 
-    // Band content gồm có descriptor, positive signals và negative signals
-    // 3 phần này càng miêu tả chuẩn, chi tiết, model sẽ càng đưa ra kết quả chuẩn nhất có thể
-    // Cho nên 3 phần này phải lưu càng nhiều thông tin càng tốt, có thể lên đến hơn trăm từ cho một đoạn descriptor hoặc signal nếu cần
+    // Band content consists of a descriptor, positive signals and negative signals.
+    // The more accurately and in detail these 3 parts describe the band, the more accurate a result the model can give.
+    // So these 3 parts must store as much information as possible, up to more than a hundred words for one descriptor or signal if needed.
     //
-    // Ba quy ước khi viết thêm nội dung ở đây:
+    // Three conventions when adding content here:
     //
-    // 1. Descriptor phải TỰ ĐỦ. Đường luyện tập (PracticeEvaluationRequestFactory) gửi sang
-    //    model danh sách signal RỖNG -- chỉ descriptor đi tới nơi. Cho nên mọi thứ then chốt
-    //    để xếp đúng bậc phải nằm trong descriptor; signal là phần bổ sung cho đường đề thi.
+    // 1. The descriptor must be SELF-SUFFICIENT. The practice path (PracticeEvaluationRequestFactory) sends the
+    //    model an EMPTY signal list -- only the descriptor arrives. So everything decisive
+    //    for placing the right band must be in the descriptor; signals are an addition for the assessment path.
     //
-    // 2. Signal viết theo thứ tự GIẢM DẦN độ quyết định, vì HIGH_IMPORTANCE_SIGNAL_COUNT phần
-    //    tử đầu được đánh importance HIGH.
+    // 2. Signals are written in DESCENDING order of decisiveness, because the first HIGH_IMPORTANCE_SIGNAL_COUNT
+    //    elements are given importance HIGH.
     //
-    // 3. Ở bậc cao nhất, "dấu hiệu tiêu cực" không còn là lỗi còn sót mà là ĐIỀU KIỆN LOẠI:
-    //    viết dạng "nếu còn X thì chưa đạt bậc này". Bậc 6 mà mô tả tiêu cực kiểu "không còn
-    //    lỗi nào" thì thực chất là một dấu hiệu tích cực nằm nhầm chỗ, không giúp model phân
-    //    biệt được bậc 6 với bậc 5.
+    // 3. At the highest band, a "negative signal" is no longer a leftover error but a DISQUALIFYING CONDITION:
+    //    written in the form "if X is still present then this band is not reached". A band 6 whose negative description reads "no
+    //    errors at all" is really a positive signal sitting in the wrong place, and does not help the model
+    //    tell band 6 from band 5.
     private record BandContent(String descriptor, List<String> positive, List<String> negative) {}
 }

@@ -97,7 +97,6 @@ public class RubricCriterionRepositoryImpl implements RubricCriterionRepository 
         return OneBasedPaging.toPageResult(pageEntity, pageEntity.getContent().stream().map(RubricCriterionMapper::toDomain).toList());
     }
 
-    // Ném thêm override này vào trong class RubricCriterionRepositoryImpl
     @Override
     public List<RubricCriterion> findByRubricVersionId(UUID rubricVersionId) {
         return springDataRubricCriterionRepository.findByRubricVersionId(rubricVersionId)

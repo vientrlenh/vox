@@ -27,12 +27,12 @@ public class CustomOidcUserService implements OAuth2UserService<OidcUserRequest,
 
         if (oidcUser.getEmailVerified() == null || !oidcUser.getEmailVerified()) {
             throw new OAuth2AuthenticationException(
-                new OAuth2Error("email_not_verified", "Người dùng chưa được xác thực để đăng nhập", null)
+                new OAuth2Error("email_not_verified", "The user has not been verified to log in", null)
             );
         }
         userRepository.findByEmailAndStatus(oidcUser.getEmail(), UserStatus.ACTIVE)
         .orElseThrow(() -> new OAuth2AuthenticationException(
-            new OAuth2Error("user_not_found", "Người dùng hiện chưa tồn tại, vui lòng gửi đơn đăng ký hoặc liên hệ bên nhà trường để được hỗ trợ", null)
+            new OAuth2Error("user_not_found", "The user does not exist yet. Please submit a registration form or contact your school for support", null)
         ));
 
         return oidcUser;        

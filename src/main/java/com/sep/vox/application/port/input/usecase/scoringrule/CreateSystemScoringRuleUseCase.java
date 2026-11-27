@@ -67,9 +67,9 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
         return scoringRuleRepository.save(toNewRule(command, safeCode, conditionParams, actionParams)).getId();
     }
 
-    // Kiểm tra criterionCode/bandCode (điền dạng code, không phải UUID) trong conditionParams/actionParams
-    // của ScoringRule có thực sự tồn tại trong Rubric Version của Assessment Policy hay không, và
-    // frameworkResultBandId (nếu có) có thực sự tồn tại và thuộc đúng Framework Version của Policy hay không.
+    // Checks that the criterionCode/bandCode values (given as codes, not UUIDs) in the ScoringRule's conditionParams/actionParams
+    // really exist in the Rubric Version of the Assessment Policy, and that frameworkResultBandId (if present)
+    // really exists and belongs to the Framework Version of the Policy.
     private void validateCriterionReferences(UUID rubricVersionId, UUID frameworkVersionId,
             ScoringRuleConditionParams conditionParams, ScoringRuleActionParams actionParams) {
         switch (conditionParams) {
@@ -91,33 +91,33 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
     private RubricCriterion requireCriterion(UUID rubricVersionId, String criterionCode) {
         return rubricCriterionRepository.findByRubricVersionIdAndCode(rubricVersionId, criterionCode)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Mã tiêu chí (criterionCode) '" + criterionCode + "' không tồn tại trong Rubric Version của Assessment Policy này."));
+                        "Criterion code (criterionCode) '" + criterionCode + "' does not exist in the Rubric Version of this Assessment Policy."));
     }
 
     private void requireFrameworkResultBand(UUID frameworkVersionId, UUID frameworkResultBandId) {
         FrameworkResultBand band = frameworkResultBandRepository.findById(frameworkResultBandId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Không tìm thấy Framework Result Band với ID '" + frameworkResultBandId + "'."));
+                        "Framework Result Band not found with ID '" + frameworkResultBandId + "'."));
         if (!band.getFrameworkVersionId().equals(frameworkVersionId)) {
             throw new ResourceNotFoundException(
-                    "Framework Result Band '" + frameworkResultBandId + "' không thuộc Framework Version của Assessment Policy này.");
+                    "Framework Result Band '" + frameworkResultBandId + "' does not belong to the Framework Version of this Assessment Policy.");
         }
     }
 
     private void requireActiveAccount() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
     }
 
     private AssessmentPolicy requireSystemPolicy(UUID policyId) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(policyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
         if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
+            throw new ForbiddenException("Cannot interfere with the Assessment Policy of a school.");
         }
         return policy;
     }
@@ -127,19 +127,19 @@ public class CreateSystemScoringRuleUseCase implements IUseCase<CreateScoringRul
         // already grading real exams; adding a rule silently midway would make exams of the same Policy
         // be graded inconsistently (before/after the rule was added) with nobody able to control it.
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được thêm Scoring Rule khi Assessment Policy đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("A Scoring Rule can only be added while the Assessment Policy is in DRAFT status.");
         }
     }
 
     private void requireCodeUnused(UUID policyId, String safeCode) {
         if (scoringRuleRepository.existsByPolicyIdAndCode(policyId, safeCode)) {
-            throw new IllegalArgumentException("Mã Scoring Rule (code) '" + safeCode + "' đã tồn tại trong Assessment Policy này.");
+            throw new IllegalArgumentException("Scoring Rule code '" + safeCode + "' already exists in this Assessment Policy.");
         }
     }
 
     private void requirePositivePriority(int priority) {
         if (priority <= 0) {
-            throw new IllegalArgumentException("Độ ưu tiên (priority) phải lớn hơn 0.");
+            throw new IllegalArgumentException("Priority must be greater than 0.");
         }
     }
 

@@ -9,8 +9,8 @@ import com.sep.vox.application.port.input.query.assessment.ViewMyAssessmentsQuer
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 
 /**
- * Mapper chỉ còn lo chuẩn hoá {@code status} và {@code sort}. Việc kiểm {@code page}/{@code size}
- * đã chuyển ra biên ({@code PageArguments}, gọi từ controller) -- xem {@code PageArgumentsTests}.
+ * The mapper now only normalises {@code status} and {@code sort}. Checking {@code page}/{@code size}
+ * moved to the boundary ({@code PageArguments}, called from the controller) -- see {@code PageArgumentsTests}.
  */
 class ViewMyAssessmentsQueryMapperTests {
 
@@ -45,20 +45,20 @@ class ViewMyAssessmentsQueryMapperTests {
     void should_reject_invalid_status() {
         assertThatThrownBy(() -> ViewMyAssessmentsQueryMapper.fromRequest(null, "DRAFT", 1, 20, "assessmentDate,desc"))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Trạng thái bài thi không hợp lệ");
+            .hasMessageContaining("Invalid assessment status");
     }
 
     @Test
     void should_reject_unknown_sort_field() {
         assertThatThrownBy(() -> ViewMyAssessmentsQueryMapper.fromRequest(null, null, 1, 20, "name,desc"))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Tham số sắp xếp không hợp lệ");
+            .hasMessageContaining("Invalid sort parameter");
     }
 
     @Test
     void should_reject_unknown_sort_direction() {
         assertThatThrownBy(() -> ViewMyAssessmentsQueryMapper.fromRequest(null, null, 1, 20, "assessmentDate,up"))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Tham số sắp xếp không hợp lệ");
+            .hasMessageContaining("Invalid sort parameter");
     }
 }

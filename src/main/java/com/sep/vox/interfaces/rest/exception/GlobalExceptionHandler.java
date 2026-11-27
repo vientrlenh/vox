@@ -38,15 +38,15 @@ import com.sep.vox.interfaces.rest.dto.response.ErrorResponse;
 import com.sep.vox.interfaces.rest.dto.response.ValidationErrorResponse;
 
 /**
- * Giới hạn trong {@code com.sep.vox}: không khai basePackages thì advice này phủ lên MỌI
- * controller trong context, kể cả của thư viện.
+ * Limited to {@code com.sep.vox}: without basePackages this advice covers EVERY controller in the context,
+ * including those of libraries.
  *
- * <p>Cụ thể là các controller của Spring Boot Admin ({@code de.codecentric...}). Chúng phục vụ
- * stream SSE {@code text/event-stream} chạy dài, và trình duyệt đóng tab là ngắt giữa chừng --
- * chuyện hoàn toàn bình thường. Nhưng {@code handleGeneric(Exception)} bắt luôn cả
- * {@code AsyncRequestNotUsableException} đó, ghi log ERROR như một sự cố thật, rồi cố ghi
- * {@code ErrorResponse} dạng JSON vào response đã chốt Content-Type là {@code text/event-stream}
- * và chết tiếp lần nữa với {@code HttpMessageNotWritableException}.
+ * <p>Specifically the Spring Boot Admin controllers ({@code de.codecentric...}). They serve long-running
+ * {@code text/event-stream} SSE streams, and the browser closing the tab cuts them off midway --
+ * which is perfectly normal. But {@code handleGeneric(Exception)} also catches that
+ * {@code AsyncRequestNotUsableException}, logs it at ERROR as if it were a real incident, then tries to write a JSON
+ * {@code ErrorResponse} into a response whose Content-Type is already fixed to {@code text/event-stream}
+ * and dies a second time with {@code HttpMessageNotWritableException}.
  */
 @RestControllerAdvice(basePackages = "com.sep.vox")
 @Slf4j
@@ -64,7 +64,7 @@ public class GlobalExceptionHandler {
 
     private static final String UNSUPPORTED_MEDIA_TYPE_ERROR = "UNSUPPORTED_MEDIA_TYPE";
     private static final String REQUEST_BODY_KEY = "body";
-    private static final String ACCEPTED_VALUES_PREFIX = "Giá trị không hợp lệ. Các giá trị chấp nhận: ";
+    private static final String ACCEPTED_VALUES_PREFIX = "Invalid value. Accepted values: ";
 
     private static final String AUTHENTICATION_ERROR = "BAD_CREDENTIALS";
     private static final String AUTHORIZATION_ERROR = "ACCESS_DENIED";
@@ -90,15 +90,15 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Lưới an toàn: {@code DateTimeParseException} kế thừa {@code DateTimeException}, KHÔNG phải
-     * {@code IllegalArgumentException}, nên nếu không bắt riêng thì rơi xuống handler chung và client
-     * nhận 500 dù lỗi hoàn toàn do dữ liệu gửi lên. Các use case nên parse qua
-     * {@code DateMapper.toInstant} — hàm đó đã đổi sang {@code IllegalArgumentException} với message
-     * tiếng Việt; nhánh này chỉ đỡ những chỗ chưa chuyển.
+     * Safety net: {@code DateTimeParseException} extends {@code DateTimeException}, NOT
+     * {@code IllegalArgumentException}, so if it is not caught separately it falls to the generic handler and the client
+     * gets a 500 even though the error is entirely caused by the submitted data. Use cases should parse through
+     * {@code DateMapper.toInstant} -- that function now throws {@code IllegalArgumentException} with a
+     * descriptive message; this branch only covers the places that have not been converted yet.
      */
     @ExceptionHandler(DateTimeParseException.class)
     public ResponseEntity<ErrorResponse> handleDateTimeParse(DateTimeParseException e) {
-        ErrorResponse error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, "Giá trị thời gian không đúng định dạng ISO-8601");
+        ErrorResponse error = new ErrorResponse(ILLEGAL_ARGUMENT_ERROR, "The time value is not in ISO-8601 format");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -134,7 +134,7 @@ public class GlobalExceptionHandler {
             Map<String, String> errors = Map.of(jsonPathOf(mismatch), describeInvalidValue(mismatch));
             return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors, VALIDATION_ERROR));
         }
-        ErrorResponse error = new ErrorResponse(VALIDATION_ERROR, "Nội dung yêu cầu không phải JSON hợp lệ");
+        ErrorResponse error = new ErrorResponse(VALIDATION_ERROR, "The request body is not valid JSON");
         return ResponseEntity.badRequest().body(error);
     }
 
@@ -156,9 +156,9 @@ public class GlobalExceptionHandler {
             return ACCEPTED_VALUES_PREFIX + acceptedConstants(targetType);
         }
         if (targetType != null && Temporal.class.isAssignableFrom(targetType)) {
-            return "Giá trị thời gian không đúng định dạng ISO-8601";
+            return "The time value is not in ISO-8601 format";
         }
-        return "Giá trị không đúng kiểu dữ liệu yêu cầu";
+        return "The value does not match the required data type";
     }
 
     private static String acceptedConstants(Class<?> enumType) {
@@ -170,14 +170,14 @@ public class GlobalExceptionHandler {
         Class<?> requiredType = e.getRequiredType();
         String message = requiredType != null && requiredType.isEnum()
             ? ACCEPTED_VALUES_PREFIX + acceptedConstants(requiredType)
-            : "Giá trị không đúng định dạng yêu cầu";
+            : "The value does not match the required format";
         ValidationErrorResponse error = new ValidationErrorResponse(Map.of(e.getName(), message), VALIDATION_ERROR);
         return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ValidationErrorResponse> handleMissingParameter(MissingServletRequestParameterException e) {
-        Map<String, String> errors = Map.of(e.getParameterName(), "Tham số bắt buộc không được để trống");
+        Map<String, String> errors = Map.of(e.getParameterName(), "Required parameter must not be blank");
         return ResponseEntity.badRequest().body(new ValidationErrorResponse(errors, VALIDATION_ERROR));
     }
 
@@ -193,7 +193,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ErrorResponse> handleUnsupportedMediaType(HttpMediaTypeNotSupportedException e) {
         List<MediaType> supported = e.getSupportedMediaTypes();
-        String message = "Content-Type không được hỗ trợ. Các loại chấp nhận: "
+        String message = "Unsupported Content-Type. Accepted types: "
             + supported.stream().map(mt -> mt.toString()).collect(Collectors.joining(", "));
         ErrorResponse error = new ErrorResponse(UNSUPPORTED_MEDIA_TYPE_ERROR, message);
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(error);
@@ -222,21 +222,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
         log.error("An unexpected error occurred", e);
-        ErrorResponse error = new ErrorResponse(INTERNAL_ERROR, "Có lỗi xảy ra");
+        ErrorResponse error = new ErrorResponse(INTERNAL_ERROR, "An error occurred");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
     // Spring security exceptions
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException e) {
-        ErrorResponse error = new ErrorResponse(AUTHENTICATION_ERROR, "Sai thông tin đăng nhập");
+        ErrorResponse error = new ErrorResponse(AUTHENTICATION_ERROR, "Incorrect login credentials");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
-        ErrorResponse error = new ErrorResponse(AUTHORIZATION_ERROR, "Quyền truy cập không hợp lệ");
+        ErrorResponse error = new ErrorResponse(AUTHORIZATION_ERROR, "Access permission is invalid");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 

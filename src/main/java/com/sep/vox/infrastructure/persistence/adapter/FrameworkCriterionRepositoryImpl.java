@@ -30,12 +30,10 @@ public class FrameworkCriterionRepositoryImpl implements FrameworkCriterionRepos
 
     @Override
     public List<FrameworkCriterion> findAllByIds(List<UUID> ids) {
-        // Trả về danh sách rỗng nếu danh sách ID truyền vào bị null hoặc rỗng
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
 
-        // Gọi hàm findAllById mặc định của JpaRepository và Map sang Domain
         return springDataFrameworkCriterionRepository.findAllById(ids)
                 .stream()
                 .map(FrameworkCriterionMapper::toDomain)

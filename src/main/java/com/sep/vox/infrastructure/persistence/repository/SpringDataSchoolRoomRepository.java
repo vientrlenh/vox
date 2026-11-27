@@ -16,7 +16,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface SpringDataSchoolRoomRepository extends JpaRepository<SchoolRoomJpaEntity, UUID> {
-    // Thêm dòng này để Spring Data tự động query kiểm tra mã code
     boolean existsBySchoolIdAndCode(UUID schoolId, String code);
 
     boolean existsBySchoolIdAndIsActive(UUID schoolId, boolean isActive);

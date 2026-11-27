@@ -119,7 +119,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
         assertThat(response.addedUserIds()).containsExactly(validUserId);
         assertThat(response.failed())
-            .containsExactly(new BulkCreateSchoolClassUserFailure(missingUserId, "Không tìm thấy người dùng"));
+            .containsExactly(new BulkCreateSchoolClassUserFailure(missingUserId, "User not found"));
     }
 
     @Test
@@ -150,7 +150,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
         assertThat(response.addedUserIds()).isEmpty();
         assertThat(response.failed())
-            .containsExactly(new BulkCreateSchoolClassUserFailure(lockedUserId, "Người dùng đã bị khoá hoặc vô hiệu hoá"));
+            .containsExactly(new BulkCreateSchoolClassUserFailure(lockedUserId, "The user has been locked or deactivated"));
         verify(schoolClassUserRepository, never()).saveAll(anyCollection());
     }
 
@@ -166,7 +166,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
         assertThat(response.addedUserIds()).isEmpty();
         assertThat(response.failed())
-            .containsExactly(new BulkCreateSchoolClassUserFailure(disabledUserId, "Người dùng đã bị khoá hoặc vô hiệu hoá"));
+            .containsExactly(new BulkCreateSchoolClassUserFailure(disabledUserId, "The user has been locked or deactivated"));
         verify(schoolClassUserRepository, never()).saveAll(anyCollection());
     }
 
@@ -182,7 +182,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
         assertThat(response.addedUserIds()).isEmpty();
         assertThat(response.failed())
-            .containsExactly(new BulkCreateSchoolClassUserFailure(otherSchoolUserId, "Người dùng không thuộc trường hiện tại"));
+            .containsExactly(new BulkCreateSchoolClassUserFailure(otherSchoolUserId, "The user does not belong to the current school"));
     }
 
     @Test
@@ -204,7 +204,7 @@ class BulkCreateSchoolClassUsersUseCaseTests {
 
         assertThat(response.addedUserIds()).isEmpty();
         assertThat(response.failed())
-            .containsExactly(new BulkCreateSchoolClassUserFailure(existingUserId, "Người dùng đã thuộc lớp học"));
+            .containsExactly(new BulkCreateSchoolClassUserFailure(existingUserId, "The user already belongs to the class"));
         verify(schoolClassUserRepository, never()).saveAll(anyCollection());
     }
 

@@ -14,16 +14,16 @@ import com.sep.vox.domain.dto.OrderDto;
 import com.sep.vox.domain.repository.OrderRepository;
 
 /**
- * Lịch sử đơn hàng của chính trường đang đăng nhập.
+ * The order history of the school that is logged in.
  *
- * <p>KHÔNG lọc bỏ đơn PENDING. Đây không phải lựa chọn hiển thị mà là ràng buộc:
- * CreateSubscriptionOrderUseCase từ chối đơn đăng ký mới khi trường còn một đơn treo, với thông báo
- * "hãy hoàn tất hoặc hủy đơn đó trước" -- giấu đơn treo đi thì trường được bảo phải hủy một thứ họ
- * không nhìn thấy. Đơn PENDING cũng là dòng DUY NHẤT còn hành động được (trả tiếp hoặc hủy); mọi
- * trạng thái khác chỉ để đọc.
+ * <p>Does NOT filter out PENDING orders. This is not a display choice but a constraint:
+ * CreateSubscriptionOrderUseCase rejects a new subscription order while the school still has an open one, with
+ * the message "complete or cancel that order first" -- hiding the open order would tell the school to cancel
+ * something it cannot see. A PENDING order is also the ONLY row that can still be acted on (pay again or
+ * cancel); every other status is read-only.
  *
- * <p>Không kèm order_items: đơn nạp thêm vốn không có dòng nào, còn đơn gói đã có description chốt
- * sẵn lúc tạo ("Đăng ký {tên gói}") nên danh sách tự mô tả được mà không cần join.
+ * <p>No order_items are attached: a top-up order has no item rows, and a plan order already has its description
+ * fixed at creation time (the Vietnamese "Subscribe {plan name}"), so the list describes itself without a join.
  */
 @Service
 @RequiredArgsConstructor

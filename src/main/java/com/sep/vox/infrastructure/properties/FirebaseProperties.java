@@ -12,13 +12,13 @@ public record FirebaseProperties(
     }
 
     /**
-     * Hai cách nạp service account, dùng đúng một trong hai.
+     * Two ways to load the service account, use exactly one of them.
      *
-     * @param path đường dẫn tới file .json. Chấp nhận cả dạng có scheme
-     *             ({@code file:}, {@code classpath:}) lẫn đường dẫn tuyệt đối trần --
-     *             xem FirebaseConfig#resolveLocation.
-     * @param json nội dung service account truyền thẳng, dạng JSON thô hoặc base64.
-     *             Dành cho môi trường container không mount được file.
+     * @param path path to the .json file. Accepts both a form with a scheme
+     *             ({@code file:}, {@code classpath:}) and a bare absolute path --
+     *             see FirebaseConfig#resolveLocation.
+     * @param json service account content passed directly, as raw JSON or base64.
+     *             For container environments that cannot mount a file.
      */
     public record Credentials(String path, String json) {
     }

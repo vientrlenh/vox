@@ -26,12 +26,12 @@ public class DeleteAssessmentMemberUseCase implements IUseCase<DeleteAssessmentM
     @Transactional
     public Void execute(DeleteAssessmentMemberCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentMember member = assessmentMemberRepository.findById(input.memberId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thành viên bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment member not found"));
 
         if (!member.getAssessmentId().equals(assessment.getId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         AssessmentMemberManageAccessService.AssessmentMemberActor actor = assessmentMemberManageAccessService.requireCanManage(assessment);

@@ -33,7 +33,7 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
             AssessmentCandidateJpaEntity saved = springDataAssessmentCandidateRepository.save(AssessmentCandidateMapper.toJpa(candidate));
             return AssessmentCandidateMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("Candidate already exists in this assessment");
         }
     }
 
@@ -45,7 +45,7 @@ public class AssessmentCandidateRepositoryImpl implements AssessmentCandidateRep
                 .map(AssessmentCandidateMapper::toDomain)
                 .toList();
         } catch (DataIntegrityViolationException e) {
-            throw new ResourceDuplicatedException("Thí sinh đã tồn tại trong kỳ thi này");
+            throw new ResourceDuplicatedException("Candidate already exists in this assessment");
         }
     }
 

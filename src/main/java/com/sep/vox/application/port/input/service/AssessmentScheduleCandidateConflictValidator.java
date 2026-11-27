@@ -96,41 +96,41 @@ public class AssessmentScheduleCandidateConflictValidator {
     }
 
     /**
-     * Đổi giờ một ca thi: mọi thí sinh đang được xếp ca đó phải còn rảnh ở khung giờ mới.
+     * Changing the time of an assessment schedule: every candidate assigned to that schedule must still be free in the new time window.
      *
-     * <p>Không có bước này thì luật bị lách dễ dàng — xếp thí sinh lúc hai ca chưa đụng nhau, rồi
-     * dời giờ cho chúng chồng lên.
+     * <p>Without this step the rule is easy to bypass — assign candidates while two schedules do not clash yet, then
+     * move the time so they overlap.
      */
     public void requireCandidatesFreeForNewWindow(UUID scheduleId, Instant start, Instant end) {
         requireCandidatesFree(assessmentCandidateRepository.findByScheduleId(scheduleId), start, end);
     }
 
     /**
-     * Message nêu tên để người xếp lịch biết phải gỡ ai, thay vì phải tự dò cả danh sách.
+     * The message names people so the scheduler knows whom to remove, instead of probing the whole list by hand.
      *
-     * <p>Không kèm giờ (mọi message trong hệ thống đều không gắn múi giờ) và không kèm tên kỳ thi
-     * đang vướng — người xếp lịch kỳ này có thể không có quyền nhìn kỳ kia. Chi tiết nằm ở API
-     * {@code studentBusySlots} dành cho màn hình.
+     * <p>No time included (no message in the system carries a time zone) and no name of the clashing
+     * assessment — the scheduler of this assessment may not have permission to see the other one. The details live in the API
+     * {@code studentBusySlots} for the screen.
      */
     private String buildMessage(List<UUID> conflictingStudentIds) {
         List<String> names = resolveNames(conflictingStudentIds);
         if (names.size() == 1) {
-            return "Học sinh " + names.getFirst() + " đã có ca thi khác trong khoảng thời gian này";
+            return "Student " + names.getFirst() + " already has another assessment schedule in this time range";
         }
         List<String> shown = names.stream().limit(MAX_NAMES_IN_MESSAGE).toList();
         StringBuilder message = new StringBuilder()
             .append(names.size())
-            .append(" học sinh đã có ca thi khác trong khoảng thời gian này: ")
+            .append(" students already have another assessment schedule in this time range: ")
             .append(String.join(", ", shown));
         if (names.size() > shown.size()) {
-            message.append(" và ").append(names.size() - shown.size()).append(" học sinh khác");
+            message.append(" and ").append(names.size() - shown.size()).append(" other students");
         }
         return message.toString();
     }
 
     /**
-     * Chỉ tra tên khi đã chắc có xung đột, nên đường thành công không tốn thêm query nào. Thiếu tên
-     * thì lùi về id: dựng message tuyệt đối không được ném và che mất lỗi thật.
+     * Names are only looked up once a conflict is certain, so the success path costs no extra query. Without a name
+     * we fall back to the id: building the message must never throw and hide the real error.
      */
     private List<String> resolveNames(List<UUID> studentIds) {
         Map<UUID, String> nameById = new HashMap<UUID, String>();

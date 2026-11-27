@@ -145,11 +145,12 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   `@Getter @Setter @SuperBuilder @NoArgsConstructor(access = AccessLevel.PROTECTED)`; mappers and tests build it with
   `builder()`. Give a field that has an initializer `@Builder.Default`. Never put `@Data`, `@EqualsAndHashCode` or
   `@ToString` on an entity.
-- **Language**: everything is English: identifiers, comments, Javadoc, test documentation, commit messages. Existing
-  comments are largely Vietnamese and are being migrated to English. Write every new or edited comment in English. When a
-  Vietnamese comment sits in code you are already changing, translate it faithfully in the same change: keep its meaning and
-  its "why", do not shorten or delete it. Do not translate comments in files you are not otherwise touching unless the task
-  is the translation itself. Leave string literals that are user-facing text (messages, email templates) as they are.
+- **Language**: everything is English: identifiers, comments, Javadoc, test documentation, log, exception, validation and
+  API response messages, email, push notification and spreadsheet texts, and commit messages. Vietnamese stays only as
+  data: seed data, import header aliases and accepted values, the 'đ' char literals, and Vietnamese names and transcripts
+  in test fixtures. `LanguageConventionTests` fails on Vietnamese in a comment or a string literal in any Java file that
+  is not listed in `src/test/resources/architecture/language-keep-list.txt`; that list may only shrink, so never add to
+  it. When you edit a comment, write it in English.
 - **Do not hand-edit** `build/`, `.gradle/`, `logs/`.
 
 ## Database
@@ -205,6 +206,9 @@ Look at an existing feature end to end before writing a new one (e.g. `CreateAss
   trace in the bytecode that `LayeredArchitectureTests` reads. It also fails on any `LoggerFactory.getLogger` under
   `src/main/java` and on any assignment-only constructor in `application`, `infrastructure` and `interfaces`; the
   constructor exemption set may only shrink.
+- `LanguageConventionTests` guards the Language rule above by scanning source text: no Vietnamese letter in a comment or
+  a string literal under `src/main/java` and `src/test/java`, except in the files of `language-keep-list.txt`, and an
+  entry that no longer holds Vietnamese fails the test. It has self-tests with violating snippets.
 - `InterfacesStructureConventionTests` guards the interfaces layout: `Rest`/`GraphQL` controller prefixes, the spelling
   `GraphQL`, no class directly in `port/input/command`, `port/input/query` or a `dto/request` or `graphql/input` package, the mapper
   allow-list, and the return type of `toCommand`/`toQuery`.

@@ -34,7 +34,7 @@ public class CreateSchoolQuestionBankUseCase implements IUseCase<CreateSchoolQue
 
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập không hợp lệ"));
+            .orElseThrow(() -> new ForbiddenException("Invalid access"));
 
         QuestionBank questionBank = QuestionBank.create(
             command.languageId(), 

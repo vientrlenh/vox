@@ -50,7 +50,7 @@ public class AssessmentAppealAccessService {
     private final UserContextPort userContextPort;
     private final AssessmentGradingAccessService assessmentGradingAccessService;
 
-    /** Ngữ cảnh đã giải xong của một đơn phúc khảo — tránh mỗi use case tự nối lại chuỗi. */
+    /** The resolved context of an appeal -- saves each use case from re-joining the chain itself. */
     public record AppealContext(
         AssessmentResultAppeal appeal,
         AssessmentCandidateResult candidateResult,
@@ -64,9 +64,9 @@ public class AssessmentAppealAccessService {
     public UUID requireActiveUserId() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+            .orElseThrow(() -> new UnauthorizedException("Account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("Account is locked.");
         }
         return currentUserId;
     }
@@ -74,7 +74,7 @@ public class AssessmentAppealAccessService {
     @Transactional(readOnly = true)
     public AppealContext load(UUID appealId) {
         AssessmentResultAppeal appeal = assessmentResultAppealRepository.findById(appealId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn phúc khảo."));
+            .orElseThrow(() -> new ResourceNotFoundException("Appeal not found."));
         return loadFromCandidateResult(appeal, appeal.getCandidateResultId());
     }
 
@@ -85,18 +85,18 @@ public class AssessmentAppealAccessService {
 
     private AppealContext loadFromCandidateResult(AssessmentResultAppeal appeal, UUID candidateResultId) {
         AssessmentCandidateResult candidateResult = assessmentCandidateResultRepository.findById(candidateResultId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment result not found."));
         AssessmentSession session = assessmentSessionRepository.findById(candidateResult.getSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found."));
         Assessment assessment = assessmentRepository.findById(candidateResult.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found."));
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(session.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the assessment session not found."));
         return new AppealContext(
             appeal, candidateResult, session, assessment.getSchoolId(), candidate.getStudentId(), assessment.getName());
     }
 
-    /** School admin cùng trường với bài thi. Dùng cho duyệt / từ chối / phân công / công bố. */
+    /** School admin of the same school as the assessment. Used for approve / reject / assign / publish. */
     public void authorizeSchoolAdmin(AppealContext context, UUID currentUserId) {
         if (userContextPort.isSystemAdmin()) {
             return;
@@ -109,7 +109,7 @@ public class AssessmentAppealAccessService {
         if (isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(context.schoolId())) {
             return;
         }
-        throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên đơn phúc khảo của trường này.");
+        throw new ForbiddenException("SECURITY: You do not have permission to act on appeals of this school.");
     }
 
     /**
@@ -131,14 +131,14 @@ public class AssessmentAppealAccessService {
             context.candidateResult().getAssessmentId(), currentUserId);
     }
 
-    /** Chính chủ bài thi. Dùng cho nộp đơn. */
+    /** The owner of the assessment. Used for filing an appeal. */
     public void authorizeOwningStudent(AppealContext context, UUID currentUserId) {
         if (!currentUserId.equals(context.studentId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn chỉ có thể phúc khảo bài thi của chính mình.");
+            throw new ForbiddenException("SECURITY: You can only appeal your own assessment.");
         }
     }
 
-    /** Giáo viên cùng trường — dùng khi kiểm tra ứng viên được phân công. */
+    /** Teacher of the same school — used when checking the person being assigned. */
     public boolean isTeacherOfSchool(UUID userId, UUID schoolId) {
         boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));

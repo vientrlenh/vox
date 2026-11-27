@@ -80,16 +80,16 @@ public class SchoolDebtNotificationService {
     }
 
     /**
-     * @param debtVnd số nợ THẬT lúc bị khóa, tức phần số dư đã âm (luôn {@code >= 0}).
+     * @param debtVnd the REAL debt at the time of the lock, i.e. the part of the balance that is negative (always {@code >= 0}).
      *
-     * <p>Nhận thẳng số nợ chứ KHÔNG tự suy ra từ {@code usedAmountVnd - totalAllocatedVnd} như bản
-     * trước: từ khi ConsumeQuotaService kẹp {@code used} tại {@code total} rồi đẩy phần vượt sang ví
-     * tự nạp, hiệu đó không bao giờ dương nữa -- mọi dòng school_debt_events kiểu LOCKED vì thế ghi
-     * overage_vnd = 0 (hoặc số âm) và dấu vết đối soát trở nên vô dụng đúng ở ca nghiêm trọng nhất.
+     * <p>Takes the debt directly instead of deriving it from {@code usedAmountVnd - totalAllocatedVnd} as the
+     * previous version did: since ConsumeQuotaService clamps {@code used} at {@code total} and pushes the excess to the
+     * self-funded balance, that difference is never positive again -- every LOCKED school_debt_events row therefore recorded
+     * overage_vnd = 0 (or a negative number) and the reconciliation trail became useless in exactly the most serious case.
      *
-     * <p>{@code used_amount_vnd} ghi xuống là con số DỰNG LẠI {@code total + debt}, giống hệt cách
-     * {@code ConsumeQuotaService.checkDebtCapTransition} dựng cho dòng CAP_EXCEEDED -- hai loại sự
-     * kiện phải nói cùng một thứ tiếng thì mới xếp chung một bảng để đọc được.
+     * <p>The {@code used_amount_vnd} written is the REBUILT figure {@code total + debt}, exactly as
+     * {@code ConsumeQuotaService.checkDebtCapTransition} builds it for the CAP_EXCEEDED row -- the two kinds of
+     * event must speak the same language to be readable in one table.
      */
     public void publishSchoolLockedDueToDebt(
             UUID subscriptionId, UUID schoolId, QuotaType quotaType,
@@ -112,12 +112,12 @@ public class SchoolDebtNotificationService {
     }
 
     /**
-     * Trường vừa thoát nợ: số dư ví đã về không âm nên khoá tự mở, không ai phải duyệt.
+     * The school has just got out of debt: the balance is back to non-negative so the lock opens by itself, nobody has to approve it.
      *
-     * <p>KHÔNG nhận quotaType/totalAllocated/usedAmount nữa. Hết nợ là sự kiện cấp TRƯỜNG: số dư là
-     * MỘT con số dùng chung cho cả hai ví hạn mức, nên "ví nào vừa hết nợ" không có câu trả lời, và
-     * bịa ra một quotaType để lấp chỗ trống là làm bẩn chính quyển sổ dùng để đối soát. Ba cột đó
-     * bỏ trống ở dòng CLEARED, có chk_school_debt_events_shape_matches_event_type canh (V4).
+     * <p>It NO LONGER takes quotaType/totalAllocated/usedAmount. Clearing debt is a SCHOOL-level event: the balance is
+     * ONE number shared by both quota records, so "which quota record just cleared its debt" has no answer, and
+     * inventing a quotaType to fill the gap pollutes the very ledger used for reconciliation. Those three columns
+     * are left empty on the CLEARED row, guarded by chk_school_debt_events_shape_matches_event_type (V4).
      */
     public void publishSchoolDebtCleared(UUID subscriptionId, UUID schoolId, Instant now) {
         List<UUID> schoolAdminIds = schoolAdminIdsOf(schoolId);
@@ -131,9 +131,9 @@ public class SchoolDebtNotificationService {
             EventTypeConstant.SCHOOL_DEBT_CLEARED, payload, now
         ));
 
-        // overage = 0 CỐ ĐỊNH, không phải usedAmountVnd - totalAllocatedVnd: hết nợ nghĩa là số dư đã
-        // về không âm, tức phần vượt bằng 0 theo đúng định nghĩa. Hiệu kia giờ luôn <= 0 (used bị kẹp
-        // tại total) nên chỉ ghi được số 0 hoặc một số ÂM vô nghĩa trên sổ đối soát.
+        // overage = 0 FIXED, not usedAmountVnd - totalAllocatedVnd: clearing debt means the balance
+        // is back to non-negative, i.e. the excess is 0 by definition. That difference is now always <= 0 (used is clamped
+        // at total), so it could only write 0 or a meaningless NEGATIVE number on the reconciliation ledger.
         logDebtEvent(schoolId, subscriptionId, SchoolDebtEventType.CLEARED, null, null, null, null,
             null, null, BigDecimal.ZERO, now);
     }

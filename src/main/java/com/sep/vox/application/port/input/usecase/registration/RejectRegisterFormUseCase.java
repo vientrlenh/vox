@@ -38,11 +38,11 @@ public class RejectRegisterFormUseCase implements IUseCase<RejectRegisterFormCom
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         RegisterForm registerForm = registerFormRepository.findById(command.registerFormId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Register form not found"));
 
         int updatedRows = registerFormRepository.updateRejectedRegisterForm(command.registerFormId(), currentUserId, command.reason());
         if (updatedRows == 0) {
-            throw new IllegalArgumentException("Đơn đăng ký không ở trạng thái chờ hoặc không tồn tại");
+            throw new IllegalArgumentException("The register form is not pending or does not exist");
         }
         
         outboxRepository.save(toRejectedOutboxEvent(registerForm, command.reason(), now));

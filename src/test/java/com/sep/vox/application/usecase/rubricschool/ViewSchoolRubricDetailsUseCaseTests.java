@@ -60,6 +60,6 @@ class ViewSchoolRubricDetailsUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new ViewSchoolRubricDetailsQuery(OTHER_SCHOOL_ID, RUBRIC_ID)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessage("BẢO MẬT: Bạn không có quyền xem Rubric của trường khác.");
+            .hasMessage("SECURITY: you are not allowed to view a Rubric of another school.");
     }
 }

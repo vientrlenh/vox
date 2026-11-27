@@ -24,20 +24,20 @@ import com.sep.vox.application.response.input.dashboard.PlatformOperationalHealt
 import com.sep.vox.domain.common.ZoneConstant;
 
 /**
- * Trọng tâm: chuỗi ngày phải ĐẦY. Query chỉ trả về ngày có phiên, nên nếu use case không chèn ngày
- * trống thì một ngày chết hoàn toàn sẽ biến mất khỏi biểu đồ thay vì hiện thành khoảng trũng — đúng
- * ngày đáng chú ý nhất lại vô hình.
+ * The focus: the day series must be FILLED. The query only returns days that have sessions, so if the use case did
+ * not insert empty days a completely dead day would vanish from the chart instead of showing as a dip -- the most
+ * notable day would be exactly the invisible one.
  */
 class ViewPlatformOperationalHealthUseCaseTests {
 
     private PlatformOperationalHealthQueryRepository queryRepository;
     private ViewPlatformOperationalHealthUseCase useCase;
 
-    /** 01/08/2026 00:00 giờ VN — mốc cố định để test không phụ thuộc đồng hồ máy chạy. */
+    /** 01/08/2026 00:00 Vietnam time -- a fixed reference point so the test does not depend on the machine's clock. */
     private static final Instant FROM = LocalDate.of(2026, 8, 1)
         .atStartOfDay(ZoneConstant.BUSINESS_ZONE).toInstant();
 
-    /** Mốc MỞ: 05/08 00:00 nên ngày cuối được vẽ là 04/08, không phải 05/08. */
+    /** The OPEN bound: 05/08 00:00, so the last day drawn is 04/08, not 05/08. */
     private static final Instant TO = LocalDate.of(2026, 8, 5)
         .atStartOfDay(ZoneConstant.BUSINESS_ZONE).toInstant();
 

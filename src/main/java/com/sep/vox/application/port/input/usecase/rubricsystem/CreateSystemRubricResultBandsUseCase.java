@@ -60,27 +60,27 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
     }
 
     private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric version not found."));
 
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được thêm Thang điểm kết quả khi Rubric ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Result bands can only be added while the Rubric is in DRAFT status.");
         }
 
         // Authorization: a System Admin must not edit a school's rubric.
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Rubric này thuộc về Trường học. System Admin không có quyền can thiệp.");
+            throw new ForbiddenException("This Rubric belongs to a School. A System Admin is not allowed to interfere.");
         }
         return version;
     }
@@ -101,7 +101,7 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
         try {
             return rubricResultBandRepository.saveAll(bandsToSave);
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã thang điểm (Code) hoặc Thứ tự (order) đã tồn tại trong phiên bản Rubric hệ thống này từ trước.");
+            throw new IllegalArgumentException("Data save error: the result band code (Code) or order already exists in this system Rubric version.");
         }
     }
 
@@ -111,11 +111,11 @@ public class CreateSystemRubricResultBandsUseCase implements IUseCase<CreateSyst
                                   NavigableMap<BigDecimal, RubricResultBand> bandsSoFarByMin,
                                   Set<Integer> ordersSoFar) {
         if (!uniqueCodes.add(safeCode)) {
-            throw new IllegalArgumentException("Dữ liệu gửi lên bị trùng lặp Mã thang điểm (Code): " + safeCode);
+            throw new IllegalArgumentException("The submitted data repeats the result band code (Code): " + safeCode);
         }
 
         if (bCmd.mappedScoreMin().compareTo(bCmd.mappedScoreMax()) > 0) {
-            throw new IllegalArgumentException("Thang điểm '" + safeName + "': Điểm quy đổi tối thiểu không được lớn hơn tối đa.");
+            throw new IllegalArgumentException("Result band '" + safeName + "': the minimum converted score must not be greater than the maximum.");
         }
 
         RubricResultBandValidator.assertNoOverlap(bandsSoFarByMin, bCmd.mappedScoreMin(), bCmd.mappedScoreMax(), safeName);

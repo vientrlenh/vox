@@ -12,12 +12,12 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Ma trận 4 vòng × 4 hành động — trái tim của bản rework. Mọi use case chấm bài đều
- * hỏi lớp này, nên một ô sai ở đây là sai ở cả bốn use case cùng lúc.
+ * The 4 rounds × 4 actions matrix — the heart of the rework. Every grading use case asks this class, so one wrong cell here
+ * is wrong in all four use cases at once.
  */
 class GradingRoundPolicyTests {
 
-    // ---- vòng nào nhận bài ở trạng thái nào --------------------------------
+    // ---- which round accepts a result in which status --------------------------------
 
     static Stream<Arguments> assignableCombinations() {
         return Stream.of(
@@ -29,7 +29,7 @@ class GradingRoundPolicyTests {
         );
     }
 
-    @ParameterizedTest(name = "{0} nhận bài {1}")
+    @ParameterizedTest(name = "{0} accepts a result in status {1}")
     @MethodSource("assignableCombinations")
     void should_accept_the_status_its_round_is_meant_for(
             GradingRoundType roundType, AssessmentCandidateResultStatus status) {
@@ -38,8 +38,8 @@ class GradingRoundPolicyTests {
 
     @Test
     void should_not_let_a_round_pick_up_a_result_from_another_round() {
-        // Bài đã công bố không quay lại vòng chấm lần đầu; bài chờ chấm chưa có gì
-        // để hậu kiểm. Nhầm hai chiều này là nhầm nguy hiểm nhất của thiết kế gộp.
+        // A published result does not go back to the first grading round; a result pending grading has nothing yet
+        // to spot-check. Confusing these two directions is the most dangerous mistake of the merged design.
         assertThat(GradingRoundPolicy.isAssignable(
             GradingRoundType.INITIAL, AssessmentCandidateResultStatus.RELEASED)).isFalse();
         assertThat(GradingRoundPolicy.isAssignable(
@@ -56,8 +56,8 @@ class GradingRoundPolicyTests {
 
     @Test
     void should_expose_every_status_that_can_still_receive_a_round() {
-        // Mẫu số của thẻ "Chưa phân công". Bài đã kết thúc vòng đời không được lọt vào,
-        // nếu không con số đó phình tới bằng tổng số bài khi kỳ thi đã chấm xong.
+        // Denominator of the "Unassigned" card. Results that have finished their lifecycle must not get in,
+        // otherwise that figure balloons to the total number of results once the assessment has been graded.
         assertThat(GradingRoundPolicy.allAssignableStatuses()).containsExactlyInAnyOrder(
             AssessmentCandidateResultStatus.PENDING_REVIEW,
             AssessmentCandidateResultStatus.RELEASED,
@@ -73,7 +73,7 @@ class GradingRoundPolicyTests {
             .containsAll(GradingRoundPolicy.assignableStatuses(roundType));
     }
 
-    // ---- hành động nào hợp lệ với vòng nào ---------------------------------
+    // ---- which action is valid in which round ---------------------------------
 
     @Test
     void should_only_allow_clear_invalid_in_the_remediation_round() {
@@ -89,16 +89,16 @@ class GradingRoundPolicyTests {
 
     @Test
     void should_not_allow_regrading_a_result_that_is_still_invalid() {
-        // Ở REMEDIATION chỉ có hai lựa chọn: xác nhận vi phạm, hoặc gỡ vô hiệu rồi
-        // mới chấm. Cho chấm thẳng ở đây là bỏ qua bước gỡ blocked_at của thí sinh.
+        // In REMEDIATION there are only two choices: confirm the violation, or lift the invalidation and then
+        // grade. Allowing grading directly here would skip the step that clears the candidate's blocked_at.
         assertThat(GradingRoundPolicy.isAllowed(
             GradingRoundType.REMEDIATION, GradingOutcome.REGRADED)).isFalse();
     }
 
     @Test
     void should_not_allow_invalidating_during_an_appeal() {
-        // Phúc khảo là để soi lại ĐIỂM. Phát hiện vi phạm lúc đó đi đường khác
-        // (buộc kết thúc / vô hiệu ở cấp kỳ thi), không lẫn vào phán quyết của đơn.
+        // An appeal is about re-examining the SCORE. Detecting a violation at that point goes another way
+        // (force finish / invalidate at assessment level), not mixed into the verdict of the appeal.
         assertThat(GradingRoundPolicy.isAllowed(
             GradingRoundType.APPEAL, GradingOutcome.INVALIDATED)).isFalse();
     }
@@ -106,15 +106,15 @@ class GradingRoundPolicyTests {
     @ParameterizedTest
     @EnumSource(GradingRoundType.class)
     void should_allow_declining_in_every_round(GradingRoundType roundType) {
-        // Giáo viên quen biết thí sinh có thể xảy ra ở bất kỳ vòng nào.
+        // A teacher who knows the candidate can happen in any round.
         assertThat(GradingRoundPolicy.isAllowed(roundType, GradingOutcome.DECLINED)).isTrue();
     }
 
-    // ---- trạng thái bài sau hành động --------------------------------------
+    // ---- result status after the action --------------------------------------
 
     @Test
     void should_release_the_result_when_the_first_round_ends() {
-        // Cả UPHELD lẫn REGRADED đều công bố — không còn bước admin release riêng.
+        // Both UPHELD and REGRADED publish — there is no separate admin release step anymore.
         assertThat(GradingRoundPolicy.resultStatusAfter(GradingRoundType.INITIAL, GradingOutcome.UPHELD))
             .isEqualTo(AssessmentCandidateResultStatus.RELEASED);
         assertThat(GradingRoundPolicy.resultStatusAfter(GradingRoundType.INITIAL, GradingOutcome.REGRADED))
@@ -123,8 +123,8 @@ class GradingRoundPolicyTests {
 
     @Test
     void should_keep_a_spot_checked_result_untouched() {
-        // null = giữ nguyên. Bài đang RELEASED phải ở RELEASED suốt quá trình hậu
-        // kiểm, nếu không học sinh sẽ thấy điểm biến mất rồi hiện lại.
+        // null = keep as is. A result that is RELEASED must stay RELEASED throughout the spot
+        // check, otherwise the student would see the score vanish and then reappear.
         assertThat(GradingRoundPolicy.resultStatusAfter(GradingRoundType.SPOT_CHECK, GradingOutcome.UPHELD))
             .isNull();
         assertThat(GradingRoundPolicy.resultStatusAfter(GradingRoundType.SPOT_CHECK, GradingOutcome.REGRADED))
@@ -154,8 +154,8 @@ class GradingRoundPolicyTests {
 
     @Test
     void should_release_the_result_after_an_appeal_regardless_of_outcome() {
-        // Kết quả quay về RELEASED chứ không phải FINAL: học sinh còn phúc khảo lại
-        // được trong hạn mức.
+        // The result goes back to RELEASED rather than FINAL: the student can still appeal again
+        // within the allowance.
         assertThat(GradingRoundPolicy.resultStatusAfter(GradingRoundType.APPEAL, GradingOutcome.UPHELD))
             .isEqualTo(AssessmentCandidateResultStatus.RELEASED);
         assertThat(GradingRoundPolicy.resultStatusAfter(GradingRoundType.APPEAL, GradingOutcome.REGRADED))
@@ -175,12 +175,12 @@ class GradingRoundPolicyTests {
             .isInstanceOf(IllegalArgumentException.class);
     }
 
-    // ---- dữ liệu bắt buộc kèm hành động ------------------------------------
+    // ---- data required with an action ------------------------------------
 
     @Test
     void should_require_a_reason_for_every_irreversible_judgement() {
-        // Ba hành động này là thứ bị mang ra tranh chấp về sau; thiếu lý do là
-        // không giải trình được. Bản cũ để INVALIDATE trống lý do — đó là lỗ hổng.
+        // These three actions are what gets disputed later; without a reason they cannot be justified.
+        // The old version left INVALIDATE without a reason — that was a hole.
         assertThat(GradingRoundPolicy.requiresReason(GradingOutcome.INVALIDATED)).isTrue();
         assertThat(GradingRoundPolicy.requiresReason(GradingOutcome.CLEARED_INVALID)).isTrue();
         assertThat(GradingRoundPolicy.requiresReason(GradingOutcome.DECLINED)).isTrue();

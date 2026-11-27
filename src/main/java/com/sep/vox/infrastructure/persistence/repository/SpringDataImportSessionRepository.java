@@ -89,7 +89,7 @@ public interface SpringDataImportSessionRepository extends JpaRepository<ImportS
                 claimed_at = NULL,
                 lease_expires_at = NULL,
                 failure_reason = CASE WHEN attempts >= :maxAttempts
-                    THEN 'Vượt số lần thử lại' ELSE failure_reason END,
+                    THEN 'Retry limit exceeded' ELSE failure_reason END,
                 updated_at = :updatedAt
         WHERE status = 'IMPORTING' AND lease_expires_at < :now
     """, nativeQuery = true)

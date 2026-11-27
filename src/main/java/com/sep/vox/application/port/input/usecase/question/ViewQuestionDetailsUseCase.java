@@ -38,7 +38,7 @@ public class ViewQuestionDetailsUseCase implements IUseCase<ViewQuestionDetailsQ
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         Question question = questionRepository.findAccessibleById(
@@ -47,7 +47,7 @@ public class ViewQuestionDetailsUseCase implements IUseCase<ViewQuestionDetailsQ
             currentSchoolId,
             systemAdmin,
             schoolAdmin
-        ).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu hỏi"));
+        ).orElseThrow(() -> new ResourceNotFoundException("Question not found"));
 
         return QuestionDtoMapper.toQuestionDto(question);
     }

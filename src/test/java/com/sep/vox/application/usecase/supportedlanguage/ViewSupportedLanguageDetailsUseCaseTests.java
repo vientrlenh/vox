@@ -55,7 +55,7 @@ class ViewSupportedLanguageDetailsUseCaseTests {
             () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id))
         );
 
-        assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
+        assertThat(exception).hasMessage("Language not found");
     }
 
     @Test
@@ -68,7 +68,7 @@ class ViewSupportedLanguageDetailsUseCaseTests {
             () -> useCase.execute(new ViewSupportedLanguageDetailsQuery(id))
         );
 
-        assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
+        assertThat(exception).hasMessage("Language not found");
     }
 
     private static SupportedLanguage language(UUID id, boolean active) {

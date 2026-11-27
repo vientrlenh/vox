@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public interface PracticeItemEvaluationRepository {
 
-    /** Ghi hoặc cập nhật kết quả chấm cho 1 response -- trả về id bản ghi evaluation. */
+    /** Writes or updates the grading result for 1 response -- returns the id of the evaluation record. */
     UUID upsert(
         UUID practiceResponseId,
         double itemScore,

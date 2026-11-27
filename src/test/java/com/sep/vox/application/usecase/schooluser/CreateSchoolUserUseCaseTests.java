@@ -395,7 +395,7 @@ public class CreateSchoolUserUseCaseTests {
 
         assertThatThrownBy(() -> createSchoolUserUseCase.execute(command))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessage("Email hoặc số điện thoại đã tồn tại");
+            .hasMessage("Email or phone number already exists");
     }
 
     @Test
@@ -408,7 +408,7 @@ public class CreateSchoolUserUseCaseTests {
 
         assertThatThrownBy(() -> createSchoolUserUseCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Không thể gán người dùng vào trường: dữ liệu không hợp lệ");
+            .hasMessage("Cannot assign the user to the school: invalid data");
     }
 
     private CreateSchoolUserCommand stubStudentCreationUpToTheUserSave() {

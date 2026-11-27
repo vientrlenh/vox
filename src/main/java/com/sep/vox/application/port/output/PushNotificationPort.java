@@ -8,14 +8,14 @@ import com.sep.vox.application.response.output.PushMessage;
 public interface PushNotificationPort {
 
     /**
-     * Gửi một thông báo tới nhiều thiết bị. Tự chia lô theo giới hạn của nhà cung cấp,
-     * phía gọi truyền bao nhiêu FID cũng được.
+     * Sends one notification to many devices. Splits into batches by the provider's limit itself,
+     * so the caller may pass any number of FIDs.
      *
-     * <p>Không ném exception khi một phần thiết bị lỗi -- lỗi từng thiết bị là chuyện
-     * bình thường (gỡ app, đổi máy) và được trả về trong kết quả để phía gọi dọn dẹp.
+     * <p>Does not throw when some devices fail -- a failure on an individual device is normal
+     * (app removed, device changed) and is returned in the result so the caller can clean up.
      */
     PushDispatchResult send(PushMessage message, List<String> installationIds);
 
-    /** Push có đang bật hay không. Cho phép phía gọi bỏ qua bước dựng nội dung khi tắt. */
+    /** Whether push is enabled. Lets the caller skip building the content when it is off. */
     boolean isEnabled();
 }

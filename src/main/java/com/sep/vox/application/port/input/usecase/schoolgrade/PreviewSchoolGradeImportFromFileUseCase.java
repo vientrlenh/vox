@@ -53,7 +53,7 @@ public class PreviewSchoolGradeImportFromFileUseCase
     @Transactional
     public PreviewSchoolGradeImportResponse execute(PreviewSchoolGradeImportFromFileCommand input) {
         if (input == null || input.file() == null) {
-            throw new IllegalArgumentException("File import không được để trống");
+            throw new IllegalArgumentException("The import file must not be empty");
         }
 
         Instant now = Instant.now();
@@ -86,33 +86,33 @@ public class PreviewSchoolGradeImportFromFileUseCase
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         if (user.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("The current user is not active");
         }
         return user;
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("The current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("The school is not active");
         }
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
         if (requestedSchoolId == null) {
-            throw new IllegalArgumentException("Trường học không được để trống");
+            throw new IllegalArgumentException("The school must not be empty");
         }
         if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
-            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
+            throw new IllegalArgumentException("The school does not match the current user");
         }
     }
 

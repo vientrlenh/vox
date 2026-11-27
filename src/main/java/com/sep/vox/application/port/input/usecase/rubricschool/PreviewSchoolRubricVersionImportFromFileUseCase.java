@@ -50,7 +50,7 @@ public class PreviewSchoolRubricVersionImportFromFileUseCase implements IUseCase
 
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_VERSION);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên trống hoặc không chứa dữ liệu.");
+            throw new IllegalArgumentException("The uploaded file is empty or contains no data.");
         }
 
         Instant expiresAt = Instant.now().plus(1, ChronoUnit.DAYS);
@@ -67,17 +67,17 @@ public class PreviewSchoolRubricVersionImportFromFileUseCase implements IUseCase
 
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Account not found."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Your account has been locked.");
 
-        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
-        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("Hành vi xâm nhập dữ liệu trường học khác bị từ chối.");
+        SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId).orElseThrow(() -> new ForbiddenException("Does not belong to any school."));
+        if (!schoolUser.getSchoolId().equals(schoolId)) throw new ForbiddenException("Intrusion into the data of another school was denied.");
     }
 
     private void requireSchoolOwnedRubric(PreviewSchoolRubricVersionImportCommand command) {
-        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+        Rubric rubric = rubricRepository.findById(command.rubricId()).orElseThrow(() -> new ResourceNotFoundException("The requested Rubric was not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || rubric.getSchoolId() == null || !rubric.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bộ Rubric này không thuộc quyền quản lý của trường bạn.");
+            throw new ForbiddenException("This Rubric is not managed by your school.");
         }
     }
 

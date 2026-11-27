@@ -2,7 +2,7 @@ package com.sep.vox.application.response.input.schoolclassuser;
 
 import java.util.UUID;
 
-/** Một người dùng không thêm được vào lớp, kèm lý do hiển thị cho người dùng cuối. */
+/** A user who could not be added to the class, with the reason to show to the end user. */
 public record BulkCreateSchoolClassUserFailure(UUID userId, String reason) {
 
 }

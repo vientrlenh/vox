@@ -9,10 +9,10 @@ public final class PracticePlanningResponses {
     }
 
     /**
-     * Không còn trường {@code level}. Trước đây mỗi thẻ mang một mức độ riêng, nên học sinh
-     * nhìn thấy "Công nghệ — Nâng cao" cạnh "Đồ ăn — Cơ bản" rồi bấm cái thứ hai: hệ thống ghi
-     * nhận "em thích Đồ ăn" trong khi em chỉ chọn cái dễ hơn. Giờ độ khó chọn MỘT lần cho cả
-     * phiên nên mọi thẻ cùng một mức, và lựa chọn chủ đề trở lại thuần sở thích.
+     * The {@code level} field is gone. Before, each card carried its own level, so a student
+     * saw "Technology — Advanced" next to "Food — Basic" and clicked the second: the system recorded
+     * "the student likes Food" when they had only chosen the easier one. Now the difficulty is chosen ONCE for the whole
+     * session so every card has the same level, and topic selection is purely about interest again.
      */
     public record PracticeTopicOffer(
             UUID topicId,
@@ -52,16 +52,16 @@ public final class PracticePlanningResponses {
             String origin,
             int plannedSeconds,
             int reservedQuotaSeconds,
-            /** Trần nói của cả phiên (giây) -- xem PracticePaperDto.sessionBudgetSeconds. */
+            /** The speaking cap of the whole session (seconds) -- see PracticePaperDto.sessionBudgetSeconds. */
             int sessionBudgetSeconds,
             List<PracticePaperQuestion> questions) {
     }
 
     /**
-     * Kết quả dựng đề theo mô hình 2 pha: dựng đề có thể phải nhờ AI sinh câu mới
-     * (10-20s) khi kho chưa có câu phù hợp, quá lâu để giữ 1 request HTTP. Pha 1
-     * (buildPracticePaper) trả về ngay READY nếu kho có sẵn, hoặc PREPARING nếu đang
-     * sinh; pha 2 (practicePaperDraft) để client hỏi lại.
+     * The result of building a paper in the 2-phase model: building a paper may need the AI to generate new questions
+     * (10-20s) when the bank has no suitable questions, too long to hold one HTTP request. Phase 1
+     * (buildPracticePaper) returns READY immediately if the bank already has them, or PREPARING if they are being
+     * generated; phase 2 (practicePaperDraft) is for the client to ask again.
      */
     public record PracticePaperDraft(
             UUID draftId,

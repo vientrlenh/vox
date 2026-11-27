@@ -29,7 +29,7 @@ public class AssessmentScheduleProctorRepositoryImpl implements AssessmentSchedu
             AssessmentScheduleProctorJpaEntity saved = springDataAssessmentScheduleProctorRepository.save(AssessmentScheduleProctorMapper.toJpa(proctor));
             return AssessmentScheduleProctorMapper.toDomain(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new ResourceDuplicatedException("Giám thị đã được phân công cho ca này");
+            throw new ResourceDuplicatedException("Proctor is already assigned to this schedule");
         }
     }
 

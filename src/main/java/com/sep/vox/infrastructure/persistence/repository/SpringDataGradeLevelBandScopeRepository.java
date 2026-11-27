@@ -19,7 +19,7 @@ public interface SpringDataGradeLevelBandScopeRepository extends JpaRepository<G
     List<GradeLevelBandScopeJpaEntity> findByGradeLevelIdInAndFrameworkVersionIdIn(
             Collection<UUID> gradeLevelIds, Collection<UUID> frameworkVersionIds);
 
-    // Một bậc có thể vừa là trần của khối này vừa là mặc định của khối kia -- phải soi cả hai cột.
+    // A band can be the ceiling of one grade and the default of another -- both columns must be checked.
     @Query("""
             SELECT COUNT(s) > 0 FROM GradeLevelBandScopeJpaEntity s
             WHERE s.defaultTargetBandId = :bandId OR s.hardMaxBandId = :bandId

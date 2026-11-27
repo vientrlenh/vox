@@ -12,14 +12,14 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateAssessmentBlueprintSlotRequest(
-    @NotNull(message = "Thứ tự slot là bắt buộc")
+    @NotNull(message = "Slot order is required")
     Integer order,
 
     BigDecimal weight,
     Integer prepTimeSecondsOverride,
     Integer responseTimeSecondsOverride,
 
-    @NotNull(message = "Loại slot là bắt buộc")
+    @NotNull(message = "Slot type is required")
     AssessmentBlueprintSlotType slotType,
 
     UUID fixedQuestionId,
@@ -28,7 +28,7 @@ public record UpdateAssessmentBlueprintSlotRequest(
     QuestionSelectionSpecRequest selectionSpec
 ) {
 
-    @AssertTrue(message = "Slot FIXED phải có fixedQuestionId và không có selectionSpec; slot SELECTION phải có selectionSpec và không có fixedQuestionId")
+    @AssertTrue(message = "A FIXED slot must have fixedQuestionId and no selectionSpec; a SELECTION slot must have selectionSpec and no fixedQuestionId")
     public boolean isSlotConfigValid() {
         if (slotType == null) {
             return true;

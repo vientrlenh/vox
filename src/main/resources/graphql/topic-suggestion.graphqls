@@ -1,9 +1,9 @@
-# GỠ 2026-08-06: mutation respondToTopicSuggestion, query myPendingTopicSuggestions và
-# type TopicSuggestion. Cả cụm chỉ phục vụ gợi ý chủ đề suy ra TỪ LỜI HỌC SINH NÓI trong bài
-# luyện -- đường đó đã bỏ ở backend nên không còn gì tạo ra dòng PENDING để mà duyệt.
+# REMOVED 2026-08-06: mutation respondToTopicSuggestion, query myPendingTopicSuggestions and
+# type TopicSuggestion. The whole cluster only served topic suggestions inferred FROM WHAT THE STUDENT SAID in a
+# practice session -- that path was removed in the backend, so nothing creates PENDING rows to review any more.
 #
-# generateTopicFromKeyword bên dưới là đường KHÁC và vẫn chạy: học sinh chủ động gõ từ khoá,
-# tìm không ra thì AI soạn chủ đề mới.
+# generateTopicFromKeyword below is a DIFFERENT path and still works: the student types a keyword on their own,
+# and when nothing is found the AI drafts a new topic.
 
 extend type Mutation {
     generateTopicFromKeyword(keyword: String!): TopicFromKeywordResult!

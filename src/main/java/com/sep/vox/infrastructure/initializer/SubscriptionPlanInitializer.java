@@ -164,7 +164,7 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
         saveEqualQuotas(plan.getId(), includedAmountVnd);
 
         log.info(
-            "Subscription plan created: {} ({} {}, gia {}d, han muc {}d moi loai)",
+            "Subscription plan created: {} ({} {}, price {} VND, quota {} VND per type)",
             seed.name(),
             seed.periodCount(),
             seed.periodType(),
@@ -203,29 +203,29 @@ public class SubscriptionPlanInitializer implements ApplicationRunner {
     }
 
     /**
-     * Một gói trong thang. HẠN MỨC suy ra từ ngân sách AI; GIÁ thì không -- hai con số này cố ý rời
-     * nhau.
+     * One plan in the ladder. The QUOTA is derived from the AI budget; the PRICE is not -- these two numbers are intentionally separate
+     * from each other.
      *
-     * <p><b>Hạn mức</b> = {@code includedQuotaUsd × }{@link #USD_TO_VND} phẳng, cấp bằng nhau cho mỗi
-     * loại. Ngân sách USD chọn tròn và tỉ lệ thuận với độ dài chu kỳ (20 / 85 / 250 / 500 / 1.000 /
-     * 2.000), nên mọi con số VNĐ đều là tích chẵn của 26.000 và tự kiểm được bằng nhẩm. Đây là con số
-     * THẬT: nó quyết định trường chấm được bao nhiêu bài trước khi phải nạp thêm.
+     * <p><b>Quota</b> = {@code includedQuotaUsd × }{@link #USD_TO_VND} flat, granted equally for each
+     * type. The USD budget is chosen round and proportional to the cycle length (20 / 85 / 250 / 500 / 1,000 /
+     * 2,000), so every VND figure is an even multiple of 26,000 and can be checked by mental arithmetic. This is a REAL
+     * number: it decides how many assessments a school can grade before having to top up.
      *
-     * <p><b>Giá</b> là một thang TƯỢNG TRƯNG cho môi trường demo, KHÔNG suy ra từ hạn mức. Bán đúng
-     * bằng chi phí AI thì gói rẻ nhất đã hơn một triệu và gói dài nhất hơn trăm triệu -- không ai bấm
-     * mua để xem thử luồng đăng ký, và cổng thanh toán sandbox cũng chỉ nên chạy với số tiền nhỏ. Vì
-     * vậy thang gói này bán LỖ nặng so với hạn mức nó cấp, có chủ đích. Gói tạo từ giao diện quản trị
-     * vẫn tính giá theo cách của nó, không dính gì tới đây.
+     * <p><b>Price</b> is a SYMBOLIC scale for the demo environment, NOT derived from the quota. Selling exactly
+     * at AI cost would make the cheapest plan over a million and the longest plan over a hundred million -- nobody would press
+     * buy just to try the registration flow, and the sandbox payment gateway should only run with small amounts. So
+     * this plan ladder sells at a heavy LOSS relative to the quota it grants, on purpose. Plans created from the admin UI
+     * still price their own way, unrelated to this.
      *
-     * <p>Giá vẫn phải TĂNG NGHIÊM NGẶT theo độ dài chu kỳ, không được để bằng nhau: luồng đổi gói rẽ
-     * nhánh bằng phép so giá -- đắt hơn thì hiệu lực ngay và bù phần chưa dùng, rẻ hơn thì xếp hàng
-     * sau kỳ hiện tại. Sáu gói cùng giá là cả hai nhánh đó không bao giờ chạy tới, và cũng là bỏ mất
-     * lý do để trường mua chu kỳ dài.
+     * <p>The price must still INCREASE STRICTLY with the cycle length and must not be equal: the plan-change flow
+     * branches on a price comparison -- more expensive takes effect immediately and compensates the unused part, cheaper is queued
+     * after the current period. Six plans at the same price means neither branch is ever reached, and it also removes
+     * the reason for a school to buy a long cycle.
      *
-     * <p>Biên lãi không nằm trong giá niêm yết ở đây: nó là dòng phí dịch vụ riêng trên đơn hàng, do
-     * {@code ServiceFeePort} tính lúc đặt đơn -- xem {@code CreateSubscriptionOrderUseCase}. Nhờ vậy
-     * sửa tỷ lệ phí không phải đụng vào thang gói, và trường đọc được rành mạch "tiền hàng bao nhiêu,
-     * phí bao nhiêu".
+     * <p>The profit margin is not in the list price here: it is a separate service fee line on the order, computed by
+     * {@code ServiceFeePort} when the order is placed -- see {@code CreateSubscriptionOrderUseCase}. That way
+     * changing the fee rate does not touch the plan ladder, and the school can read plainly "how much the goods cost,
+     * how much the fee is".
      */
     private record PlanSeed(
         String name,

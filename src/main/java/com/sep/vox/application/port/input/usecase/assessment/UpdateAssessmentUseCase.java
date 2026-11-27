@@ -67,7 +67,7 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Assessment assessment = assessmentRepository.findById(command.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         authorizeMutation(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
         requireEditableForCurrentStatus(assessment);
@@ -99,7 +99,7 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
         if (assessment.getKind() == AssessmentKind.CLASS_TEST
                 && assessment.getStatus() != AssessmentStatus.DRAFT
                 && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException("Chỉ được cập nhật bài kiểm tra trên lớp khi chưa bắt đầu");
+            throw new IllegalArgumentException("A class test may only be updated before it starts");
         }
         // Regular assessment: candidates are already in the exam room, so any change to the information would put the running data
         // out of step (time window, attempt time, how the score is decided).
@@ -239,18 +239,18 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
             if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessmentSchoolId)) {
                 return;
             }
-            // Chủ tịch hội đồng chạy trọn quy trình kỳ thi tập trung trên trang chi tiết (lập hội đồng →
-            // chốt khung đề → ra đề → xếp lịch), nên phải sửa được thông tin kỳ thi như quản trị trường.
+            // A CHAIR runs the whole centralized assessment workflow on the detail page (set up the committee ->
+            // lock the paper framework -> author the papers -> schedule), so they must be able to edit the assessment like a school admin.
             if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, currentUserId, AssessmentMemberRole.CHAIR)) {
                 return;
             }
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, currentUserId, AssessmentMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessmentId)) {
-            throw new IllegalArgumentException("Không thể cập nhật bài kiểm tra khi đã có bài nộp");
+            throw new IllegalArgumentException("The assessment cannot be updated after a submission exists");
         }
     }
 
@@ -261,8 +261,8 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
      * (findByAssessmentId has already excluded DELETED).
      */
     /**
-     * Chỉ kiểm lại bất biến ca thi khi thao tác thực sự đụng tới thời gian; sửa tên/mô tả không được
-     * bị chặn chỉ vì dữ liệu sẵn có đang lệch.
+     * Re-checks the assessment schedule invariant only when the operation really touches the time; editing the name
+     * or description must not be blocked just because the existing data is already inconsistent.
      */
     private boolean touchesScheduleTiming(UpdateAssessmentCommand command) {
         return command.openAt() != null
@@ -296,21 +296,21 @@ public class UpdateAssessmentUseCase implements IUseCase<UpdateAssessmentCommand
 
 
     /**
-     * Cả hai kind đều bắt buộc có khung mở/đóng: với bài trên lớp vì khung này chính là ca thi, với
-     * kỳ thi tập trung vì nó là ràng buộc ngoài của mọi ca thi -- để trống thì ca thi không còn mốc
-     * nào chặn, kể cả hạn gói dịch vụ.
+     * Both kinds require an opening/closing window: for a class test because the window is the assessment schedule
+     * itself, for a centralized assessment because it is the outer bound of every assessment schedule -- left empty,
+     * the schedules have no limit at all, including the subscription plan's term.
      *
-     * <p>Bài kiểm tra tạo từ trước khi luật này có hiệu lực có thể còn null; lúc đó phải nhập đủ hai
-     * mốc mới lưu được, đúng như bài tạo mới.
+     * <p>An assessment created before this rule took effect may still have nulls; then both boundaries must be
+     * entered before it can be saved, exactly like a newly created one.
      */
     private void requireAssessmentWindow(Instant openAt, Instant closeAt, AssessmentKind kind) {
         if (openAt == null || closeAt == null) {
             throw new IllegalArgumentException(kind == AssessmentKind.CLASS_TEST
-                ? "Bài kiểm tra trên lớp phải có thời gian mở bài và đóng bài"
-                : "Kỳ thi phải có thời gian mở bài và đóng bài");
+                ? "A class test must have an opening time and a closing time"
+                : "An assessment must have an opening time and a closing time");
         }
         if (!openAt.isBefore(closeAt)) {
-            throw new IllegalArgumentException("Thời gian mở bài phải nhỏ hơn thời gian đóng bài");
+            throw new IllegalArgumentException("The opening time must be earlier than the closing time");
         }
     }
 }

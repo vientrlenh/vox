@@ -88,7 +88,7 @@ public class AssessmentHumanGradingNotificationService {
     private void warnNoRecipients(Assessment assessment, long pendingCount) {
         // A class test without a CHAIR, or a school with no active admin left.
         // The attempts stay in the grading queue, there is just nobody to alert.
-        log.warn("Bài thi {} còn {} bài chờ chấm tay nhưng không tìm được người nhận thông báo",
+        log.warn("Assessment {} has {} submissions awaiting manual grading but no notification recipient could be found",
             assessment.getId(), pendingCount);
     }
 
@@ -125,19 +125,19 @@ public class AssessmentHumanGradingNotificationService {
         assessment.setHumanGradingNotifiedAt(now);
         assessmentRepository.save(assessment);
 
-        log.info("Bài thi {} có {} bài chờ chấm tay -- báo cho {} người",
+        log.info("Assessment {} has {} submissions awaiting manual grading -- notifying {} people",
             assessment.getId(), pendingCount, recipientIds.size());
     }
 
     /**
-     * Bài trên lớp: CHAIR chính là giáo viên ra đề, và cũng là người duy nhất chấm nó -- xem
-     * {@code ClassTestGradingAssignmentService.findClassTestChairId}, nơi mọi phân công đều
-     * được mở dưới tên họ.
+     * Class test: the CHAIR is the teacher who made the paper, and also the only one who grades it -- see
+     * {@code ClassTestGradingAssignmentService.findClassTestChairId}, where every assignment is
+     * opened under their name.
      *
-     * <p>Kỳ thi tập trung: CHAIR (chủ tịch hội đồng, người chịu trách nhiệm về kỳ thi) CỘNG
-     * school admin (người thực sự đi giao việc chấm qua AssignGradingUseCase). Gộp cả hai vì
-     * thiếu bên nào cũng có ca không ai được báo: kỳ thi chưa gán chair, hoặc chair nghỉ.
-     * {@code distinct} vì một người có thể vừa là chair vừa là school admin.
+     * <p>Centralized assessment: the CHAIR (chairperson of the council, responsible for the assessment) PLUS
+     * school admin (who actually hands out the grading work through AssignGradingUseCase). Both are merged because
+     * missing either leaves a case where nobody is notified: an assessment with no chair assigned, or a chair who left.
+     * {@code distinct} because one person may be both chair and school admin.
      */
     private List<UUID> recipientsOf(Assessment assessment) {
         Stream<UUID> chairIds = assessmentMemberRepository.findByAssessmentId(assessment.getId()).stream()

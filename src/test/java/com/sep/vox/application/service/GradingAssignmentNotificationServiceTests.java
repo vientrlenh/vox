@@ -37,10 +37,10 @@ import com.sep.vox.domain.valueobject.FullName;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Báo cho giáo viên vừa được giao một vòng chấm.
+ * Notifies a teacher who has just been given a grading round.
  *
- * <p>Phần đáng giá nhất ở đây là luật ẩn danh: kỳ thi tập trung chấm mù, nên tên học sinh
- * không được lọt vào thông báo -- mà thông báo thì nằm lại vĩnh viễn trong cột payload.
+ * <p>The most valuable part here is the anonymity rule: centralized assessments are graded blind, so the student's name
+ * must not leak into the notification -- and the notification stays forever in the payload column.
  */
 class GradingAssignmentNotificationServiceTests {
 
@@ -96,7 +96,7 @@ class GradingAssignmentNotificationServiceTests {
         assertThat(payload.assessmentName()).isEqualTo("Kiểm tra 15 phút");
     }
 
-    /** Bài kiểm tra trên lớp không chấm mù: giáo viên vốn đã thấy tên ở hàng đợi chấm. */
+    /** A class test is not graded blind: the teacher already sees the name in the grading queue. */
     @Test
     void should_name_the_candidate_for_a_class_test() {
         given(AssessmentKind.CLASS_TEST, "Trần Quang Thiên");
@@ -130,7 +130,7 @@ class GradingAssignmentNotificationServiceTests {
             .isEqualTo(candidateResultId.toString().replace("-", "").substring(0, 8).toUpperCase());
     }
 
-    /** Không tra tên cho kỳ thi tập trung: thứ không nạp lên thì không lọt vào payload được. */
+    /** No name lookup for a centralized assessment: what is not loaded cannot leak into the payload. */
     @Test
     void should_not_even_look_up_names_for_a_centralized_assessment() {
         given(AssessmentKind.CENTRALIZED, "Trần Quang Thiên");
@@ -141,7 +141,7 @@ class GradingAssignmentNotificationServiceTests {
         verify(userRepository, never()).findByIdIn(any());
     }
 
-    /** Học sinh không tra được tên vẫn phải nhận diện được bài -- lui về mã bài. */
+    /** A student whose name cannot be looked up must still identify the assessment -- fall back to the assessment code. */
     @Test
     void should_fall_back_to_the_result_code_when_the_name_is_missing() {
         given(AssessmentKind.CLASS_TEST, null);

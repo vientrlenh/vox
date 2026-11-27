@@ -33,7 +33,7 @@ public class ResultStatusHistoryRecorder {
 
     private final AssessmentResultStatusHistoryRepository assessmentResultStatusHistoryRepository;
 
-    /** Ảnh chụp trạng thái + điểm trước khi thao tác. */
+    /** Snapshot of the status + score before the action. */
     public record Snapshot(UUID candidateResultId, AssessmentCandidateResultStatus status, BigDecimal totalScore) {
     }
 
@@ -45,11 +45,11 @@ public class ResultStatusHistoryRecorder {
     }
 
     /**
-     * Ghi một dòng nhật ký nếu có gì đó thực sự đổi (trạng thái hoặc điểm).
+     * Writes a history row if anything actually changed (status or score).
      *
-     * <p>Trả về {@code null} khi không có gì đổi — hành động "giữ nguyên" ở vòng hậu
-     * kiểm không sinh dòng rác, nhưng bản thân việc giáo viên đã xác nhận vẫn nằm ở
-     * {@code outcome} của dòng phân công.
+     * <p>Returns {@code null} when nothing changed — a "keep as is" action in the post-review
+     * round creates no junk row, but the fact that the teacher confirmed still lives in
+     * the {@code outcome} of the assignment row.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public AssessmentResultStatusHistory record(Snapshot before, AssessmentCandidateResult after,
@@ -68,9 +68,9 @@ public class ResultStatusHistoryRecorder {
     }
 
     /**
-     * Ghi thẳng, kể cả khi không có gì đổi. Dùng cho những quyết định phải để lại dấu
-     * vết dù trạng thái đứng yên — ví dụ REMEDIATION giữ nguyên INVALID (xác nhận vi
-     * phạm) hay giáo viên trả lại phân công.
+     * Writes directly, even when nothing changed. Used for decisions that must leave a
+     * trace even though the status stays still — for example REMEDIATION keeping INVALID
+     * (confirming a violation) or a teacher returning an assignment.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public AssessmentResultStatusHistory recordAlways(Snapshot before, AssessmentCandidateResult after,
@@ -83,16 +83,16 @@ public class ResultStatusHistoryRecorder {
                 source, actorId, reason, Instant.now()));
     }
 
-    /** Ghi hàng loạt — chốt sổ cả kỳ thi không được đẻ ra N insert lẻ. */
+    /** Bulk write — closing out a whole assessment must not spawn N single inserts. */
     @Transactional(propagation = Propagation.MANDATORY)
     public List<AssessmentResultStatusHistory> recordAll(List<AssessmentResultStatusHistory> histories) {
         return assessmentResultStatusHistoryRepository.saveAll(histories);
     }
 
     /**
-     * So điểm theo GIÁ TRỊ, không theo {@code equals}: {@code BigDecimal("7.0")} và
-     * {@code BigDecimal("7.00")} không equals nhau nhưng là cùng một điểm — dùng
-     * equals ở đây sẽ đẻ ra dòng audit ma mỗi lần tính lại.
+     * Compares scores by VALUE, not by {@code equals}: {@code BigDecimal("7.0")} and
+     * {@code BigDecimal("7.00")} are not equal yet are the same score — using
+     * equals here would spawn a ghost audit row on every recomputation.
      */
     private boolean equalScores(BigDecimal left, BigDecimal right) {
         if (left == null || right == null) {

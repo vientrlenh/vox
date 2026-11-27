@@ -13,10 +13,10 @@ import com.sep.vox.domain.dto.SchoolDebtEventDto;
 import com.sep.vox.domain.repository.SchoolDebtEventRepository;
 
 /**
- * Sổ audit "nguyên nhân nợ hạn mức AI" của một trường.
+ * The audit ledger of "what caused the AI quota debt" of a school.
  *
- * <p>Ở package balance chứ không phải school: nợ là mặt trái của chính cái ví -- số dư âm CHÍNH LÀ
- * khoản nợ -- nên nó thuộc về cùng một nhóm với sao kê ví, không phải với lớp học và phòng thi.
+ * <p>Lives in the balance package rather than school: debt is the flip side of the balance itself -- a negative
+ * balance IS the debt -- so it belongs with the balance statement, not with classes and exam rooms.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,8 +31,8 @@ public class ViewSchoolDebtEventsUseCase
     public PageResult<SchoolDebtEventDto> execute(ViewSchoolDebtEventsQuery input) {
         schoolScopedReadGuard.requireCanRead(input.schoolId());
 
-        // page đi vào repository theo lối 1-BASED; adapter là chỗ DUY NHẤT trừ 1 trước khi giao cho
-        // Spring Data -- xem PagingConventionTests.
+        // page goes into the repository 1-BASED; the adapter is the ONLY place that subtracts 1 before handing it to
+        // Spring Data -- see PagingConventionTests.
         PageResult<SchoolDebtEvent> page = schoolDebtEventRepository.findBySchoolId(input.schoolId(), input.page(), input.size());
 
         return new PageResult<>(

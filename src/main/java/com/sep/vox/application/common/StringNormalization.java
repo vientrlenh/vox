@@ -57,10 +57,12 @@ public final class StringNormalization {
     }
 
     /**
-     * Tạo sẵn pattern "%keyword%" (đã lowercase) ở tầng Java thay vì dùng JPQL CONCAT(), vì Hibernate dịch
-     * CONCAT() sang toán tử `||` của PostgreSQL và để JDBC tự suy luận kiểu tham số - khi giá trị/ngữ cảnh mơ hồ,
-     * PostgreSQL có thể suy ra nhầm tham số là bytea, khiến LOWER(...) báo lỗi "function lower(bytea) does not
-     * exist". Build sẵn chuỗi này rồi bind thẳng vào LIKE :pattern tránh hẳn lỗi suy luận kiểu đó.
+     * Builds the "%keyword%" pattern (already lowercased) in Java instead of using JPQL CONCAT(),
+     * because Hibernate translates CONCAT() to PostgreSQL's `||` operator and lets JDBC infer the
+     * parameter type - when the value/context is ambiguous, PostgreSQL may wrongly infer the
+     * parameter as bytea, making LOWER(...) fail with "function lower(bytea) does not exist".
+     * Building the string beforehand and binding it straight into LIKE :pattern avoids that type
+     * inference error entirely.
      */
     public static String toLikePattern(String keyword) {
         String trimmed = trimAndCollapseSpaces(keyword);

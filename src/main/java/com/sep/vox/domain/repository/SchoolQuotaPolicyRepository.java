@@ -8,18 +8,18 @@ import com.sep.vox.domain.model.metering.QuotaType;
 import com.sep.vox.domain.model.school.SchoolQuotaPolicy;
 
 /**
- * Trần phân phối hạn mức theo TRƯỜNG và theo từng loại hạn mức.
+ * Quota distribution ceiling per SCHOOL and per quota type.
  *
- * <p>Không có dòng nào = chia được toàn bộ ví. Đường đọc vì thế không bao giờ trả Optional rỗng ra
- * ngoài: nó dựng bản mặc định tại chỗ, y như cách số dư ví dựng bản 0 đồng cho trường chưa từng nạp.
+ * <p>No row = the whole balance may be distributed. So the read path never hands an empty Optional outside:
+ * it builds the default in place, just as the wallet balance builds a 0-dong version for a school that never topped up.
  */
 public interface SchoolQuotaPolicyRepository {
 
-    /** Không bao giờ null -- trường chưa đặt gì nhận bản mặc định 1.0, KHÔNG ghi xuống DB. */
+    /** Never null -- a school that set nothing gets the default 1.0, NOT written to the DB. */
     SchoolQuotaPolicy findBySchoolIdAndQuotaType(UUID schoolId, QuotaType quotaType);
 
     List<SchoolQuotaPolicy> findBySchoolId(UUID schoolId);
 
-    /** Tạo dòng nếu chưa có, ghi đè tỷ lệ nếu đã có. */
+    /** Creates the row if missing, overwrites the ratio if it exists. */
     SchoolQuotaPolicy upsertRatio(UUID schoolId, QuotaType quotaType, BigDecimal distributableRatio);
 }

@@ -58,8 +58,8 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
     @Override
     @Transactional(readOnly = true)
     public PageResult<StudentAssessmentSummaryResponse> execute(ViewMyAssessmentsQuery input) {
-        // MỘT mốc "bây giờ" cho cả câu đếm lẫn câu lấy dòng: lấy hai lần thì một bài đúng lúc
-        // chuyển trạng thái có thể lọt vào câu này mà rơi khỏi câu kia.
+        // ONE "now" for both the count query and the row query: with two readings, an assessment that changes status right
+        // at that moment could appear in one query and fall out of the other.
         Instant now = Instant.now();
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
 
@@ -183,44 +183,44 @@ public class ViewMyAssessmentsUseCase implements IUseCase<ViewMyAssessmentsQuery
 
     private EntryAvailability resolveCandidateBlock(StudentAssessmentRowInfo row, int attemptsUsed) {
         if (row.blockedAt() != null) {
-            return new EntryAvailability(false, "Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
+            return new EntryAvailability(false, "Your attempt at this assessment was force-ended, you cannot re-enter");
         }
 
         if (AssessmentCandidateStatus.isBlockedForEntry(row.candidateStatus())) {
-            return new EntryAvailability(false, "Bạn không đủ điều kiện tham gia kỳ thi này");
+            return new EntryAvailability(false, "You are not eligible to take this assessment");
         }
 
         if (row.maxAttempt() != null && attemptsUsed >= row.maxAttempt()) {
-            return new EntryAvailability(false, "Bạn đã hết số lượt vào thi cho bài này.");
+            return new EntryAvailability(false, "You have used up your attempts for this assessment.");
         }
 
         if (row.assignedPaperId() == null) {
-            return new EntryAvailability(false, "Bạn chưa được gán đề thi.");
+            return new EntryAvailability(false, "You have not been assigned an assessment paper.");
         }
 
         // There is no separate switch-off branch for class tests any more: a class test is also taken in a room with a
         // proctor and a real session, so it goes through the same checks as a centralized assessment.
         if (!AssessmentCandidateStatus.isAttended(row.candidateStatus())) {
-            return new EntryAvailability(false, "Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị.");
+            return new EntryAvailability(false, "You have not been marked present, please contact the proctor.");
         }
         return null;
     }
 
     private EntryAvailability resolveScheduleAvailability(StudentAssessmentRowInfo row, Instant now) {
         if (row.assessmentStatus() != AssessmentStatus.IN_PROGRESS) {
-            return new EntryAvailability(false, "Kỳ thi hiện chưa được mở để vào thi.");
+            return new EntryAvailability(false, "The assessment is not open for entry yet.");
         }
 
         if (row.scheduleStartDate() != null && now.isBefore(row.scheduleStartDate())) {
-            return new EntryAvailability(false, "Chưa đến giờ thi, vui lòng chờ đến khi ca thi bắt đầu.");
+            return new EntryAvailability(false, "It is not time yet, please wait until the assessment schedule starts.");
         }
 
         if (row.scheduleEndDate() != null && !now.isBefore(row.scheduleEndDate())) {
-            return new EntryAvailability(false, "Ca thi đã hết thời gian vào thi.");
+            return new EntryAvailability(false, "The entry time of the assessment schedule has ended.");
         }
 
         if (assessmentScheduleRepository.findByIdAndInSchedule(row.scheduleId(), now).isEmpty()) {
-            return new EntryAvailability(false, "Ca thi không hợp lệ hoac đã hết hạn.");
+            return new EntryAvailability(false, "The assessment schedule is invalid or has expired.");
         }
 
         return new EntryAvailability(true, null);

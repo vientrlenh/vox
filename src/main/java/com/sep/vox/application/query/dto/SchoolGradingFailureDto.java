@@ -25,15 +25,15 @@ public record SchoolGradingFailureDto(
     String assessmentCode,
     String assessmentName,
     String candidateName,
-    /** null khi học sinh chưa được xếp vào lớp đang hoạt động nào. */
+    /** null when the student has not been placed in any active class. */
     String className,
-    /** Mốc nộp bài — phiên hỏng không có mốc nào khác đáng tin để xếp thứ tự. */
+    /** The submission time -- a failed session has no other trustworthy timestamp to order by. */
     Instant failedAt,
-    /** Thông điệp lỗi thô; null với phiên bị đánh dấu hỏng qua nhánh DLT. */
+    /** The raw error message; null for a session marked failed through the DLT path. */
     String error,
-    /** Dịch vụ chấm đã tự thử mấy lần trước khi bỏ cuộc; null khi không rõ. */
+    /** How many times the grading service retried by itself before giving up; null when unknown. */
     Integer aiRetryCount,
-    /** Trường còn lượt nhờ AI chấm lại cho phiên này hay không. */
+    /** Whether the school still has AI re-grade attempts left for this session. */
     boolean schoolRetryLeft
 ) {
 }

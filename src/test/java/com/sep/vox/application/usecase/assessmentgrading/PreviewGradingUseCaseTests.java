@@ -187,7 +187,7 @@ public class PreviewGradingUseCaseTests {
     void should_not_write_anything() {
         useCase.execute(command("8.00", "6.00"));
 
-        // Preview là POST nhưng chỉ đọc — nếu nó ghi, giáo viên "xem thử" là đã chấm.
+        // Preview is a POST but read-only -- if it wrote, a teacher "trying it out" would already have graded.
         verifyNoInteractions(assessmentItemEvaluationRepository);
         verifyNoInteractions(assessmentItemCriterionScoreRepository);
         verifyNoInteractions(assessmentSessionRepository);
@@ -234,7 +234,7 @@ public class PreviewGradingUseCaseTests {
 
     @Test
     void should_reject_when_teacher_is_not_the_assigned_one() {
-        org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
+        org.mockito.Mockito.doThrow(new ForbiddenException("SECURITY"))
             .when(assessmentGradingAccessService).authorizeAssignedTeacher(any(), eq(teacherId));
 
         assertThatThrownBy(() -> useCase.execute(command("8.00", "6.00")))

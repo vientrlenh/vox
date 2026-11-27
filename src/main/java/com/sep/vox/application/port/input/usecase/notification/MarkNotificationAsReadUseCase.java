@@ -28,7 +28,7 @@ public class MarkNotificationAsReadUseCase implements IUseCase<MarkNotificationA
         Instant now = Instant.now();
 
         Notification notification = notificationRepository.findByIdAndUserId(input.id(), userId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông báo"));
+            .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
         notificationRepository.markRead(userId, input.id(), now);
 
         return notification.getId();

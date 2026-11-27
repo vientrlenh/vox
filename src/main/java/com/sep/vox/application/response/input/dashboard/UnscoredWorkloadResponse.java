@@ -6,14 +6,14 @@ import com.sep.vox.application.query.dto.SchoolUnscoredWorkloadDto;
 import com.sep.vox.domain.common.BusinessDays;
 
 /**
- * Bài đã thi xong mà học sinh chưa có điểm, chia theo thứ đang chặn.
+ * Submissions that are finished but the student has no score yet, split by what is blocking them.
  *
- * <p>Năm nhóm loại trừ nhau và cộng lại đúng bằng {@code total} — xem
- * {@link SchoolUnscoredWorkloadDto} cho định nghĩa từng nhóm.
+ * <p>The five buckets are mutually exclusive and add up to exactly {@code total} -- see
+ * {@link SchoolUnscoredWorkloadDto} for the definition of each bucket.
  *
- * <p>{@code aiFailed} là tổng của hai nhóm AI, trả sẵn vì giao diện gộp chúng thành MỘT dòng còn hai
- * số con chỉ là nhãn phụ trên dòng đó. Để client tự cộng thì con số trên thẻ và con số sau khi bấm
- * vào có thể lệch nhau nếu một bên quên một nhóm.
+ * <p>{@code aiFailed} is the sum of the two AI buckets, returned ready-made because the UI merges them into ONE row while the two
+ * sub-numbers are only secondary labels on that row. If the client adds them itself, the number on the card and the number after clicking
+ * through can disagree if one side forgets a bucket.
  */
 public record UnscoredWorkloadResponse(
     int total,
@@ -23,7 +23,7 @@ public record UnscoredWorkloadResponse(
     int awaitingAssignment,
     int assignedOverdue,
     int assignedInProgress,
-    /** Bài chờ lâu nhất đã chờ bao nhiêu ngày lịch; null khi không còn bài nào. */
+    /** How many calendar days the longest-waiting submission has waited; null when no submission is left. */
     Integer oldestWaitingDays,
     int assessmentCount
 ) {

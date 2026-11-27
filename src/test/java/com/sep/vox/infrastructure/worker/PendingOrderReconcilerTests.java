@@ -32,17 +32,17 @@ import com.sep.vox.domain.repository.OrderRepository;
 import com.sep.vox.domain.repository.PaymentRecordRepository;
 
 /**
- * Phép kiểm cho ca DÒNG MỒ CÔI: lần thử mang một mã mà cổng chưa từng thấy.
+ * Checks for the ORPHANED ROW case: an attempt carrying a code that the gateway has never seen.
  *
- * <p>Trạng thái này chỉ tồn tại từ khi CreatePaymentCheckoutUrlUseCase commit dòng PENDING TRƯỚC lúc
- * gọi createPaymentLink -- lời gọi đó hỏng giữa chừng thì dòng ở lại, còn cổng thì không có phiên nào.
+ * <p>This state only exists since CreatePaymentCheckoutUrlUseCase commits the PENDING row BEFORE calling
+ * createPaymentLink -- if that call fails midway the row stays, while the gateway has no session.
  *
- * <p>Vì sao đáng có test riêng: job này KHÔNG chốt dòng mồ côi thì {@code expireIfOverdue} từ chối
- * đóng đơn (nó thấy còn lần thử treo), nên đơn kẹt PENDING VĨNH VIỄN chứ không phải tới lúc hết hạn
- * -- hết hạn chính là việc đang bị chặn. Với đơn đăng ký thì
- * uq_orders_one_open_subscription_order khóa luôn trường khỏi việc đặt đơn mới, và đường thoát thủ
- * công (CancelOrderUseCase) cũng đi qua đúng cùng một quyết định. Hỏng ở đây là hỏng thành phải sửa
- * tay dưới DB.
+ * <p>Why it deserves its own test: if this job does NOT settle the orphaned row then {@code expireIfOverdue} refuses to
+ * close the order (it sees a pending attempt), so the order is stuck PENDING FOREVER and not just until expiry
+ * -- expiring is exactly what is being blocked. For a subscription order,
+ * uq_orders_one_open_subscription_order also locks the school out of placing a new order, and the manual
+ * escape path (CancelOrderUseCase) goes through exactly the same decision. Breaking here means breaking into something that has to be fixed
+ * by hand in the DB.
  */
 class PendingOrderReconcilerTests {
 
@@ -80,10 +80,10 @@ class PendingOrderReconcilerTests {
     }
 
     /**
-     * Mặt kia: lần thử vừa mở vài giây trước thì NOT_FOUND KHÔNG có nghĩa là nó chết -- rất có thể
-     * createPaymentLink còn đang bay và cổng chưa kịp dựng phiên. Job nền là thứ dễ rơi vào đúng cửa
-     * sổ đó nhất, và chốt hỏng ở đây nghĩa là trường trả tiền vào một link thật trong khi dòng ứng
-     * với khoản tiền ấy đã mang FAILED.
+     * The other side: for an attempt opened only a few seconds ago, NOT_FOUND does NOT mean it is dead -- most likely
+     * createPaymentLink is still in flight and the gateway has not yet built the session. A background job is the thing most likely to land in exactly that
+     * window, and settling wrongly here means a school pays into a real link while the row that corresponds
+     * to that payment already carries FAILED.
      */
     @Test
     void should_leave_a_freshly_opened_attempt_alone_when_the_gateway_says_not_found() {
@@ -94,7 +94,7 @@ class PendingOrderReconcilerTests {
         verify(orderSettlementService, never()).failAttempt(any(), any());
     }
 
-    /** Cổng nói phiên vẫn đang chờ trả: không đụng vào gì cả, để lượt sau hỏi lại. */
+    /** The gateway says the session is still waiting for payment: touch nothing, ask again in the next run. */
     @Test
     void should_leave_a_live_attempt_alone() {
         givenPendingAttempt(Instant.now().minus(10, ChronoUnit.MINUTES), PaymentLinkRemoteStatus.PENDING);

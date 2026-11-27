@@ -42,12 +42,12 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
     public AssessmentDto execute(UpdateClassTestSectionCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         classTestDirectEditGuard.requireDirectlyEditable(assessment, currentUserId);
 
         AssessmentPaperSection paperSection = assessmentPaperSectionRepository.findById(input.sectionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy section"));
+            .orElseThrow(() -> new ResourceNotFoundException("Section not found"));
 
         applySectionFields(paperSection, input);
 
@@ -76,7 +76,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paperSection.getPaperId()).stream()
                 .map(section -> section.getId().equals(paperSection.getId()) ? paperSection : section)
                 .toList();
-            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
+            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "The total section weight must be 1.00");
             assessmentPaperSectionRepository.save(paperSection);
         }
     }
@@ -87,7 +87,7 @@ public class UpdateClassTestSectionUseCase implements IUseCase<UpdateClassTestSe
             Assessment assessment,
             UUID currentUserId) {
         if (questions.isEmpty()) {
-            throw new IllegalArgumentException("Section phải có ít nhất 1 câu hỏi");
+            throw new IllegalArgumentException("A section must have at least 1 question");
         }
         for (ClassTestQuestionCommand questionCommand : questions) {
             classTestDirectEditGuard.loadUsableQuestion(assessment, questionCommand.questionId(), currentUserId);

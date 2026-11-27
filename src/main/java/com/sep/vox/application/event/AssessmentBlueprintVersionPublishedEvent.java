@@ -4,11 +4,10 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Một version của blueprint vừa được publish. Người nhận là mọi SCHOOL_ADMIN của trường.
+ * A blueprint version has just been published. Every SCHOOL_ADMIN of the school is a recipient.
  *
- * @param blueprintId cùng với {@code versionId} là thứ dựng được đường dẫn tới đúng version
- *        vừa publish; {@code blueprintCode} chỉ dùng để hiển thị, không có màn hình nào
- *        tra cứu theo mã
+ * @param blueprintId together with {@code versionId}, builds the link to exactly the published
+ *        version; {@code blueprintCode} is for display only, no screen looks anything up by code
  */
 public record AssessmentBlueprintVersionPublishedEvent(
     List<UUID> schoolAdminIds,

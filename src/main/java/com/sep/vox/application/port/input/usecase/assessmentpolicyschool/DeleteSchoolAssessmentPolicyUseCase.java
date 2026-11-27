@@ -40,7 +40,7 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
 
         // Only a DRAFT may be hard-deleted; the other statuses use the separate Archive function
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
+            throw new IllegalArgumentException("Only an Assessment Policy in the DRAFT status can be deleted. Use Archive if the Policy is already PUBLISHED.");
         }
         assessmentPolicyRepository.deleteById(policy.getId());
         return null;
@@ -49,29 +49,29 @@ public class DeleteSchoolAssessmentPolicyUseCase implements IUseCase<DeleteSchoo
     private void requireActiveSchoolAdmin(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được phân bổ vào trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not assigned to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to modify the Assessment Policy of another school.");
         }
 
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa trên hệ thống.");
+            throw new ForbiddenException("Action denied: this school has been deactivated in the system.");
         }
     }
 
     private AssessmentPolicy loadPolicyOfSchool(DeleteSchoolAssessmentPolicyCommand command) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
         if (policy.getSchoolId() == null || !policy.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền can thiệp vào Assessment Policy của trường khác.");
+            throw new ForbiddenException("SECURITY: You are not allowed to modify the Assessment Policy of another school.");
         }
         return policy;
     }

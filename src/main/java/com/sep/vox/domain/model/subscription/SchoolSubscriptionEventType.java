@@ -1,8 +1,8 @@
 package com.sep.vox.domain.model.subscription;
 
 public enum SchoolSubscriptionEventType {
-    /** System Admin cưỡng chế mất quyền dùng NGAY -- luôn kèm lý do. */
+    /** A System Admin forces loss of access IMMEDIATELY -- always with a reason. */
     SUSPENDED,
-    /** Gỡ đình chỉ, trả gói về ACTIVE. */
+    /** Lifts the suspension, returning the plan to ACTIVE. */
     UNSUSPENDED
 }

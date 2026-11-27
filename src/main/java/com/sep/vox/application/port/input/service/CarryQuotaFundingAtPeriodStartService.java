@@ -18,27 +18,27 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 /**
- * Mang tiền tự nạp chưa tiêu của kỳ cũ sang kỳ mới, tại ĐÚNG lúc kỳ mới bắt đầu chạy.
+ * Carries the unspent self-funded money of the old period into the new one, at EXACTLY the moment the new period starts running.
  *
- * <p><b>Vì sao không làm luôn lúc chốt đơn.</b> {@code OrderSettlementService.seedQuotaRecords} vẫn
- * mang sang ngay khi hai mốc trùng nhau (gia hạn lúc kỳ cũ đã hết hạn -- đường đi thường gặp nhất).
- * Nhưng gia hạn SỚM thì kỳ mới bắt đầu ở endDate của kỳ cũ, cách lúc trả tiền có khi cả tháng, và
- * trong quãng đó kỳ CŨ vẫn là kỳ đang hiệu lực: vẫn tiêu được, vẫn nạp thêm được. Con số chốt tại
- * thời điểm trả tiền vì thế sai theo cả hai chiều -- trường tiêu nốt thì 5tr đó được tiêu HAI lần,
- * trường nạp thêm thì khoản mới bốc hơi ở ranh giới. Xem V13.
+ * <p><b>Why not do it when the order is settled.</b> {@code OrderSettlementService.seedQuotaRecords} still
+ * carries it over immediately when the two milestones coincide (a renewal after the old period has expired -- the most common path).
+ * But with an EARLY renewal the new period starts at the old period's endDate, sometimes a whole month after the payment, and
+ * in between the OLD period is still the one in force: it can still be spent from and topped up. The figure fixed at
+ * payment time is therefore wrong in both directions -- if the school spends the rest, those 5M get spent TWICE;
+ * if the school tops up, the new money evaporates at the boundary. See V13.
  *
- * <p><b>Vì sao CỘNG THÊM chứ không GÁN.</b> Kỳ mới có thể đã bắt đầu và trường đã tự nạp vào chính ví
- * đó trước khi job kịp chạy ({@code FundQuotaFromBalanceUseCase} cộng cả total lẫn funded). Một phép
- * gán "funded = phần chưa tiêu của kỳ cũ" sẽ xoá đúng khoản họ vừa bỏ ra. {@code addFundingFromBalance}
- * cộng thêm và giữ nguyên mọi thứ đã có.
+ * <p><b>Why ADD instead of ASSIGN.</b> The new period may already have started and the school may have topped up that very quota record
+ * before the job got to run ({@code FundQuotaFromBalanceUseCase} adds to both total and funded). An assignment
+ * "funded = unspent part of the old period" would erase exactly the money they just put in. {@code addFundingFromBalance}
+ * adds and keeps everything already there.
  *
- * <p><b>Vì sao đúng một lần.</b> Cộng thêm mà chạy hai lần là nhân đôi tiền, nên cái hẹn
- * ({@code carry_funding_from_subscription_id}) bị xoá ngay sau khi cộng, trong CÙNG transaction. Job
- * chạy lại không thấy gì để làm; job chạy muộn chỉ làm tiền hiện ra muộn, không làm sai.
+ * <p><b>Why exactly once.</b> Adding twice doubles the money, so the carry marker
+ * ({@code carry_funding_from_subscription_id}) is cleared right after the addition, in the SAME transaction. A re-run of the
+ * job finds nothing to do; a late job only makes the money appear late, it never makes it wrong.
  *
- * <p>Không có bút toán nào sinh ra ở đây và đó là đúng: tiền này đã RỜI ví tự nạp từ lúc nạp, kèm một
- * dòng QUOTA_FUNDING. Đây chỉ là nó đi tiếp từ ví hạn mức kỳ cũ sang ví hạn mức kỳ mới, không đụng tới
- * {@code school_balances}, nên bất biến SUM(entries) = balance_vnd không liên quan.
+ * <p>No ledger entry is created here and that is correct: this money already LEFT the self-funded balance when it was topped up, with one
+ * QUOTA_FUNDING row. Here it only moves on from the old period's quota record to the new period's quota record, without touching
+ * {@code school_balances}, so the invariant SUM(entries) = balance_vnd is not involved.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,7 +48,7 @@ public class CarryQuotaFundingAtPeriodStartService {
     private final SchoolSubscriptionQuotaRecordRepository quotaRecordRepository;
 
     /**
-     * @return số ví đã nhận tiền mang sang. 0 là trạng thái bình thường -- chỉ gia hạn sớm mới sinh hẹn.
+     * @return the number of quota records that received carried money. 0 is the normal state -- only an early renewal creates a marker.
      */
     @Transactional
     public int carryDueFunding(Instant now) {
@@ -58,8 +58,8 @@ public class CarryQuotaFundingAtPeriodStartService {
         }
 
         int carriedCount = 0;
-        // Gom theo kỳ NGUỒN: mỗi nhóm chỉ cần đọc ví của kỳ đó một lần, và nhóm cũng chính là đơn vị
-        // để phát hiện loại ví bị bỏ lại (xem reportStrandedTypes).
+        // Group by SOURCE period: each group only needs to read that period's quota records once, and the group is also the unit
+        // for detecting quota types left behind (see reportStrandedTypes).
         Map<UUID, List<SchoolSubscriptionQuotaRecord>> bySource = due.stream()
             .collect(Collectors.groupingBy(record -> record.getCarryFundingFromSubscriptionId()));
 
@@ -84,7 +84,7 @@ public class CarryQuotaFundingAtPeriodStartService {
             .map(record -> record.unspentFundedVnd())
             .orElse(BigDecimal.ZERO);
 
-        // Xoá hẹn kể cả khi không có đồng nào để mang: hẹn còn treo là job còn đọc lại mỗi giờ, mãi mãi.
+        // Clear the marker even when there is no money to carry: a lingering marker means the job re-reads it every hour, forever.
         if (unspentVnd.signum() <= 0) {
             quotaRecordRepository.clearFundingCarry(target.getId());
             return false;
@@ -93,17 +93,17 @@ public class CarryQuotaFundingAtPeriodStartService {
         quotaRecordRepository.addFundingFromBalance(target.getId(), unspentVnd);
         quotaRecordRepository.clearFundingCarry(target.getId());
 
-        log.info("Kỳ {} bắt đầu: mang {}đ tiền tự nạp chưa tiêu của ví {} từ kỳ {} sang",
+        log.info("Period {} started: carrying {} VND of unspent self-funded money of quota {} over from period {}",
             target.getSchoolSubscriptionId(), unspentVnd, target.getQuotaType(), sourceSubscriptionId);
         return true;
     }
 
     /**
-     * Kỳ nguồn còn tiền tự nạp ở một loại ví mà kỳ mới KHÔNG có -- gói mới không còn loại hạn mức đó.
+     * The source period still has self-funded money in a quota type that the new period does NOT have -- the new plan no longer has that quota type.
      *
-     * <p>Không có hẹn nào được đặt cho loại ví không tồn tại, nên nếu không nói ra ở đây thì khoản đó
-     * nằm lại kỳ cũ và không ai biết. Cùng cảnh báo mà {@code seedQuotaRecords} phát ở đường mang sang
-     * tức thì; ca này hiếm và chưa có đường xử lý tự động.
+     * <p>No marker is set for a quota type that does not exist, so unless it is said here that amount
+     * stays behind in the old period and nobody knows. The same warning that {@code seedQuotaRecords} emits on the immediate
+     * carry path; this case is rare and has no automatic handling yet.
      */
     private void reportStrandedTypes(List<SchoolSubscriptionQuotaRecord> sourcePools,
             List<SchoolSubscriptionQuotaRecord> targets, UUID sourceSubscriptionId) {
@@ -114,8 +114,8 @@ public class CarryQuotaFundingAtPeriodStartService {
         for (SchoolSubscriptionQuotaRecord pool : sourcePools) {
             BigDecimal unspentVnd = pool.unspentFundedVnd();
             if (unspentVnd.signum() > 0 && !carriedTypes.contains(pool.getQuotaType())) {
-                log.warn("Kỳ {} còn {}đ tiền tự nạp chưa tiêu ở ví {} nhưng kỳ kế tiếp không có loại"
-                    + " hạn mức này -- khoản đó nằm lại và cần xử lý tay.",
+                log.warn("Period {} has {} VND of unspent self-funded money in quota {} but the next period does not have this"
+                    + " quota type -- that amount stays behind and needs manual handling.",
                     sourceSubscriptionId, unspentVnd, pool.getQuotaType());
             }
         }

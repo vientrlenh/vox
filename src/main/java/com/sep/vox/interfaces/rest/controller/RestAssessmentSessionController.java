@@ -74,7 +74,7 @@ public class RestAssessmentSessionController {
                 request.paperId()
         ));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Tao phien thi thanh cong", data));
+                .body(ApiResponse.success("Session created successfully", data));
     }
 
     @PatchMapping("/{id}")
@@ -86,13 +86,13 @@ public class RestAssessmentSessionController {
                 id,
                 request.status()
         ));
-        return ResponseEntity.ok(ApiResponse.success("Cap nhat trang thai phien thi thanh cong", data));
+        return ResponseEntity.ok(ApiResponse.success("Session status updated successfully", data));
     }
 
     /**
-     * Ghi lại đồng hồ đếm ngược của client (mặc định 10 giây một lần) để lần vào lại phiên thi
-     * không bắt đầu lại từ đầu. Trả về giá trị server thực sự đang giữ, có thể nhỏ hơn giá trị gửi
-     * lên nếu nó bị chặn trên hoặc bị từ chối vì không đi lùi.
+     * Records the client's countdown timer (every 10 seconds by default) so that re-entering the session
+     * does not start from the beginning. Returns the value the server actually keeps, which can be lower than the
+     * value sent if it is capped from above or rejected because it does not go backwards.
      */
     @PatchMapping("/{id}/remaining-time")
     @PreAuthorize("hasRole('STUDENT')")
@@ -101,14 +101,14 @@ public class RestAssessmentSessionController {
             @Valid @RequestBody UpdateRemainingTimeRequest request) {
         Integer data = updateAssessmentSessionRemainingTimeUseCase.execute(
             new UpdateAssessmentSessionRemainingTimeCommand(id, request.remainingSeconds()));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật thời gian còn lại thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Remaining time updated successfully", data));
     }
 
     @GetMapping("/{id}/paper")
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<ApiResponse<?>> getPaper(@PathVariable("id") UUID id) {
         StudentAssessmentPaperResponse data = getAssessmentSessionPaperUseCase.execute(new ViewAssessmentSessionPaperQuery(id));
-        return ResponseEntity.ok(ApiResponse.success("Lay de thi thanh cong", data));
+        return ResponseEntity.ok(ApiResponse.success("Paper retrieved successfully", data));
     }
 
     @PostMapping("/{id}/flag")
@@ -117,7 +117,7 @@ public class RestAssessmentSessionController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody SessionReasonRequest request) {
         UUID data = flagAssessmentSessionUseCase.execute(new FlagAssessmentSessionCommand(id, true, request.reason()));
-        return ResponseEntity.ok(ApiResponse.success("Đánh dấu nghi vấn phiên thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Session flagged as suspicious successfully", data));
     }
 
     @PostMapping("/{id}/force-end")
@@ -126,26 +126,26 @@ public class RestAssessmentSessionController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody SessionReasonRequest request) {
         UUID data = forceEndAssessmentSessionUseCase.execute(new ForceEndAssessmentSessionCommand(id, request.reason()));
-        return ResponseEntity.ok(ApiResponse.success("Buộc kết thúc phiên thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Session ended by force successfully", data));
     }
 
     @PostMapping("/{id}/retry-grading")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> retryGrading(@PathVariable("id") UUID id) {
         UUID data = retryGradingAssessmentSessionUseCase.execute(new RetryGradingAssessmentSessionCommand(id));
-        return ResponseEntity.ok(ApiResponse.success("Gửi yêu cầu chấm lại thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Re-grade request submitted successfully", data));
     }
 
     /**
-     * Bài AI chấm lỗi -> đưa vào hàng đợi cho người chấm. Trả về id kết quả vừa tạo, để client
-     * biết bài đã có mặt trong hàng đợi.
+     * The AI failed to grade the result -> put it in the queue for human graders. Returns the id of the result
+     * just created, so the client knows the result is now in the queue.
      */
     @PostMapping("/{id}/hand-off-grading")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<UUID>> handOffGrading(@PathVariable("id") UUID id) {
         UUID data = handOffGradingToHumanUseCase.execute(new HandOffGradingToHumanCommand(id));
         return ResponseEntity.ok(ApiResponse.success(
-            "Đã chuyển bài sang chấm tay, chờ nhà trường phân công giáo viên", data));
+            "Moved to manual grading, waiting for the school to assign a teacher", data));
     }
 
     @DeleteMapping("/{id}")
@@ -154,14 +154,14 @@ public class RestAssessmentSessionController {
             @PathVariable(name = "id") UUID id,
             @Valid @RequestBody SessionReasonRequest request) {
         deleteAssessmentSessionUseCase.execute(new DeleteAssessmentSessionCommand(id, request.reason()));
-        return ResponseEntity.ok(ApiResponse.success("Xóa bài thi thành công", null));
+        return ResponseEntity.ok(ApiResponse.success("Session deleted successfully", null));
     }
 
      @PostMapping("/{sessionId}/complete-grading")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> completeGrading(@PathVariable(name = "sessionId") UUID sessionId) {
         completeAssessmentSessionGradingUseCase.execute(new CompleteAssessmentSessionGradingCommand(sessionId));
-        return ResponseEntity.ok(ApiResponse.success("Ghi nhận hoàn tất chấm bài thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Grading completion recorded successfully"));
     }
 
     /**
@@ -175,6 +175,6 @@ public class RestAssessmentSessionController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody ReportAiUsageRequest request) {
         reportAiUsageUseCase.execute(ReportAiUsageRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Ghi nhận chi phí AI thành công"));
+        return ResponseEntity.ok(ApiResponse.success("AI cost recorded successfully"));
     }
 }

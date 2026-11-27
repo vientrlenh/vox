@@ -30,12 +30,12 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * Bao dam bucket S3 ton tai va dung cau hinh (policy + CORS) ngay khi ung dung khoi dong.
+ * Ensures the S3 bucket exists and is correctly configured (policy + CORS) as soon as the application starts.
  *
- * <p>Bucket khong tao duoc luon lam startup that bai vi khong co bucket thi moi upload deu hong.
- * Cac buoc policy/CORS chi la hardening nen mac dinh chi canh bao — moi truong prod chay bang
- * credentials least-privileged thuong khong co quyen ghi bucket-level. Dat
- * {@code storage.s3.fail-on-error=true} neu muon chung cung chan startup.
+ * <p>A bucket that cannot be created always fails startup because without a bucket every upload is broken.
+ * The policy/CORS steps are only hardening so by default they only warn -- production environments running with
+ * least-privileged credentials usually lack bucket-level write permission. Set
+ * {@code storage.s3.fail-on-error=true} if you want them to block startup too.
  */
 @Order(0)
 @RequiredArgsConstructor
@@ -52,12 +52,12 @@ public class S3BucketInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         String bucket = properties.getBucket();
         if (!hasText(bucket)) {
-            log.warn("storage.s3.bucket chua duoc cau hinh. Bo qua buoc khoi tao bucket S3");
+            log.warn("storage.s3.bucket is not configured. Skipping the S3 bucket initialization step");
             return;
         }
 
         if (bucketExists(bucket)) {
-            log.info("Bucket S3 '{}' da ton tai", bucket);
+            log.info("S3 bucket '{}' already exists", bucket);
         } else {
             createBucket(bucket);
         }
@@ -78,18 +78,18 @@ public class S3BucketInitializer implements ApplicationRunner {
                 return false;
             }
             if (e.statusCode() == 403) {
-                // Thieu quyen s3:ListBucket: coi nhu bucket da ton tai thay vi tao moi.
-                log.warn("Khong du quyen kiem tra bucket S3 '{}'. Gia dinh bucket da ton tai", bucket);
+                // Missing the s3:ListBucket permission: treat the bucket as existing instead of creating a new one.
+                log.warn("Not enough permission to check S3 bucket '{}'. Assuming the bucket exists", bucket);
                 return true;
             }
             if (e.statusCode() == 301) {
                 // S3 answers 301 when the client calls the wrong regional endpoint. The real region is in the response header.
                 throw new IllegalStateException(
-                    "Bucket S3 '%s' nam o region '%s' nhung storage.s3.region dang duoc cau hinh la '%s'"
+                    "S3 bucket '%s' is in region '%s' but storage.s3.region is configured as '%s'"
                         .formatted(bucket, bucketRegionOf(e), properties.getRegion()));
             }
             throw new IllegalStateException(
-                "Khong the kiem tra bucket S3 '" + bucket + "': " + messageOf(e));
+                "Could not check S3 bucket '" + bucket + "': " + messageOf(e));
         }
     }
 
@@ -99,18 +99,18 @@ public class S3BucketInitializer implements ApplicationRunner {
         try {
             s3Client.createBucket(buildCreateBucketRequest(bucket, region));
         } catch (BucketAlreadyOwnedByYouException e) {
-            log.info("Bucket S3 '{}' vua duoc tao boi mot tien trinh khac", bucket);
+            log.info("S3 bucket '{}' was just created by another process", bucket);
             return;
         } catch (BucketAlreadyExistsException e) {
             throw new IllegalStateException(
-                "Ten bucket S3 '" + bucket + "' da thuoc ve mot AWS account khac. Can doi ten bucket");
+                "The S3 bucket name '" + bucket + "' already belongs to another AWS account. Choose a different bucket name");
         } catch (AwsServiceException e) {
             throw new IllegalStateException(
-                "Khong the tao bucket S3 '" + bucket + "': " + messageOf(e));
+                "Could not create S3 bucket '" + bucket + "': " + messageOf(e));
         }
 
         s3Client.waiter().waitUntilBucketExists(HeadBucketRequest.builder().bucket(bucket).build());
-        log.info("Da tao bucket S3 '{}' tai region '{}'", bucket, region);
+        log.info("Created S3 bucket '{}' in region '{}'", bucket, region);
     }
 
     private CreateBucketRequest buildCreateBucketRequest(String bucket, String region) {
@@ -129,12 +129,12 @@ public class S3BucketInitializer implements ApplicationRunner {
             return;
         }
         if (hasText(properties.getEndpoint())) {
-            // MinIO/LocalStack khong implement PublicAccessBlock nen bo qua khi dung endpoint tu cau hinh.
+            // MinIO/LocalStack do not implement PublicAccessBlock so it is skipped when using a configured endpoint.
             return;
         }
 
-        // Bucket moi tren AWS mac dinh bat Block Public Access, khien policy "Principal": "*"
-        // bi tu choi. Van chan public ACL vi quyen doc public duoc mo bang policy.
+        // A new AWS bucket has Block Public Access on by default, which makes a policy with "Principal": "*"
+        // get rejected. Public ACLs are still blocked because public read access is opened through the policy.
         s3Client.putPublicAccessBlock(PutPublicAccessBlockRequest.builder()
             .bucket(bucket)
             .publicAccessBlockConfiguration(PublicAccessBlockConfiguration.builder()
@@ -150,7 +150,7 @@ public class S3BucketInitializer implements ApplicationRunner {
         ArrayNode statements = buildPolicyStatements(bucket);
 
         if (statements.isEmpty()) {
-            log.info("Khong co statement nao can ap dung cho bucket S3 '{}'. Bo qua bucket policy", bucket);
+            log.info("No statement to apply for S3 bucket '{}'. Skipping the bucket policy", bucket);
             return;
         }
 
@@ -216,21 +216,21 @@ public class S3BucketInitializer implements ApplicationRunner {
         try {
             action.run();
         } catch (RuntimeException e) {
-            String message = "Khong the ap dung %s cho bucket S3 '%s': %s".formatted(step, bucket, messageOf(e));
+            String message = "Could not apply %s to S3 bucket '%s': %s".formatted(step, bucket, messageOf(e));
             if (properties.isFailOnError()) {
                 throw new IllegalStateException(message);
             }
-            log.warn("{}. Ung dung van tiep tuc khoi dong", message, e);
+            log.warn("{}. The application continues to start", message, e);
         }
     }
 
     private String bucketRegionOf(S3Exception exception) {
         if (exception.awsErrorDetails() == null || exception.awsErrorDetails().sdkHttpResponse() == null) {
-            return "khong xac dinh";
+            return "unknown";
         }
         return exception.awsErrorDetails().sdkHttpResponse()
             .firstMatchingHeader("x-amz-bucket-region")
-            .orElse("khong xac dinh");
+            .orElse("unknown");
     }
 
     private String messageOf(Exception exception) {

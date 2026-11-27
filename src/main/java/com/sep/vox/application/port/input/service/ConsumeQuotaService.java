@@ -28,20 +28,20 @@ import com.sep.vox.domain.repository.SchoolSubscriptionQuotaUserAllocationReposi
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Trừ chi phí AI vào hạn mức kèm gói, và khi hạn mức đã cạn thì trừ tiếp vào ví tự nạp của trường.
+ * Deducts AI cost from the quota included in the plan and, once that quota is exhausted, continues deducting from the school's self-funded balance.
  *
- * <p>NỢ = {@code school_balances.balance_vnd < 0}, KHÔNG còn là
- * {@code used_amount_vnd > total_allocated_amount_vnd}. Đây là điểm đổi cốt lõi của refactor: hai cột
- * của ví hạn mức giờ chỉ diễn tả "gói cấp bao nhiêu / đã tiêu bao nhiêu trong số đó", nên used KHÔNG
- * BAO GIỜ được vượt total nữa -- phần vượt đã chuyển thành một bút toán trừ trên sổ cái. Xem V2 mục 6
- * ("phần âm ở đây CHÍNH LÀ nợ, thay cho điều kiện used_quantity > total_allocated cũ").
+ * <p>DEBT = {@code school_balances.balance_vnd < 0}, NO LONGER
+ * {@code used_amount_vnd > total_allocated_amount_vnd}. This is the core change of the refactor: the two columns
+ * of the quota record now only express "how much the plan grants / how much of it has been spent", so used must NEVER
+ * exceed total again -- the excess has become a deduction entry on the ledger. See V2 section 6
+ * ("the negative part here IS the debt, replacing the old condition used_quantity > total_allocated").
  *
- * <p>Chỉ phần VƯỢT mới đi vào school_balance_entries. Phần còn nằm trong hạn mức đã được đếm ở
- * used_amount_vnd rồi; ghi lại lần nữa ở sổ cái là đếm hai lần cùng một đồng tiền và phá bất biến
- * {@code SUM(entries.amount_vnd) = balance_vnd} (V2 mục 7).
+ * <p>Only the EXCESS goes into school_balance_entries. The part within the quota is already counted in
+ * used_amount_vnd; recording it again in the ledger counts the same money twice and breaks the invariant
+ * {@code SUM(entries.amount_vnd) = balance_vnd} (V2 section 7).
  *
- * <p>Internal service-to-service (gọi từ luồng chấm bài / luyện nói), không end-user-facing -- không
- * kiểm tra school-scoping qua UserContextPort ở đây.
+ * <p>Internal service-to-service (called from the grading / speaking-practice flow), not end-user-facing -- it does not
+ * check school scoping through UserContextPort here.
  */
 @Service
 @RequiredArgsConstructor
@@ -80,15 +80,15 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Trừ chi phí của một phiên LUYỆN NÓI -- luôn ví PRACTICE.
+     * Deducts the cost of one SPEAKING PRACTICE session -- always the PRACTICE quota.
      *
-     * <p>Cũng cho phép tiêu sang số dư như đường thi, và vì cùng một lý do: lúc gọi tới đây thì Azure
-     * đã tính tiền xong rồi (turn.turnCostUsd là chi phí THẬT của lượt vừa nói, Python tính đồng bộ
-     * trong request submit_turn). Chặn ở đây không giữ lại được đồng nào, chỉ làm khoản chi đó biến
-     * mất khỏi sổ sách và VOX âm thầm gánh.
+     * <p>Spending into the balance is allowed here too, as on the assessment path, for the same reason: by the time this is
+     * called Azure has already charged (turn.turnCostUsd is the REAL cost of the turn just spoken, computed by Python
+     * synchronously in the submit_turn request). Blocking here would not hold back a single dong, it would only make that
+     * spend vanish from the books and VOX would silently absorb it.
      *
-     * <p>Việc học sinh có được nói tiếp hay không là câu hỏi KHÁC, trả lời bằng
-     * {@link ConsumeQuotaResponse#fundsExhausted()} chứ không bằng exception -- xem
+     * <p>Whether the student may keep speaking is a DIFFERENT question, answered by
+     * {@link ConsumeQuotaResponse#fundsExhausted()} and not by an exception -- see
      * SubmitTurnResultDto.quotaExhausted.
      */
     @Transactional
@@ -104,8 +104,8 @@ public class ConsumeQuotaService {
             BigDecimal amountVnd, BigDecimal costUsd, BigDecimal fxRateUsed, UUID userId) {
         SchoolSubscriptionQuotaRecord quota = requireQuota(subscriptionId, quotaType);
 
-        // tryConsume là UPDATE có điều kiện nên tự nó đã là chốt chặn -- không đọc-rồi-so ở Java.
-        // Lọt qua = khoản này nằm gọn trong hạn mức: không đụng số dư, không sinh bút toán nào.
+        // tryConsume is a conditional UPDATE, so it is itself the guard -- no read-then-compare in Java.
+        // Passing = this amount fits within the quota: no balance is touched and no ledger entry is created.
         ChargeSplit split;
         if (schoolSubscriptionQuotaRecordRepository.tryConsume(quota.getId(), amountVnd)) {
             checkUsageWarningTransition(subscriptionId, quotaType, quota.getTotalAllocatedAmountVnd(),
@@ -122,23 +122,23 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Ghi vào sổ chi phí AI của trường -- ĐỦ số tiền, không chỉ phần vượt hạn mức.
+     * Writes to the school's AI cost ledger -- the FULL amount, not just the part over the quota.
      *
-     * <p>Đặt ở đây, SAU cả hai nhánh, vì đây là chỗ duy nhất biết đồng thời trường, loại ví, người
-     * tiêu, số tiền và phiên. Để chỗ gọi tự ghi thì mỗi nguồn tiêu tiền mới lại là một cơ hội quên,
-     * và đường luyện nói vắng mặt khỏi mọi báo cáo suốt thời gian qua chính là hệ quả của kiểu quên
-     * đó (xem V10).
+     * <p>Placed here, AFTER both branches, because this is the only place that knows the school, quota type, spender,
+     * amount and session all at once. If the caller wrote it, every new source of spending would be another chance to forget,
+     * and the speaking-practice path being absent from every report for so long is the consequence of exactly that kind of
+     * forgetting (see V10).
      *
-     * <p>KHÁC {@code school_balance_entries} ở chỗ nó ghi cả khoản nằm gọn trong hạn mức: sổ kia là
-     * sổ cái của VÍ nên chỉ nhận phần vượt, còn sổ này trả lời "trường đã tiêu bao nhiêu". Cộng hai
-     * sổ lại là đếm hai lần cùng một đồng.
+     * <p>DIFFERENT from {@code school_balance_entries} in that it records the part within the quota too: that one is
+     * the LEDGER of the BALANCE so it only takes the excess, while this one answers "how much has the school spent".
+     * Adding the two together counts the same money twice.
      *
-     * <p>{@code userId} null là một CÂU TRẢ LỜI -- kỳ thi tập trung không thuộc trần chi của ai.
+     * <p>{@code userId} null is an ANSWER -- a centralized assessment belongs to nobody's spending cap.
      */
     private void recordSpend(UUID subscriptionId, UUID assessmentSessionId, UUID practiceSessionId,
             QuotaType quotaType, BigDecimal amountVnd, UUID userId) {
-        // Ràng buộc chk_..._amount_positive từ chối dòng 0 đồng, và một lần trừ 0 đồng cũng không
-        // phải sự kiện đáng ghi -- chặn ở đây thay vì để DB ném giữa luồng chấm bài.
+        // The constraint chk_..._amount_positive rejects a 0-dong row, and a 0-dong deduction is not an
+        // event worth recording either -- block it here instead of letting the DB throw in the middle of grading.
         if (amountVnd == null || amountVnd.signum() <= 0) {
             return;
         }
@@ -256,19 +256,19 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Trần chi CÁ NHÂN mà trường tự chia nội bộ (giáo viên ra đề kiểm tra trên lớp, học sinh luyện
-     * nói). Không có allocation row = trường không chia riêng cho ai = không bị chặn theo cá nhân.
+     * The PERSONAL spending cap that the school divides internally (teachers creating class tests, students practising
+     * speaking). No allocation row = the school did not divide anything for anyone = no personal blocking.
      *
-     * <p>Đây là một GIỚI HẠN, không phải một số dư: nó không giữ tiền và không bao giờ sinh bút toán
-     * -- vượt trần cá nhân chỉ làm used vượt allocated ở đúng dòng allocation đó, không đụng tới ví
-     * trường. Xem QuotaType.
+     * <p>This is a LIMIT, not a balance: it holds no money and never creates a ledger entry
+     * -- exceeding the personal cap only makes used exceed allocated on that very allocation row, without touching the
+     * school's balance. See QuotaType.
      *
-     * <p>Chỉ GHI NHẬN, KHÔNG chặn -- và không còn tham số allowDebt để chọn giữa hai kiểu. Cả hai
-     * đường gọi tới đây (thi và luyện nói) đều chạy SAU khi Azure đã tính tiền, nên "từ chối vì vượt
-     * trần cá nhân" ở bước này không giữ lại được đồng nào mà chỉ làm khoản chi thật biến mất khỏi
-     * bộ đếm của chính người đã tiêu nó. Việc CHẶN theo trần cá nhân xảy ra ở cửa trước khi tốn tiền:
-     * ClassTestTokenQuotaGuardService.requireWithinUserAllocation cho bài kiểm tra trên lớp, và
-     * SchoolSubscriptionRepository.findPracticeSpendableFundsVnd cho luyện nói.
+     * <p>It only RECORDS, it does NOT block -- and there is no longer an allowDebt parameter to choose between two styles. Both
+     * call paths (assessment and speaking practice) run AFTER Azure has charged, so "reject for exceeding the
+     * personal cap" at this step would not hold back a single dong, it would only make the real spend vanish from the
+     * counter of the very person who spent it. BLOCKING by the personal cap happens at the gate before money is spent:
+     * ClassTestTokenQuotaGuardService.requireWithinUserAllocation for class tests, and
+     * SchoolSubscriptionRepository.findPracticeSpendableFundsVnd for speaking practice.
      */
     private void consumeUserAllocation(UUID subscriptionId, QuotaType quotaType, UUID userId,
             BigDecimal amountVnd) {
@@ -282,13 +282,13 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Chỉ CẢNH BÁO (log + notification SYSTEM_ADMIN), KHÔNG chặn -- chi phí thật đã ghi nhận đủ ở trên
-     * rồi. Mục đích là phát hiện sớm nếu pipeline đo chi phí AI có bug làm nợ tăng bất thường, không
-     * phải để giới hạn số nợ tối đa.
+     * Only WARNS (log + SYSTEM_ADMIN notification), does NOT block -- the real cost was already fully recorded above. The purpose is
+     * to detect early if the AI-cost measuring pipeline has a bug that makes debt grow abnormally, not to
+     * cap the maximum debt.
      *
-     * <p>So sánh số dư TRƯỚC/SAU để chỉ báo đúng 1 lần lúc CHUYỂN từ dưới trần sang vượt trần. Cả hai
-     * con số đều lấy thẳng từ {@link SchoolBalance#apply} nên không cần đọc lại DB lần thứ hai -- khác
-     * bản cũ phải fetch before/after quanh một bulk update và vì thế phải bật {@code clearAutomatically}.
+     * <p>Compares the balance BEFORE/AFTER so that it reports exactly once, when the balance CROSSES from below the cap to above it. Both
+     * numbers come straight from {@link SchoolBalance#apply}, so no second DB read is needed -- unlike
+     * the old version, which had to fetch before/after around a bulk update and therefore needed {@code clearAutomatically}.
      */
     private void checkDebtCapTransition(UUID subscriptionId, UUID schoolId, QuotaType quotaType,
             UUID assessmentSessionId, UUID practiceSessionId, BigDecimal overageVnd, BigDecimal totalAllocatedVnd,
@@ -302,7 +302,7 @@ public class ConsumeQuotaService {
         }
 
         log.warn(
-            "Nợ vượt trần cảnh báo: subscriptionId={} quotaType={} assessmentSessionId={} practiceSessionId={} debtVnd={} capVnd={}",
+            "Debt exceeded the warning cap: subscriptionId={} quotaType={} assessmentSessionId={} practiceSessionId={} debtVnd={} capVnd={}",
             subscriptionId, quotaType, assessmentSessionId, practiceSessionId, debtAfterVnd, cap
         );
 
@@ -313,13 +313,13 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Chỉ CẢNH BÁO SỚM (log + notification SCHOOL_ADMIN), KHÔNG chặn -- hạn mức CHƯA cạn, đây chỉ là
-     * báo trước để trường cân nhắc gia hạn/nạp thêm trước khi bị tính vào nợ (xem
+     * Only an EARLY WARNING (log + SCHOOL_ADMIN notification), does NOT block -- the quota is NOT yet exhausted, this is only a
+     * heads-up so the school can consider renewing/topping up before it is counted into debt (see
      * {@link #checkDebtCapTransition}).
      *
-     * <p>So sánh {@code used/total} TRƯỚC/SAU để chỉ báo đúng 1 lần lúc CHUYỂN từ dưới ngưỡng sang
-     * vượt ngưỡng -- cùng kỹ thuật crossing-detection với checkDebtCapTransition, nên tự "reset" đúng
-     * khi trường gia hạn/nạp thêm làm {@code totalAllocatedVnd} tăng và tỉ lệ tụt xuống dưới ngưỡng.
+     * <p>Compares {@code used/total} BEFORE/AFTER so that it reports exactly once, when it CROSSES from below the threshold to
+     * above it -- the same crossing-detection technique as checkDebtCapTransition, so it "resets" by itself
+     * when the school renews/tops up, which raises {@code totalAllocatedVnd} and drops the ratio below the threshold.
      */
     private void checkUsageWarningTransition(UUID subscriptionId, QuotaType quotaType,
             BigDecimal totalAllocatedVnd, BigDecimal usedBeforeVnd, BigDecimal usedAfterVnd, Instant now) {
@@ -333,7 +333,7 @@ public class ConsumeQuotaService {
         }
 
         log.info(
-            "Hạn mức vượt ngưỡng cảnh báo sớm: subscriptionId={} quotaType={} usedVnd={} totalVnd={}",
+            "Quota exceeded the early-warning threshold: subscriptionId={} quotaType={} usedVnd={} totalVnd={}",
             subscriptionId, quotaType, usedAfterVnd, totalAllocatedVnd
         );
 
@@ -358,7 +358,7 @@ public class ConsumeQuotaService {
     ) {
     }
 
-    /** Kết quả chia khoản chi giữa ví hạn mức và số dư -- phần nội bộ của {@link ConsumeQuotaResponse}. */
+    /** The result of splitting a spend between the quota record and the balance -- an internal part of {@link ConsumeQuotaResponse}. */
     private record ChargeSplit(
         BigDecimal chargedToQuotaVnd,
         BigDecimal chargedToBalanceVnd,
@@ -368,14 +368,14 @@ public class ConsumeQuotaService {
     }
 
     /**
-     * Đọc lại ví hạn mức SAU khi trừ rồi gộp với phần đã tính được lúc còn giữ khóa số dư.
+     * Re-reads the quota record AFTER the deduction and merges it with the part computed while the balance lock was still held.
      *
-     * <p>{@code fundsExhausted} phải soi CẢ HAI túi: ví hạn mức cạn mà số dư còn tiền thì trường vẫn
-     * tiêu tiếp được, nên chỉ nhìn một bên sẽ đóng phiên luyện nói sớm hơn thực tế.
+     * <p>{@code fundsExhausted} must look at BOTH pockets: with the quota record exhausted but money left in the balance the school can still
+     * spend, so looking at one side only would close the speaking-practice session earlier than it should.
      */
     private ConsumeQuotaResponse buildResponse(UUID subscriptionId, UUID quotaId, ChargeSplit split) {
         SchoolSubscriptionQuotaRecord quota = schoolSubscriptionQuotaRecordRepository.findById(quotaId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription quota not found"));
 
         BigDecimal quotaRemainingVnd = quota.getTotalAllocatedAmountVnd().subtract(quota.getUsedAmountVnd());
         boolean fundsExhausted = quotaRemainingVnd.signum() <= 0 && split.balanceAfterVnd().signum() <= 0;
@@ -393,16 +393,16 @@ public class ConsumeQuotaService {
     private SchoolSubscriptionQuotaRecord requireQuota(UUID subscriptionId, QuotaType quotaType) {
         return schoolSubscriptionQuotaRecordRepository
             .findBySchoolSubscriptionIdAndQuotaType(subscriptionId, quotaType)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hạn mức của gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription quota not found"));
     }
 
     private UUID requireSchoolId(UUID subscriptionId) {
         return schoolSubscriptionRepository.findById(subscriptionId)
             .map(s -> s.getSchoolId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói đăng ký"));
+            .orElseThrow(() -> new ResourceNotFoundException("Subscription not found"));
     }
 
-    /** Bản CHỈ ĐỌC -- chỉ dùng cho đường KHÔNG ghi số dư (xem javadoc SchoolBalanceRepository). */
+    /** READ-ONLY copy -- use only on the path that does NOT write the balance (see the SchoolBalanceRepository Javadoc). */
     private BigDecimal currentBalanceVnd(UUID subscriptionId) {
         return schoolBalanceRepository.findBySchoolId(requireSchoolId(subscriptionId))
             .map(b -> b.getBalanceVnd())

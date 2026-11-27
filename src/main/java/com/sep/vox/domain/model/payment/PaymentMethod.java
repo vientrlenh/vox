@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.payment;
 
 public enum PaymentMethod {
-    E_BANKING, // Thanh toán bằng dịch vụ bên thứ 3
-    CARD // Thanh toán qua thẻ
-    // Hiện không hỗ trợ thanh toán trực tiếp
+    E_BANKING, // Payment through a third-party service
+    CARD // Payment by card
+    // Direct payment is not supported at the moment
 }

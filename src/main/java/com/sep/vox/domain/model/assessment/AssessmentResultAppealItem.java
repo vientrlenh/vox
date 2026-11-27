@@ -4,10 +4,10 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Một phần thi được phúc khảo trong đơn. Một đơn có thể có nhiều phần.
+ * One part of the assessment that is appealed within an appeal. An appeal can have several parts.
  *
- * <p>{@code responseId} được chốt ngay lúc tạo đơn: điểm chấm lại ghi theo response,
- * nên không được để nó thay đổi giữa chừng.
+ * <p>{@code responseId} is fixed at the moment the appeal is created: the re-graded score is recorded per response,
+ * so it must not change midway.
  */
 public class AssessmentResultAppealItem {
     private UUID id;

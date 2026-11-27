@@ -56,7 +56,7 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
     @Transactional
     public List<UUID> execute(List<CreateAssessmentPolicyCommand> commands) {
         if (commands == null || commands.isEmpty()) {
-            throw new IllegalArgumentException("Danh sách Assessment Policy cần tạo không được để trống.");
+            throw new IllegalArgumentException("The list of Assessment Policies to create must not be empty.");
         }
 
         requireActiveSystemAdmin();
@@ -75,8 +75,8 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
 
     private void requireActiveSystemAdmin() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản đã bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Account not found."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account has been locked.");
     }
 
     private AssessmentPolicy buildDraftPolicy(
@@ -106,12 +106,12 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
 
     private FrameworkVersion requirePublishedFrameworkAndLanguage(CreateAssessmentPolicyCommand command) {
         FrameworkVersion frameworkVersion = frameworkVersionRepository.findById(command.frameworkVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Khung tiêu chuẩn."));
+                .orElseThrow(() -> new ResourceNotFoundException("Framework version not found."));
         if (frameworkVersion.getStatus() != FrameworkVersionStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể tạo Policy trên Framework đã PUBLISHED.");
+            throw new IllegalArgumentException("A Policy can only be created on a PUBLISHED Framework.");
         }
         if (!languageRepository.existsById(command.languageId())) {
-            throw new ResourceNotFoundException("Ngôn ngữ không tồn tại.");
+            throw new ResourceNotFoundException("The language does not exist.");
         }
         return frameworkVersion;
     }
@@ -121,26 +121,26 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
         // those belong to one specific school. Only the Grade level is a system-wide concept.
         if (command.schoolGradeId() != null || command.schoolClassId() != null) {
             throw new IllegalArgumentException(
-                    "Chính sách hệ thống chỉ giới hạn được tới cấp Khối; Niên khóa và Lớp thuộc phạm vi của từng trường.");
+                    "A system policy can only be scoped down to the grade level; school year and class belong to each school's scope.");
         }
         if (command.gradeLevelId() != null
                 && gradeLevelRepository.findById(command.gradeLevelId()).isEmpty()) {
-            throw new ResourceNotFoundException("Không tìm thấy Khối.");
+            throw new ResourceNotFoundException("Grade level not found.");
         }
     }
 
     private void requireTargetBand(CreateAssessmentPolicyCommand command) {
         FrameworkResultBand targetBand = frameworkResultBandRepository.findById(command.targetFrameworkBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Band mục tiêu."));
+                .orElseThrow(() -> new ResourceNotFoundException("Target band not found."));
         if (!targetBand.getFrameworkVersionId().equals(command.frameworkVersionId())) {
-            throw new IllegalArgumentException("Band mục tiêu phải thuộc Khung năng lực đang chọn.");
+            throw new IllegalArgumentException("The target band must belong to the selected competency framework.");
         }
     }
 
     private void requireValidEffectivePeriod(CreateAssessmentPolicyCommand command) {
-        if (command.effectiveFrom() == null) throw new IllegalArgumentException("Ngày bắt đầu không được để trống.");
+        if (command.effectiveFrom() == null) throw new IllegalArgumentException("The start date must not be empty.");
         if (command.effectiveTo() != null && command.effectiveFrom().isAfter(command.effectiveTo())) {
-            throw new IllegalArgumentException("Ngày kết thúc không được trước ngày bắt đầu.");
+            throw new IllegalArgumentException("The end date must not be before the start date.");
         }
     }
 
@@ -154,14 +154,14 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
     private void claimScopeOnce(CreateAssessmentPolicyCommand command, VersionScopeKey versionScopeKey, Set<VersionScopeKey> scopeClaimsInBatch) {
         if (!scopeClaimsInBatch.add(versionScopeKey)) {
             throw new ResourceDuplicatedException(
-                    "Trong cùng một lần tạo có hai Assessment Policy trùng ngôn ngữ và Khung"
-                            + " tiêu chuẩn. Mỗi phạm vi chỉ được một chính sách.");
+                    "The same creation request contains two Assessment Policies with the same language and"
+                            + " framework. Each scope may have only one policy.");
         }
         if (assessmentPolicyRepository.existsActiveForScopeAnyRubricVersion(
                 null, command.languageId(), command.frameworkVersionId(),
                 command.gradeLevelId(), null, null)) {
-            throw new ResourceDuplicatedException("Phạm vi này đã có một Assessment Policy hệ thống còn"
-                    + " hiệu lực (DRAFT hoặc PUBLISHED). Hãy Archive bản cũ trước khi tạo bản mới.");
+            throw new ResourceDuplicatedException("This scope already has a system Assessment Policy still"
+                    + " in force (DRAFT or PUBLISHED). Archive the old one before creating a new one.");
         }
     }
 
@@ -174,22 +174,22 @@ public class CreateSystemAssessmentPolicyUseCase implements IUseCase<List<Create
     private void requireUsableRubricVersion(CreateAssessmentPolicyCommand command, FrameworkVersion frameworkVersion) {
         UUID rubricVersionId = command.rubricVersionId();
         RubricVersion rubricVersion = rubricVersionRepository.findById(rubricVersionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric ID: " + rubricVersionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric version not found, ID: " + rubricVersionId));
         Rubric rubric = rubricRepository.findById(rubricVersion.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric gốc của version ID: " + rubricVersionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent rubric not found for version ID: " + rubricVersionId));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new IllegalArgumentException("Chỉ được dùng Rubric SYSTEM cho luồng System Admin.");
+            throw new IllegalArgumentException("Only a SYSTEM Rubric may be used in the System Admin flow.");
         }
         // Blocks ARCHIVED, does NOT block PUBLISHED -- see CreateSchoolAssessmentPolicyUseCase for the full reason.
         // Both flows must read this rule the same way, otherwise the system template and the school's copy
         // would have two different lifecycles.
         if (rubricVersion.getStatus() == RubricStatus.ARCHIVED) {
             throw new IllegalArgumentException(
-                    "Không gán được Policy vào Phiên bản Rubric đã lưu trữ (ARCHIVED).");
+                    "A Policy cannot be attached to an archived (ARCHIVED) rubric version.");
         }
         if (!rubric.getFrameworkId().equals(frameworkVersion.getFrameworkId())) {
-            throw new IllegalArgumentException("Phiên bản Rubric và Khung năng lực không khớp nhau.");
+            throw new IllegalArgumentException("The rubric version and the competency framework do not match.");
         }
     }
 

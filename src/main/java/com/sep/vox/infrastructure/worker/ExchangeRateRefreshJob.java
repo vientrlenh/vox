@@ -8,10 +8,10 @@ import org.springframework.stereotype.Component;
 
 import com.sep.vox.infrastructure.service.ExchangeRateRefreshService;
 
-// Tỷ giá USD->VND trước đây là hằng số tĩnh phải tự tay sửa .env (xem QuotaSellingPriceProperties)
-// -- job này tự động lấy tỷ giá thật định kỳ, để tiền hạn mức trên đơn hàng và fxRateUsed của từng
-// lượt dùng không bị lệch xa thị trường. Chạy hằng ngày (không phải hằng tuần như
-// QuotaPricingCalibrationJob) vì tỷ giá đổi nhanh hơn nhiều so với chi phí AI calibrate.
+// The USD->VND exchange rate used to be a static constant that had to be edited by hand in .env (see QuotaSellingPriceProperties)
+// -- this job periodically fetches the real rate automatically, so the quota money on orders and the fxRateUsed of each
+// usage do not drift far from the market. Runs daily (not weekly like
+// QuotaPricingCalibrationJob) because the exchange rate changes much faster than the AI cost being calibrated.
 @Component
 @RequiredArgsConstructor
 public class ExchangeRateRefreshJob {

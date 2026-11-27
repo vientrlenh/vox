@@ -78,7 +78,7 @@ class ViewStudentBusySlotsUseCaseTests {
         verify(assessmentCandidateRepository, never()).findConflictsForStudents(anyCollection(), any(), any(), any());
     }
 
-    /** Học sinh đã ở trong chính ca đang xét thì không phải "bận" — họ đang ở đúng chỗ. */
+    /** A student already in the schedule under consideration is not "busy" -- they are exactly where they should be. */
     @Test
     void should_exclude_the_schedule_being_filled() {
         useCase.execute(new ViewStudentBusySlotsQuery(List.of(scheduleId), List.of(studentId)));
@@ -125,7 +125,7 @@ class ViewStudentBusySlotsUseCaseTests {
     @Test
     void should_reject_when_caller_cannot_see_the_assessment_directory() {
         when(assessmentDirectoryAccessService.resolveByAssessmentId(assessmentId))
-            .thenThrow(new ForbiddenException("Quyền truy cập bị từ chối"));
+            .thenThrow(new ForbiddenException("Access denied"));
 
         assertThatThrownBy(() -> useCase.execute(
                 new ViewStudentBusySlotsQuery(List.of(scheduleId), List.of(studentId))))

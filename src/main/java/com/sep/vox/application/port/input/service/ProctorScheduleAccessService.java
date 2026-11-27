@@ -35,20 +35,20 @@ public class ProctorScheduleAccessService {
     private final UserContextPort userContextPort;
 
     /**
-     * Trả về ca thi nếu người đang đăng nhập được phép giám sát nó, ném lỗi nếu không.
+     * Returns the assessment schedule if the logged-in user is allowed to proctor it, throws an error if not.
      *
-     * <p>Được phép nghĩa là: giám thị được phân công ca này, hoặc school admin của trường sở hữu kỳ
-     * thi.
+     * <p>Allowed means: the proctor assigned to this schedule, or the school admin of the school that owns the
+     * assessment.
      */
     public AssessmentSchedule requireCanMonitorSchedule(UUID scheduleId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!hasAccess(scheduleId, currentUserId)) {
-            throw new ForbiddenException("Bạn không phải giám thị của ca thi này");
+            throw new ForbiddenException("You are not a proctor of this assessment schedule");
         }
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(scheduleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (schedule.getStatus() != null && schedule.getStatus().isRemoved()) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Assessment schedule not found");
         }
         return schedule;
     }

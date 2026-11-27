@@ -41,19 +41,19 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
     @Transactional
     public AssessmentScheduleProctorDto execute(AddAssessmentScheduleProctorCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Assessment schedule not found");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         requireTeacherOfAssessmentSchool(assessment, input.teacherId());
 
         if (assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(schedule.getId(), input.teacherId())) {
-            throw new ResourceDuplicatedException("Giám thị đã được phân công cho ca này");
+            throw new ResourceDuplicatedException("The proctor is already assigned to this assessment schedule");
         }
 
         // Exclude this session itself from the check: the duplicate check right above already covers that case,
@@ -68,12 +68,12 @@ public class AddAssessmentScheduleProctorUseCase implements IUseCase<AddAssessme
     private void requireTeacherOfAssessmentSchool(Assessment assessment, UUID teacherId) {
         // The proctor must be a school_user with the TEACHER role in the same school as the assessment.
         if (!schoolUserRepository.existsBySchoolIdAndUserId(assessment.getSchoolId(), teacherId)) {
-            throw new IllegalArgumentException("Giáo viên không thuộc trường của bài kiểm tra");
+            throw new IllegalArgumentException("The teacher does not belong to the school of the assessment");
         }
         boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(teacherId).stream()
             .anyMatch(role -> SchoolRoleCodes.TEACHER.equals(role.roleCode()));
         if (!isTeacher) {
-            throw new IllegalArgumentException("Người dùng không phải là giáo viên");
+            throw new IllegalArgumentException("The user is not a teacher");
         }
     }
 }

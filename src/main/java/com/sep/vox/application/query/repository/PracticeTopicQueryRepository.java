@@ -15,7 +15,7 @@ public interface PracticeTopicQueryRepository {
 
     List<TopicSearchRowInfo> searchTopics(UUID studentId, String pattern, String normalized);
 
-    /** Nạp lại chủ đề còn active theo id -- hydrate kết quả tìm bằng vector từ Postgres. */
+    /** Reloads active topics by id -- hydrates the result of a vector search from Postgres. */
     List<TopicSearchRowInfo> findActiveByIds(UUID studentId, java.util.Collection<UUID> topicIds);
 
     Optional<TopicSearchRowInfo> findRandomActiveTopic(UUID studentId);
@@ -23,10 +23,10 @@ public interface PracticeTopicQueryRepository {
     List<TopicSearchRowInfo> findSavedTopics(UUID studentId);
 
     /**
-     * Danh thiếp (id, tên, chiều) của chủ đề đang hoạt động -- cho phép chống trùng theo tên.
+     * A card (id, name, dimension) of each active topic -- enables name-based duplicate detection.
      *
-     * <p>Thay {@code findAllActive()} cũ (gỡ 2026-08-11) vốn trả entity đầy đủ kèm cột
-     * {@code description} kiểu TEXT, trong khi chỗ dùng chỉ đọc ba trường này.
+     * <p>Replaces the old {@code findAllActive()} (removed 2026-08-11), which returned full entities with the
+     * TEXT {@code description} column, while the caller only reads these three fields.
      */
     List<TopicNameCardInfo> findActiveNameCards();
 

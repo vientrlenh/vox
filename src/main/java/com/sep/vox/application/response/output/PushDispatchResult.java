@@ -4,16 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Kết quả gửi push, đã phân loại sẵn lỗi theo hành động mà phía gọi cần làm.
+ * The push result, with failures already classified by the action the caller needs to take.
  *
- * <p>Phân loại nằm ở đây chứ không để phía gọi tự đọc mã lỗi của FCM, vì đây là chỗ
- * dễ gây mất dữ liệu: nếu gộp chung "cứ lỗi là xoá thiết bị" thì một lần FCM downtime
- * (UNAVAILABLE hàng loạt) sẽ quét sạch bảng notification_devices và toàn bộ người dùng
- * phải đăng ký lại thiết bị từ đầu.
+ * <p>The classification is here and not left to the caller to read FCM error codes, because this is the place
+ * that can lose data: if everything were merged into "delete the device on any error", one FCM downtime
+ * (mass UNAVAILABLE) would wipe the notification_devices table and every user
+ * would have to register their device again from scratch.
  *
- * @param successCount               số thiết bị nhận được thông báo
- * @param staleInstallationIds       FID chắc chắn không còn dùng được -- phía gọi NÊN xoá khỏi DB
- * @param retryableInstallationIds   FID lỗi tạm thời -- phía gọi PHẢI giữ lại, thử lại sau
+ * @param successCount               the number of devices that received the notification
+ * @param staleInstallationIds       FIDs that are certainly no longer usable -- the caller SHOULD delete them from the DB
+ * @param retryableInstallationIds   FIDs with a temporary failure -- the caller MUST keep them and retry later
  */
 public record PushDispatchResult(
     int successCount,
@@ -35,7 +35,7 @@ public record PushDispatchResult(
         return staleInstallationIds.size() + retryableInstallationIds.size();
     }
 
-    /** Gộp kết quả của các lô 500 thành một kết quả duy nhất cho phía gọi. */
+    /** Merges the results of the batches of 500 into a single result for the caller. */
     public PushDispatchResult merge(PushDispatchResult other) {
         if (other == null) {
             return this;

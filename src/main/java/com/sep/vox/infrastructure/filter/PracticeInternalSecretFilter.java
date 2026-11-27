@@ -13,10 +13,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Xác thực các endpoint nội bộ Python->Java (/internal/practice-sessions/**) bằng shared secret
- * -- không phải JWT người dùng, vì bên gọi là Python, không phải học sinh đăng nhập. Đường
- * /internal/practice-selection, /internal/practice-generation (đã có từ trước) KHÔNG được filter
- * này bảo vệ -- chỉ áp cho path mới, không đổi hành vi hai đường cũ.
+ * Authenticates the internal Python->Java endpoints (/internal/practice-sessions/**) with a shared secret
+ * -- not the user JWT, because the caller is Python, not a logged-in student. The paths
+ * /internal/practice-selection and /internal/practice-generation (which already existed) are NOT protected by this
+ * filter -- it only applies to the new paths, leaving the behavior of the two old paths unchanged.
  */
 @Component
 @Slf4j
@@ -25,8 +25,8 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
     private static final String SECRET_HEADER = "X-Internal-Secret";
     private static final String[] PROTECTED_PREFIXES = {
         "/internal/practice-sessions/",
-        // Đường thi cũng chuyển sang cho Python tự upload audio của lượt, thay vì WPF upload rồi
-        // gọi POST /turns/archive. Cùng cơ chế bí mật dùng chung, vì bên gọi vẫn là Python.
+        // The assessment path also moves to Python uploading the turn's audio itself, instead of WPF uploading and then
+        // calling POST /turns/archive. Same shared-secret mechanism, because the caller is still Python.
         "/internal/assessment-turns/",
     };
 
@@ -55,7 +55,7 @@ public class PracticeInternalSecretFilter extends OncePerRequestFilter {
         }
         String provided = request.getHeader(SECRET_HEADER);
         if (expectedSecret.isBlank() || provided == null || !expectedSecret.equals(provided)) {
-            log.warn("Từ chối gọi endpoint nội bộ luyện tập: {}", request.getRequestURI());
+            log.warn("Rejected a call to the internal practice endpoint: {}", request.getRequestURI());
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }

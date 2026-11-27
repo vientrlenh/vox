@@ -44,19 +44,19 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
 
     private void validateSystemAdmin(UUID userId) {
         if (!userRepository.existsByIdAndStatus(userId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("The account does not exist or has been locked.");
         }
         if (!userContextPort.isSystemAdmin()) {
-            throw new ForbiddenException("Chỉ quản trị hệ thống mới được tạo khối học.");
+            throw new ForbiddenException("Only a system admin can create a grade level.");
         }
     }
 
     private void validateUniqueness(String code, Integer order) {
         if (gradeLevelRepository.existsByCode(code)) {
-            throw new ResourceDuplicatedException("Mã khối học đã tồn tại.");
+            throw new ResourceDuplicatedException("Grade level code already exists.");
         }
         if (order != null && gradeLevelRepository.existsByOrder(order)) {
-            throw new ResourceDuplicatedException("Thứ tự khối học đã được sử dụng.");
+            throw new ResourceDuplicatedException("Grade level order is already in use.");
         }
     }
 
@@ -70,7 +70,7 @@ public class CreateGradeLevelUseCase implements IUseCase<CreateGradeLevelCommand
             return gradeLevelRepository.save(newGradeLevel).getId();
         } catch (DataConflictException e) {
             // Race-condition guard: two requests that create the same code/order both pass the exists check and only then hit the unique index.
-            throw new ResourceDuplicatedException("Mã hoặc thứ tự khối học đã tồn tại.");
+            throw new ResourceDuplicatedException("Grade level code or order already exists.");
         }
     }
 }

@@ -38,9 +38,9 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
- * Khoá lại công thức tổng sau khi tách {@code rollUp}: {@code calculate} phải giữ
- * nguyên hành vi cho luồng AI và phúc khảo, còn {@code preview} phải cho ra đúng
- * con số mà {@code calculate} sẽ cho nếu bộ điểm kia được ghi thật.
+ * Locks the total-score formula after {@code rollUp} was split out: {@code calculate} must keep
+ * its behavior for the AI flow and the appeal flow, and {@code preview} must give exactly the
+ * number that {@code calculate} would give if the other set of scores were really written.
  */
 public class AssessmentSessionResultCalculatorTests {
 

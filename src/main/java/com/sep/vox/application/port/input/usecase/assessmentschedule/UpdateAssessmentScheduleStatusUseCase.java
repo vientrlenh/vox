@@ -51,12 +51,12 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
     @Transactional
     public AssessmentScheduleDto execute(UpdateAssessmentScheduleStatusCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Assessment schedule not found");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         UUID currentUserId = authorize(assessment);
 
         applyAction(input, schedule, assessment, currentUserId);
@@ -81,22 +81,22 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
             }
             case "COMPLETE" -> complete(schedule);
             case "CANCEL" -> cancel(schedule);
-            default -> throw new IllegalArgumentException("Hành động không hợp lệ");
+            default -> throw new IllegalArgumentException("Invalid action");
         }
     }
 
     private void requireAssessmentNotStarted(Assessment assessment) {
         if (assessment.isLockedForEditing()) {
-            throw new IllegalArgumentException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
+            throw new IllegalArgumentException("The schedule cannot be changed after the assessment has started");
         }
     }
 
     private void publish(AssessmentSchedule schedule) {
         if (schedule.getStatus() != AssessmentScheduleStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể công bố ca thi ở trạng thái nháp");
+            throw new IllegalArgumentException("An assessment schedule can only be published while it is a draft");
         }
         if (assessmentScheduleProctorRepository.countByScheduleId(schedule.getId()) < 1) {
-            throw new IllegalArgumentException("Cần ít nhất 1 giám thị trước khi công bố ca thi");
+            throw new IllegalArgumentException("At least 1 proctor is required before an assessment schedule is published");
         }
         requireEveryCandidateHasPaper(schedule);
         schedule.setStatus(AssessmentScheduleStatus.PUBLISHED);
@@ -113,14 +113,14 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
             .filter(candidate -> !AssessmentCandidateStatus.isNonScorable(candidate.getStatus()))
             .toList();
         if (candidates.isEmpty()) {
-            throw new IllegalArgumentException("Ca thi chưa có thí sinh nào, không thể công bố");
+            throw new IllegalArgumentException("The assessment schedule has no candidate, so it cannot be published");
         }
         long withoutPaper = candidates.stream()
             .filter(candidate -> candidate.getAssignedPaperId() == null)
             .count();
         if (withoutPaper > 0) {
             throw new IllegalArgumentException(
-                "Còn " + withoutPaper + " học sinh chưa được gán đề, không thể công bố ca thi");
+                "There are still " + withoutPaper + " students not assigned a paper, so the assessment schedule cannot be published");
         }
     }
 
@@ -142,22 +142,22 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
 
     private AssessmentSchedule requireMoveTarget(AssessmentSchedule schedule, UUID targetScheduleId) {
         if (schedule.getStatus() != AssessmentScheduleStatus.DRAFT && schedule.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể chuyển ca thi ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalArgumentException("An assessment schedule can only be moved while it is a draft or published");
         }
         if (targetScheduleId == null) {
-            throw new IllegalArgumentException("Ca thi đích là bắt buộc khi chuyển");
+            throw new IllegalArgumentException("The target assessment schedule is required when moving");
         }
         if (targetScheduleId.equals(schedule.getId())) {
-            throw new IllegalArgumentException("Ca thi đích phải khác ca thi hiện tại");
+            throw new IllegalArgumentException("The target assessment schedule must differ from the current one");
         }
         // Lock the target session row so it does not run in parallel with placing candidates into that same session.
         AssessmentSchedule target = assessmentScheduleRepository.findByIdForUpdate(targetScheduleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi đích"));
+            .orElseThrow(() -> new ResourceNotFoundException("Target assessment schedule not found"));
         if (!target.getAssessmentId().equals(schedule.getAssessmentId())) {
-            throw new IllegalArgumentException("Ca thi đích không thuộc cùng bài kiểm tra");
+            throw new IllegalArgumentException("The target assessment schedule does not belong to the same assessment");
         }
         if (target.getStatus() != AssessmentScheduleStatus.DRAFT && target.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Ca thi đích không ở trạng thái hợp lệ");
+            throw new IllegalArgumentException("The target assessment schedule is not in a valid status");
         }
         return target;
     }
@@ -167,10 +167,10 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
         if (candidates.isEmpty()) {
             return;
         }
-        // Ca đích có khung giờ khác ca nguồn nên phải soát lại, đối xứng với moveProctors: thí sinh
-        // đi theo có thể đâm vào một ca thứ ba ở kỳ thi khác. Ca nguồn tự bị loại (nó là ca hiện tại
-        // của mọi thí sinh ở đây) và cũng sắp thành MOVED. Soát TRỌN lô trước khi đụng vào ai để
-        // không để lại nửa vời trong bộ nhớ khi người thứ 40 mới là người vướng.
+        // The target schedule has a different time window than the source, so it must be re-checked, symmetric with moveProctors: the candidates
+        // that move along may collide with a third schedule of another assessment. The source schedule is excluded (it is the current schedule
+        // of every candidate here) and is about to become MOVED. Check the WHOLE batch before touching anyone so
+        // nothing is left half-done in memory when the 40th person is the one who conflicts.
         assessmentScheduleCandidateConflictValidator.requireCandidatesFree(
             candidates, target.getStartDate(), target.getEndDate());
 
@@ -180,11 +180,11 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
 
     private void moveProctors(UUID sourceScheduleId, AssessmentSchedule target) {
         for (AssessmentScheduleProctor proctor : assessmentScheduleProctorRepository.findByScheduleId(sourceScheduleId)) {
-            // Bảng có unique (schedule_id, teacher_id) nên bỏ qua giám thị đã có sẵn ở ca đích,
-            // nhưng vẫn phải xoá dòng cũ để ca nguồn không còn giám thị nào.
+            // The table has a unique (schedule_id, teacher_id), so a proctor already present in the target schedule is skipped,
+            // but the old row must still be deleted so the source schedule is left with no proctor.
             if (!assessmentScheduleProctorRepository.existsByScheduleIdAndTeacherId(target.getId(), proctor.getTeacherId())) {
-                // Ca đích có khung giờ khác ca nguồn nên phải soát lại: giám thị đi theo có thể đâm
-                // vào một ca thứ ba. Loại ca nguồn khỏi phép kiểm tra vì nó sắp thành MOVED.
+                // The target schedule has a different time window than the source, so it must be re-checked: a proctor who moves along may collide
+                // with a third schedule. Exclude the source schedule from the check because it is about to become MOVED.
                 assessmentScheduleProctorConflictValidator.requireTeacherFree(
                     proctor.getTeacherId(), target.getStartDate(), target.getEndDate(), sourceScheduleId);
                 assessmentScheduleProctorRepository.save(
@@ -196,14 +196,14 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
 
     private void complete(AssessmentSchedule schedule) {
         if (schedule.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể hoàn thành ca thi đã công bố");
+            throw new IllegalArgumentException("Only a published assessment schedule can be completed");
         }
         schedule.setStatus(AssessmentScheduleStatus.COMPLETED);
     }
 
     private void cancel(AssessmentSchedule schedule) {
         if (schedule.getStatus() != AssessmentScheduleStatus.DRAFT && schedule.getStatus() != AssessmentScheduleStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ có thể huỷ ca thi ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalArgumentException("An assessment schedule can only be cancelled while it is a draft or published");
         }
         schedule.setStatus(AssessmentScheduleStatus.CANCELLED);
     }
@@ -221,6 +221,6 @@ public class UpdateAssessmentScheduleStatusUseCase implements IUseCase<UpdateAss
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return currentUserId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

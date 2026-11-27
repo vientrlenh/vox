@@ -5,7 +5,7 @@ public record RequireHumanReviewParams(
 ) implements ScoringRuleActionParams {
     public RequireHumanReviewParams {
         if (reasonCode == null || reasonCode.isBlank()) {
-            throw new IllegalArgumentException("Reason code không được để trống");
+            throw new IllegalArgumentException("The reason code must not be blank");
         }
     }
 }

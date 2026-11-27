@@ -76,9 +76,9 @@ public class AssessmentGradingAccessService {
     public UUID requireActiveUserId() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+            .orElseThrow(() -> new UnauthorizedException("Account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("Account is locked.");
         }
         return currentUserId;
     }
@@ -86,26 +86,26 @@ public class AssessmentGradingAccessService {
     @Transactional(readOnly = true)
     public GradingContext load(UUID assignmentId) {
         AssessmentGradingAssignment assignment = assessmentGradingAssignmentRepository.findById(assignmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phân công chấm bài."));
+            .orElseThrow(() -> new ResourceNotFoundException("Grading assignment not found."));
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
 
     /**
-     * Như {@link #load} nhưng khoá dòng phân công để ghi.
+     * Like {@link #load} but locks the assignment row for writing.
      *
-     * <p>Dùng cho mọi luồng đọc-sửa-ghi trên một phân công. Không có khoá, hai request
-     * cùng đọc một dòng ASSIGNED sẽ cùng vượt qua các kiểm tra kiểu {@code isCompleted()}
-     * rồi cùng ghi — mà {@code save} ở đây là {@code merge} trên POJO detached nên ghi đè
-     * trọn cả dòng. Khoá cho luồng sau chờ, đọc lại trạng thái đã cập nhật, và ném đúng
-     * thông báo nghiệp vụ thay vì lặng lẽ chấm đè.
+     * <p>Use for every read-modify-write flow on an assignment. Without the lock, two requests
+     * reading the same ASSIGNED row both pass checks like {@code isCompleted()}
+     * and both write -- and {@code save} here is a {@code merge} on a detached POJO so it overwrites
+     * the whole row. The lock makes the later flow wait, re-read the updated state, and throw the proper
+     * business message instead of silently grading over it.
      *
-     * <p>{@code MANDATORY} vì khoá chỉ có nghĩa khi nằm trong transaction ghi của use
-     * case: nếu tự mở transaction riêng, khoá sẽ nhả ngay khi hàm này trả về.
+     * <p>{@code MANDATORY} because the lock only means something inside the write transaction of the use
+     * case: if it opened its own transaction, the lock would be released as soon as this function returns.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public GradingContext loadForUpdate(UUID assignmentId) {
         AssessmentGradingAssignment assignment = assessmentGradingAssignmentRepository.findByIdForUpdate(assignmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phân công chấm bài."));
+            .orElseThrow(() -> new ResourceNotFoundException("Grading assignment not found."));
         return loadFromCandidateResult(assignment, assignment.getCandidateResultId());
     }
 
@@ -118,46 +118,46 @@ public class AssessmentGradingAccessService {
 
     private GradingContext loadFromCandidateResult(AssessmentGradingAssignment assignment, UUID candidateResultId) {
         AssessmentCandidateResult candidateResult = assessmentCandidateResultRepository.findById(candidateResultId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kết quả bài thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment result not found."));
         AssessmentSession session = assessmentSessionRepository.findById(candidateResult.getSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found."));
         Assessment assessment = assessmentRepository.findById(candidateResult.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found."));
         return new GradingContext(
             assignment, candidateResult, session, assessment.getSchoolId(), assessment.getName(), assessment.getKind());
     }
 
-    /** School admin cùng trường với bài thi. Dùng cho gán / đổi / gỡ phân công. */
+    /** School admin of the same school as the assessment. Used for assigning / changing / removing assignments. */
     public void authorizeSchoolAdmin(UUID schoolId, UUID currentUserId) {
         if (isSchoolAdminOfSchool(schoolId, currentUserId)) {
             return;
         }
-        throw new ForbiddenException("BẢO MẬT: Bạn không có quyền phân công chấm bài của trường này.");
+        throw new ForbiddenException("SECURITY: You do not have permission to assign grading in this school.");
     }
 
     /**
-     * Chính giáo viên được gán bài này. Đây là chốt phân quyền duy nhất cho mọi
-     * thao tác chấm — kể cả gỡ cờ và đánh INVALID.
+     * The very teacher assigned to this assessment. This is the one authorization gate for every
+     * grading action -- including clearing a flag and marking INVALID.
      *
-     * <p>School admin KHÔNG được đi cửa này: quyền chấm đến từ chính dòng phân công,
-     * và vòng chấm ({@code roundType}) — thứ quyết định hành động nào hợp lệ và bài
-     * được chuyển sang trạng thái nào — cũng nằm ở đó. Nhà trường muốn chấm thì tự
-     * gán qua {@code authorizeSchoolAdmin}, để lại một dòng phân công có vòng rõ ràng.
+     * <p>School admin may NOT go through this door: the right to grade comes from the assignment row itself,
+     * and the grading round ({@code roundType}) -- which decides which actions are valid and which
+     * state the assessment moves to -- lives there too. A school that wants to grade assigns it to
+     * itself through {@code authorizeSchoolAdmin}, leaving an assignment row with a clear round.
      */
     public void authorizeAssignedTeacher(GradingContext context, UUID currentUserId) {
         AssessmentGradingAssignment assignment = context.assignment();
         if (assignment == null || !currentUserId.equals(assignment.getTeacherId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không được phân công chấm bài thi này.");
+            throw new ForbiddenException("SECURITY: You are not assigned to grade this assessment.");
         }
     }
 
     /**
-     * CHAIR của một bài kiểm tra trên lớp — chốt quyền DUY NHẤT cho mọi thao tác chấm
-     * của bài trên lớp.
+     * The CHAIR of a class test — the ONE authorization gate for every grading action
+     * on a class test.
      *
-     * <p>Kỳ thi {@code CENTRALIZED} luôn trả {@code false} kể cả khi người gọi là CHAIR
-     * của nó: bài tập trung do nhà trường điều phối, quyền chấm đến từ dòng phân công
-     * chứ không từ vai trò trong kỳ thi.
+     * <p>A {@code CENTRALIZED} assessment always returns {@code false} even when the caller is its CHAIR:
+     * a centralized assessment is coordinated by the school, and the right to grade comes from the assignment row
+     * and not from a role in the assessment.
      */
     public boolean isClassTestChair(UUID assessmentId, UUID currentUserId) {
         if (assessmentId == null || currentUserId == null) {
@@ -174,15 +174,15 @@ public class AssessmentGradingAccessService {
         if (isClassTestChair(assessmentId, currentUserId)) {
             return;
         }
-        throw new ForbiddenException("BẢO MẬT: Bạn không phải giáo viên tạo bài kiểm tra trên lớp này.");
+        throw new ForbiddenException("SECURITY: You are not the teacher who created this class test.");
     }
 
-    /** School admin cùng trường, HOẶC giáo viên tạo bài kiểm tra trên lớp đó. */
+    /** School admin of the same school, OR the teacher who created that class test. */
     public void authorizeSchoolAdminOrClassTestChair(UUID schoolId, UUID assessmentId, UUID currentUserId) {
         if (isSchoolAdminOfSchool(schoolId, currentUserId) || isClassTestChair(assessmentId, currentUserId)) {
             return;
         }
-        throw new ForbiddenException("BẢO MẬT: Bạn không có quyền thao tác trên bài kiểm tra này.");
+        throw new ForbiddenException("SECURITY: You do not have permission to act on this assessment.");
     }
 
     /**
@@ -214,13 +214,13 @@ public class AssessmentGradingAccessService {
         if (isSchoolAdminOfSchool(schoolId, currentUserId) || isAssessmentChair(assessmentId, currentUserId)) {
             return;
         }
-        throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem dữ liệu chấm của kỳ thi này.");
+        throw new ForbiddenException("SECURITY: You do not have permission to view the grading data of this assessment.");
     }
 
     /**
-     * Bài thuộc một kỳ thi {@code CLASS_TEST}? Dùng để CHẶN school admin điều phối —
-     * bài trên lớp do giáo viên tạo bài tự chấm, hai mô hình sở hữu chồng lên nhau là
-     * hai bên tranh cùng một {@code active_result_id}.
+     * Does the result belong to a {@code CLASS_TEST} assessment? Used to BLOCK the school admin from coordinating --
+     * a class test is graded by the teacher who created it, and two ownership models overlapping means
+     * two parties fighting over the same {@code active_result_id}.
      */
     public boolean isClassTestResult(UUID candidateResultId) {
         if (candidateResultId == null) {
@@ -231,7 +231,7 @@ public class AssessmentGradingAccessService {
             .orElse(false);
     }
 
-    /** Như {@link #isClassTestResult} nhưng theo lô — hai query cho cả danh sách, không N+1. */
+    /** Like {@link #isClassTestResult} but in batch — two queries for the whole list, no N+1. */
     public Set<UUID> classTestResultIds(Collection<UUID> candidateResultIds) {
         if (candidateResultIds == null || candidateResultIds.isEmpty()) {
             return Set.of();
@@ -253,16 +253,16 @@ public class AssessmentGradingAccessService {
     }
 
     public static final String CLASS_TEST_COORDINATION_REJECTION =
-        "Bài kiểm tra trên lớp do giáo viên tạo bài tự chấm, nhà trường không phân công.";
+        "A class test is graded by the teacher who created it; the school does not assign graders.";
 
-    /** Chặn nhà trường điều phối một bài của lớp. Xem {@link #isClassTestResult}. */
+    /** Blocks the school from coordinating a class test. See {@link #isClassTestResult}. */
     public void rejectClassTestCoordination(UUID candidateResultId) {
         if (isClassTestResult(candidateResultId)) {
             throw new ForbiddenException(CLASS_TEST_COORDINATION_REJECTION);
         }
     }
 
-    /** Như trên nhưng cho cả lô — chặn cả lô chứ không lọc lẻ, để kết quả không phụ thuộc dữ liệu ẩn. */
+    /** Same as above but for a whole batch — blocks the whole batch rather than filtering individually, so the result does not depend on hidden data. */
     public void rejectClassTestCoordination(Collection<UUID> candidateResultIds) {
         if (anyClassTestResult(candidateResultIds)) {
             throw new ForbiddenException(CLASS_TEST_COORDINATION_REJECTION);
@@ -290,14 +290,14 @@ public class AssessmentGradingAccessService {
         return isSchoolAdmin && currentSchoolId != null && currentSchoolId.equals(schoolId);
     }
 
-    /** Trường của người đang đăng nhập — mọi màn phân công đều bị giới hạn trong đó. */
+    /** The school of the logged-in user — every assignment screen is restricted to it. */
     public UUID requireCurrentSchoolId(UUID currentUserId) {
         return schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Tài khoản không thuộc trường học nào."));
+            .orElseThrow(() -> new ForbiddenException("The account does not belong to any school."));
     }
 
-    /** Giáo viên cùng trường — kiểm tra trước khi gán bài cho họ. */
+    /** Teacher of the same school — checked before assigning an assessment to them. */
     public boolean isTeacherOfSchool(UUID userId, UUID schoolId) {
         boolean isTeacher = userRoleQueryRepository.findByUserIdWithRoleInfo(userId).stream()
             .anyMatch(role -> "TEACHER".equals(role.roleCode()));

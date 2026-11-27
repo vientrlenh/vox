@@ -30,17 +30,17 @@ public class DeleteSystemRubricResultBandUseCase implements IUseCase<DeleteSyste
     @Transactional
     public Void execute(DeleteSystemRubricResultBandCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Account error."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
 
-        RubricVersion version = rubricVersionRepository.findById(command.versionId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
-        if (version.getStatus() != RubricStatus.DRAFT) throw new IllegalArgumentException("Chỉ xóa được khi là DRAFT.");
+        RubricVersion version = rubricVersionRepository.findById(command.versionId()).orElseThrow(() -> new ResourceNotFoundException("Version not found."));
+        if (version.getStatus() != RubricStatus.DRAFT) throw new IllegalArgumentException("Can only be deleted while DRAFT.");
 
-        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
-        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
+        Rubric rubric = rubricRepository.findById(version.getRubricId()).orElseThrow(() -> new ResourceNotFoundException("Rubric not found."));
+        if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) throw new ForbiddenException("Cannot delete data of a school.");
 
-        RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId()).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Thang điểm."));
-        if (!resultBand.getRubricVersionId().equals(version.getId())) throw new IllegalArgumentException("Thang điểm sai phiên bản.");
+        RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId()).orElseThrow(() -> new ResourceNotFoundException("Result band not found."));
+        if (!resultBand.getRubricVersionId().equals(version.getId())) throw new IllegalArgumentException("The result band belongs to a different version.");
 
         rubricResultBandRepository.deleteById(resultBand.getId());
 

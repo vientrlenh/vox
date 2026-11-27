@@ -45,7 +45,7 @@ class RestImportControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Hủy import thành công");
+            .extractingPath("$.message").isEqualTo("Import cancelled successfully");
         assertThat(result).bodyJson().extractingPath("$.data.reason").isEqualTo("User cancelled");
     }
 

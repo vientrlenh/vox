@@ -27,11 +27,11 @@ public class CreateAssessmentSessionUseCase implements IUseCase<CreateAssessment
     @Override
     public AssessmentSessionResponse execute(CreateAssessmentSessionCommand input) {
         assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh được gán"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assigned candidate not found"));
         assessmentPaperRepository.findById(input.paperId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment paper not found"));
 
         Instant now = Instant.now();
         AssessmentSession session = AssessmentSession.started(

@@ -58,10 +58,10 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
     public AssessmentEntryTicketResponse execute(StartClassTestSessionCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         AssessmentCandidate candidate = assessmentCandidateRepository.findByAssessmentIdAndStudentId(input.assessmentId(), studentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Bạn không phải thí sinh của bài kiểm tra này"));
+            .orElseThrow(() -> new ResourceNotFoundException("You are not a candidate of this assessment"));
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         requireStreamingAndNoOtp(assessment);
 
@@ -104,7 +104,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         // Take the session that is inside its time window, with no fallback to the assessment's closeAt: this is exactly the
         // condition IssueStudentStreamTokenUseCase checks right after when it issues the stream token.
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdAndInSchedule(candidate.getScheduleId(), now)
-            .orElseThrow(() -> new ResourceNotFoundException("Ca thi không hợp lệ hoặc đã hết hạn"));
+            .orElseThrow(() -> new ResourceNotFoundException("The assessment schedule is invalid or has expired"));
         return schedule.getEndDate();
     }
 
@@ -116,29 +116,29 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         }
 
         if (assessment.isRequiresOtp()) {
-            throw new IllegalArgumentException("Bài kiểm tra này yêu cầu xác thực OTP, vui lòng dùng luồng xác thực OTP");
+            throw new IllegalArgumentException("This assessment requires OTP verification, please use the OTP verification flow");
         }
     }
 
     private void requireCandidateMayEnter(AssessmentCandidate candidate, Assessment assessment, Instant now) {
         if (candidate.getBlockedAt() != null) {
-            throw new IllegalArgumentException("Bạn đã bị buộc kết thúc bài thi này, không thể vào lại");
+            throw new IllegalArgumentException("Your attempt at this assessment was force-ended, you cannot re-enter");
         }
         if (AssessmentCandidateStatus.isBlockedForEntry(candidate.getStatus())) {
-            throw new IllegalArgumentException("Bạn không đủ điều kiện tham gia kỳ thi này");
+            throw new IllegalArgumentException("You are not eligible to take this assessment");
         }
         // A class test is also taken in a room with a proctor, so the candidate must be marked present before entering.
         if (!AssessmentCandidateStatus.isAttended(candidate.getStatus())) {
-            throw new IllegalArgumentException("Bạn chưa được điểm danh có mặt, vui lòng liên hệ giám thị");
+            throw new IllegalArgumentException("You have not been marked present, please contact the proctor");
         }
         if (isAssessmentClosedForEntry(assessment, now)) {
-            throw new IllegalArgumentException("Bài kiểm tra hiện không mở để làm bài (trạng thái: " + assessment.getStatus() + ")");
+            throw new IllegalArgumentException("The assessment is not open for taking (status: " + assessment.getStatus() + ")");
         }
         if (candidate.getScheduleId() == null) {
-            throw new IllegalArgumentException("Bạn chưa được xếp ca thi");
+            throw new IllegalArgumentException("You have not been placed in an assessment schedule");
         }
         if (candidate.getAssignedPaperId() == null) {
-            throw new IllegalArgumentException("Bạn chưa được gán đề bài kiểm tra");
+            throw new IllegalArgumentException("You have not been assigned an assessment paper");
         }
     }
 
@@ -164,7 +164,7 @@ public class StartClassTestSessionUseCase implements IUseCase<StartClassTestSess
         if (assessment.getMaxAttempt() != null) {
             long usedAttempts = countUsedAttempts(candidate.getId());
             if (usedAttempts >= assessment.getMaxAttempt()) {
-                throw new ResourceDuplicatedException("Đã hết số lượt làm bài cho phép (" + assessment.getMaxAttempt() + " lượt)");
+                throw new ResourceDuplicatedException("The number of allowed attempts has been used up (" + assessment.getMaxAttempt() + " attempts)");
             }
         }
     }

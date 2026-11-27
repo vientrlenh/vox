@@ -14,8 +14,8 @@ import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 import com.sep.vox.application.response.input.practicesession.PracticeSessionResponses.TeacherPracticeSessionDetail;
 
 /**
- * GIÁO VIÊN xem bài luyện của học sinh mình dạy. Học sinh tự xem lại bài của chính mình đi
- * đường khác: {@link ViewMyPracticeSessionDetailUseCase}.
+ * A TEACHER views the practice of the students they teach. Students review their own work through another path:
+ * {@link ViewMyPracticeSessionDetailUseCase}.
  */
 @Service
 @RequiredArgsConstructor
@@ -31,7 +31,7 @@ public class ViewStudentPracticeSessionDetailUseCase
     public TeacherPracticeSessionDetail execute(ViewStudentPracticeSessionDetailQuery input) {
         UUID teacherId = userContextPort.getCurrentAuthenticatedUserId();
         if (!practiceSessionQueryRepository.canTeacherReadSession(teacherId, input.sessionId())) {
-            throw new ForbiddenException("Bạn không được xem phiên luyện này.");
+            throw new ForbiddenException("You are not allowed to view this practice session.");
         }
         return detailAssemblyService.assemble(input.sessionId());
     }

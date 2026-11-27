@@ -145,12 +145,12 @@ public class AssignGradingUseCaseTests {
     void should_batch_all_lookups_regardless_of_batch_size() {
         useCase.execute(command(firstResultId, secondResultId));
 
-        // Không N+1: mỗi lookup đúng một lần cho cả lô, không nhân theo số bài.
+        // No N+1: each lookup happens exactly once for the whole batch, not multiplied by the number of submissions.
         verify(assessmentCandidateResultRepository, times(1)).findByIdIn(anyCollection());
         verify(assessmentRepository, times(1)).findByIdIn(anyCollection());
         verify(assessmentGradingAssignmentRepository, times(1)).findOpenByCandidateResultIdIn(anyCollection());
         verify(assessmentGradingQueryRepository, times(1)).findTeacherIdsInSchool(eq(schoolId), anyCollection());
-        // Phân quyền chạy một lần cho trường duy nhất, không lặp theo bài.
+        // Authorization runs once for the single school, not repeated per submission.
         verify(assessmentGradingAccessService, times(1)).authorizeSchoolAdmin(eq(schoolId), eq(adminId));
     }
 
@@ -159,10 +159,10 @@ public class AssignGradingUseCaseTests {
         when(assessmentGradingAssignmentRepository.findOpenByCandidateResultIdIn(anyCollection()))
             .thenReturn(List.of(existingAssignment(secondResultId)));
 
-        // Một bài, một giáo viên. Unique index là chốt cuối; đây là lỗi đọc được.
+        // One submission, one teacher. The unique index is the last guard; this is the readable error.
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, secondResultId)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("đang được một giáo viên chấm");
+            .hasMessageContaining("is being graded by a teacher");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -171,7 +171,7 @@ public class AssignGradingUseCaseTests {
     void should_reject_duplicate_results_in_the_same_batch() {
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, firstResultId)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("trùng bài thi");
+            .hasMessageContaining("assigned twice");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -182,12 +182,12 @@ public class AssignGradingUseCaseTests {
             result(firstResultId, AssessmentCandidateResultStatus.PENDING_REVIEW),
             result(secondResultId, AssessmentCandidateResultStatus.RELEASED)));
 
-        // Vòng INITIAL chỉ nhận bài PENDING_REVIEW; bài RELEASED thuộc vòng SPOT_CHECK.
+        // The INITIAL round only takes PENDING_REVIEW submissions; a RELEASED submission belongs to the SPOT_CHECK round.
         assertThatThrownBy(() -> useCase.execute(command(firstResultId, secondResultId)))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("INITIAL");
 
-        // Bài đầu hợp lệ vẫn không được ghi: validate hết rồi mới persist.
+        // Even if the first submission is valid it must not be written: validate everything, then persist.
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
 
@@ -198,7 +198,7 @@ public class AssignGradingUseCaseTests {
 
         useCase.execute(command(GradingRoundType.SPOT_CHECK, firstResultId));
 
-        // Hậu kiểm là vòng dành cho bài ĐÃ công bố — bản cũ không giao được bài này.
+        // The post-check is the round for submissions that are ALREADY published -- the old version could not assign this submission.
         assertThat(captureSaved()).singleElement()
             .satisfies(assignment ->
                 assertThat(assignment.getRoundType()).isEqualTo(GradingRoundType.SPOT_CHECK));
@@ -206,11 +206,11 @@ public class AssignGradingUseCaseTests {
 
     @Test
     void should_refuse_to_assign_the_appeal_round_here() {
-        // Vòng phúc khảo gắn với một đơn cụ thể và có luật xung đột lợi ích riêng,
-        // nên nó chỉ được giao từ màn đơn phúc khảo.
+        // The appeal round is tied to one specific appeal and has its own conflict-of-interest rule,
+        // so it can only be assigned from the appeal screen.
         assertThatThrownBy(() -> useCase.execute(command(GradingRoundType.APPEAL, firstResultId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("phúc khảo");
+            .hasMessageContaining("appeal");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
@@ -243,14 +243,14 @@ public class AssignGradingUseCaseTests {
             GradingRoundType.INITIAL, null, List.of(
                 new AssignGradingCommand.AssignmentItem(firstResultId, outsider)))))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("cùng trường");
+            .hasMessageContaining("same school");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }
 
     @Test
     void should_reject_when_caller_is_not_school_admin_of_the_assessment() {
-        org.mockito.Mockito.doThrow(new ForbiddenException("BẢO MẬT"))
+        org.mockito.Mockito.doThrow(new ForbiddenException("SECURITY"))
             .when(assessmentGradingAccessService).authorizeSchoolAdmin(eq(schoolId), eq(adminId));
         when(assessmentCandidateResultRepository.findByIdIn(anyCollection()))
             .thenReturn(List.of(result(firstResultId, AssessmentCandidateResultStatus.PENDING_REVIEW)));
@@ -262,9 +262,9 @@ public class AssignGradingUseCaseTests {
     }
 
     /**
-     * Bài kiểm tra trên lớp do giáo viên tạo bài tự chấm — nhà trường không phân công.
-     * Không chặn thì admin gán giáo viên khác trong khi chủ bài đã được gán tự động,
-     * hai bên tranh cùng một {@code active_result_id}.
+     * A class test is graded by the teacher who created it -- the school does not assign.
+     * Without the block, an admin would assign another teacher while the owner was already auto-assigned,
+     * and the two sides would compete for the same {@code active_result_id}.
      */
     @Test
     void should_reject_class_test_result() {
@@ -276,7 +276,7 @@ public class AssignGradingUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(firstResultId)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("nhà trường không phân công");
+            .hasMessageContaining("the school does not assign graders");
 
         verify(assessmentGradingAssignmentRepository, never()).saveAll(anyList());
     }

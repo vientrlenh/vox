@@ -32,9 +32,8 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
- * Danh sách kết quả của học sinh dùng chung một luật hiển thị với màn chi tiết. Trước đợt
- * này vị từ bị chép ra hai bản và cả hai đều bỏ sót PASSED/FAILED — hai nơi suy luật là
- * sớm muộn hai nơi lệch nhau.
+ * A student's result list shares one display rule with the detail screen. Before this change the predicate was copied into two places and both
+ * missed PASSED/FAILED -- two places deriving the rule will sooner or later drift apart.
  */
 class ViewMyAssessmentResultsUseCaseTests {
 
@@ -125,7 +124,7 @@ class ViewMyAssessmentResultsUseCaseTests {
         assertThat(summaries.get(0).rubricResultBandId()).isEqualTo(BAND_ID);
     }
 
-    /** Vị từ cũ bỏ sót PASSED nên bài đã chốt lại bị giấu điểm khỏi chính chủ. */
+    /** The old predicate missed PASSED, so a finalized submission hid its score from its own owner. */
     @Test
     void should_show_total_score_when_result_passed() {
         givenResult(AssessmentCandidateResultStatus.PASSED);

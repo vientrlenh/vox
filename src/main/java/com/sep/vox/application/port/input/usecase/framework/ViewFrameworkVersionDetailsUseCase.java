@@ -20,7 +20,7 @@ public class ViewFrameworkVersionDetailsUseCase implements IUseCase<ViewFramewor
     @Override
     public FrameworkVersionDto execute(ViewFrameworkVersionDetailsQuery input) {
         FrameworkVersion version = frameworkVersionRepository.findById(input.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
         return FrameworkVersionDtoMapper.toDto(version);
     }
 }

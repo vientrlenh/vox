@@ -7,8 +7,7 @@ import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleSeverity;
 
-// Lệnh cập nhật 1 Scoring Rule đã tồn tại của trường học.
-// schoolId + policyId dùng để double-check quyền sở hữu; code là bất biến nên không có ở đây.
+// schoolId + policyId are used to double-check ownership; code is immutable so it is not here.
 public record UpdateSchoolScoringRuleCommand(
         UUID schoolId,
         UUID policyId,

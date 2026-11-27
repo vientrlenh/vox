@@ -7,11 +7,11 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
 public record AllocateUserQuotaAmountRequest(
-    @NotNull(message = "Người dùng yêu cầu không được để trống")
+    @NotNull(message = "Requesting user must not be blank")
     UUID userId,
 
-    @NotNull(message = "Số lượng không được để trống")
-    @DecimalMin(value = "0", message = "Số tiền để phân bổ không được dưới 0")
+    @NotNull(message = "Quantity must not be blank")
+    @DecimalMin(value = "0", message = "Amount to allocate must not be below 0")
     BigDecimal amountVnd
 ) {
 }

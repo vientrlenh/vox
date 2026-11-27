@@ -22,7 +22,7 @@ public class ViewSchoolSubscriptionsUseCase implements IUseCase<ViewSchoolSubscr
     @Override
     public PageResult<SchoolSubscriptionDto> execute(ViewSchoolSubscriptionsQuery input) {
         if (!userContextPort.isSystemAdmin()) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         PageResult<SchoolSubscription> result = schoolSubscriptionRepository.findForAdmin(
             input.planId(),

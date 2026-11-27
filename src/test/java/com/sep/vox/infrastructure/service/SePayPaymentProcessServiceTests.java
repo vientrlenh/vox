@@ -16,9 +16,9 @@ import com.sep.vox.infrastructure.properties.SePayPaymentProperties;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * IPN là đường duy nhất SePay báo "đã thu được tiền". Nếu bước đọc payload hỏng thì hóa đơn không
- * bao giờ được chốt: trường đã trả tiền nhưng không được cấp quota, và SePay chỉ retry một số lần
- * hữu hạn rồi bỏ cuộc.
+ * The IPN is the only path by which SePay reports "money collected". If the payload reading step breaks, the invoice is never
+ * settled: the school paid but is not granted quota, and SePay only retries a finite number
+ * of times and then gives up.
  */
 class SePayPaymentProcessServiceTests {
 
@@ -44,9 +44,9 @@ class SePayPaymentProcessServiceTests {
     }
 
     /**
-     * Payload thật của SePay gửi {@code custom_data} dưới dạng MẢNG. Khai nó là String khiến Jackson
-     * ném MismatchedInputException, parseBody trả null, và toàn bộ IPN bị coi là không xác thực được
-     * — tức mọi giao dịch SePay đều thất bại ở bước chốt, dù secret key hoàn toàn đúng.
+     * The real SePay payload sends {@code custom_data} as an ARRAY. Declaring it as String makes Jackson
+     * throw MismatchedInputException, parseBody returns null, and the whole IPN is treated as unauthenticatable
+     * -- meaning every SePay transaction fails at the settling step, even though the secret key is completely correct.
      */
     private static byte[] ipnWithArrayCustomData(String notificationType, String orderStatus) {
         return ("""

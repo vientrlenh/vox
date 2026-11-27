@@ -29,17 +29,17 @@ public class UpdateAssessmentMemberUseCase implements IUseCase<UpdateAssessmentM
     @Transactional
     public AssessmentMemberDto execute(UpdateAssessmentMemberCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentMember member = assessmentMemberRepository.findById(input.memberId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thành viên bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment member not found"));
 
         if (!member.getAssessmentId().equals(assessment.getId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         AssessmentMemberManageAccessService.AssessmentMemberActor actor = assessmentMemberManageAccessService.requireCanManage(assessment);
-        // Đổi vai trò chạm tới hai vai: vai cũ bị gỡ và vai mới được gán. Kiểm cả hai, nếu không thì
-        // chủ tịch hội đồng hạ cấp được chủ tịch khác xuống AUTHOR chỉ vì vai đích không phải CHAIR.
+        // Changing a role touches two roles: the old one is removed and the new one is assigned. Check both, otherwise
+        // a CHAIR could demote another CHAIR to AUTHOR just because the target role is not CHAIR.
         AssessmentMemberRole newRole = input.role();
         assessmentMemberManageAccessService.requireCanTouchRole(actor, member.getRole());
         assessmentMemberManageAccessService.requireCanTouchRole(actor, newRole);

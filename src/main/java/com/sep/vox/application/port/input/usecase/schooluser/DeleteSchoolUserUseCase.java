@@ -32,11 +32,11 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
         requireCallerMayDeleteUsersOf(input);
 
         User targetUser = userRepository.findById(input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         SchoolUser targetSchoolUser = schoolUserRepository.findByUserId(input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         if (!input.schoolId().equals(targetSchoolUser.getSchoolId())) {
-            throw new ResourceNotFoundException("Không tìm thấy người dùng");
+            throw new ResourceNotFoundException("User not found");
         }
 
         targetUser.softDelete();
@@ -51,14 +51,14 @@ public class DeleteSchoolUserUseCase implements IUseCase<DeleteSchoolUserCommand
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(callerId)
-            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+            .orElseThrow(() -> new IllegalArgumentException("You are not allowed to perform this action"));
         if (!input.schoolId().equals(callerSchoolUser.getSchoolId())) {
-            throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
+            throw new IllegalArgumentException("You are not allowed to perform this action");
         }
         if (callerId.equals(input.userId())) {
-            throw new IllegalArgumentException("Không thể tự xóa tài khoản của chính mình");
+            throw new IllegalArgumentException("You cannot delete your own account");
         }
     }
 

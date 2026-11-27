@@ -37,15 +37,15 @@ public class CreateQuestionBankGradeUseCase implements IUseCase<CreateQuestionBa
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         questionBankManageAccessService.requireManageAccess(questionBank, currentUserId);
 
         schoolGradeRepository.findById(input.schoolGradeId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khối lớp"));
+            .orElseThrow(() -> new ResourceNotFoundException("Grade level not found"));
 
         if (questionBankGradeRepository.existsByQuestionBankIdAndSchoolGradeId(questionBank.getId(), input.schoolGradeId())) {
-            throw new ResourceDuplicatedException("Khối lớp này đã được gắn với ngân hàng câu hỏi");
+            throw new ResourceDuplicatedException("This grade level is already attached to the question bank");
         }
 
         QuestionBankGrade grade = QuestionBankGrade.attached(

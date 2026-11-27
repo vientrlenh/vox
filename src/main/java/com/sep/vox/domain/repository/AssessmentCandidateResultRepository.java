@@ -17,6 +17,6 @@ public interface AssessmentCandidateResultRepository {
     AssessmentCandidateResult save(AssessmentCandidateResult result);
     void deleteBySessionId(UUID sessionId);
 
-    /** Xoá mềm kết quả của một phiên thi, cùng lúc với chính phiên đó. */
+    /** Soft-deletes the results of an assessment session, together with the session itself. */
     int softDeleteBySessionId(UUID sessionId, Instant deletedAt, String reason);
 }

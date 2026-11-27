@@ -61,20 +61,20 @@ public class SearchSystemRubricVersionsUseCase implements IUseCase<SearchSystemR
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
 
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
     }
 
     // Security checkpoint: prevent cross-viewing school Rubrics.
     private void requireSystemOwnedRubric(UUID rubricId) {
         Rubric rubric = rubricRepository.findById(rubricId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("The requested Rubric was not found."));
 
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("BẢO MẬT: Bộ Rubric này thuộc về Trường học. System Admin không được quyền tìm kiếm các phiên bản của nó.");
+            throw new ForbiddenException("SECURITY: this Rubric belongs to a School. A System Admin is not allowed to search its versions.");
         }
     }
 }

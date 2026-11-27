@@ -18,7 +18,7 @@ public interface AssessmentMemberRepository {
     boolean existsByUserIdAndRoleAndSchoolId(UUID userId, AssessmentMemberRole role, UUID schoolId);
     boolean existsByAssessmentIdAndRoleExcludingUserId(UUID assessmentId, AssessmentMemberRole role, UUID excludeUserId);
     boolean existsByRoleAndSchoolIdExcludingUserId(AssessmentMemberRole role, UUID schoolId, UUID excludeUserId);
-    /** Quản trị trường, hoặc thành viên AUTHOR/CHAIR của kỳ thi — người được gắn/đổi khung đề. */
+    /** School admins, or AUTHOR/CHAIR members of the assessment — the people allowed to attach/change the paper framework. */
     boolean canAttachBlueprint(UUID assessmentId, UUID userId);
     boolean canApproveBlueprintVersion(UUID assessmentId, UUID userId);
     void deleteById(UUID id);

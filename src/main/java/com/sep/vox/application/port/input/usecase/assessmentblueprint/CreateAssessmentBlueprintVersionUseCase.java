@@ -56,7 +56,7 @@ public class CreateAssessmentBlueprintVersionUseCase implements IUseCase<CreateA
         assessmentTimeQuotaGuardService.requireWithinPlan(
             blueprint.getSchoolId(),
             recalculatedVersion.getTotalTimeLimitSeconds(),
-            "Phiên bản blueprint " + recalculatedVersion.getCode()
+            "Blueprint version " + recalculatedVersion.getCode()
         );
         return AssessmentBlueprintVersionDtoMapper.toDto(recalculatedVersion);
     }

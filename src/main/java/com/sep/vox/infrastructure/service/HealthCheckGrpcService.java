@@ -32,7 +32,7 @@ public class HealthCheckGrpcService implements HealthCheckPort {
             }
         } catch (StatusRuntimeException e) {
             log.error("Streaming service status: {}", e.getStatus().toString());
-            throw new ServiceUnavailableException("Streaming service hiện không hoạt động");
+            throw new ServiceUnavailableException("The streaming service is currently not running");
         }
     }
 

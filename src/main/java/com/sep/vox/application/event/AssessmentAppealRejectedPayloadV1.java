@@ -2,7 +2,7 @@ package com.sep.vox.application.event;
 
 import java.util.UUID;
 
-/** Đơn phúc khảo bị từ chối ngay từ bước duyệt. */
+/** An appeal was rejected at the approval step. */
 public record AssessmentAppealRejectedPayloadV1(
     UUID appealId,
     UUID studentId,

@@ -48,6 +48,6 @@ class CreateGradeLevelUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessage("Mã hoặc thứ tự khối học đã tồn tại.");
+            .hasMessage("Grade level code or order already exists.");
     }
 }

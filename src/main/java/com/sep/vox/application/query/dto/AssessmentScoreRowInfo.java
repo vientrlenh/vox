@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Một dòng bảng điểm để xuất CSV. */
+/** One row of the score sheet, for CSV export. */
 public record AssessmentScoreRowInfo(
     UUID candidateResultId,
     String studentName,
@@ -16,7 +16,7 @@ public record AssessmentScoreRowInfo(
     BigDecimal totalScore,
     String resultBand,
     String status,
-    /** Vòng chấm gần nhất đã hoàn thành; rỗng khi bài chưa qua vòng nào. */
+    /** The latest completed grading round; empty when the submission has been through none. */
     String lastRoundType,
     String lastOutcome,
     String lastGraderName,

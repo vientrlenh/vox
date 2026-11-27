@@ -29,7 +29,7 @@ import com.sep.vox.support.IntegrationTest;
  * <p>Born from a REAL incident: {@code SchoolBalanceEntryType.QUOTA_FUNDING} was added to the Java enum
  * in the same change as V12, but {@code school-balance.graphqls} was not. Nothing blew up at startup, no
  * test went red, and the first QUOTA_FUNDING record merely having to EXIST was enough to kill the whole
- * "Sao kê ví" (wallet statement) page with {@code Can't serialize value ... Unknown value 'QUOTA_FUNDING'} --
+ * "Balance statement" page with {@code Can't serialize value ... Unknown value 'QUOTA_FUNDING'} --
  * the whole page broke, not just one row, because a serialization error kills the entire response.
  *
  * <p>This is exactly the kind of mistake nobody catches by eye: two files far apart; if both are edited
@@ -80,12 +80,12 @@ class GraphQLEnumParityTests {
 
             if (!missingFromSdl.isEmpty() || !missingFromJava.isEmpty()) {
                 drift.put(sdlEnum.getName(),
-                    "thiếu trong SDL " + missingFromSdl + ", thừa trong SDL " + missingFromJava);
+                    "missing from the SDL " + missingFromSdl + ", extra in the SDL " + missingFromJava);
             }
         }
 
         assertThat(drift)
-            .describedAs("enum SDL lệch với enum Java cùng tên -- thêm giá trị vào file .graphqls tương ứng")
+            .describedAs("SDL enum differs from the Java enum of the same name -- add the value to the matching .graphqls file")
             .isEmpty();
     }
 
@@ -123,8 +123,8 @@ class GraphQLEnumParityTests {
 
     @Test
     void the_scan_actually_finds_domain_enums() {
-        // Chốt chính phép quét: một ngày nào đó package đổi tên và scanDomainEnums trả rỗng, thì test
-        // trên sẽ XANH vì không so gì cả -- im lặng đúng kiểu lỗi nó sinh ra để bắt.
+        // Pin the scan itself: if one day the package is renamed and scanDomainEnums returns empty, the test
+        // above would turn GREEN because it compares nothing -- silent, exactly the kind of failure it exists to catch.
         assertThat(scanDomainEnums())
             .containsKeys("SchoolBalanceEntryType", "QuotaType", "SchoolSubscriptionStatus");
     }

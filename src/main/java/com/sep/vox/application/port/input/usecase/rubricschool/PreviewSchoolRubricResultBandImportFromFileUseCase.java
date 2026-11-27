@@ -48,7 +48,7 @@ public class PreviewSchoolRubricResultBandImportFromFileUseCase implements IUseC
     @Transactional
     public PreviewRubricResultBandImportResponse execute(PreviewRubricResultBandImportCommand command) {
         if (command.schoolId() == null) {
-            throw new IllegalArgumentException("Yêu cầu không hợp lệ: Thiếu mã trường học đối với luồng School Admin.");
+            throw new IllegalArgumentException("Invalid request: the school id is missing for the School Admin flow.");
         }
 
         requireActiveSchoolMember(command.schoolId());
@@ -75,30 +75,30 @@ public class PreviewSchoolRubricResultBandImportFromFileUseCase implements IUseC
     private ParseImportFileResult parseNonEmptyFile(PreviewRubricResultBandImportCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_RESULT_BAND);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên trống hoặc không chứa dữ liệu hợp lệ.");
+            throw new IllegalArgumentException("The uploaded file is empty or contains no valid data.");
         }
         return parsedResult;
     }
 
     private void requireActiveSchoolMember(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Bạn không thuộc trường học nào để thực hiện chức năng này."));
+                .orElseThrow(() -> new ForbiddenException("You do not belong to any school, so you cannot use this function."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bạn không có quyền thao tác trên dữ liệu của trường khác.");
+            throw new ForbiddenException("You are not allowed to operate on the data of another school.");
         }
     }
 
     private void requireSchoolOwnedRubricVersion(PreviewRubricResultBandImportCommand command) {
         RubricVersion version = rubricVersionRepository.findById(command.rubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("The requested Rubric version was not found."));
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc tương ứng."));
+                .orElseThrow(() -> new ResourceNotFoundException("The matching parent Rubric was not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(command.schoolId())) {
-            throw new ForbiddenException("Bảo mật: Bộ Rubric này không thuộc sở hữu của trường bạn.");
+            throw new ForbiddenException("Security: this Rubric is not owned by your school.");
         }
     }
 

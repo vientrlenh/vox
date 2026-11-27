@@ -3,7 +3,7 @@ package com.sep.vox.application.response.output;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Ứng viên kỳ thi tập trung, dùng để chọn ra kỳ thi gần thời điểm hiện tại nhất */
+/** A candidate of a centralized assessment, used to pick the assessment nearest to the current time. */
 public record CandidateAssessmentProjection(
     UUID id, 
     String code, 

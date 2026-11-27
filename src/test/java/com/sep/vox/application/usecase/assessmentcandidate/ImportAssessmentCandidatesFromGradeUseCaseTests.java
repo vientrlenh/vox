@@ -97,13 +97,13 @@ class ImportAssessmentCandidatesFromGradeUseCaseTests {
 
     @Test
     void should_reject_grade_import_for_class_test_chair() {
-        // Nhập theo niên khóa gom mọi lớp của niên khóa — vượt phạm vi chủ tịch bài trên lớp.
+        // Importing by school year gathers every class of the school year -- beyond the scope of the CHAIR of a class test.
         when(assessmentDirectoryAccessService.resolve(any(Assessment.class)))
             .thenReturn(new AssessmentDirectoryScope(userId, schoolId, false));
 
         assertThatThrownBy(() -> useCase.execute(new ImportAssessmentCandidatesFromGradeCommand(assessmentId, gradeId)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessage("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
+            .hasMessage("A class test does not support importing candidates by school year");
         verify(assessmentCandidateRepository, never()).saveAll(anyCollection());
     }
 

@@ -55,7 +55,7 @@ public class ImportAssessmentCandidatesFromGradeUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(ImportAssessmentCandidatesFromGradeCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentDirectoryAccessService.AssessmentDirectoryScope scope = assessmentDirectoryAccessService.resolve(assessment);
         requireSchoolWideScope(scope);
         UUID currentUserId = scope.callerId();
@@ -83,15 +83,15 @@ public class ImportAssessmentCandidatesFromGradeUseCase
      */
     private void requireSchoolWideScope(AssessmentDirectoryAccessService.AssessmentDirectoryScope scope) {
         if (!scope.schoolWide()) {
-            throw new ForbiddenException("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
+            throw new ForbiddenException("A class test does not support importing candidates by school year");
         }
     }
 
     private SchoolGrade requireGradeOfAssessmentSchool(Assessment assessment, UUID schoolGradeId) {
         SchoolGrade grade = schoolGradeRepository.findById(schoolGradeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khối"));
+            .orElseThrow(() -> new ResourceNotFoundException("Grade not found"));
         if (!grade.getSchoolId().equals(assessment.getSchoolId())) {
-            throw new ForbiddenException("Khối không thuộc trường của bài kiểm tra");
+            throw new ForbiddenException("The grade does not belong to the school of the assessment");
         }
         return grade;
     }

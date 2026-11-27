@@ -24,13 +24,13 @@ public class ViewSubscriptionPlanDetailUseCase implements IUseCase<ViewSubscript
     @Transactional(readOnly = true)
     public SubscriptionPlanDto execute(ViewSubscriptionPlanDetailQuery input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
-        // Chỉ System Admin mới quản lý gói nên được xem mọi trạng thái (DRAFT/ARCHIVED để biết
-        // gói nào chưa xuất bản/đã ngừng bán). Các role khác chỉ được xem gói đang bán — ẩn hẳn
-        // sự tồn tại của gói DRAFT/ARCHIVED thay vì trả lỗi quyền, đồng nhất với ViewPlansUseCase.
+        // Only the System Admin manages plans and so may see every status (DRAFT/ARCHIVED, to know which plans are
+        // unpublished/discontinued). Other roles only see plans on sale -- the existence of a DRAFT/ARCHIVED plan is
+        // hidden entirely instead of returning a permission error, consistent with ViewPlansUseCase.
         if (!userContextPort.isSystemAdmin() && plan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new ResourceNotFoundException("Không tìm thấy gói");
+            throw new ResourceNotFoundException("Plan not found");
         }
 
         return SubscriptionPlanDto.toDto(plan);

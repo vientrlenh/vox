@@ -32,9 +32,9 @@ public class ViewAssessmentBlueprintDetailsUseCase implements IUseCase<ViewAsses
             .orElse(null);
 
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi với id: " + input.id()));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment blueprint not found with id: " + input.id()));
         if (!hasAccess(blueprint, currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối: không có quyền truy cập blueprint đề thi này");
+            throw new ForbiddenException("Access denied: you have no access to this assessment blueprint");
         }
         return AssessmentBlueprintDtoMapper.toDto(blueprint);
     }

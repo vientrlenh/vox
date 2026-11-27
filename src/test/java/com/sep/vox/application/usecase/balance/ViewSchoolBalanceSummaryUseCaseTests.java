@@ -22,13 +22,13 @@ import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 
 /**
- * Ô tổng của trang sao kê tồn tại để giải thích MỌI thay đổi của số dư trong dải. Điều đó chỉ đúng
- * khi nó cộng dồn đủ mọi loại bút toán -- và một lần đã không đúng: QUOTA_FUNDING thêm vào enum ở V12
- * mà không thêm vào đây, nên trường chuyển 5tr sang ví hạn mức thì sao kê hiện một ví tụt 5tr với ba
- * ô tổng đều bằng 0.
+ * The totals box of the statement page exists to explain EVERY change of the balance within the range. That is
+ * only true when it sums every type of balance entry -- and once it was not true: QUOTA_FUNDING was added to the
+ * enum in V12 without being added here, so a school that moved 5M into the quota pool saw a statement showing a
+ * balance drop of 5M with all three totals at zero.
  *
- * <p>Vì thế phép kiểm chính ở đây duyệt {@code SchoolBalanceEntryType.values()} chứ không liệt kê
- * tay: liệt kê tay là lặp lại đúng cái danh sách vừa quên cập nhật.
+ * <p>So the main check here walks {@code SchoolBalanceEntryType.values()} instead of listing them by hand:
+ * listing by hand repeats exactly the list that was forgotten.
  */
 class ViewSchoolBalanceSummaryUseCaseTests {
 

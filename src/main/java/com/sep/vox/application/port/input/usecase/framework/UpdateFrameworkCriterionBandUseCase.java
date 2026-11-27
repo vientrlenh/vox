@@ -44,32 +44,32 @@ public class UpdateFrameworkCriterionBandUseCase
 
     private FrameworkVersion getVersion(UpdateFrameworkCriterionBandCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
     }
 
     private FrameworkCriterion getCriterion(UpdateFrameworkCriterionBandCommand command) {
         return frameworkCriterionRepository.findById(command.criterionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tiêu chí"));
+            .orElseThrow(() -> new ResourceNotFoundException("Criterion not found"));
     }
 
     private FrameworkCriterionBand getBand(UpdateFrameworkCriterionBandCommand command) {
         return frameworkCriterionBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mức đánh giá"));
+            .orElseThrow(() -> new ResourceNotFoundException("Band not found"));
     }
 
     private void checkValidRequest(UpdateFrameworkCriterionBandCommand command, FrameworkVersion version,
             FrameworkCriterion criterion, FrameworkCriterionBand band) {
         if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể cập nhật mức đánh giá khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Bands can only be updated while the version is in DRAFT status");
 
         if (!criterion.getFrameworkVersionId().equals(command.versionId()))
-            throw new IllegalArgumentException("Tiêu chí không thuộc phiên bản này");
+            throw new IllegalArgumentException("The criterion does not belong to this version");
 
         if (!band.getFrameworkCriterionId().equals(command.criterionId()))
-            throw new IllegalArgumentException("Mức đánh giá không thuộc tiêu chí này");
+            throw new IllegalArgumentException("The band does not belong to this criterion");
     }
 
     private void updateCriterionBand(UpdateFrameworkCriterionBandCommand command, FrameworkCriterionBand band) {

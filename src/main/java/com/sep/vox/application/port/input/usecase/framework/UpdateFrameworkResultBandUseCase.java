@@ -39,7 +39,7 @@ public class UpdateFrameworkResultBandUseCase
         try {
             frameworkResultBandRepository.save(band);
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Mã hoặc nhãn kết quả đã tồn tại cho phiên bản này", e);
+            throw new IllegalArgumentException("The result code or label already exists for this version", e);
         }
 
         return band.getId();
@@ -47,23 +47,23 @@ public class UpdateFrameworkResultBandUseCase
 
     private FrameworkVersion getVersion(UpdateFrameworkResultBandCommand command) {
         return frameworkVersionRepository.findById(command.versionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản khung năng lực"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework version not found"));
     }
 
     private FrameworkResultBand getBand(UpdateFrameworkResultBandCommand command) {
         return frameworkResultBandRepository.findById(command.bandId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mức kết quả"));
+            .orElseThrow(() -> new ResourceNotFoundException("Result band not found"));
     }
 
     private void checkValidRequest(UpdateFrameworkResultBandCommand command, FrameworkVersion version, FrameworkResultBand band) {
         if (!version.getFrameworkId().equals(command.frameworkId()))
-            throw new IllegalArgumentException("Phiên bản không thuộc khung năng lực này");
+            throw new IllegalArgumentException("The version does not belong to this framework");
 
         if (version.getStatus() != FrameworkVersionStatus.DRAFT)
-            throw new IllegalArgumentException("Chỉ có thể cập nhật mức kết quả khi phiên bản đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Result bands can only be updated while the version is in DRAFT status");
 
         if (!band.getFrameworkVersionId().equals(command.versionId()))
-            throw new IllegalArgumentException("Mức kết quả không thuộc phiên bản này");
+            throw new IllegalArgumentException("The result band does not belong to this version");
 
         requireUniqueCodeAndLabel(command);
         requireOrderKeepsSequenceContinuous(command);
@@ -73,10 +73,10 @@ public class UpdateFrameworkResultBandUseCase
         String safeCode = StringNormalization.normalizeCode(command.code());
         String safeLabel = StringNormalization.trimAndCollapseSpaces(command.label());
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndCodeAndIdNot(command.versionId(), safeCode, command.bandId())) {
-            throw new IllegalArgumentException("Mã kết quả đã tồn tại");
+            throw new IllegalArgumentException("Result code already exists");
         }
         if (frameworkResultBandRepository.existsByFrameworkVersionIdAndLabelAndIdNot(command.versionId(), safeLabel, command.bandId())) {
-            throw new IllegalArgumentException("Nhãn kết quả đã tồn tại");
+            throw new IllegalArgumentException("Result label already exists");
         }
     }
 
@@ -87,12 +87,12 @@ public class UpdateFrameworkResultBandUseCase
                 .map(frb -> frb.getOrder())
                 .collect(Collectors.toSet());
         if (!otherOrders.add(command.order())) {
-            throw new IllegalArgumentException("Thứ tự mức kết quả bị trùng lặp: " + command.order());
+            throw new IllegalArgumentException("Duplicate result band order: " + command.order());
         }
         int expectedOrder = otherOrders.size();
         for (int i = 1; i <= expectedOrder; i++) {
             if (!otherOrders.contains(i)) {
-                throw new IllegalArgumentException("Thứ tự mức kết quả phải tăng dần liên tục từ 1, không được bỏ số");
+                throw new IllegalArgumentException("Result band order must increase continuously from 1 without skipping a number");
             }
         }
     }

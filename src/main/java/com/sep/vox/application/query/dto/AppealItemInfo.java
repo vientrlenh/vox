@@ -5,19 +5,19 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Một phần thi được phúc khảo, kèm dữ liệu để đối chiếu.
- * `finalScore` null cho tới khi đơn được công bố.
+ * One exam part under appeal, with the data needed to compare.
+ * `finalScore` is null until the appeal is published.
  */
 public record AppealItemInfo(
     UUID appealItemId,
     UUID paperItemId,
     String partLabel,
     /**
-     * Điểm tiêu chí của bản chấm đang có hiệu lực: vòng đầu là bản AI, vòng sau là
-     * bản chấm tay của vòng trước. Không phải lúc nào cũng là điểm AI.
+     * The criterion score of the grade currently in effect: in the first round it is the AI grade,
+     * in later rounds it is the manual grade of the previous round. It is not always the AI score.
      */
     List<AppealCriterionScoreInfo> baselineScores,
-    /** Luôn lấy từ bản AI — chỉ bản AI mới có lượt nói. */
+    /** Always taken from the AI grade -- only the AI grade has the speaking turn. */
     List<AppealTurnInfo> turns,
     BigDecimal finalScore
 ) {

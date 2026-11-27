@@ -36,10 +36,10 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Phân đề đòi mọi mã đề phải LOCKED. Bài trên lớp lại không có tách bạch tác giả / người duyệt —
- * giáo viên vừa là CHAIR vừa là người soạn mọi mã đề — nên luồng duyệt 3 bước của kỳ thi tập trung
- * ({@code requireNotAuthor}) sẽ khoá chết giáo viên khỏi chính đề của mình. Ở đây khoá đề là một
- * bước DRAFT → LOCKED.
+ * Assigning papers requires every paper to be LOCKED. A class test has no separation of author / reviewer --
+ * the teacher is both the CHAIR and the author of every paper -- so the 3-step review flow of a centralized assessment
+ * ({@code requireNotAuthor}) would lock the teacher out of their own paper. Here locking a paper is
+ * a single step DRAFT → LOCKED.
  */
 class LockClassTestPaperTests {
 
@@ -107,7 +107,7 @@ class LockClassTestPaperTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("còn ô câu hỏi chưa được gán");
+            .hasMessageContaining("unassigned question slots");
     }
 
     @Test
@@ -117,7 +117,7 @@ class LockClassTestPaperTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Quyền truy cập bị từ chối");
+            .hasMessageContaining("Access denied");
     }
 
     /**

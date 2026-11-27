@@ -50,7 +50,7 @@ public class AutoFillAssessmentCandidatesUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(AutoFillAssessmentCandidatesCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -105,7 +105,7 @@ public class AutoFillAssessmentCandidatesUseCase
         List<AssessmentSchedule> lockedSchedules = new ArrayList<AssessmentSchedule>();
         for (AssessmentSchedule schedule : targetSchedules) {
             AssessmentSchedule locked = assessmentScheduleRepository.findByIdForUpdate(schedule.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
             lockedSchedules.add(locked);
         }
         return lockedSchedules;

@@ -8,18 +8,18 @@ import jakarta.validation.constraints.NotNull;
 
 public record CreateSchoolGradeRequest(
 
-        @NotBlank(message = "Mã code không được để trống")
+        @NotBlank(message = "Code must not be blank")
         String code,
 
-        @NotBlank(message = "Tên năm học không được để trống")
+        @NotBlank(message = "School year name must not be blank")
         String name,
 
         String description,
 
-        @NotNull(message = "Ngày bắt đầu không được để trống")
+        @NotNull(message = "Start date must not be blank")
         LocalDate startDate,
 
-        @NotNull(message = "Ngày kết thúc không được để trống")
+        @NotNull(message = "End date must not be blank")
         LocalDate endDate
 ) {
 

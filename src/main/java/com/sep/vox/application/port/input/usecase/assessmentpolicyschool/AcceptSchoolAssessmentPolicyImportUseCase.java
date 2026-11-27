@@ -59,25 +59,25 @@ public class AcceptSchoolAssessmentPolicyImportUseCase implements IUseCase<Accep
 
     private void requireSchoolMember(AcceptSchoolAssessmentPolicyImportCommand command) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("The account does not exist."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
 
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Không thuộc trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("You do not belong to any school."));
         if (!schoolUser.getSchoolId().equals(command.schoolId()))
-            throw new ForbiddenException("BẢO MẬT: Mã bảo mật trường học không trùng khớp.");
+            throw new ForbiddenException("SECURITY: The school security code does not match.");
     }
 
     private ImportSession loadPreviewedSession(AcceptSchoolAssessmentPolicyImportCommand command) {
         ImportSession session = importSessionRepository.findById(command.sessionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên làm việc Import."));
+                .orElseThrow(() -> new ResourceNotFoundException("Import session not found."));
 
         if (session.getType() != ImportType.ASSESSMENT_POLICY || session.getSchoolId() == null
                 || !session.getSchoolId().equals(command.schoolId())) {
-            throw new IllegalArgumentException("Dữ liệu phiên làm việc không thuộc trường học của bạn hoặc sai cấu trúc định dạng.");
+            throw new IllegalArgumentException("The session data does not belong to your school or has an invalid format.");
         }
         if (session.getStatus() != ImportSessionStatus.PREVIEWED) {
-            throw new IllegalArgumentException("Trạng thái phiên làm việc không hợp lệ để phê duyệt.");
+            throw new IllegalArgumentException("The session status is not valid for approval.");
         }
         return session;
     }

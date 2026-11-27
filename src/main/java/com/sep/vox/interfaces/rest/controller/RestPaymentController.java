@@ -25,13 +25,13 @@ public class RestPaymentController {
     private final CreatePaymentCheckoutUrlUseCase createPaymentCheckoutUrlUseCase;
 
     /**
-     * POST chứ không phải GET dù tên nghe như một phép đọc: mỗi lần gọi sẽ GHI một dòng
-     * payment_records và gọi sang cổng để mở một phiên thanh toán thật. GET phải là thao tác an toàn
-     * -- trình duyệt và proxy được phép prefetch, mà prefetch một endpoint như thế này nghĩa là tự
-     * mở ra một lần thử thanh toán không ai yêu cầu.
+     * POST rather than GET even though the name sounds like a read: every call WRITES a payment_records
+     * row and calls the gateway to open a real payment session. GET must be a safe operation
+     * -- browsers and proxies may prefetch, and prefetching an endpoint like this would open
+     * a payment attempt nobody asked for.
      *
-     * <p>201 vì kết quả là một tài nguyên MỚI (lần thử thanh toán) -- trừ trường hợp đơn đang có
-     * phiên treo thì use case trả lại đúng phiên cũ.
+     * <p>201 because the result is a NEW resource (the payment attempt) -- unless the order already has a pending
+     * session, in which case the use case returns that same session.
      */
     @PostMapping("/checkout-url")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
@@ -40,6 +40,6 @@ public class RestPaymentController {
         PaymentCheckoutResponse data = createPaymentCheckoutUrlUseCase.execute(
             new CreatePaymentCheckoutUrlCommand(request.orderId(), request.provider()));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo liên kết thanh toán thành công", data));
+            .body(ApiResponse.success("Payment link created successfully", data));
     }
 }

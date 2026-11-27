@@ -40,12 +40,12 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
     @Transactional
     public UUID execute(DeleteAssessmentScheduleCommand input) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findById(input.scheduleId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (!schedule.getAssessmentId().equals(input.assessmentId())) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Assessment schedule not found");
         }
         Assessment assessment = assessmentRepository.findById(schedule.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         authorize(assessment);
 
         requireScheduleDeletable(schedule, assessment);
@@ -57,15 +57,15 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
 
     private void requireScheduleDeletable(AssessmentSchedule schedule, Assessment assessment) {
         if (assessmentCandidateRepository.countByScheduleId(schedule.getId()) > 0) {
-            throw new IllegalArgumentException("Không thể xoá ca thi đang có thí sinh");
+            throw new IllegalArgumentException("An assessment schedule that has candidates cannot be deleted");
         }
         // The session is soft-deleted but no FK/cascade cleans up the assessment_schedule_proctors rows, so the
         // proctors must be removed first -- otherwise the attendance screen still joins out the deleted session.
         if (assessmentScheduleProctorRepository.countByScheduleId(schedule.getId()) > 0) {
-            throw new IllegalArgumentException("Không thể xoá ca thi đang có giám thị");
+            throw new IllegalArgumentException("An assessment schedule that has proctors cannot be deleted");
         }
         if (assessment.isLockedForEditing()) {
-            throw new IllegalArgumentException("Không thể thay đổi lịch thi khi kỳ thi đã bắt đầu");
+            throw new IllegalArgumentException("The schedule cannot be changed after the assessment has started");
         }
     }
 
@@ -82,6 +82,6 @@ public class DeleteAssessmentScheduleUseCase implements IUseCase<DeleteAssessmen
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return currentUserId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

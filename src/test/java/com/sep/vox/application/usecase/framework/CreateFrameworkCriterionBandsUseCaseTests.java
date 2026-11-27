@@ -122,7 +122,7 @@ public class CreateFrameworkCriterionBandsUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Mã kết quả đã được gán mức đánh giá cho tiêu chí này");
+            .hasMessage("The result code already has a band assigned for this criterion");
     }
 
     @Test

@@ -50,7 +50,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     public ImportCommitResult commit(ImportSession session, List<ImportRow> rows) {
         RubricVersion version = requireDraftVersion(session.getImportedEntityId());
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found during background processing."));
         CommitRun run = buildCommitRun(version, rubric, resolveMapping(session));
 
         List<RubricCriterion> criterionsToSave = new ArrayList<>();
@@ -71,9 +71,9 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
     private RubricVersion requireDraftVersion(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Phiên bản Rubric khi xử lý ngầm."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric version not found during background processing."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể import Tiêu chí khi phiên bản Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Criteria can only be imported when the Rubric version is in DRAFT status.");
         }
         return version;
     }
@@ -101,7 +101,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         FrameworkVersion activeFwVersion = frameworkVersionRepository.findByFrameworkIdAndStatus(
                         rubric.getFrameworkId(), FrameworkVersionStatus.PUBLISHED)
                 .stream().findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy phiên bản Khung tiêu chuẩn nào đang hoạt động cho Framework này."));
+                .orElseThrow(() -> new IllegalArgumentException("No active standard Framework version found for this Framework."));
         // Framework criteria are fetched by the framework VERSION id, not by the framework id.
         List<FrameworkCriterion> fwCriterions = frameworkCriterionRepository.findByFrameworkVersionId(activeFwVersion.getId());
         List<RubricCriterion> existingCriterions = rubricCriterionRepository.findByRubricVersionId(version.getId());
@@ -164,7 +164,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
             markImported(row, mappedData);
             return true;
         } catch (Exception ex) {
-            errors.add(error("general", "Lỗi xử lý luồng ngầm: " + ex.getMessage()));
+            errors.add(error("general", "Background processing error: " + ex.getMessage()));
             markInvalid(row, errors);
             return false;
         }
@@ -190,7 +190,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
 
     private void addDuplicateCodeError(CommitRun run, String safeCode, List<Map<String, String>> errors) {
         if (errors.isEmpty() && !run.codesInFile().add(normalizeCode(safeCode))) {
-            errors.add(error("code", "Bị trùng Mã tiêu chí '" + safeCode + "' ngay trong file Excel."));
+            errors.add(error("code", "Duplicate criterion code '" + safeCode + "' within the Excel file."));
         }
     }
 
@@ -223,13 +223,13 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     }
 
     private static void addMissingFieldErrors(RowFields fields, List<Map<String, String>> errors) {
-        if (isBlank(fields.code())) errors.add(error("code", "Thiếu Mã tiêu chí."));
-        if (isBlank(fields.name())) errors.add(error("name", "Thiếu Tên tiêu chí."));
-        if (isBlank(fields.frameworkCriterionCode())) errors.add(error("frameworkCriterionCode", "Thiếu Mã Khung tiêu chuẩn tham chiếu."));
-        if (isBlank(fields.weight())) errors.add(error("weight", "Thiếu Trọng số."));
-        if (isBlank(fields.minScore())) errors.add(error("minScore", "Thiếu Điểm sàn."));
-        if (isBlank(fields.maxScore())) errors.add(error("maxScore", "Thiếu Điểm trần."));
-        if (isBlank(fields.order())) errors.add(error("order", "Thiếu Thứ tự."));
+        if (isBlank(fields.code())) errors.add(error("code", "Criterion code is missing."));
+        if (isBlank(fields.name())) errors.add(error("name", "Criterion name is missing."));
+        if (isBlank(fields.frameworkCriterionCode())) errors.add(error("frameworkCriterionCode", "Referenced standard framework code is missing."));
+        if (isBlank(fields.weight())) errors.add(error("weight", "Weight is missing."));
+        if (isBlank(fields.minScore())) errors.add(error("minScore", "Minimum score is missing."));
+        if (isBlank(fields.maxScore())) errors.add(error("maxScore", "Maximum score is missing."));
+        if (isBlank(fields.order())) errors.add(error("order", "Order is missing."));
     }
 
     private static boolean isBlank(String value) {
@@ -243,7 +243,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     private static UUID resolveFrameworkCriterionId(CommitRun run, RowFields fields, List<Map<String, String>> errors) {
         UUID fwCriterionId = run.fwCodeToIdMap().get(normalizeCode(fields.frameworkCriterionCode()));
         if (fwCriterionId == null) {
-            errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fields.frameworkCriterionCode() + "' không tồn tại trong Framework gốc."));
+            errors.add(error("frameworkCriterionCode", "Standard framework code '" + fields.frameworkCriterionCode() + "' does not exist in the parent Framework."));
         }
         return fwCriterionId;
     }
@@ -260,17 +260,17 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         String fwCodeStr = fields.frameworkCriterionCode();
         if (targetCriterion == null) {
             if (!run.fwCriterionIdsInFile().add(fwCriterionId)) {
-                errors.add(error("frameworkCriterionCode", "Bị trùng Mã Khung tiêu chuẩn tham chiếu '" + fwCodeStr + "' ngay trong file Excel."));
+                errors.add(error("frameworkCriterionCode", "Duplicate referenced standard framework code '" + fwCodeStr + "' within the Excel file."));
             } else {
                 RubricCriterion holder = run.existingByFwCriterionId().get(fwCriterionId);
                 if (holder != null) {
-                    errors.add(error("frameworkCriterionCode", "Mã Khung tiêu chuẩn '" + fwCodeStr
-                            + "' đã được gán cho tiêu chí khác (mã: " + holder.getCode() + ") trong phiên bản này."));
+                    errors.add(error("frameworkCriterionCode", "Standard framework code '" + fwCodeStr
+                            + "' is already assigned to another criterion (code: " + holder.getCode() + ") in this version."));
                 }
             }
         } else if (!fwCriterionId.equals(targetCriterion.getFrameworkCriterionId())) {
-            errors.add(error("frameworkCriterionCode", "Không thể thay đổi Khung tiêu chuẩn tham chiếu của tiêu chí '"
-                    + safeCode + "' đã tồn tại (Mã Khung tiêu chuẩn tham chiếu không được phép sửa sau khi tạo)."));
+            errors.add(error("frameworkCriterionCode", "Cannot change the referenced standard framework of criterion '"
+                    + safeCode + "' that already exists (the referenced standard framework code may not be edited after creation)."));
         }
     }
 
@@ -290,7 +290,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
                     .map(exampleText -> new RubricCriterionExample(exampleText, exampleText, BigDecimal.ZERO))
                     .toList());
         } catch (Exception e) {
-            errors.add(error("examples", "Dữ liệu ví dụ không hợp lệ (Hãy phân cách các ví dụ bằng dấu ;). Lỗi: " + e.getMessage()));
+            errors.add(error("examples", "Example data is invalid (separate examples with a ; character). Error: " + e.getMessage()));
             return null;
         }
     }
@@ -303,11 +303,11 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
             BigDecimal weight = parseWeightFraction(trimOrEmpty(fields.weight()), errors);
             BigDecimal minScore = new BigDecimal(trimOrEmpty(fields.minScore()));
             BigDecimal maxScore = new BigDecimal(trimOrEmpty(fields.maxScore()));
-            if (minScore.compareTo(maxScore) > 0) errors.add(error("minScore", "Điểm sàn không được lớn hơn điểm trần."));
+            if (minScore.compareTo(maxScore) > 0) errors.add(error("minScore", "Minimum score must not exceed maximum score."));
             int order = parseOrder(trimOrEmpty(fields.order()), ordersInFile, errors);
             return new ParsedNumbers(weight, minScore, maxScore, order, parseIsRequired(fields.required()));
         } catch (NumberFormatException e) {
-            errors.add(error("general", "Dữ liệu Trọng số/Điểm/Thứ tự không đúng định dạng số."));
+            errors.add(error("general", "Weight/Score/Order data is not a valid number."));
             return ParsedNumbers.DEFAULT;
         }
     }
@@ -323,15 +323,15 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     // without losing digits.
     private static BigDecimal parseWeightFraction(String weightText, List<Map<String, String>> errors) {
         BigDecimal weightPercent = new BigDecimal(weightText);
-        if (weightPercent.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Trọng số không được âm."));
+        if (weightPercent.compareTo(BigDecimal.ZERO) < 0) errors.add(error("weight", "Weight must not be negative."));
         return weightPercent.divide(ONE_HUNDRED, 6, RoundingMode.HALF_UP);
     }
 
     private static int parseOrder(String orderText, Set<Integer> ordersInFile, List<Map<String, String>> errors) {
         int order = Integer.parseInt(orderText.trim());
-        if (order <= 0) errors.add(error("order", "Thứ tự phải lớn hơn 0."));
+        if (order <= 0) errors.add(error("order", "Order must be greater than 0."));
         if (!ordersInFile.add(order)) {
-            errors.add(error("order", "Bị trùng Thứ tự " + order + " ngay trong file Excel."));
+            errors.add(error("order", "Duplicate order " + order + " within the Excel file."));
         }
         return order;
     }
@@ -387,7 +387,7 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
         try {
             rubricCriterionRepository.saveAll(criterionsToSave);
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp trong phiên bản Rubric này.", e);
+            throw new IllegalArgumentException("Data save error: the criterion code or standard Framework is duplicated in this Rubric version.", e);
         }
     }
 
@@ -396,8 +396,8 @@ public class RubricCriterionImportCommitHandler implements ImportCommitHandler {
     }
 
     /**
-     * Chuẩn hóa code để so khớp: loại bỏ non-breaking space / zero-width space / BOM
-     * (rất hay dính khi copy dữ liệu từ Excel) mà String.strip() không loại bỏ được.
+     * Normalizes a code for matching: removes non-breaking space / zero-width space / BOM
+     * (very common when copying data from Excel) that String.strip() does not remove.
      */
     private static String normalizeCode(String raw) {
         if (raw == null) return null;

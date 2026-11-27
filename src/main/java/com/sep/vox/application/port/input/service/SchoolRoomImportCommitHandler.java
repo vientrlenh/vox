@@ -55,14 +55,14 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
             .filter(key -> !validHeaders.contains(key))
             .toList();
         if (!invalidKeys.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa cột không tồn tại trong file: " + String.join(", ", invalidKeys));
+            throw new IllegalArgumentException("Mapping contains a column that does not exist in the file: " + String.join(", ", invalidKeys));
         }
         List<String> invalidValues = confirmedMapping.values().stream()
             .map(value -> value == null ? null : value.strip())
             .filter(value -> value != null && !value.isEmpty() && !SUPPORTED_FIELDS.contains(value))
             .toList();
         if (!invalidValues.isEmpty()) {
-            throw new IllegalArgumentException("Mapping chứa trường hệ thống không hợp lệ: " + String.join(", ", invalidValues));
+            throw new IllegalArgumentException("Mapping contains an invalid system field: " + String.join(", ", invalidValues));
         }
     }
 
@@ -120,7 +120,7 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
             row.setStatus(ImportRowStatus.IMPORTED);
             return outcome;
         } catch (DataConflictException | IllegalArgumentException exception) {
-            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã phòng đã tồn tại"))));
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Room code already exists"))));
             row.setStatus(ImportRowStatus.FAILED);
             return RowOutcome.INVALID;
         }
@@ -148,8 +148,8 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     private void updateRoom(SchoolRoom existing, Map<String, String> data) {
         existing.setName(data.get("name"));
         existing.setDescription(data.get("description"));
-        // Import lại mã phòng đang inactive = khôi phục phòng đó, vì không có API nào bật lại
-        // và unique (school_id, code) chặn tạo mới cùng mã.
+        // Re-importing the code of an inactive room = restoring that room, because no API turns it back on
+        // and the unique (school_id, code) blocks creating a new one with the same code.
         existing.setActive(true);
         schoolRoomRepository.save(existing);
     }
@@ -186,12 +186,12 @@ public class SchoolRoomImportCommitHandler implements ImportCommitHandler {
     private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenCodes) {
         List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
 
-        addMissingError(errors, data, "code", "Mã phòng không được để trống");
-        addMissingError(errors, data, "name", "Tên phòng không được để trống");
+        addMissingError(errors, data, "code", "Room code must not be blank");
+        addMissingError(errors, data, "name", "Room name must not be blank");
 
         String code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
-            errors.add(error("code", "Mã phòng bị trùng trong file import"));
+            errors.add(error("code", "Room code is duplicated in the import file"));
         }
 
         return errors;

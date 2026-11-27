@@ -40,7 +40,7 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
         List<AssessmentSchedule> schedules;
         if (input.assessmentId() != null) {
             Assessment assessment = assessmentRepository.findById(input.assessmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
             schedules = resolveAssessmentSchedules(assessment, currentUserId, currentSchoolId);
         } else {
             schedules = assessmentScheduleRepository.findBySchoolId(authorizeSchoolWide());
@@ -67,7 +67,7 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
         if (schoolAdmin && currentSchoolId != null) {
             return currentSchoolId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 
     private List<AssessmentSchedule> resolveAssessmentSchedules(Assessment assessment, UUID currentUserId, UUID currentSchoolId) {
@@ -86,6 +86,6 @@ public class ViewAssessmentSchedulesUseCase implements IUseCase<ViewAssessmentSc
             List<UUID> proctoredScheduleIds = assessmentScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(currentUserId, scheduleIds);
             return assessmentScheduleRepository.findByIdIn(proctoredScheduleIds);
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

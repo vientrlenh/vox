@@ -12,9 +12,9 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.AppealDetailInfo;
 import com.sep.vox.application.query.repository.AssessmentAppealQueryRepository;
 
-// Dùng chung type AppealDetailInfo với school admin theo quyết định của chủ dự án -- field
-// reviewer vẫn tồn tại trên type này, nhưng FE (web/mobile) không được hỏi/hiện field đó cho
-// học sinh (xem useStudentAppealQueries.ts / appeal_api.dart).
+// Shares the AppealDetailInfo type with the school admin by the project owner's decision -- the
+// reviewer field still exists on this type, but the frontend (web/mobile) must not ask for or show that field to the
+// student (see useStudentAppealQueries.ts / appeal_api.dart).
 @Service
 @RequiredArgsConstructor
 public class ViewMyAppealDetailUseCase implements IUseCase<UUID, AppealDetailInfo> {
@@ -27,6 +27,6 @@ public class ViewMyAppealDetailUseCase implements IUseCase<UUID, AppealDetailInf
     public AppealDetailInfo execute(UUID appealId) {
         return assessmentAppealQueryRepository.findStudentDetailById(
                 appealId, userContextPort.getCurrentAuthenticatedUserId())
-            .orElseThrow(() -> new ForbiddenException("Bạn không được xem đơn phúc khảo này."));
+            .orElseThrow(() -> new ForbiddenException("You are not allowed to view this appeal."));
     }
 }

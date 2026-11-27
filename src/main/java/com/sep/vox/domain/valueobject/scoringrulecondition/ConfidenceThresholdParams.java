@@ -7,7 +7,7 @@ public record ConfidenceThresholdParams(BigDecimal confidence) implements Scorin
         if (confidence == null
                 || confidence.compareTo(BigDecimal.ZERO) < 0
                 || confidence.compareTo(BigDecimal.ONE) > 0) {
-            throw new IllegalArgumentException("Độ tự tin bắt buộc trong khoảng 0 đến 1");
+            throw new IllegalArgumentException("The confidence must be between 0 and 1");
         }
     }
 }

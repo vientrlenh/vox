@@ -15,11 +15,11 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.repository.SchoolRoomRepository;
 
 /**
- * Kiểm tra phòng cho một ca thi: phòng có thật, thuộc đúng trường của bài kiểm tra, và không đụng
- * ca thi khác trong cùng khoảng thời gian.
+ * Validates the room for an assessment schedule: the room exists, belongs to the school of the assessment, and does not clash with
+ * another schedule in the same time range.
  *
- * <p>Gom lại vì ba luồng đều cần đúng một luật: tạo ca thi (kỳ thi tập trung), sửa ca thi, và tạo
- * bài kiểm tra trên lớp.
+ * <p>Gathered here because three flows need exactly one rule: creating a schedule (centralized assessment), editing a schedule, and creating
+ * a class test.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,23 +28,23 @@ public class AssessmentScheduleRoomValidator {
     private final SchoolRoomRepository schoolRoomRepository;
     private final AssessmentScheduleRepository assessmentScheduleRepository;
 
-    /** Phòng phải tồn tại và thuộc trường của bài kiểm tra. */
+    /** The room must exist and belong to the school of the assessment. */
     public void requireRoomOfAssessmentSchool(UUID schoolRoomId, Assessment assessment) {
         SchoolRoom room = schoolRoomRepository.findById(schoolRoomId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phòng học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Room not found"));
         if (!room.getSchoolId().equals(assessment.getSchoolId())) {
-            throw new ForbiddenException("Phòng học không thuộc trường của bài kiểm tra");
+            throw new ForbiddenException("The room does not belong to the school of the assessment");
         }
     }
 
-    /** Phòng không được có ca thi khác chồng lấn; {@code excludeScheduleId} để bỏ qua chính ca đang sửa. */
+    /** The room must not have another schedule overlapping; {@code excludeScheduleId} skips the schedule being edited. */
     public void requireNoOverlap(UUID schoolRoomId, Instant startDate, Instant endDate, UUID excludeScheduleId) {
         if (assessmentScheduleRepository.existsOverlapping(schoolRoomId, startDate, endDate, excludeScheduleId)) {
-            throw new ResourceDuplicatedException("Phòng học đã có ca thi khác trong khoảng thời gian này");
+            throw new ResourceDuplicatedException("The room already has another assessment schedule in this time range");
         }
     }
 
-    /** Hai kiểm tra trên gộp lại cho luồng tạo ca thi mới. */
+    /** The two checks above combined for the create-new-schedule flow. */
     public void validateForNewSchedule(UUID schoolRoomId, Assessment assessment, Instant startDate, Instant endDate) {
         requireRoomOfAssessmentSchool(schoolRoomId, assessment);
         requireNoOverlap(schoolRoomId, startDate, endDate, null);

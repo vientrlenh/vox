@@ -28,11 +28,11 @@ import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 import com.sep.vox.domain.service.assessment.AssessmentEditingGuard;
 
 /**
- * Xếp (hoặc gỡ) cả một nhóm thí sinh vào một ca thi trong đúng MỘT transaction.
+ * Places (or removes) a whole group of candidates in one assessment schedule in exactly ONE transaction.
  *
- * <p>Để giao diện gọi endpoint xếp từng người N lần thì xếp 40 thí sinh mà hỏng ở người thứ 25 sẽ
- * để lại trạng thái dở dang, và mỗi lượt lại khoá đi khoá lại cùng một ca. Ở đây ca chỉ bị khoá một
- * lần, và hỏng thì rollback toàn bộ.
+ * <p>If the UI called the one-by-one endpoint N times, placing 40 candidates and failing at the 25th would leave
+ * a half-done state, and every call would lock the same schedule again and again. Here the schedule is locked only
+ * once, and a failure rolls everything back.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,7 +53,7 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
     @Transactional
     public List<AssessmentCandidateDto> execute(BulkAssignAssessmentCandidateScheduleCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         UUID currentUserId = assessmentScheduleManageAccessService.requireCanManage(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -82,12 +82,12 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
      */
     private AssessmentSchedule lockAssignableSchedule(Assessment assessment, UUID scheduleId) {
         AssessmentSchedule schedule = assessmentScheduleRepository.findByIdForUpdate(scheduleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ca thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment schedule not found"));
         if (!schedule.getAssessmentId().equals(assessment.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy ca thi");
+            throw new ResourceNotFoundException("Assessment schedule not found");
         }
         if (!ASSIGNABLE_STATUSES.contains(schedule.getStatus())) {
-            throw new IllegalArgumentException("Chỉ có thể xếp thí sinh vào ca ở trạng thái nháp hoặc đã công bố");
+            throw new IllegalArgumentException("Candidates can only be placed in an assessment schedule that is a draft or published");
         }
         return schedule;
     }
@@ -109,7 +109,7 @@ public class BulkAssignAssessmentCandidateScheduleUseCase
         // Looked up by (id, assessmentId) so a missing row means an id that does not exist or belongs to another assessment --
         // the whole batch fails instead of silently placing only part of it.
         if (candidates.size() != candidateIds.stream().distinct().count()) {
-            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Candidate not found");
         }
         return candidates;
     }

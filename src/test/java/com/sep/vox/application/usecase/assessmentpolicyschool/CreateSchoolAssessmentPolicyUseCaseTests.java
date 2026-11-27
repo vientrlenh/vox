@@ -44,10 +44,10 @@ import com.sep.vox.domain.repository.SupportedLanguageRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * 1 Rubric Version được phép gắn với nhiều Assessment Policy, kể cả khi 2 Policy nằm ở 2 lớp
- * (schoolClassId) khác nhau trong cùng trường.
- * Ranh giới sau V44: nhiều Assessment Policy ở các PHẠM VI khác nhau được dùng chung một Rubric
- * Version, nhưng mỗi phạm vi vẫn chỉ được đúng một chính sách còn hiệu lực.
+ * 1 Rubric Version may be attached to many Assessment Policies, even when 2 Policies sit in 2 different
+ * classes (schoolClassId) of the same school.
+ * The boundary after V44: many Assessment Policies with different SCOPES share one Rubric
+ * Version, but each scope still has exactly one policy in force.
  */
 class CreateSchoolAssessmentPolicyUseCaseTests {
 
@@ -62,7 +62,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
     private AssessmentPolicyRepository assessmentPolicyRepository;
     private SchoolClassRepository schoolClassRepository;
-    // Trạng thái phiên bản Rubric là thứ các test dưới đây đổi qua lại, nên mock phải là field.
+    // The Rubric version status is what the tests below keep flipping, so the mock must be a field.
     private RubricVersion rubricVersion;
     private CreateSchoolAssessmentPolicyUseCase useCase;
 
@@ -148,9 +148,9 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
     @Test
     void allows_whenSameBatchReusesRubricVersionAcrossDifferentClasses() {
-        // V44: lớp chuyên và lớp thường cần chính sách riêng theo phạm vi Lớp nhưng chấm bằng cùng
-        // một bộ tiêu chí. Trước V44 mỗi chính sách buộc phải có phiên bản rubric riêng, nên trường
-        // phải nhân bản y hệt bộ tiêu chí cho từng lớp.
+        // V44: a specialized class and a regular class need separate policies by Class scope but are graded with the same
+        // set of criteria. Before V44 every policy had to have its own rubric version, so the school
+        // had to duplicate the very same criteria set for every class.
         UUID classId1 = UUID.randomUUID();
         UUID classId2 = UUID.randomUUID();
         stubSchoolClass(classId1);
@@ -158,7 +158,7 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
         List<CreateAssessmentPolicyCommand> commands = List.of(
                 command(classId1),
-                command(classId2) // lớp khác -> scope khác, cùng rubricVersionId
+                command(classId2) // another class -> another scope, same rubricVersionId
         );
 
         assertThat(useCase.execute(commands)).hasSize(2);
@@ -166,21 +166,21 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
     @Test
     void stillRejects_whenTwoPoliciesInBatchShareTheSameScope() {
-        // Ràng buộc còn hiệu lực sau V44: mỗi phạm vi chỉ một chính sách. Lúc chấm bài chỉ MỘT
-        // chính sách được chọn cho một phạm vi, nên bản thứ hai sẽ là dữ liệu chết.
+        // The constraint still in force after V44: each scope has only one policy. At grading time only ONE
+        // policy is chosen for a scope, so a second one would be dead data.
         UUID classId = UUID.randomUUID();
         stubSchoolClass(classId);
 
         assertThatThrownBy(() -> useCase.execute(List.of(command(classId), command(classId))))
                 .isInstanceOf(ResourceDuplicatedException.class)
-                .hasMessageContaining("trùng phạm vi áp dụng");
+                .hasMessageContaining("same scope");
     }
 
     @Test
     void allowsAttachingToAnAlreadyPublishedRubricVersion() {
-        // Nới 2026-08-23. Luật cũ chặn PUBLISHED, tức là trường chỉ có đúng một cửa sổ -- trước lúc
-        // ban hành phiên bản -- để khai hết mọi lớp sẽ dùng bộ tiêu chí này. Mà ban hành lại là điều
-        // kiện để dùng được cho kỳ thi, nên thêm một lớp sau đó buộc phải sao lại cả Rubric.
+        // Relaxed on 2026-08-23. The old rule blocked PUBLISHED, which meant the school had exactly one window -- before
+        // the version was published -- to declare every class that would use this set of criteria. But publishing again is the
+        // condition for using it in an assessment, so adding a class afterwards forced the whole Rubric to be copied.
         when(rubricVersion.getStatus()).thenReturn(RubricStatus.PUBLISHED);
         UUID classId = UUID.randomUUID();
         stubSchoolClass(classId);
@@ -190,9 +190,9 @@ class CreateSchoolAssessmentPolicyUseCaseTests {
 
     @Test
     void rejects_whenRubricVersionIsArchived() {
-        // Chiều ngược lại của cùng một luật: phiên bản đã thu hồi thì không được gắn thêm chính sách,
-        // nếu không là chấm học sinh bằng thang trường đã bỏ. Luật cũ dùng `== PUBLISHED` nên nhánh
-        // ARCHIVED lọt qua -- chặn nhầm bản đang dùng, cho qua bản đã bỏ.
+        // The reverse direction of the same rule: an archived version must not get more policies attached,
+        // otherwise students are graded with a scale the school has dropped. The old rule used `== PUBLISHED` so the
+        // ARCHIVED branch slipped through -- blocking the version in use by mistake and letting the dropped one pass.
         when(rubricVersion.getStatus()).thenReturn(RubricStatus.ARCHIVED);
         UUID classId = UUID.randomUUID();
         stubSchoolClass(classId);

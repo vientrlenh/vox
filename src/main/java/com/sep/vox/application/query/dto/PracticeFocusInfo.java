@@ -4,45 +4,45 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Tiêu điểm luyện tập của một học sinh: các tiêu chí xếp theo mức yếu, kèm sub-attribute đáng
- * luyện nhất của từng tiêu chí.
+ * The practice focus of one student: the criteria ranked by weakness, with the most worthwhile
+ * sub-attribute to practice for each criterion.
  *
- * Trước đây record này chỉ mang ĐÚNG HAI tiêu chí (primary/secondary), nên ba tiêu chí còn lại
- * không bao giờ được hỏi tới -- dù truy vấn nguồn
- * ({@code findFocusCriterionCodesOrderedByWeakness}) vốn đã trả về cả danh sách xếp hạng. Học
- * sinh yếu ngữ pháp thì mãi mãi chỉ luyện ngữ pháp, còn phát âm hay mạch lạc không bao giờ
- * được chạm tới cho tới khi nó tụt xuống thành một trong hai yếu nhất.
+ * Before, this record carried EXACTLY TWO criteria (primary/secondary), so the other three criteria
+ * were never asked about -- even though the source query
+ * ({@code findFocusCriterionCodesOrderedByWeakness}) already returned the whole ranked list. A student
+ * weak in grammar would only ever practice grammar, while pronunciation or coherence would never be
+ * touched until it dropped to become one of the two weakest.
  */
 public record PracticeFocusInfo(
-    /** Tiêu chí xếp theo mức yếu giảm dần. Không bao giờ rỗng -- xem resolveFocus. */
+    /** The criteria in descending order of weakness. Never empty -- see resolveFocus. */
     List<String> orderedCriteria,
     /**
-     * Sub-attribute của từng tiêu chí, XẾP THEO mức ưu tiên giảm dần. Thiếu khoá hoặc danh
-     * sách rỗng nghĩa là "luyện tiêu chí này nói chung".
+     * The sub-attributes of each criterion, ORDERED by descending priority. A missing key or an empty
+     * list means "practice this criterion in general".
      */
     Map<String, List<String>> subAttributesByCriterion
 ) {
 
     /**
-     * Tiêu chí cho ô thứ {@code slotIndex}, theo chu kỳ 4: yếu nhất, yếu nhất, yếu nhì, xoay
-     * vòng phần còn lại.
+     * The criterion for slot {@code slotIndex}, in a cycle of 4: weakest, weakest, second weakest, then
+     * rotating through the rest.
      *
-     * Tỉ lệ ra 50% cho tiêu chí yếu nhất, 25% cho yếu nhì, 25% rải đều các tiêu chí khác --
-     * tập trung vào chỗ yếu nhưng không đóng khung ở đúng một thứ. Luyện mãi một tiêu chí thì
-     * ba việc hỏng cùng lúc: học sinh chán, các tiêu chí khác không có quan sát mới nên hồ sơ
-     * điểm yếu đứng yên, và ước lượng bậc mất nguồn dữ liệu ở những tiêu chí đó.
+     * The ratio is 50% for the weakest criterion, 25% for the second weakest, 25% spread evenly over
+     * the other criteria -- focused on the weak spot but not framed on exactly one thing. Practicing one
+     * criterion forever breaks three things at once: the student gets bored, the other criteria get no new
+     * observations so the weakness profile stands still, and the band estimate loses its data source for those criteria.
      *
-     * Chu kỳ CỐ ĐỊNH chứ không ngẫu nhiên: cùng một học sinh ở cùng một ô luôn ra cùng tiêu
-     * chí, nên lỗi tái hiện được và "thỉnh thoảng xen lẫn" là điều chắc chắn xảy ra chứ không
-     * phải may rủi.
+     * The cycle is FIXED rather than random: the same student in the same slot always gets the same
+     * criterion, so bugs are reproducible and "occasionally mixed in" is something that is certain to
+     * happen rather than a matter of luck.
      */
     public String criterionForSlot(int slotIndex) {
         int safeIndex = Math.max(0, slotIndex);
         return switch (safeIndex % 4) {
             case 0, 1 -> at(0);
             case 2 -> at(1);
-            // Ô xen lẫn: xoay vòng qua các tiêu chí TỪ THỨ BA trở đi, để mỗi vòng lại đụng một
-            // tiêu chí khác thay vì lặp lại đúng tiêu chí thứ ba mãi.
+            // The mixed-in slot: rotate through the criteria FROM THE THIRD onward, so that each cycle
+            // hits a different criterion instead of repeating the third one forever.
             default -> orderedCriteria.size() <= 2
                 ? at(1)
                 : at(2 + (safeIndex / 4) % (orderedCriteria.size() - 2));
@@ -50,19 +50,19 @@ public record PracticeFocusInfo(
     }
 
     /**
-     * Sub-attribute cho ô đó; null nghĩa là luyện tiêu chí nói chung.
+     * The sub-attribute for that slot; null means practice the criterion in general.
      *
-     * Cùng nguyên tắc với {@link #criterionForSlot}, một tầng sâu hơn: nhãn yếu nhất chiếm
-     * phần lớn nhưng vẫn xoay vòng sang các nhãn còn lại. Bản trước lấy {@code findFirst()}
-     * nên trong GRAMMAR mọi câu đều nhắm đúng một nhãn (ví dụ tense_control), còn article_use
-     * hay word_form không bao giờ được luyện -- và vì không được luyện nên không có quan sát
-     * mới, nên thứ hạng của chúng đứng yên vĩnh viễn.
+     * The same principle as {@link #criterionForSlot}, one level deeper: the weakest label takes most of
+     * the slots but still rotates to the remaining labels. The previous version used {@code findFirst()},
+     * so in GRAMMAR every question targeted exactly one label (e.g. tense_control) while article_use or
+     * word_form were never practiced -- and because they were not practiced there were no new
+     * observations, so their ranking stood still forever.
      *
-     * Chu kỳ 3: hai lượt cho nhãn yếu nhất, một lượt xoay vòng phần còn lại (~67/33).
+     * A cycle of 3: two turns for the weakest label, one turn rotating through the rest (~67/33).
      *
-     * Đếm theo số lần TIÊU CHÍ NÀY đã xuất hiện, không theo slotIndex thô: tiêu chí xen lẫn
-     * chỉ rơi vào ô 3, 7, 11... nên nếu lấy slotIndex % 3 thì nó luôn ở cùng một pha và nhãn
-     * phụ không bao giờ tới lượt.
+     * Counted by the number of times THIS CRITERION has appeared, not by the raw slotIndex: the
+     * mixed-in criterion only lands in slots 3, 7, 11... so with slotIndex % 3 it would always be in the
+     * same phase and the secondary label would never get its turn.
      */
     public String subAttributeForSlot(int slotIndex) {
         String criterion = criterionForSlot(slotIndex);
@@ -77,7 +77,7 @@ public record PracticeFocusInfo(
         return candidates.get(1 + (occurrence / 3) % (candidates.size() - 1));
     }
 
-    /** Đây là lần thứ mấy tiêu chí này được hỏi, tính từ ô 0. */
+    /** How many times this criterion has been asked, counting from slot 0. */
     private int occurrenceOfCriterion(String criterion, int slotIndex) {
         int count = 0;
         for (int index = 0; index < slotIndex; index++) {

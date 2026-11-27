@@ -42,7 +42,7 @@ public class ProvisionSchoolService {
     /** @return the id of the school just created. */
     public UUID provision(ProvisionSchoolCommand command) {
         Role schoolAdminRole = roleRepository.findByCode("SCHOOL_ADMIN")
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò quản trị nhà trường"));
+            .orElseThrow(() -> new ResourceNotFoundException("School admin role not found"));
 
         requireNoDuplicate(command);
 
@@ -60,15 +60,15 @@ public class ProvisionSchoolService {
 
     private void requireNoDuplicate(ProvisionSchoolCommand command) {
         if (userRepository.existsByEmail(command.contactEmail())) {
-            throw new ResourceDuplicatedException("Người dùng với email này đã tồn tại");
+            throw new ResourceDuplicatedException("A user with this email already exists");
         }
 
         if (userRepository.existsByPhone(command.contactPhone())) {
-            throw new ResourceDuplicatedException("Người dùng với số điện thoại này đã tồn tại");
+            throw new ResourceDuplicatedException("A user with this phone number already exists");
         }
 
         if (schoolRepository.existsByCode(command.schoolCode())) {
-            throw new ResourceDuplicatedException("Mã trường đã tồn tại");
+            throw new ResourceDuplicatedException("School code already exists");
         }
     }
 

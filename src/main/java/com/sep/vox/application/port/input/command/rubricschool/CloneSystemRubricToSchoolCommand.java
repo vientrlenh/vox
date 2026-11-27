@@ -7,13 +7,13 @@ import java.util.UUID;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 
 /**
- * @param code           mã rubric do TRƯỜNG đặt, không sao từ bản mẫu. Đây là trục phân biệt giữa
- *                       các bản sao của cùng một bản mẫu (ví dụ ENG-K10 / ENG-K11 / ENG-K12), và
- *                       cũng là thứ ràng buộc unique
- *                       {@code (owner_type, school_id, language_id, framework_id, code)} kiểm tra.
- * @param totalScoreMethod cách tính điểm trường chọn, có thể khác bản mẫu.
- * @param policies       các chính sách mẫu (gắn với chính phiên bản đang sao) mà trường muốn dựng
- *                       luôn cho bản sao. Rỗng = chỉ sao bộ tiêu chí, trường tự tạo chính sách sau.
+ * @param code           the rubric code set by the SCHOOL, not copied from the template. It is the axis that tells apart
+ *                       copies of the same template (e.g. ENG-K10 / ENG-K11 / ENG-K12), and
+ *                       it is also what the unique constraint
+ *                       {@code (owner_type, school_id, language_id, framework_id, code)} checks.
+ * @param totalScoreMethod the scoring method the school chooses, which may differ from the template.
+ * @param policies       the template policies (tied to the very version being copied) that the school wants to build
+ *                       along with the copy. Empty = copy only the criteria set, the school creates policies later itself.
  */
 public record CloneSystemRubricToSchoolCommand(
     UUID schoolId,
@@ -26,16 +26,16 @@ public record CloneSystemRubricToSchoolCommand(
 ) {
 
     /**
-     * Một chính sách mẫu, kèm PHẠM VI RIÊNG của nó.
+     * One template policy, with ITS OWN SCOPE.
      *
-     * <p>Phạm vi phải đi theo từng chính sách chứ không phải theo cả lần sao: nhiều chính sách dùng
-     * chung một phiên bản Rubric là để lớp thường và lớp chuyên chấm cùng bộ tiêu chí nhưng khác bậc
-     * mục tiêu -- mà mỗi phạm vi chỉ được đúng một chính sách còn hiệu lực
-     * ({@code existsActiveForScopeAnyRubricVersion}). Dùng chung một phạm vi cho cả hai thì bản thứ
-     * hai bị từ chối ngay trong cùng một lần gọi.
+     * <p>The scope must go with each policy and not with the whole copy: several policies share
+     * one Rubric version so that regular and specialized classes are graded with the same criteria but different target
+     * bands -- while each scope may have only one policy in effect
+     * ({@code existsActiveForScopeAnyRubricVersion}). Sharing one scope for both would get the second
+     * one rejected within the same call.
      *
-     * <p>Bản mẫu đã khai Khối thì bản sao giữ nguyên khối đó và cả ba cột phạm vi ở đây phải để
-     * trống; bản mẫu không khai khối thì phải chọn đúng một trong ba.
+     * <p>When the template already declares a Grade, the copy keeps that grade and all three scope columns here must be left
+     * empty; when the template declares no grade, exactly one of the three must be chosen.
      */
     public record PolicyToClone(
         UUID sourcePolicyId,

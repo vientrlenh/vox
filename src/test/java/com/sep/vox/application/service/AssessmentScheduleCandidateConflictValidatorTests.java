@@ -29,11 +29,11 @@ import com.sep.vox.domain.repository.UserRepository;
 import com.sep.vox.domain.valueobject.FullName;
 
 /**
- * Luật "một học sinh không ngồi hai phòng cùng lúc".
+ * The rule "a student cannot sit in two rooms at the same time".
  *
- * <p>Khác với validator giám thị (chỉ uỷ quyền một dòng xuống repository), lớp này giữ logic thật:
- * tự loại ca hiện tại của từng thí sinh, bỏ qua người đã miễn/huỷ thi, và dựng message nêu tên.
- * Nên nó có test riêng thay vì chỉ được test gián tiếp qua use case.
+ * <p>Unlike the proctor validator (which only delegates one row down to the repository), this class holds real logic:
+ * it excludes each candidate's current schedule itself, skips people who were exempted/cancelled, and builds a message that names people.
+ * So it has its own test instead of only being tested indirectly through a use case.
  */
 class AssessmentScheduleCandidateConflictValidatorTests {
 
@@ -83,7 +83,7 @@ class AssessmentScheduleCandidateConflictValidatorTests {
         assertThatThrownBy(() -> validator.requireCandidatesFree(List.of(candidate), start, end))
             .isInstanceOf(ResourceDuplicatedException.class)
             .hasMessageContaining("Nguyễn Văn An")
-            .hasMessageContaining("khoảng thời gian này");
+            .hasMessageContaining("in this time range");
     }
 
     @Test
@@ -148,7 +148,7 @@ class AssessmentScheduleCandidateConflictValidatorTests {
 
         assertThatThrownBy(() -> validator.requireCandidatesFree(List.of(first, second), start, end))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("2 học sinh")
+            .hasMessageContaining("2 students")
             .hasMessageContaining("Trần Thị Bình")
             .hasMessageContaining("Lê Văn Cường");
     }
@@ -166,8 +166,8 @@ class AssessmentScheduleCandidateConflictValidatorTests {
 
         assertThatThrownBy(() -> validator.requireCandidatesFree(candidates, start, end))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("8 học sinh")
-            .hasMessageContaining("và 3 học sinh khác");
+            .hasMessageContaining("8 students")
+            .hasMessageContaining("and 3 other students");
     }
 
     @Test

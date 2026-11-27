@@ -28,7 +28,7 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
     @Override
     public Void execute(RecordRecordingPartChangedCommand input) {
         assessmentSessionRepository.findById(input.assessmentSessionId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi cho recording event: " + input.assessmentSessionId()));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found for the recording event: " + input.assessmentSessionId()));
 
         Instant now = Instant.now();
         // Lookup with the source included: each ingest source only updates its own row, so the two ingest
@@ -54,7 +54,7 @@ public class RecordRecordingPartChangedUseCase implements IUseCase<RecordRecordi
 
     private void logKeptExistingRecording(AssessmentRecording existing, RecordRecordingPartChangedCommand input) {
         log.info(
-            "Giữ bản ghi hiện có assessmentSessionId={} streamType={} source={} status={}; bỏ qua event status={} objectKey={}",
+            "Keeping the existing recording assessmentSessionId={} streamType={} source={} status={}; ignoring event status={} objectKey={}",
             input.assessmentSessionId(), input.streamType(),
             existing.getSource(), existing.getStatus(),
             input.status(), input.objectKey()

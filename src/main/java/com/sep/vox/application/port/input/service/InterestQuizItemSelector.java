@@ -12,21 +12,21 @@ import org.springframework.stereotype.Service;
 import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 
 /**
- * Chọn đúng N triplet sẽ đem ra hỏi, từ kho item đang có.
+ * Picks exactly N triplets to ask, from the existing item bank.
  *
- * Giải quyết hai việc mà việc "lấy N item đầu tiên" không làm được:
+ * Solves two things that "take the first N items" cannot:
  *
- * 1. LOẠI item chứa chiều không còn hỏi được (đã tắt, hoặc quiz_eligible=false). Nếu không
- *    lọc, học sinh vẫn bị hỏi triplet đó và lựa chọn của họ rơi vào chiều mà
- *    {@link InterestQuizScorer#normalize} không duyệt -> điểm bị VỨT ÂM THẦM, câu hỏi coi
- *    như phí mà không ai biết. Đây đúng loại lỗi "im lặng vô hiệu" mà việc đưa danh mục
- *    chiều ra thành dữ liệu nhằm diệt.
+ * 1. EXCLUDE items containing a dimension that can no longer be asked (turned off, or quiz_eligible=false). Without
+ *    filtering, the student is still asked that triplet and their choice falls on a dimension that
+ *    {@link InterestQuizScorer#normalize} does not iterate -> the score is SILENTLY DROPPED, the question is
+ *    wasted and nobody knows. This is exactly the "silently ineffective" bug that making the dimension
+ *    catalog into data was meant to kill.
  *
- * 2. PHỦ ĐỀU các chiều trong đúng ngân sách câu hỏi cố định. Số câu quiz giữ nguyên 5-7
- *    (không nới), nên khi admin thêm chiều thì mỗi chiều tự nhiên được ít lượt xuất hiện
- *    hơn. Chọn tham lam theo "chiều nào đang ít lượt nhất thì ưu tiên" giúp tiêu ngân sách
- *    đó đều nhất có thể, thay vì để vài chiều được hỏi 3 lần còn chiều khác 0 lần -- chiều
- *    0 lượt thì điểm của nó hoàn toàn vô nghĩa.
+ * 2. COVER the dimensions evenly within the fixed question budget. The quiz keeps 5-7 questions
+ *    (not widened), so when the admin adds a dimension each dimension naturally gets fewer appearances. Greedy selection by
+ *    "whichever dimension has the fewest appearances goes first" spends that
+ *    budget as evenly as possible, instead of some dimensions being asked 3 times and others 0 times -- a dimension with
+ *    0 appearances has a meaningless score.
  */
 @Service
 @RequiredArgsConstructor
@@ -77,8 +77,8 @@ public class InterestQuizItemSelector {
         return best;
     }
 
-    /** Càng nhiều chiều đang ít lượt thì điểm càng cao. 1/(1+n) giảm dần nên item phủ chiều
-     * chưa xuất hiện lần nào luôn thắng item phủ chiều đã có sẵn vài lượt. */
+    /** The more dimensions with few appearances, the higher the score. 1/(1+n) decreases so an item covering a dimension
+     * that has never appeared always beats an item covering a dimension that already has a few appearances. */
     private static double coverageScore(
             InterestQuizSeedItem item,
             java.util.Map<String, Integer> coverage) {

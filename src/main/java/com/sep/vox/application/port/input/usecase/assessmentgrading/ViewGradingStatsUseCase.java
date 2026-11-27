@@ -12,7 +12,7 @@ import com.sep.vox.application.query.dto.GradingStatsInfo;
 import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository;
 import com.sep.vox.domain.service.assessment.GradingScopeKind;
 
-/** Thẻ số đầu màn phân công — không có màn riêng cho thống kê. */
+/** The number cards at the top of the assignment screen -- there is no separate screen for the statistics. */
 @Service
 @RequiredArgsConstructor
 public class ViewGradingStatsUseCase implements IUseCase<ViewGradingStatsQuery, GradingStatsInfo> {

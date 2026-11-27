@@ -5,7 +5,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record UpdateSchoolClassUserStatusRequest(
-    @NotNull(message = "trạng thái là bắt buộc") Boolean isActive
+    @NotNull(message = "Status is required") Boolean isActive
 ) {
 
     public static UpdateSchoolClassUserStatusCommand toCommand(

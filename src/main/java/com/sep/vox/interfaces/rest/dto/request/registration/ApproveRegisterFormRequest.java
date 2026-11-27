@@ -8,18 +8,18 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record ApproveRegisterFormRequest(
-    @NotNull(message = "ID của đơn đăng ký không được để trống")
+    @NotNull(message = "Registration form ID must not be blank")
     UUID registerFormId,
 
-    @NotBlank(message = "Mã trường không được để trống")
-    @Size(max = 100, message = "Mã trường không được vượt quá 100 ký tự")
+    @NotBlank(message = "School code must not be blank")
+    @Size(max = 100, message = "School code must not exceed 100 characters")
     String schoolCode,
 
-    @Size(max = 2048, message = "Mô tả trường không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "School description must not exceed 2048 characters")
     String description, 
 
-    @NotBlank(message = "Mã tỉnh thành không được để trống")
-    @Size(max = 100, message = "Mã tỉnh thành không được vượt quá 100 ký tự")
+    @NotBlank(message = "Province code must not be blank")
+    @Size(max = 100, message = "Province code must not exceed 100 characters")
     String provinceCode
 ) {
 

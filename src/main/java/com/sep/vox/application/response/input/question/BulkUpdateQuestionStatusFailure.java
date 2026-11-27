@@ -3,16 +3,16 @@ package com.sep.vox.application.response.input.question;
 import java.util.UUID;
 
 /**
- * Một câu hỏi bị bỏ qua trong lần cập nhật hàng loạt.
+ * One question skipped in a bulk update.
  *
- * <p>Ngoài {@code reason} (tiếng Việt, hiển thị thẳng cho người dùng) còn có {@code reasonCode} để
- * client gom nhóm các câu cùng lý do, và {@code questionCode}/{@code currentStatus} để client hiển
- * thị được danh sách câu bị bỏ qua mà không phải tra ngược sang danh sách đang xem — trước đây nó
- * phải tự join theo id nên câu nào không nằm trên trang hiện tại sẽ biến mất khỏi thông báo.
+ * <p>Besides {@code reason} (human-readable text shown directly to the user) there is {@code reasonCode} so the
+ * client can group questions with the same reason, and {@code questionCode}/{@code currentStatus} so the client can show
+ * the list of skipped questions without looking back into the list being viewed -- before, it had to
+ * join by id itself, so a question not on the current page would vanish from the message.
  *
- * @param questionCode {@code null} khi không tìm thấy câu hỏi
- * @param currentStatus tên enum {@code QuestionStatus}, {@code null} khi không tìm thấy câu hỏi
- * @param reasonCode tên enum {@code QuestionStatusTransition.RejectionCode}
+ * @param questionCode {@code null} when the question is not found
+ * @param currentStatus the {@code QuestionStatus} enum name, {@code null} when the question is not found
+ * @param reasonCode the {@code QuestionStatusTransition.RejectionCode} enum name
  */
 public record BulkUpdateQuestionStatusFailure(
     UUID questionId,

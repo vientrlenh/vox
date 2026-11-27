@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotBlank;
 // a payment method collected outside the system has no gateway to create a link with. Rejecting here only gives an early
 // and clear error -- the real guard is PaymentMethod.resolveOnlineGateway() in the use case.
 public record PaymentMethodRequest(
-    @NotBlank(message = "Phương thức thanh toán không được để trống")
+    @NotBlank(message = "Payment method must not be blank")
     String paymentMethod
 ) {
     public static final List<String> VALID_METHODS = List.of(
@@ -17,7 +17,7 @@ public record PaymentMethodRequest(
         "SEPAY"
     );
 
-    @AssertTrue(message = "Phương thức thanh toán không được hỗ trợ")
+    @AssertTrue(message = "Payment method is not supported")
     public boolean isValidMethod() {
         return VALID_METHODS.contains(paymentMethod);
     }

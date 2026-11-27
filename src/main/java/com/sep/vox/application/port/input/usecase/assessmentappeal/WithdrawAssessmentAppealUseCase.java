@@ -19,14 +19,14 @@ import com.sep.vox.domain.repository.AssessmentCandidateResultRepository;
 import com.sep.vox.domain.repository.AssessmentResultAppealRepository;
 
 /**
- * Học sinh rút đơn phúc khảo khi đơn còn {@code PENDING}.
+ * A student withdraws an appeal while it is still {@code PENDING}.
  *
- * <p>Bài quay về {@code RELEASED} và <em>lượt phúc khảo được hoàn lại</em>: hạn mức
- * đếm số đơn đã {@code PUBLISHED}, mà đơn rút thì chưa ai chấm nên không đốt lượt.
+ * <p>The submission goes back to {@code RELEASED} and <em>the appeal round is refunded</em>: the quota counts
+ * the appeals that are {@code PUBLISHED}, and a withdrawn appeal was never graded, so it does not burn a round.
  *
- * <p>Chỉ cho rút ở {@code PENDING}. Từ {@code APPROVED} trở đi đã có người bị điều
- * động (và có thể đã đọc bài), rút lúc đó là lãng phí công của trường — muốn dừng thì
- * đi đường admin từ chối, có ghi lý do.
+ * <p>Withdrawal is only allowed in {@code PENDING}. From {@code APPROVED} on, someone has already been assigned
+ * (and may have read the submission), so withdrawing then wastes the school's effort -- to stop it, the admin
+ * rejects the appeal through the admin path, with a recorded reason.
  */
 @Service
 @RequiredArgsConstructor
@@ -46,7 +46,7 @@ public class WithdrawAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
 
         AssessmentResultAppeal appeal = context.appeal();
         if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
-            throw new IllegalArgumentException("Chỉ có thể rút đơn khi đơn còn đang chờ duyệt.");
+            throw new IllegalArgumentException("An appeal can only be withdrawn while it is pending.");
         }
 
         Instant now = Instant.now();
@@ -73,7 +73,7 @@ public class WithdrawAssessmentAppealUseCase implements IUseCase<UUID, UUID> {
             assessmentCandidateResultRepository.save(candidateResult);
             resultStatusHistoryRecorder.record(
                 before, candidateResult, ResultStatusChangeSource.SYSTEM, currentUserId,
-                "Học sinh rút đơn phúc khảo.");
+                "The student withdrew the appeal.");
         }
     }
 }

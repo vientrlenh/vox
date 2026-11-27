@@ -74,7 +74,7 @@ class AssessmentAppealEmailConsumerTests {
 
         verify(mailTemplatePort).renderAppealPublishedEmail("Kỳ thi giữa kỳ", "5.5", "7.0");
         verify(mailSendingPort)
-            .sendHtml("student@example.com", "Kết quả phúc khảo đã được công bố", "<html></html>");
+            .sendHtml("student@example.com", "Appeal result published", "<html></html>");
         verify(processedEventRepository).save(any(ProcessedEvent.class));
         verify(ack).acknowledge();
     }
@@ -91,7 +91,7 @@ class AssessmentAppealEmailConsumerTests {
 
         verify(mailTemplatePort).renderAppealRejectedEmail("Kỳ thi giữa kỳ", "Nộp quá hạn");
         verify(mailSendingPort)
-            .sendHtml("student@example.com", "Đơn phúc khảo không được chấp nhận", "<html></html>");
+            .sendHtml("student@example.com", "Appeal not accepted", "<html></html>");
         verify(ack).acknowledge();
     }
 
@@ -121,7 +121,7 @@ class AssessmentAppealEmailConsumerTests {
 
         consumer.consume(record(EventTypeConstant.ASSESSMENT_APPEAL_APPROVED, payload), ack);
 
-        verify(mailTemplatePort).renderAppealApprovedEmail("Kỳ thi giữa kỳ", "chưa đặt");
+        verify(mailTemplatePort).renderAppealApprovedEmail("Kỳ thi giữa kỳ", "not set");
     }
 
     @Test
@@ -167,7 +167,7 @@ class AssessmentAppealEmailConsumerTests {
 
     @Test
     void should_throw_when_payload_is_invalid() {
-        ConsumerRecord<String, String> record = rawRecord(EventTypeConstant.ASSESSMENT_APPEAL_REJECTED, "{khong-phai-json}");
+        ConsumerRecord<String, String> record = rawRecord(EventTypeConstant.ASSESSMENT_APPEAL_REJECTED, "{not-json}");
 
         assertThatThrownBy(() -> consumer.consume(record, ack))
             .isInstanceOf(IllegalStateException.class);

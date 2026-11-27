@@ -8,18 +8,18 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 public record UpdateQuestionAssetRequest(
-    @Size(max = 255, message = "Tiêu đề tài nguyên không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Asset title must not exceed 255 characters")
     String title,
 
-    @Min(value = 0, message = "Thời lượng tài nguyên phải lớn hơn hoặc bằng 0")
+    @Min(value = 0, message = "Asset duration must be greater than or equal to 0")
     Integer durationSeconds,
 
-    @Size(max = 255, message = "Văn bản thay thế không được vượt quá 255 ký tự")
+    @Size(max = 255, message = "Alt text must not exceed 255 characters")
     String altText,
 
     QuestionAssetType type,
 
-    @Size(max = 4096, message = "URL tài nguyên không được vượt quá 4096 ký tự")
+    @Size(max = 4096, message = "Asset URL must not exceed 4096 characters")
     String url,
 
     String transcript,
@@ -27,7 +27,7 @@ public record UpdateQuestionAssetRequest(
     // No length limit -- see CreateQuestionAssetRequest. The column has been TEXT since V42.
     String description,
 
-    @Min(value = 0, message = "Thứ tự tài nguyên không được nhỏ hơn 0")
+    @Min(value = 0, message = "Asset order must not be less than 0")
     Integer order
 ) {
 

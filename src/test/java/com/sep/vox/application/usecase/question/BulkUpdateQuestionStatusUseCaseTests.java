@@ -43,12 +43,12 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.service.question.QuestionStatusTransition.RejectionCode;
 
 /**
- * Cập nhật trạng thái hàng loạt.
+ * Bulk status update.
  *
- * <p>Bất biến: một câu hỏi bị từ chối KHÔNG được làm hỏng cả request. Trước đây use case này gọi
- * {@code UpdateQuestionStatusUseCase} — một bean {@code @Transactional} khác — nên exception của
- * câu lỗi đánh dấu transaction dùng chung là rollback-only và request kết thúc bằng HTTP 500.
- * Xem thêm {@code BulkUpdateQuestionStatusTransactionTests} cho phần transaction thật.
+ * <p>Invariant: one rejected question must NOT break the whole request. This use case used to call
+ * {@code UpdateQuestionStatusUseCase} -- another {@code @Transactional} bean -- so the exception of the
+ * failing question marked the shared transaction rollback-only and the request ended with HTTP 500.
+ * See also {@code BulkUpdateQuestionStatusTransactionTests} for the real-transaction part.
  */
 class BulkUpdateQuestionStatusUseCaseTests {
 
@@ -99,8 +99,8 @@ class BulkUpdateQuestionStatusUseCaseTests {
         assertThat(response.failed()).hasSize(1);
         assertThat(response.failed().getFirst().questionId()).isEqualTo(alreadySubmitted.getId());
         assertThat(response.failed().getFirst().reason()).isEqualTo(
-            "Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Chờ duyệt\", "
-                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
+            "Cannot submit for review: the question is in status \"Awaiting review\", "
+                + "this action only applies to questions in status \"Draft\" or \"Revision requested\"");
     }
 
     /**
@@ -134,7 +134,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
         assertThat(response.updated()).hasSize(1);
         assertThat(response.failed()).hasSize(1);
         assertThat(response.failed().getFirst().questionId()).isEqualTo(missingQuestionId);
-        assertThat(response.failed().getFirst().reason()).isEqualTo("Không tìm thấy câu hỏi");
+        assertThat(response.failed().getFirst().reason()).isEqualTo("Question not found");
         assertThat(response.failed().getFirst().reasonCode())
             .isEqualTo(RejectionCode.QUESTION_NOT_FOUND.name());
     }
@@ -150,7 +150,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
         assertThat(response.updated()).isEmpty();
         assertThat(response.failed()).hasSize(1);
-        assertThat(response.failed().getFirst().reason()).isEqualTo("Không tìm thấy ngân hàng câu hỏi");
+        assertThat(response.failed().getFirst().reason()).isEqualTo("Question bank not found");
     }
 
     /**
@@ -183,7 +183,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
         assertThat(response.updated()).isEmpty();
         assertThat(response.failed().getFirst().reason()).isEqualTo(
-            "Không thể gửi duyệt: bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này");
+            "Cannot submit for review: you are not the creator or a collaborator with edit rights on this question");
     }
 
     @Test
@@ -230,7 +230,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
 
         assertThat(response.updated()).isEmpty();
         assertThat(response.failed().getFirst().reason()).isEqualTo(
-            "Không thể gửi duyệt: bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này");
+            "Cannot submit for review: you are not the creator or a collaborator with edit rights on this question");
     }
 
     @Test
@@ -270,7 +270,7 @@ class BulkUpdateQuestionStatusUseCaseTests {
     void should_refuse_an_empty_batch() {
         assertThatThrownBy(() -> useCase.execute(new BulkUpdateQuestionStatusCommand(List.of(), "SUBMIT", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Danh sách câu hỏi không được để trống");
+            .hasMessage("The question list must not be empty");
     }
 
     private void mockQuestions(Question... questions) {

@@ -82,64 +82,64 @@ public class CreateSchoolClassUseCase implements IUseCase<CreateSchoolClassComma
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         validateCurrentUserIsActive(user);
         return user;
     }
 
     private void validateCurrentUserIsActive(User currentUser) {
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("The current user is not active");
         }
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("The current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("The school is not active");
         }
     }
 
     private void validateLanguage(UUID languageId) {
         SupportedLanguage language = supportedLanguageRepository.findById(languageId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngôn ngữ"));
+            .orElseThrow(() -> new ResourceNotFoundException("Language not found"));
         if (!language.isActive()) {
-            throw new IllegalArgumentException("Ngôn ngữ không hoạt động");
+            throw new IllegalArgumentException("The language is not active");
         }
     }
 
     private void validateRequestedSchool(UUID requestedSchoolId, UUID currentSchoolId) {
         if (requestedSchoolId == null) {
-            throw new IllegalArgumentException("Trường học không được để trống");
+            throw new IllegalArgumentException("The school must not be empty");
         }
         if (!Objects.equals(requestedSchoolId, currentSchoolId)) {
-            throw new IllegalArgumentException("Trường học không khớp với người dùng hiện tại");
+            throw new IllegalArgumentException("The school does not match the current user");
         }
     }
 
     private void validateSchoolGrade(UUID schoolGradeId, UUID schoolId) {
         SchoolGrade grade = schoolGradeRepository.findById(schoolGradeId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khối học"));
-        // Năm học đã lưu schoolId trực tiếp -- không còn phải bắc cầu qua Khối để xác định trường sở hữu.
+            .orElseThrow(() -> new ResourceNotFoundException("Grade level not found"));
+        // The school year stores schoolId directly -- no need to go through the Grade to find the owning school.
         if (!Objects.equals(grade.getSchoolId(), schoolId)) {
-            throw new IllegalArgumentException("Khối học không thuộc trường hiện tại");
+            throw new IllegalArgumentException("The grade level does not belong to the current school");
         }
         if (grade.getStatus() != SchoolGradeStatus.ACTIVE) {
-            throw new IllegalArgumentException("Khối học không hoạt động");
+            throw new IllegalArgumentException("The grade level is not active");
         }
     }
 
 
     private void validateClassCodeIsUnique(UUID schoolId, String code) {
         if (schoolClassRepository.findBySchoolIdAndCode(schoolId, code).isPresent()) {
-            throw new ResourceDuplicatedException("Mã lớp học đã tồn tại trong trường");
+            throw new ResourceDuplicatedException("The class code already exists in the school");
         }
     }
 }

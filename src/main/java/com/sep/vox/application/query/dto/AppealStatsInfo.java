@@ -1,11 +1,11 @@
 package com.sep.vox.application.query.dto;
 
 /**
- * Thẻ số màn phúc khảo.
+ * The number cards on the appeal screen.
  *
- * @param processing APPROVED + GRADING (trạng thái COMPARING đã bị bỏ)
- * @param withdrawn  đơn học sinh tự rút — tách khỏi {@code rejected} vì đó là quyết
- *                   định của học sinh, không phải của trường
+ * @param processing APPROVED + GRADING (the COMPARING status has been removed)
+ * @param withdrawn  appeals the student withdrew themselves -- kept apart from {@code rejected}
+ *                   because that is the student's decision, not the school's
  */
 public record AppealStatsInfo(
     int pending,

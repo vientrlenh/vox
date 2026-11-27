@@ -16,8 +16,8 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Kiểm tra quyền truy cập dùng chung cho các use case "lớp của tôi" của giáo viên.
- * Gom về một chỗ vì cả ba use case cần đúng một luật, tách ra thì dễ lệch.
+ * Shared access check for the teacher's "my class" use cases.
+ * Kept in one place because all three use cases need exactly the same rule, and splitting it makes it easy to drift.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,36 +28,36 @@ public class MyClassAccessGuard {
     private final SchoolUserRepository schoolUserRepository;
     private final SchoolClassUserRepository schoolClassUserRepository;
 
-    /** Trả về id người gọi sau khi chắc chắn tài khoản còn hoạt động. */
+    /** Returns the caller's id after making sure the account is still active. */
     public UUID requireActiveCaller() {
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+            throw new UnauthorizedException("The user status is invalid");
         }
         return callerId;
     }
 
-    /** Như trên, kèm điều kiện người gọi thuộc trường được yêu cầu. */
+    /** As above, and additionally requires the caller to belong to the requested school. */
     public UUID requireSchoolMembership(UUID schoolId) {
         UUID callerId = requireActiveCaller();
         if (!schoolUserRepository.existsBySchoolIdAndUserId(schoolId, callerId)) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
+            throw new ForbiddenException("The access permission is invalid");
         }
         return callerId;
     }
 
     /**
-     * Như trên, kèm điều kiện người gọi đang là thành viên active của lớp.
-     * Cố tình ném NotFound chứ không phải Forbidden: người ngoài lớp không nên
-     * phân biệt được "lớp không tồn tại" với "lớp tồn tại nhưng không phải của tôi".
+     * As above, and additionally requires the caller to be an active member of the class.
+     * Throws NotFound on purpose rather than Forbidden: someone outside the class must not be able to tell
+     * "the class does not exist" from "the class exists but is not mine".
      */
     public UUID requireClassMembership(UUID schoolClassId) {
         UUID callerId = requireActiveCaller();
         SchoolClassUser membership = schoolClassUserRepository
             .findByUserIdAndSchoolClassId(callerId, schoolClassId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+            .orElseThrow(() -> new ResourceNotFoundException("Class not found"));
         if (!membership.isActive()) {
-            throw new ResourceNotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Class not found");
         }
         return callerId;
     }

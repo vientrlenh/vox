@@ -18,13 +18,14 @@ import com.sep.vox.application.response.input.dashboard.SchoolsAtRiskResponse;
 import com.sep.vox.domain.common.BusinessConstant;
 
 /**
- * Trang "trường cần chú ý" — chỗ đáp của bốn dòng trên thẻ cùng tên ở trang tổng quan hệ thống.
+ * The "schools needing attention" page -- the landing place of the four rows on the card of the same name on the
+ * system overview page.
  *
- * <p>MỘT trang, bốn bộ lọc, không phải bốn trang: bốn nhóm chỉ khác nhau ở vị từ trên cùng một bảng.
+ * <p>ONE page with four filters, not four pages: the four groups only differ in the predicate over the same table.
  *
- * <p>Số đếm lấy từ CHÍNH {@link PlatformBusinessHealthQueryRepository} mà trang tổng quan dùng, chứ
- * không đếm lại bằng câu khác. Đây là điểm dễ hỏng nhất của màn hình: thẻ ghi 5, người dùng bấm vào,
- * và một phép lọc khác sẽ cho ra 9 mà không ai biết số nào đúng.
+ * <p>The counts come from the SAME {@link PlatformBusinessHealthQueryRepository} that the overview page uses, and
+ * are not counted again with a different query. This is the most fragile point of the screen: the card says 5, the
+ * user clicks it, and a different filter would give 9 with nobody knowing which is right.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,9 +37,9 @@ public class ViewSchoolsAtRiskUseCase implements IUseCase<ViewSchoolsAtRiskQuery
     @Override
     @Transactional(readOnly = true)
     public SchoolsAtRiskResponse execute(ViewSchoolsAtRiskQuery input) {
-        // MỘT mốc "bây giờ" cho cả phép đếm lẫn danh sách. Gọi Instant.now() hai lần thì một kỳ hết
-        // hạn đúng giữa hai lời gọi sẽ khiến thẻ và bảng ngay bên dưới nó lệch nhau một trường, và
-        // không có cách nào tái hiện được.
+        // ONE "now" for both the count and the list. Calling Instant.now() twice would let a period that expires
+        // exactly between the two calls make the card and the table right below it differ by one school, and
+        // there would be no way to reproduce it.
         Instant now = Instant.now();
         Instant expiringThrough = now.plus(BusinessConstant.DASHBOARD_EXPIRING_SOON_DAYS, ChronoUnit.DAYS);
 

@@ -15,15 +15,15 @@ import com.sep.vox.domain.mapper.AssessmentProctoringAlertDtoMapper;
 import com.sep.vox.domain.repository.AssessmentProctoringAlertRepository;
 
 /**
- * Cảnh báo giám sát của cả một ca thi -- cho màn giám sát trực tiếp.
+ * The proctoring alerts of a whole assessment schedule -- for the live monitoring screen.
  *
- * <p>Tồn tại vì màn đó lấy CA THI làm đơn vị, không phải phiên thi: một phòng có nhiều thí sinh cùng
- * lúc, và hỏi từng phiên một sẽ thành N request cho mỗi lần mở phòng.
+ * <p>Exists because that screen takes the SCHEDULE as its unit, not the session: a room has many candidates at the
+ * same time, and asking session by session would become N requests every time a room is opened.
  *
- * <p>Đây là thứ vá được lỗ hổng "giám thị vào muộn thì mất hết cảnh báo trước đó": kênh trực tiếp là
- * Redis pub/sub, fire-and-forget, nên nó chỉ kể được những gì xảy ra SAU khi người ta kết nối. Đọc
- * lịch sử từ đây rồi gộp với luồng trực tiếp cho ra bức tranh đầy đủ, và cũng khiến việc tải lại
- * trang không còn xoá sạch mọi thứ.
+ * <p>This is what fixes the hole "a proctor who joins late loses all earlier alerts": the live channel is Redis
+ * pub/sub, fire-and-forget, so it can only tell what happens AFTER someone connects. Reading the history from here
+ * and merging it with the live stream gives the full picture, and also means reloading the page no longer wipes
+ * everything.
  */
 @Service
 @RequiredArgsConstructor

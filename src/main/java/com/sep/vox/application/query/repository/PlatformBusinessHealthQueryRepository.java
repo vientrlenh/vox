@@ -6,52 +6,52 @@ import java.time.Instant;
 import com.sep.vox.application.query.dto.SchoolSubscriptionHealthDto;
 
 /**
- * Đọc sức khỏe KINH DOANH của nền tảng cho dashboard system admin: bao nhiêu trường còn gói, bao
- * nhiêu sắp rụng, và giá vốn AI để đặt cạnh doanh thu.
+ * Reads the BUSINESS health of the platform for the system admin dashboard: how many schools still have a plan, how
+ * many are about to drop, and the AI cost price to set next to revenue.
  *
- * <p>Là một BÁO CÁO chứ không phải cổng ghi của aggregate nào — cùng khuôn với
- * {@link PlatformOperationalHealthQueryRepository}. Gộp ở đây thay vì thêm hàng loạt {@code countBy...}
- * vào {@code SchoolSubscriptionRepository} và {@code SchoolBalanceRepository}: mỗi màn thống kê mới
- * lại nhét một phép đếm nữa vào cổng nghiệp vụ thì tới lúc không còn phân biệt được cái nào là mô
- * hình nghiệp vụ, cái nào chỉ phục vụ một cái biểu đồ.
+ * <p>This is a REPORT and not the write port of any aggregate -- the same mold as
+ * {@link PlatformOperationalHealthQueryRepository}. It is gathered here instead of adding a pile of
+ * {@code countBy...} to {@code SchoolSubscriptionRepository} and {@code SchoolBalanceRepository}: if every new
+ * statistics screen stuffs another count into a business port, soon nobody can tell which one is a
+ * business model and which only serves a chart.
  */
 public interface PlatformBusinessHealthQueryRepository {
 
     /**
-     * Nhận {@link Instant} chứ không phải {@code LocalDate}: {@code school_subscriptions.start_date}
-     * và {@code end_date} đã được V2 đổi sang {@code timestamptz} (mục "ALTER COLUMN start_date TYPE
-     * timestamp with time zone"), nên so với một {@code date} sẽ để Postgres tự ép ngày đó thành mốc
-     * nửa đêm THEO MÚI GIỜ CỦA SESSION — một phụ thuộc ẩn vào cấu hình JDBC, đúng thứ
-     * {@code ZoneConstant} cảnh báo. So instant với instant thì không còn gì để đoán.
+     * Takes an {@link Instant} and not a {@code LocalDate}: {@code school_subscriptions.start_date}
+     * and {@code end_date} were changed to {@code timestamptz} by V2 (the "ALTER COLUMN start_date TYPE
+     * timestamp with time zone" section), so comparing against a {@code date} would let Postgres coerce that
+     * date to a midnight instant IN THE SESSION'S TIME ZONE -- a hidden dependency on the JDBC configuration,
+     * exactly what {@code ZoneConstant} warns about. Comparing instant with instant leaves nothing to guess.
      *
-     * @param now             thời điểm xét kỳ thuê bao nào đang phủ
-     * @param expiringThrough ngưỡng cảnh báo sắp hết hạn, BAO GỒM
+     * @param now             the moment used to decide which subscription period is covering
+     * @param expiringThrough the expiring-soon warning threshold, INCLUSIVE
      */
     SchoolSubscriptionHealthDto countSchoolSubscriptionHealth(Instant now, Instant expiringThrough);
 
     /**
-     * Trường có ví tự nạp âm — chính là trường đang bị chặn mở ca thi.
+     * Schools with a negative top-up wallet -- exactly the schools blocked from opening assessment sessions.
      *
-     * <p>Không có cờ khóa nào để đọc: trạng thái khóa được SUY RA từ số dư mỗi lần hỏi, xem
-     * {@code SchoolBalance.isInDebt()} và {@code SchoolSubscriptionDebtGuardService}. Điều kiện ở đây
-     * ({@code balance_vnd < 0}) phải khớp với vị từ đó, nếu không dashboard sẽ đếm ra một tập trường
-     * khác với tập thật sự đang bị chặn.
+     * <p>There is no lock flag to read: the locked state is DERIVED from the balance on every query, see
+     * {@code SchoolBalance.isInDebt()} and {@code SchoolSubscriptionDebtGuardService}. The condition here
+     * ({@code balance_vnd < 0}) must match that predicate, otherwise the dashboard would count a different
+     * set of schools than the ones actually blocked.
      *
-     * <p>CẮT NGANG các nhóm thuê bao: đọc từ bảng khác nên một trường đang còn gói mà ví âm sẽ vào
-     * cả hai số đếm. Đừng cộng con số này với ba nhóm kia.
+     * <p>CUTS ACROSS the subscription buckets: it reads from another table, so a school that still has a plan but a negative
+     * wallet falls into both counts. Do not add this number to the other three buckets.
      */
     long countSchoolsInDebt();
 
     /**
-     * Giá vốn AI thực tế đã phát sinh trong kỳ, quy ra VND để đặt được cạnh doanh thu.
+     * The real AI cost price incurred in the period, converted to VND so it can sit next to revenue.
      *
-     * <p>Dùng {@code cost_vnd} chứ không {@code cost_usd}: doanh thu ghi bằng VND, mà trừ hai đơn vị
-     * khác nhau thì ra một con số không có nghĩa gì. Không lọc {@code charged_at} — biên lợi nhuận
-     * hỏi chi phí đã PHÁT SINH, còn đã thu được tiền của trường hay chưa là chuyện khác.
+     * <p>Uses {@code cost_vnd} and not {@code cost_usd}: revenue is recorded in VND, and subtracting two
+     * different units gives a meaningless number. Does not filter on {@code charged_at} -- the profit margin
+     * asks for the cost INCURRED, whether the school's money has been collected yet is a different matter.
      *
-     * @param from bao gồm
-     * @param to   KHÔNG bao gồm, cùng quy ước với {@code OrderRepository.sumTotalAmountByStatusInRange}
-     * @return không bao giờ null; kỳ không có bản ghi nào trả {@link BigDecimal#ZERO}
+     * @param from inclusive
+     * @param to   EXCLUSIVE, the same convention as {@code OrderRepository.sumTotalAmountByStatusInRange}
+     * @return never null; a period with no records returns {@link BigDecimal#ZERO}
      */
     BigDecimal sumAiCostVnd(Instant from, Instant to);
 }

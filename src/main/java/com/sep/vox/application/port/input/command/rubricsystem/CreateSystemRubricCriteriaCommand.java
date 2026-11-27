@@ -13,7 +13,7 @@ public record CreateSystemRubricCriteriaCommand(
             String code,
             String name,
             String description,
-            List<CriterionExampleCommand> examples, // SỬA THÀNH LIST
+            List<CriterionExampleCommand> examples,
             BigDecimal weight,
             BigDecimal minScore,
             BigDecimal maxScore,

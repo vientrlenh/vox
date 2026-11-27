@@ -8,17 +8,17 @@ import java.util.UUID;
 import com.sep.vox.domain.model.invoice.Invoice;
 
 /**
- * Hóa đơn giờ là CHỨNG TỪ phát hành sau khi tiền đã về, không còn mang vòng đời thanh toán (đã sang
- * Order) lẫn phiên cổng (đã sang PaymentRecord).
+ * An invoice is now a DOCUMENT issued after the money has arrived, and no longer carries the payment lifecycle (moved to
+ * Order) or the gateway session (moved to PaymentRecord).
  *
- * <p>Vì vậy các method cũ đã BỎ, không phải quên:
+ * <p>That is why the old methods were REMOVED, not forgotten:
  * <ul>
- *   <li>{@code findAllByStatus} / {@code sumAmountByStatus} -- invoice không còn cột status. Đơn
- *       PENDING cần đối soát hỏi {@code OrderRepository.findAllByStatus}, doanh thu hỏi
+ *   <li>{@code findAllByStatus} / {@code sumAmountByStatus} -- an invoice no longer has a status column. PENDING
+ *       orders needing reconciliation are asked of {@code OrderRepository.findAllByStatus}, revenue of
  *       {@code OrderRepository.sumTotalAmountByStatusInRange}.</li>
- *   <li>{@code findByPaymentProviderAndProviderOrderRef} -- mã đơn phía cổng đã chuyển sang
+ *   <li>{@code findByPaymentProviderAndProviderOrderRef} -- the gateway-side order code moved to
  *       PaymentRecord.</li>
- *   <li>{@code findByIdForUpdate} -- không còn gì để "chốt" trên hóa đơn; khóa nay đặt ở Order
+ *   <li>{@code findByIdForUpdate} -- there is nothing left to "settle" on an invoice; the lock is now placed on Order
  *       ({@code OrderRepository.findByIdForUpdate}).</li>
  * </ul>
  */
@@ -30,6 +30,6 @@ public interface InvoiceRepository {
     List<Invoice> findByOrderIdIn(Collection<UUID> orderIds);
     Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
 
-    /** Guard idempotent: một đơn chỉ phát hành đúng một hóa đơn. */
+    /** Idempotency guard: one order issues exactly one invoice. */
     boolean existsByOrderId(UUID orderId);
 }

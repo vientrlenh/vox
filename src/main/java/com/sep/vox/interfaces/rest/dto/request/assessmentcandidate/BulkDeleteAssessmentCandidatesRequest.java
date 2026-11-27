@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotEmpty;
 
 public record BulkDeleteAssessmentCandidatesRequest(
-    @NotEmpty(message = "Danh sách thí sinh không được để trống")
+    @NotEmpty(message = "Candidate list must not be blank")
     List<UUID> candidateIds
 ) {
 }

@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateQuestionBankGradeRequest(
-    @NotNull(message = "ID khối lớp không được để trống")
+    @NotNull(message = "Grade level ID must not be blank")
     UUID schoolGradeId
 ) {
 

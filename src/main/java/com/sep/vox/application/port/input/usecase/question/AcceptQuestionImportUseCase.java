@@ -42,7 +42,7 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
         Instant now = Instant.now();
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         importSessionAcceptanceGuard.requireAcceptableSession(
-            input.importSessionId(), ImportType.QUESTION, "Phiên import không phải là loại câu hỏi", currentUserId, now);
+            input.importSessionId(), ImportType.QUESTION, "The import session is not a question import", currentUserId, now);
         importSessionAcceptanceGuard.requireMappedFields(input.confirmedMapping(), REQUIRED_FIELDS);
 
         int queued = importSessionRepository.markQueued(
@@ -52,17 +52,17 @@ public class AcceptQuestionImportUseCase implements IUseCase<AcceptQuestionImpor
             now
         );
         if (queued == 0) {
-            throw new IllegalArgumentException("Phiên import không ở trạng thái cho accept hoac đã hết hạn");
+            throw new IllegalArgumentException("The import session is not in a status that allows accepting, or it has expired");
         }
         return null;
     }
 
     private void validateCommand(AcceptQuestionImportCommand input) {
         if (input == null || input.importSessionId() == null) {
-            throw new IllegalArgumentException("Phiên import không được để trống");
+            throw new IllegalArgumentException("Import session must not be empty");
         }
         if (input.confirmedMapping() == null || input.confirmedMapping().isEmpty()) {
-            throw new IllegalArgumentException("Mapping import không được để trống");
+            throw new IllegalArgumentException("Import mapping must not be empty");
         }
     }
 }

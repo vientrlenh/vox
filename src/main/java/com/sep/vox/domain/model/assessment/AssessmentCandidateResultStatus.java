@@ -1,7 +1,7 @@
 package com.sep.vox.domain.model.assessment;
 
 public enum AssessmentCandidateResultStatus {
-    PENDING_REVIEW, // có item đã gán human review
+    PENDING_REVIEW, // has an item assigned to human review
     RELEASED,
     APPEALED,
     RE_GRADING,
@@ -12,8 +12,8 @@ public enum AssessmentCandidateResultStatus {
     FINAL,
     INVALID,
     RETAKE_REQUIRED,
-    PASSED, // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm >= passingScore (hoặc nhà trường tự chọn từ FINAL)
-    FAILED, // chốt sau khi kỳ thi RESULTS_PUBLISHED, điểm < passingScore hoặc INVALID (hoặc nhà trường tự chọn từ FINAL)
+    PASSED, // finalized after the assessment is RESULTS_PUBLISHED, score >= passingScore (or the school chose it from FINAL)
+    FAILED, // finalized after the assessment is RESULTS_PUBLISHED, score < passingScore or INVALID (or the school chose it from FINAL)
     /** The assessment session that produced this result has been soft-deleted -- see {@link AssessmentSessionStatus#DELETED}. */
     DELETED;
 
@@ -23,7 +23,7 @@ public enum AssessmentCandidateResultStatus {
         }
         return switch (status) {
             case RELEASED, FINAL, PASSED, FAILED, INVALID -> true;
-            // DELETED: kết quả của phiên đã xoá — học sinh tuyệt đối không được thấy lại.
+            // DELETED: the result of a deleted session — the student must absolutely never see it again.
             case PENDING_REVIEW, APPEALED, RE_GRADING, RETAKE_REQUIRED, DELETED -> false;
         };
     }

@@ -15,8 +15,8 @@ import com.sep.vox.application.query.dto.GradingRiskInfo;
 import com.sep.vox.domain.model.assessment.GradingSampleSelectionMode;
 
 /**
- * Bốn chế độ chọn bài. Bốc ngẫu nhiên được test bằng seed cố định — nếu không thì
- * chính cái tính năng "chọn mẫu hậu kiểm" là thứ duy nhất không ai kiểm được.
+ * The four selection modes. Random draws are tested with a fixed seed — otherwise
+ * the "post-review sampling" feature itself would be the one thing nobody can verify.
  */
 class GradingSampleSelectorTests {
 
@@ -43,7 +43,7 @@ class GradingSampleSelectorTests {
 
     @Test
     void should_round_the_random_sample_up() {
-        // 10% của 5 bài = 0.5. Làm tròn XUỐNG sẽ trả rỗng và admin tưởng hệ thống hỏng.
+        // 10% of 5 assessments = 0.5. Rounding DOWN would return empty and the admin would think the system is broken.
         assertThat(selector.select(GradingSampleSelectionMode.RANDOM_PERCENT, ids(5), 10, null, null))
             .hasSize(1);
         assertThat(selector.select(GradingSampleSelectionMode.RANDOM_PERCENT, ids(10), 30, null, null))
@@ -134,7 +134,7 @@ class GradingSampleSelectorTests {
         assertThatThrownBy(() -> selector.select(
             GradingSampleSelectionMode.MANUAL_LIST, candidates, null, List.of(UUID.randomUUID()), null))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("không đủ điều kiện");
+            .hasMessageContaining("not eligible");
     }
 
     @Test

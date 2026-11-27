@@ -6,15 +6,15 @@ import jakarta.validation.constraints.Size;
 
 public record CreateSupportedLanguageRequest(
 
-    @NotBlank(message = "Mã ngôn ngữ không được để trống")
-    @Size(max = 10, message = "Mã ngôn ngữ không được vượt quá 10 ký tự")
+    @NotBlank(message = "Language code must not be blank")
+    @Size(max = 10, message = "Language code must not exceed 10 characters")
     String code,
 
-    @NotBlank(message = "Tên ngôn ngữ không được để trống")
-    @Size(max = 100, message = "Tên ngôn ngữ không được vượt quá 100 ký tự")
+    @NotBlank(message = "Language name must not be blank")
+    @Size(max = 100, message = "Language name must not exceed 100 characters")
     String name,
 
-    @Size(max = 2048, message = "Mô tả ngôn ngữ không được vượt quá 2048 ký tự")
+    @Size(max = 2048, message = "Language description must not exceed 2048 characters")
     String description
 ) {
 

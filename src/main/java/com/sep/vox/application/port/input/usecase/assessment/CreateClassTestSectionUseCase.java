@@ -48,11 +48,11 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
     public AssessmentDto execute(CreateClassTestSectionCommand input) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         classTestDirectEditGuard.requireDirectlyEditable(assessment, currentUserId);
         if (input.questions() == null || input.questions().isEmpty()) {
-            throw new IllegalArgumentException("Section phải có ít nhất 1 câu hỏi");
+            throw new IllegalArgumentException("A section must have at least 1 question");
         }
         requireQuestionsUsable(input.questions(), assessment, currentUserId);
 
@@ -77,7 +77,7 @@ public class CreateClassTestSectionUseCase implements IUseCase<CreateClassTestSe
             List<AssessmentPaperSection> sections = assessmentPaperSectionRepository.findByPaperId(paperId).stream()
                 .sorted(Comparator.comparingInt(section -> section.getOrder()))
                 .toList();
-            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "Tổng trọng số section phải bằng 1.00");
+            ClassTestSectionWeightPolicy.validateStoredWeights(sections, "The total section weight must be 1.00");
         }
     }
 

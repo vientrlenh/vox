@@ -29,11 +29,11 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
     public CreateFrameworkVersionResponse execute(CreateFrameworkVersionCommand input) {
         CreateFrameworkVersionCommand command = normalize(input);
         if (command.effectiveTo() != null && !command.effectiveTo().isAfter(command.effectiveFrom())) {
-            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau ngày hiệu lực");
+            throw new IllegalArgumentException("The expiry date must be after the effective date");
         }
 
         frameworkRepository.findById(command.frameworkId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework not found"));
 
         FrameworkVersion version = FrameworkVersion.draft(
             command.frameworkId(),
@@ -48,7 +48,7 @@ public class CreateFrameworkVersionUseCase implements IUseCase<CreateFrameworkVe
             FrameworkVersion saved = frameworkVersionRepository.save(version);
             return CreateFrameworkVersionResponseMapper.toResponse(saved.getId());
         } catch (DataConflictException e) {
-            throw new ResourceDuplicatedException("Phiên bản hoặc mã phiên bản này đã tồn tại trong framework");
+            throw new ResourceDuplicatedException("The version or version code already exists in the framework");
         }
     }
 

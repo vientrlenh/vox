@@ -7,15 +7,15 @@ import java.util.UUID;
 import com.sep.vox.application.query.dto.AssessmentAttemptSummary;
 
 /**
- * Lượt thi của thí sinh.
+ * The attempts of a candidate.
  *
- * <p>Hai phương thức tách đôi theo NGƯỜI ĐỌC, không theo dữ liệu: phiên đã xoá mềm là thứ quản trị
- * trường và chủ tịch hội đồng phải thấy (để trả lời "điểm của em đi đâu"), nhưng học sinh thì không.
- * Tách thành hai tên gọi rõ ràng thay vì một cờ boolean để mỗi call-site phải nói ra mình phục vụ ai.
+ * <p>The two methods are split by WHO READS, not by data: a soft-deleted session is something the school
+ * admin and the council chair must be able to see (to answer "where did my score go"), but the student must not.
+ * Split into two clearly named methods instead of a boolean flag so that every call site has to say whom it serves.
  */
 public interface AssessmentCandidateAttemptsQueryRepository {
 
-    /** Mặc định an toàn: BỎ lượt đã xoá mềm. Dùng cho mọi đường học sinh nhìn thấy. */
+    /** The safe default: EXCLUDES soft-deleted attempts. Used for every path a student can see. */
     List<AssessmentAttemptSummary> findByCandidateIds(Collection<UUID> candidateIds);
 
     /**

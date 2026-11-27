@@ -4,12 +4,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Giao MỘT người chấm phúc khảo cho một đơn.
+ * Assigns ONE appeal grader to an appeal.
  *
- * @param overrideReason lý do cố tình giao cho người đã từng ghi điểm tay cho bài này.
- *        Không truyền = giữ luật xung đột lợi ích và use case sẽ từ chối. Truyền =
- *        admin chấp nhận rủi ro (trường nhỏ không đủ giáo viên) và lý do đi vào audit.
- * @param deadlineAt hạn chấm riêng cho vòng phúc khảo; bỏ trống thì lấy hạn của đơn
+ * @param overrideReason the reason for deliberately assigning someone who has previously given a manual score for this submission.
+ *        Not passed = keep the conflict-of-interest rule and the use case will refuse. Passed =
+ *        the admin accepts the risk (a small school without enough teachers) and the reason goes into the audit.
+ * @param deadlineAt a separate grading deadline for the appeal round; if empty, the appeal's own deadline is used
  */
 public record AssignAssessmentAppealReviewerCommand(
     UUID appealId,

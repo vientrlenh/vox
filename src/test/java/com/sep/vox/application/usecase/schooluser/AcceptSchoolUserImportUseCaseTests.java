@@ -85,7 +85,7 @@ class AcceptSchoolUserImportUseCaseTests {
         when(importSessionRepository.findById(sessionId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
-                .hasMessageContaining("Không tìm thấy phiên import");
+                .hasMessageContaining("Import session not found");
     }
 
     @Test
@@ -99,7 +99,7 @@ class AcceptSchoolUserImportUseCaseTests {
             .thenReturn(Optional.of(sessionWithType(sessionId, schoolId, ImportType.SCHOOL_DIRECTORY)));
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
-                .hasMessageContaining("không phải là import người dùng");
+                .hasMessageContaining("is not a user import");
     }
 
     @Test
@@ -114,7 +114,7 @@ class AcceptSchoolUserImportUseCaseTests {
             .thenReturn(Optional.of(session(sessionId, otherSchoolId)));
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
-                .hasMessageContaining("không thuộc trường hiện tại");
+                .hasMessageContaining("does not belong to the current school");
     }
 
     @Test
@@ -129,7 +129,7 @@ class AcceptSchoolUserImportUseCaseTests {
         when(importSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
-                .hasMessageContaining("đã hết hạn");
+                .hasMessageContaining("has expired");
         verify(importSessionRepository).save(any(ImportSession.class));
     }
 
@@ -144,7 +144,7 @@ class AcceptSchoolUserImportUseCaseTests {
             .thenReturn(Optional.of(sessionWithStatus(sessionId, schoolId, ImportSessionStatus.QUEUED)));
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
-                .hasMessageContaining("không ở trạng thái cho accept");
+                .hasMessageContaining("not in a state that allows accepting");
     }
 
     @Test
@@ -159,7 +159,7 @@ class AcceptSchoolUserImportUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(
                 new AcceptSchoolUserImportCommand(schoolId, sessionId, incompleteMapping)))
-                .hasMessageContaining("thiếu trường bắt buộc");
+                .hasMessageContaining("missing required fields");
     }
 
     @Test
@@ -185,7 +185,7 @@ class AcceptSchoolUserImportUseCaseTests {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(inactiveSchool));
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
-                .hasMessageContaining("không hoạt động");
+                .hasMessageContaining("is not active");
     }
 
     @Test
@@ -199,7 +199,7 @@ class AcceptSchoolUserImportUseCaseTests {
         when(importSessionRepository.markQueued(any(), any(), any(), any())).thenReturn(0);
 
         assertThatThrownBy(() -> useCase.execute(command(schoolId, sessionId)))
-                .hasMessageContaining("không ở trạng thái cho accept hoặc đã hết hạn");
+                .hasMessageContaining("not in a state that allows accepting, or it has expired");
     }
 
     private void mockCurrentUserAndSchool(UUID currentUserId, UUID schoolId) {

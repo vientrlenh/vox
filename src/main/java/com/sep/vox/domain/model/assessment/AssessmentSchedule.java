@@ -30,21 +30,21 @@ public class AssessmentSchedule extends BaseModel {
     }
 
     /**
-     * Ca thi chỉ được phép sửa (đổi phòng/giờ) khi còn ở trạng thái DRAFT.
+     * A schedule may only be edited (change room/time) while it is still in status DRAFT.
      */
     public boolean isModifiable() {
         return this.status == AssessmentScheduleStatus.DRAFT;
     }
 
-    /** Đã tới giờ bắt đầu. Đúng khoảnh khắc {@code startDate} tính là đã bắt đầu. */
+    /** The start time has been reached. The exact moment {@code startDate} counts as started. */
     public boolean hasStartedAt(Instant now) {
         return this.startDate != null && !this.startDate.isAfter(now);
     }
 
     /**
-     * Đã qua giờ kết thúc. Đúng khoảnh khắc {@code endDate} tính là đã hết giờ -- khớp với điều kiện
-     * {@code endDate > :now} của các truy vấn vào phòng thi ({@code findByIdAndInSchedule}...), nếu
-     * lệch biên thì có một giây mà ca vừa "chưa hết giờ" vừa "không vào thi được".
+     * The end time has passed. The exact moment {@code endDate} counts as time up -- matching the condition
+     * {@code endDate > :now} of the queries that enter the exam room ({@code findByIdAndInSchedule}...); if the
+     * boundary were off there would be one second in which the schedule is both "not over" and "cannot be entered".
      */
     public boolean hasEndedAt(Instant now) {
         return this.endDate != null && !this.endDate.isAfter(now);

@@ -25,12 +25,12 @@ public class PracticeSessionHeartbeatCleanupJob {
     private final PracticeGradingFlushService gradingFlushService;
 
     /**
-     * Nới 3 -> 10 phút (2026-08-12). Ba phút quá ngắn cho luyện NÓI: riêng câu hỏi AI đọc đã gần
-     * một phút, học sinh nghĩ rồi nói thêm một hai phút nữa. Cộng với việc trước đây không ai cập
-     * nhật last_heartbeat_at, ngưỡng này giết MỌI phiên bình thường ở phút thứ 3.
+     * Widened from 3 -> 10 minutes (2026-08-12). Three minutes is too short for SPEAKING practice: the AI reading the question alone takes nearly
+     * a minute, then the student thinks and speaks for another minute or two. Combined with the fact that nobody used to update
+     * last_heartbeat_at, this threshold killed EVERY normal session at minute 3.
      *
-     * <p>Nay agents gửi nhịp mỗi 60 giây nên 10 phút rất rộng: phiên chết thật vẫn được dọn sau
-     * 10 phút, còn phiên đang chạy phải mất 10 nhịp liên tiếp mới bị đụng tới.
+     * <p>Now agents send a heartbeat every 60 seconds so 10 minutes is very generous: a truly dead session is still cleaned up after
+     * 10 minutes, while a running session would have to miss 10 consecutive beats to be touched.
      */
     private static final Duration STALE_AFTER = Duration.ofMinutes(10);
 
@@ -39,8 +39,8 @@ public class PracticeSessionHeartbeatCleanupJob {
         cleanupService.cleanupStaleSessions(
             Instant.now().minus(STALE_AFTER)
         );
-        // Sau khi đóng phiên treo mới quét mồ côi: phiên vừa bị đóng ở trên cũng đã kịp xả
-        // chấm, nên vòng này chỉ còn lại đúng những lượt thật sự lọt lưới.
+        // Orphans are swept only after the stale sessions are closed: a session just closed above has also had its
+        // grading flush, so this round is left with exactly the turns that really slipped through.
         gradingFlushService.sweepEndedSessions(Instant.now().minus(ORPHAN_SWEEP_WINDOW));
     }
 }

@@ -28,20 +28,20 @@ public class DeleteAssessmentBlueprintUseCase implements IUseCase<DeleteAssessme
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         UUID currentSchoolId = schoolUserRepository.findByUserId(currentUserId)
             .map(schoolUser -> schoolUser.getSchoolId())
-            .orElseThrow(() -> new ForbiddenException("Quyền truy cập bị từ chối"));
+            .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         AssessmentBlueprint blueprint = assessmentBlueprintRepository.findById(input.blueprintId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy blueprint đề thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment blueprint not found"));
         if (!assessmentBlueprintRepository.canEditBlueprint(blueprint.getId(), currentUserId, currentSchoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (assessmentBlueprintRepository.existsUsedByAssessment(blueprint.getId())) {
             throw new IllegalArgumentException(
-                "Blueprint vẫn đang được ít nhất 1 bài kiểm tra tham chiếu, không thể xóa — hãy gỡ blueprint khỏi bài kiểm tra đó trước");
+                "The blueprint is still referenced by at least 1 assessment and cannot be deleted: detach it from that assessment first");
         }
 
         if (blueprint.isActive()) {
-            throw new IllegalArgumentException("Chỉ được xóa blueprint khi isActive=false");
+            throw new IllegalArgumentException("A blueprint can only be deleted when isActive=false");
         }
 
         assessmentBlueprintRepository.deleteById(blueprint.getId());

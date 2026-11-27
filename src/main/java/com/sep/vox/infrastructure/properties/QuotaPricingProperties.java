@@ -7,13 +7,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import com.sep.vox.application.port.output.QuotaPricingConfigPort;
 
 /**
- * Hệ số quy đổi USD dùng để ước lượng worst-case chi phí AI trước khi cho phép lên
- * lịch kỳ thi (xem ClassTestTokenQuotaGuardService). Đây là số ước tính, KHÔNG phải
- * chi phí thật -- chi phí thật đến từ ai_usage_record sau khi Agentic AI xử lý xong.
+ * USD conversion factors used to estimate the worst-case AI cost before allowing an assessment to be
+ * scheduled (see ClassTestTokenQuotaGuardService). This is an estimate, NOT the
+ * real cost -- the real cost comes from ai_usage_record after the Agentic AI has finished processing.
  *
- * PLACEHOLDER: giá trị mặc định bên dưới là số giả định, cần thay bằng số đo thực tế
- * từ ai_usage_record (trung bình cost_usd / audio_duration_seconds trên một khoảng
- * thời gian đủ dài) trước khi dùng ở production.
+ * PLACEHOLDER: the default values below are assumptions, and must be replaced with real measurements
+ * from ai_usage_record (average cost_usd / audio_duration_seconds over a long enough
+ * period) before use in production.
  */
 @ConfigurationProperties(prefix = "vox.quota")
 public record QuotaPricingProperties(

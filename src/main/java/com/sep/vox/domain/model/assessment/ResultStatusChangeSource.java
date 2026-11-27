@@ -14,13 +14,13 @@ public enum ResultStatusChangeSource {
     TEACHER_SPOT_CHECK,
     TEACHER_REMEDIATION,
     TEACHER_APPEAL,
-    /** Admin chốt sổ hàng loạt cả kỳ thi. */
+    /** The admin finalizes the whole assessment in bulk. */
     ADMIN_BULK_FINALIZE,
-    /** Kỳ thi chuyển RESULTS_PUBLISHED kéo theo kết quả sang FINAL/PASSED/FAILED. */
+    /** The assessment moves to RESULTS_PUBLISHED, taking results to FINAL/PASSED/FAILED with it. */
     ASSESSMENT_PUBLISH,
     SYSTEM;
 
-    /** Nguồn tương ứng với vòng chấm — dùng khi ghi audit từ các use case của giáo viên. */
+    /** The source matching a grading round — used when writing the audit from teacher use cases. */
     public static ResultStatusChangeSource ofRound(GradingRoundType roundType) {
         if (roundType == null) {
             return SYSTEM;

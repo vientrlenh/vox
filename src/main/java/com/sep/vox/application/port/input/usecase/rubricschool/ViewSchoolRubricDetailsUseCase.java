@@ -38,13 +38,13 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
     public RubricDto execute(ViewSchoolRubricDetailsQuery query) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Tài khoản không tồn tại."));
+                .orElseThrow(() -> new UnauthorizedException("The account does not exist."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản bị khóa.");
+            throw new UnauthorizedException("The account is locked.");
         }
 
         Rubric rubric = rubricRepository.findById(query.rubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Rubric was not found."));
         requireOwnedBySchoolOfUser(rubric, query, currentUserId);
         requireActiveSchool(query.schoolId());
 
@@ -54,19 +54,19 @@ public class ViewSchoolRubricDetailsUseCase implements IUseCase<ViewSchoolRubric
     // Security gate based on SchoolUser.
     private void requireOwnedBySchoolOfUser(Rubric rubric, ViewSchoolRubricDetailsQuery query, UUID currentUserId) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL ||
                 !rubric.getSchoolId().equals(query.schoolId()) ||
                 !schoolUser.getSchoolId().equals(rubric.getSchoolId())) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền xem Rubric của trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to view a Rubric of another school.");
         }
     }
 
     private void requireActiveSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Hành động bị từ chối: Trường học này đang bị vô hiệu hóa.");
+            throw new ForbiddenException("Action denied: this school is disabled.");
         }
     }
 }

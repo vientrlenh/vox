@@ -1,12 +1,12 @@
 package com.sep.vox.application.port.input.command.auth;
 
 /**
- * Đăng nhập bằng ID token Google lấy được NATIVE trên máy người dùng.
+ * Logs in with a Google ID token obtained NATIVELY on the user's device.
  *
- * <p>Khác {@link OAuth2LoginCommand} ở chỗ mọi thông tin về người dùng còn nằm KHOÁ trong
- * {@code idToken} và chưa được kiểm chứng. {@code OAuth2LoginCommand} là thứ đi ra SAU khi kiểm --
- * ở đó email/sub đã là sự thật đã được xác minh, còn ở đây mới chỉ là một chuỗi do client gửi lên.
- * Hai record riêng chính là để không có đường nào nhầm cái này thành cái kia.
+ * <p>Different from {@link OAuth2LoginCommand} in that all the user information is still LOCKED inside
+ * {@code idToken} and has not been verified. {@code OAuth2LoginCommand} is what comes out AFTER verification --
+ * there the email/sub is already verified fact, while here it is only a string sent up by the client.
+ * Two separate records exist precisely so that no path can mistake one for the other.
  */
 public record GoogleTokenLoginCommand(
     String idToken,

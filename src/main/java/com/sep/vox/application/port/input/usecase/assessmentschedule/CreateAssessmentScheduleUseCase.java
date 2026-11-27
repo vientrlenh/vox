@@ -41,7 +41,7 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
     @Transactional
     public AssessmentScheduleDto execute(CreateAssessmentScheduleCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
@@ -57,10 +57,10 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
 
     private void requireWindowFitsAssessment(Assessment assessment, CreateAssessmentScheduleCommand input) {
         if (input.startDate() == null || input.endDate() == null) {
-            throw new IllegalArgumentException("Thời gian bắt đầu và kết thúc là bắt buộc");
+            throw new IllegalArgumentException("The start and end times are required");
         }
         if (!input.endDate().isAfter(input.startDate())) {
-            throw new IllegalArgumentException("Thời gian kết thúc phải sau thời gian bắt đầu");
+            throw new IllegalArgumentException("The end time must be after the start time");
         }
         if (assessment.isScheduleWindowShorterThanAssessmentTime(input.startDate(), input.endDate())) {
             throw new IllegalArgumentException(AssessmentScheduleWindowMessages.tooShortForAssessmentTime(assessment));
@@ -83,6 +83,6 @@ public class CreateAssessmentScheduleUseCase implements IUseCase<CreateAssessmen
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return currentUserId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

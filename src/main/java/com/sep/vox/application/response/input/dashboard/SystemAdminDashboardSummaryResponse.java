@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Doanh thu ở đây tính trên ĐƠN HÀNG đã thu được tiền (Order.status = SUCCESS), không phải trên hóa
- * đơn: hóa đơn giờ chỉ còn là chứng từ phát hành SAU khi tiền về, không mang trạng thái thanh toán
- * lẫn số tiền nữa -- xem InvoiceRepository.
+ * Revenue here is computed on ORDERS that have been paid (Order.status = SUCCESS), not on invoices:
+ * an invoice is now only a document issued AFTER the money arrives, and no longer carries payment status
+ * or amount -- see InvoiceRepository.
  */
 public record SystemAdminDashboardSummaryResponse(
     long totalSchools,
@@ -14,8 +14,8 @@ public record SystemAdminDashboardSummaryResponse(
     long inactiveSchools,
     long pendingRegistrations,
     /**
-     * Số ngày đơn chờ LÂU NHẤT đã nằm trong hàng đợi. {@code null} khi không còn đơn nào chờ — khác
-     * hẳn 0, vốn nghĩa là "có đơn, và nó vừa nộp hôm nay".
+     * The number of days the LONGEST-waiting order has been in the queue. {@code null} when no order is waiting -- very different
+     * from 0, which means "there is an order, and it was just submitted today".
      */
     Integer oldestPendingRegistrationDays,
     long registrationsLast30Days,

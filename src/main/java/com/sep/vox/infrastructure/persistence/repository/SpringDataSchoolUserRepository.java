@@ -52,9 +52,9 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
     boolean existsBySchoolIdAndUserId(UUID schoolId, UUID userId);
 
     /**
-     * {@code excludeAdminRoles} loại quản trị viên (SCHOOL_ADMIN/SYSTEM_ADMIN) khỏi kết quả: các
-     * màn hình chọn người dùng của trường (xếp lớp, danh sách giáo viên/học sinh) không bao giờ
-     * thao tác trên tài khoản quản trị.
+     * {@code excludeAdminRoles} removes administrators (SCHOOL_ADMIN/SYSTEM_ADMIN) from the result: the school's
+     * user-picking screens (class assignment, teacher/student lists) never
+     * act on administrator accounts.
      */
     @Query(value = """
         SELECT su FROM SchoolUserJpaEntity su
@@ -113,8 +113,8 @@ public interface SpringDataSchoolUserRepository extends JpaRepository<SchoolUser
 
 
     /**
-     * DISTINCT là bắt buộc: ba JOIN ở đây nhân dòng khi một người được gán cùng vai trò
-     * nhiều lần. Không có nó thì danh sách người nhận trong payload outbox chứa UUID trùng.
+     * DISTINCT is required: the three JOINs here multiply rows when a person is assigned the same role
+     * several times. Without it the recipient list in the outbox payload contains duplicate UUIDs.
      */
     @Query("""
         SELECT DISTINCT su FROM SchoolUserJpaEntity su

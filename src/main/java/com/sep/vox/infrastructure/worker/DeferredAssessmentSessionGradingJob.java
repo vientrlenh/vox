@@ -39,7 +39,7 @@ public class DeferredAssessmentSessionGradingJob {
                     submitAssessmentSessionUseCase.execute(new SubmitAssessmentSessionCommand(current.getId()));
                 }
             } catch (Exception ex) {
-                log.warn("Không thể xử lý hoãn chấm cho phiên thi {}", session.getId(), ex);
+                log.warn("Could not process the deferred grading for session {}", session.getId(), ex);
             }
         }
     }

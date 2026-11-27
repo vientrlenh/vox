@@ -72,10 +72,10 @@ public class Assessment extends BaseModel {
     }
 
     /**
-     * Từ lúc kỳ thi bắt đầu trở đi thì thông tin kỳ thi và lịch thi (ca thi, giám thị, thí sinh)
-     * bị khóa: thí sinh đã vào phòng nên mọi thay đổi đều làm lệch dữ liệu đang chạy. Các thao tác
-     * vận hành trong lúc thi (công bố/hoàn thành/huỷ ca, OTP, điểm danh, chấm bài) không nằm trong
-     * phạm vi khóa này.
+     * From the moment the assessment starts, the assessment information and the schedule (schedules, proctors,
+     * candidates) are locked: candidates have already entered the room, so any change would skew the running data.
+     * Operations performed during the assessment (publish/complete/cancel a schedule, OTP, attendance, grading) are not
+     * covered by this lock.
      */
     public boolean isLockedForEditing() {
         return status == AssessmentStatus.IN_PROGRESS

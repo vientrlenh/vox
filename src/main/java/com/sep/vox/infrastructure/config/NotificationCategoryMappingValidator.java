@@ -11,15 +11,15 @@ import com.sep.vox.domain.model.notification.NotificationCategory;
 import com.sep.vox.domain.model.notification.NotificationTarget;
 
 /**
- * Chặn từ lúc khởi động những kiểu lệch giữa {@link EventTypeConstant},
- * {@link NotificationCategory} và {@link NotificationTarget}.
+ * Blocks, at startup, the kinds of mismatch between {@link EventTypeConstant},
+ * {@link NotificationCategory} and {@link NotificationTarget}.
  *
- * <p>Không kiểm tra chiều "eventType nào cũng phải có category": {@code UserCreated} và
- * {@code RegisterFormRejected} cố tình không có, vì người nhận chưa từng đăng nhập nên
- * không có thiết bị nào để đẩy.
+ * <p>Does not check the direction "every eventType must have a category": {@code UserCreated} and
+ * {@code RegisterFormRejected} intentionally have none, because the recipient has never logged in so
+ * there is no device to push to.
  *
- * <p>Ngược lại, category và target thì PHẢI phủ đúng cùng một tập: category quyết định
- * event nào sinh notification, target quyết định notification đó mở đi đâu.
+ * <p>Conversely, category and target MUST cover exactly the same set: the category decides which
+ * event produces a notification, the target decides where that notification opens.
  */
 @Configuration
 @Slf4j
@@ -38,8 +38,8 @@ public class NotificationCategoryMappingValidator {
         requireTargetForEveryCategory();
         requireCategoryForEveryTarget();
 
-        log.info("Notification mapping: {} eventType đã khai báo (dẫn về {} target), "
-            + "{} eventType không tạo notification",
+        log.info("Notification mapping: {} eventTypes declared (leading to {} targets), "
+            + "{} eventTypes that create no notification",
             NotificationCategory.mappedEventTypes().size(),
             NotificationTarget.mappedEventTypes().stream().map(NotificationTarget::of).distinct().count(),
             knownEventTypes.size() - NotificationCategory.mappedEventTypes().size());
@@ -56,7 +56,7 @@ public class NotificationCategoryMappingValidator {
 
         if (!unknown.isEmpty()) {
             throw new IllegalStateException(
-                "NotificationCategory ánh xạ eventType không tồn tại trong EventTypeConstant: " + unknown);
+                "NotificationCategory maps an eventType that does not exist in EventTypeConstant: " + unknown);
         }
     }
 
@@ -71,7 +71,7 @@ public class NotificationCategoryMappingValidator {
 
         if (!missingTarget.isEmpty()) {
             throw new IllegalStateException(
-                "eventType có NotificationCategory nhưng thiếu NotificationTarget: " + missingTarget);
+                "eventType has a NotificationCategory but no NotificationTarget: " + missingTarget);
         }
     }
 
@@ -86,7 +86,7 @@ public class NotificationCategoryMappingValidator {
 
         if (!targetWithoutCategory.isEmpty()) {
             throw new IllegalStateException(
-                "eventType có NotificationTarget nhưng thiếu NotificationCategory, sẽ không bao giờ sinh "
+                "eventType has a NotificationTarget but no NotificationCategory, it will never produce a "
                     + "notification: " + targetWithoutCategory);
         }
     }

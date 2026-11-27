@@ -7,14 +7,14 @@ import java.util.UUID;
 import com.sep.vox.domain.model.assessment.GradingRoundType;
 
 /**
- * Gán tay nhiều bài trong một lần. Batch là cố ý: admin tick nhiều dòng trên bảng
- * rồi gán một phát, và ràng buộc "một phân công mở / bài" được kiểm trọn trong một
- * transaction thay vì rải rác qua N request.
+ * Manually assigns many submissions at once. The batch is deliberate: the admin ticks many rows on the table
+ * and assigns in one go, and the "one open assignment per submission" constraint is checked entirely within one
+ * transaction instead of being scattered over N requests.
  *
- * @param roundType  vòng chấm áp cho cả lô. Một lần gán chỉ một vòng — trộn vòng
- *                   trong cùng lô làm luật kiểm tra trạng thái bài nhập nhằng, mà
- *                   trên UI admin cũng chọn vòng trước rồi mới tick bài.
- * @param deadlineAt hạn chấm chung, có thể null
+ * @param roundType  the grading round applied to the whole batch. One assignment covers a single round -- mixing rounds
+ *                   in one batch makes the submission-status check rules ambiguous, and in the admin UI
+ *                   the round is also chosen first before ticking submissions.
+ * @param deadlineAt the common grading deadline, may be null
  */
 public record AssignGradingCommand(
     GradingRoundType roundType,

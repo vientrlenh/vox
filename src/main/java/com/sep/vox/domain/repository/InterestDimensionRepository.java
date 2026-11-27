@@ -7,7 +7,7 @@ import com.sep.vox.domain.model.personalization.InterestDimension;
 
 public interface InterestDimensionRepository {
 
-    /** Toàn bộ danh mục, kể cả đã tắt -- dùng cho màn quản trị. */
+    /** The whole catalog, including disabled entries -- for the admin screen. */
     List<InterestDimension> findAll();
 
     /** Dimensions still in effect, used to rank topics (including ACADEMIC_ASSESSMENT). */
@@ -20,6 +20,6 @@ public interface InterestDimensionRepository {
 
     InterestDimension save(InterestDimension dimension);
 
-    /** Tắt mềm -- giữ nguyên điểm số/topic lịch sử đã gán chiều này. */
+    /** Soft disable -- keeps the historical scores/topics already assigned to this dimension. */
     void deactivate(String code);
 }

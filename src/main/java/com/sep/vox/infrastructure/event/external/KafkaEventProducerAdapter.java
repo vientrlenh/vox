@@ -22,7 +22,7 @@ public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
     @Override
     public void publish(Object event) {
         if (event == null) {
-            throw new IllegalArgumentException("Loại event external không được để trống");
+            throw new IllegalArgumentException("External event type must not be blank");
         }
 
         String topic = resolveTopic(event);
@@ -34,11 +34,11 @@ public class KafkaEventProducerAdapter implements ExternalEventPublisherPort {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("Interrupted when sending event: {}", e);
-            throw new IllegalStateException("Bị gián đoạn khi gửi event");
+            throw new IllegalStateException("Interrupted while sending the event");
         }
         catch (ExecutionException e) {
             log.error("Event published failed to kafka: {}", e);
-            throw new IllegalStateException("Có lỗi xảy ra, không thể gửi event lên kafka");
+            throw new IllegalStateException("An error occurred, cannot send the event to Kafka");
         }
     }
 

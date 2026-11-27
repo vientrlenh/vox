@@ -76,37 +76,37 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
 
     private void requireCallerBelongsToSchool(UUID callerId, UUID schoolId) {
         User caller = userRepository.findByIdAndStatus(callerId, UserStatus.ACTIVE)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         SchoolUser callerSchoolUser = schoolUserRepository.findByUserId(caller.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Không có quyền thực hiện thao tác này"));
+            .orElseThrow(() -> new IllegalArgumentException("You are not allowed to perform this action"));
         if (!schoolId.equals(callerSchoolUser.getSchoolId())) {
-            throw new IllegalArgumentException("Không có quyền thực hiện thao tác này");
+            throw new IllegalArgumentException("You are not allowed to perform this action");
         }
     }
 
     private School findActiveSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("The school is not active");
         }
         return school;
     }
 
     private Role findAllowedRole(String roleCode) {
         if (!ALLOWED_ROLE_CODES.contains(roleCode)) {
-            throw new IllegalArgumentException("Vai trò không hợp lệ, chỉ chấp nhận STUDENT hoặc TEACHER");
+            throw new IllegalArgumentException("Invalid role, only STUDENT or TEACHER is accepted");
         }
         return roleRepository.findByCode(roleCode)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vai trò: " + roleCode));
+            .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleCode));
     }
 
     private void rejectDuplicateEmailOrPhone(CreateSchoolUserCommand command) {
         if (userRepository.findByEmail(command.email()).isPresent()) {
-            throw new ResourceDuplicatedException("Email đã tồn tại");
+            throw new ResourceDuplicatedException("Email already exists");
         }
         if (userRepository.findByPhone(command.phone()).isPresent()) {
-            throw new ResourceDuplicatedException("Số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Phone number already exists");
         }
     }
 
@@ -117,17 +117,17 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         try {
             return userRepository.save(user);
         } catch (DataConflictException e) {
-            throw new ResourceDuplicatedException("Email hoặc số điện thoại đã tồn tại");
+            throw new ResourceDuplicatedException("Email or phone number already exists");
         }
     }
 
     private void linkToSchool(User savedUser, CreateSchoolUserCommand command, Instant now) {
         if ("STUDENT".equals(command.roleCode())) {
             if (command.startDate() == null || command.endDate() == null) {
-                throw new IllegalArgumentException("Ngày bắt đầu và ngày kết thúc là bắt buộc đối với học sinh");
+                throw new IllegalArgumentException("Start date and end date are required for students");
             }
             if (!command.startDate().isBefore(command.endDate())) {
-                throw new IllegalArgumentException("Ngày bắt đầu phải trước ngày kết thúc");
+                throw new IllegalArgumentException("The start date must be before the end date");
             }
             Instant startDate = command.startDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
             Instant endDate = command.endDate().atStartOfDay(DateMapper.DEFAULT_INPUT_ZONE).toInstant();
@@ -164,7 +164,7 @@ public class CreateSchoolUserUseCase implements IUseCase<CreateSchoolUserCommand
         try {
             schoolUserRepository.save(schoolUser);
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Không thể gán người dùng vào trường: dữ liệu không hợp lệ");
+            throw new IllegalArgumentException("Cannot assign the user to the school: invalid data");
         }
     }
 

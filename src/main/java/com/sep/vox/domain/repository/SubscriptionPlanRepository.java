@@ -17,21 +17,21 @@ public interface SubscriptionPlanRepository {
     void deleteById(UUID id);
 
     /**
-     * Gói này có đang là ĐÍCH của một chuỗi thay thế không (có gói khác trỏ replacedByPlanId vào
-     * đây). Lưu trữ một gói như vậy mà không chỉ định gói thay thế tiếp theo sẽ cắt cụt chuỗi, và
-     * những trường ở đầu chuỗi mất luôn đường gia hạn -- xem SubscriptionPlanResolver.
+     * Whether this plan is the TARGET of a replacement chain (another plan points replacedByPlanId at
+     * it). Archiving such a plan without naming the next replacement would truncate the chain, and
+     * schools at the head of the chain would lose their renewal path -- see SubscriptionPlanResolver.
      */
     boolean existsByReplacedByPlanId(UUID replacedByPlanId);
 
-    /** Gói nào (nếu có) đang trỏ replacedByPlanId vào gói này -- xem existsByReplacedByPlanId. */
+    /** Which plan (if any) points replacedByPlanId at this plan -- see existsByReplacedByPlanId. */
     List<SubscriptionPlan> findByReplacedByPlanId(UUID replacedByPlanId);
 
-    /** Danh sách gói cho trường/khách vãng lai -- chỉ những gói còn bán được. */
+    /** List of plans for schools/anonymous visitors -- only plans that can still be sold. */
     PageResult<SubscriptionPlan> findByStatus(SubscriptionPlanStatus status, int page, int size);
 
     /**
-     * Danh sách gói cho System Admin: gồm cả DRAFT và ARCHIVED, vì admin cần thấy gói nào đã ngừng
-     * bán và nó được thay bằng gói nào (replacedByPlanId).
+     * List of plans for the System Admin: including DRAFT and ARCHIVED, because the admin needs to see which plans stopped being
+     * sold and which plan replaced them (replacedByPlanId).
      */
     PageResult<SubscriptionPlan> findAll(int page, int size);
 }

@@ -10,36 +10,36 @@ import org.springframework.data.repository.query.Param;
 import com.sep.vox.infrastructure.persistence.entity.personalization.PracticeSessionJpaEntity;
 
 /**
- * Repository chỉ-đọc gộp điểm thi + điểm luyện tập theo tiêu chí -- không có entity chủ, dùng
- * marker {@link Repository} thay vì {@code JpaRepository} vì không cần CRUD chuẩn.
+ * Read-only repository aggregating assessment scores + practice scores per criterion -- there is no owning entity, so it uses the
+ * {@link Repository} marker instead of {@code JpaRepository} because standard CRUD is not needed.
  */
 public interface SpringDataCriterionScoreAverageRepository
         extends Repository<PracticeSessionJpaEntity, UUID> {
 
     /**
-     * Phần {@code UNION ALL} bên dưới bê nguyên từ
+     * The {@code UNION ALL} below is carried over verbatim from
      * {@code SpringDataWeaknessScoreObservationViewRepository.findAllValidScoreObservations}
-     * (đã xoá), giữ nguyên các điều kiện hợp lệ đã cân nhắc từ trước:
+     * (deleted), keeping the validity conditions that were considered earlier:
      *
      * <ul>
-     *   <li>{@code marked_invalid = false} -- bài đã bị đánh dấu vô hiệu không được tính</li>
-     *   <li>{@code blocked_at IS NULL} -- thí sinh bị chặn thì kết quả không dùng</li>
-     *   <li>{@code EXISTS (... turns)} -- đánh giá không gắn với lượt nói nào là bản ghi rỗng,
-     *       tính vào sẽ kéo trung bình xuống bằng một con số không đại diện cho ai</li>
+     *   <li>{@code marked_invalid = false} -- a result marked invalid is not counted</li>
+     *   <li>{@code blocked_at IS NULL} -- if the candidate is blocked the result is not used</li>
+     *   <li>{@code EXISTS (... turns)} -- an evaluation not tied to any speaking turn is an empty record,
+     *       counting it would pull the average down with a number that represents nobody</li>
      * </ul>
      *
-     * <p>Khác một điểm quyết định: query cũ KHÔNG lọc học sinh (quét cả hệ thống rồi mới gom
-     * trong bộ nhớ, phục vụ việc căn giữa theo lớp). Ở đây có {@code :studentId} trong cả hai
-     * vế union, nên chỉ số hàng đọc tỉ lệ với một học sinh chứ không với cả trường.
+     * <p>One decisive difference: the old query did NOT filter by student (it scanned the whole system and only then grouped
+     * in memory, to serve centering by class). Here {@code :studentId} is in both
+     * sides of the union, so the number of rows read is proportional to one student, not to the whole school.
      *
-     * <p>Chuẩn hoá về 0..1 theo dải của chính tiêu chí ({@code min_score}/{@code max_score} trên
-     * {@code rubric_criterions}) trước khi lấy trung bình: không chuẩn hoá thì tiêu chí thang
-     * 0-10 luôn trông "khá hơn" tiêu chí thang 0-5, và thứ tự yếu-nhất-trước sẽ sai. Các cột đều
-     * là {@code numeric} nên đây là phép chia thực, không phải chia nguyên.
+     * <p>Normalized to 0..1 by the criterion's own range ({@code min_score}/{@code max_score} on
+     * {@code rubric_criterions}) before averaging: without normalization a 0-10 scale criterion
+     * always looks "better" than a 0-5 scale criterion, and the weakest-first order would be wrong. The columns are all
+     * {@code numeric}, so this is real division, not integer division.
      *
-     * <p>{@code ORDER BY} có thêm {@code criterion_code} làm chốt phụ để hai tiêu chí bằng điểm
-     * nhau vẫn ra thứ tự ổn định giữa các lần gọi -- chu kỳ xoay vòng ô dựa vào thứ tự này, đổi
-     * ngẫu nhiên thì cùng một học sinh ở cùng một ô lại ra tiêu chí khác nhau.
+     * <p>{@code ORDER BY} also has {@code criterion_code} as a tiebreaker so that two criteria with equal scores
+     * still get a stable order between calls -- the slot rotation cycle depends on this order; if it changed
+     * randomly the same student in the same slot would get a different criterion.
      */
     @Query(value = """
         WITH scores AS (
@@ -56,8 +56,8 @@ public interface SpringDataCriterionScoreAverageRepository
             WHERE ec.student_id = :studentId
               AND e.marked_invalid = false
               AND ec.blocked_at IS NULL
-              -- Query native nên KHÔNG được lọc theo entity: phải tự loại phiên đã xoá mềm, nếu
-              -- không điểm của một bài đã xoá vẫn kéo trung bình năng lực của học sinh.
+              -- Native query, so it must NOT filter by entity: soft-deleted sessions must be excluded by hand, otherwise
+              -- the score of a deleted result still pulls down the student's average ability.
               AND s.status <> 'DELETED'
               AND cs.final_score IS NOT NULL
               AND EXISTS (
@@ -66,11 +66,11 @@ public interface SpringDataCriterionScoreAverageRepository
                   WHERE t.evaluation_id = e.id
               )
             UNION ALL
-            -- Điểm luyện: thang 0-100 cố định, định danh bằng MÃ, không join rubric.
+            -- Practice score: fixed 0-100 scale, identified by CODE, no rubric join.
             --
-            -- Chia cho 100 chứ không cho dải rubric: hai nguồn phải cùng quy về 0..1 thì phép
-            -- so mới có nghĩa. Dùng nhầm dải của bên kia là lỗi CHẠY SAI LẶNG LẼ -- không nổ,
-            -- chỉ khiến điểm luyện lấn át điểm thi và Q1 chọn sai tiêu chí mãi mãi.
+            -- Divide by 100, not by the rubric range: both sources must be reduced to 0..1 for the
+            -- comparison to mean anything. Using the other side's range by mistake is a SILENTLY WRONG run -- no failure,
+            -- practice scores just overwhelm assessment scores and Q1 picks the wrong criterion forever.
             SELECT UPPER(TRIM(pcs.criterion_code)) AS criterion_code,
                    pcs.final_score / 100.0 AS normalized
             FROM practice_criterion_scores pcs
@@ -86,8 +86,8 @@ public interface SpringDataCriterionScoreAverageRepository
                   WHERE pt.practice_response_id = pr.id
               )
         )
-        -- UPPER ở đây vì ba nguồn trên có thể khác kiểu chữ: framework_criteria.code
-        -- và practice_criterion_scores.criterion_code không cùng quy ước.
+        -- UPPER here because the three sources above may differ in letter case: framework_criteria.code
+        -- and practice_criterion_scores.criterion_code do not share a convention.
         SELECT UPPER(criterion_code) AS criterion_code
         FROM scores
         WHERE normalized IS NOT NULL

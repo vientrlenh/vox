@@ -8,6 +8,6 @@ import com.sep.vox.domain.model.metering.QuotaPricingSource;
 public interface QuotaPricingCalibrationRepository {
     QuotaPricingCalibration save(QuotaPricingCalibration calibration);
 
-    /** Lần calibrate gần nhất đã tính thành công (đủ mẫu) cho nguồn này -- rỗng nếu chưa có lần nào. */
+    /** The latest calibration computed successfully (enough samples) for this source -- empty if there has never been one. */
     Optional<QuotaPricingCalibration> findLatest(QuotaPricingSource source);
 }

@@ -32,13 +32,13 @@ public class UpdateFrameworkStatusUseCase implements IUseCase<UpdateFrameworkAct
 
     private Framework getFramework(UpdateFrameworkActiveStatusCommand input) {
         return frameworkRepository.findById(input.frameworkId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy framework"));
+            .orElseThrow(() -> new ResourceNotFoundException("Framework not found"));
     }
 
     private void validateRequest(UpdateFrameworkActiveStatusCommand input) {
         if (input.isActive()
                 && frameworkVersionRepository.findByFrameworkIdAndStatus(input.frameworkId(), FrameworkVersionStatus.PUBLISHED).isEmpty()) {
-            throw new IllegalArgumentException("Framework phải có ít nhất một phiên bản đã xuất bản trước khi kích hoạt");
+            throw new IllegalArgumentException("A framework must have at least one published version before it is activated");
         }
     }
 

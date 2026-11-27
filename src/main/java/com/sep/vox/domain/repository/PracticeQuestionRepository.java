@@ -30,6 +30,6 @@ public interface PracticeQuestionRepository {
 
     void incrementUsageCount(UUID id);
 
-    /** Trả lại lượt dùng khi câu được chọn nhưng học sinh chưa bao giờ trả lời. */
+    /** Gives back the usage when a question was chosen but the student never answered it. */
     void decrementUsageCount(UUID id);
 }

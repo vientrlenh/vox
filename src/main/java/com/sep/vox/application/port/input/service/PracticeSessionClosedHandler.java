@@ -16,19 +16,19 @@ import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.query.repository.PracticeSessionQueryRepository;
 
 /**
- * Việc phải làm SAU KHI một phiên luyện đóng lại, bất kể nó đóng bằng cách nào.
+ * What must happen AFTER a practice session closes, however it closes.
  *
- * Vì sao tách ra: phiên đóng theo HAI đường -- học sinh bấm "Hoàn tất"
- * ({@code EndPracticeSessionUseCase}) hoặc job dọn tự đóng phiên treo
- * ({@code PracticeSessionCleanupService}). Trước đây toàn bộ phần "học từ buổi vừa rồi" chỉ
- * nằm ở đường thứ nhất.
+ * Why split out: a session closes by TWO paths -- the student clicks "Finish"
+ * ({@code EndPracticeSessionUseCase}) or the cleanup job auto-closes a hung session
+ * ({@code PracticeSessionCleanupService}). Previously the whole "learn from the session just ended" part
+ * lived only on the first path.
  *
- * Đo trên dữ liệu thật: 4 trong 5 phiên gần nhất đóng bằng job dọn (nhận ra qua
- * {@code ended_at = last_heartbeat_at}) -- vì học sinh thường chỉ đóng app chứ không bấm nút.
- * Với 4 phiên đó thì điểm quan tâm không cập nhật, không sinh chủ đề mới, listener cũng không
- * chạy. Học sinh nói 4 buổi mà danh sách chủ đề đứng yên, và trông như hệ thống hỏng.
+ * Measured on real data: 4 of the last 5 sessions were closed by the cleanup job (recognised by
+ * {@code ended_at = last_heartbeat_at}) -- because students usually just close the app instead of pressing the button.
+ * For those 4 sessions the interest score was not updated, no new topics were generated, and the listener did not
+ * run either. A student speaks 4 sessions and the topic list stands still, and it looks like the system is broken.
  *
- * Gộp vào một chỗ thay vì chép sang job dọn: chép thì hai bản sẽ trôi lệch ngay lần sửa sau.
+ * Gathered in one place instead of copying into the cleanup job: copies would drift apart on the very next edit.
  */
 @Service
 @RequiredArgsConstructor
@@ -108,7 +108,7 @@ public class PracticeSessionClosedHandler {
                 studentId, sessionId, row.getPracticePaperId()
             );
         } catch (RuntimeException exception) {
-            log.warn("Không trả được câu chưa dùng về kho cho phiên {}.", sessionId, exception);
+            log.warn("Could not return the unused question to the bank for session {}.", sessionId, exception);
         }
     }
 

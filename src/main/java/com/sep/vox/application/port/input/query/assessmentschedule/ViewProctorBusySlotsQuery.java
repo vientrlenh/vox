@@ -3,7 +3,7 @@ package com.sep.vox.application.port.input.query.assessmentschedule;
 import java.util.List;
 import java.util.UUID;
 
-/** Trong nhóm {@code teacherIds}, ai đang vướng lịch với khung giờ của ca {@code scheduleId}. */
+/** Within the group {@code teacherIds}, who has a schedule conflict with the time slot of schedule {@code scheduleId}. */
 public record ViewProctorBusySlotsQuery(
     UUID scheduleId,
     List<UUID> teacherIds

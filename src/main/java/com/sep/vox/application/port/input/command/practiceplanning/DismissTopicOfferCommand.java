@@ -2,6 +2,6 @@ package com.sep.vox.application.port.input.command.practiceplanning;
 
 import java.util.UUID;
 
-/** Học sinh bấm loại một thẻ chủ đề trong lô đang được chào. */
+/** The student dismisses one topic card in the batch currently being offered. */
 public record DismissTopicOfferCommand(UUID topicId) {
 }

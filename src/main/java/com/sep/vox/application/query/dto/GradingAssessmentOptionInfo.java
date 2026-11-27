@@ -3,19 +3,19 @@ package com.sep.vox.application.query.dto;
 import java.util.UUID;
 
 /**
- * Một mục trong bộ lọc kỳ thi của hàng đợi giáo viên.
+ * One entry in the assessment filter of the teacher queue.
  *
- * <p>Cố ý mỏng: đây là dropdown, không phải màn kỳ thi. Mỗi field thêm vào đây là một
- * field giáo viên đọc được về kỳ thi tập trung mà họ không phải thành viên.
+ * <p>Deliberately thin: this is a dropdown, not an assessment screen. Every field added here is one
+ * more field a teacher can read about a centralized assessment that they are not a member of.
  */
 public record GradingAssessmentOptionInfo(
     UUID id,
-    /** Mã kỳ thi — tên trùng nhau giữa các đợt, mã thì không. */
+    /** The assessment code -- names repeat between sessions, codes do not. */
     String code,
     String name,
-    /** Tổng số phân công của người gọi ở kỳ thi này, mọi vòng, mọi trạng thái. */
+    /** The caller's total assignments in this assessment, all rounds, all statuses. */
     long taskCount,
-    /** Trong đó còn ASSIGNED — con số cho badge "còn phải chấm". */
+    /** Of which still ASSIGNED -- the number for the "still to grade" badge. */
     long openTaskCount
 ) {
 }

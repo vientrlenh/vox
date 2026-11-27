@@ -15,20 +15,20 @@ import com.sep.vox.domain.repository.SchoolDirectoryRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Cùng lý do với FrameworkInitializerTests: {@code ApplicationRunner} KHÔNG được gọi trong
- * {@code @SpringBootTest}, nên phải gọi thẳng {@code run(null)} trên bean thật với DB thật --
- * ràng buộc unique trên school_directories.code chỉ lộ khi có lượt ghi thật.
+ * Same reason as FrameworkInitializerTests: {@code ApplicationRunner} is NOT called in
+ * {@code @SpringBootTest}, so {@code run(null)} must be called directly on the real bean with a real DB --
+ * the unique constraint on school_directories.code only shows when a real write happens.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
 @Transactional
 class SchoolDirectoryInitializerTests {
 
-    /** Số dòng trong school/school-directory-seed.json, sinh từ file Excel nghiệp vụ. */
+    /** Number of rows in school/school-directory-seed.json, generated from the business Excel file. */
     private static final int SEED_COUNT = 71;
 
     private static final int PAGE_SIZE = SEED_COUNT + 50;
-    /** findAll của repository đếm trang từ 1, không phải từ 0 -- xem SchoolDirectoryRepositoryImpl. */
+    /** The repository's findAll counts pages from 1, not from 0 -- see SchoolDirectoryRepositoryImpl. */
     private static final int FIRST_PAGE = 1;
     private static final String SAMPLE_CODE = "PTNK-HCM-1";
 
@@ -80,7 +80,7 @@ class SchoolDirectoryInitializerTests {
         schoolDirectoryInitializer.run(null);
 
         assertThat(schoolDirectoryRepository.findAll(FIRST_PAGE, PAGE_SIZE).totalElements())
-            .as("lần chạy thứ hai không được chèn thêm gì")
+            .as("the second run must not insert anything")
             .isEqualTo(afterFirstRun);
         assertThat(schoolDirectoryRepository.findByCodeIn(List.of(SAMPLE_CODE))).hasSize(1);
     }
@@ -99,7 +99,7 @@ class SchoolDirectoryInitializerTests {
         assertThat(withoutDomain).isEqualTo(2);
     }
 
-    /** Tên trường trong Excel có dòng thừa khoảng trắng đuôi -- seed phải đã chuẩn hoá sẵn. */
+    /** School names in the Excel file have trailing whitespace -- the seed must already be normalized. */
     @Test
     void ten_truong_da_duoc_chuan_hoa_khoang_trang() throws Exception {
         schoolDirectoryInitializer.run(null);

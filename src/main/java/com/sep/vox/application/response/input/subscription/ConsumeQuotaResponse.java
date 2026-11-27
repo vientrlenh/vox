@@ -5,22 +5,22 @@ import java.math.BigDecimal;
 import com.sep.vox.domain.dto.SchoolSubscriptionQuotaRecordDto;
 
 /**
- * Kết quả của MỘT lần trừ chi phí (ConsumeQuotaService) -- không phải ảnh chụp của một dòng nào.
+ * The result of ONE cost deduction (ConsumeQuotaService) -- not a snapshot of any row.
  *
- * <p>Không nhét mấy con số này vào {@link SchoolSubscriptionQuotaRecordDto} vì cùng lý do đã nêu ở
- * {@link SchoolSubscriptionQuotaRecordResponse}: chúng không phải cột của ví hạn mức. Nặng hơn thế,
- * một lần trừ giờ động vào HAI aggregate khác nhau (ví hạn mức + số dư trường), nên một DTO chiếu
- * đúng một dòng không thể diễn tả đủ dù có thêm cột.
+ * <p>These numbers are not put into {@link SchoolSubscriptionQuotaRecordDto} for the same reason given in
+ * {@link SchoolSubscriptionQuotaRecordResponse}: they are not columns of the quota wallet. More importantly,
+ * one deduction now touches TWO different aggregates (the quota wallet + the school balance), so a DTO projecting
+ * exactly one row cannot express it fully even with extra columns.
  *
- * <p>Các số dẫn xuất được tính NGAY trong transaction đã giữ khóa dòng số dư rồi trả ra đây, thay vì
- * để chỗ gọi tự truy vấn lại sau khi commit: hai lần đọc ngoài khóa có thể không khớp với chính cái
- * vừa xảy ra bên trong khóa.
+ * <p>The derived numbers are computed RIGHT INSIDE the transaction that holds the balance row lock and returned here, instead of
+ * letting the caller query again after commit: two reads outside the lock may not match what has just
+ * happened inside the lock.
  *
- * @param quota               ví hạn mức SAU khi trừ
- * @param chargedToQuotaVnd   phần nằm trong hạn mức kèm gói
- * @param chargedToBalanceVnd phần VƯỢT, đã ghi thành bút toán OVERAGE_CHARGE (0 nếu không vượt).
- *                            Luôn có {@code chargedToQuotaVnd + chargedToBalanceVnd = số tiền đã trừ}
- * @param balanceAfterVnd     số dư ví tự nạp sau bút toán -- ÂM nghĩa là trường đang nợ
+ * @param quota               the quota wallet AFTER the deduction
+ * @param chargedToQuotaVnd   the part that fell within the quota that came with the plan
+ * @param chargedToBalanceVnd the part that EXCEEDED it, recorded as an OVERAGE_CHARGE entry (0 if nothing exceeded).
+ *                            Always {@code chargedToQuotaVnd + chargedToBalanceVnd = the amount deducted}
+ * @param balanceAfterVnd     the top-up wallet balance after the entry -- NEGATIVE means the school is in debt
  */
 public record ConsumeQuotaResponse(
     SchoolSubscriptionQuotaRecordDto quota,
@@ -29,17 +29,17 @@ public record ConsumeQuotaResponse(
     BigDecimal balanceAfterVnd,
 
     /**
-     * CHÍNH lần trừ này đẩy trường từ không nợ sang nợ -- một CHUYỂN TIẾP, chỉ đúng đúng một lần.
-     * Dùng để phát thông báo. Đang nợ sẵn từ trước thì cờ này false.
+     * THIS very deduction pushed the school from no debt into debt -- a TRANSITION, true exactly once.
+     * Used to send a notification. If it was already in debt beforehand, this flag is false.
      */
     boolean crossedIntoDebt,
 
     /**
-     * Hết sạch cả hạn mức lẫn số dư -- một TRẠNG THÁI, đúng ở mọi lần trừ tiếp theo chứ không chỉ
-     * lần đầu. Dùng để đóng phiên luyện nói một cách tử tế (SubmitTurnResultDto.quotaExhausted).
+     * Both the quota and the balance are fully used up -- a STATE, true on every later deduction and not only
+     * the first. Used to close a speaking practice session properly (SubmitTurnResultDto.quotaExhausted).
      *
-     * <p>Cố ý tách khỏi {@link #crossedIntoDebt}: một cái báo "vừa mới xảy ra", một cái báo "đang
-     * như vậy". Gộp làm một thì hoặc thông báo lặp lại mỗi lượt, hoặc phiên không bao giờ đóng.
+     * <p>Deliberately separated from {@link #crossedIntoDebt}: one says "it just happened", the other says "it is
+     * currently so". Merged into one, either the notification repeats every turn, or the session never closes.
      */
     boolean fundsExhausted
 ) {

@@ -23,9 +23,9 @@ public class ViewMyProctorScheduleCandidatesUseCase implements IUseCase<UUID, Li
     @Override
     @Transactional(readOnly = true)
     public List<ProctorCandidateSummary> execute(UUID scheduleId) {
-        // Khối kiểm quyền từng nằm ngay trong lớp này; nó chuyển sang ProctorScheduleAccessService
-        // khi đường đọc thứ hai theo ca thi xuất hiện (lịch sử cảnh báo giám sát), để hai đường không
-        // trả lời khác nhau cho cùng câu hỏi "ai được xem ca thi này".
+        // The permission block used to live in this class; it moved to ProctorScheduleAccessService when the second
+        // read path per assessment schedule appeared (the proctoring warning history), so that the two paths
+        // cannot answer differently for the same question "who may view this assessment schedule".
         AssessmentSchedule schedule = accessService.requireCanMonitorSchedule(scheduleId);
         return proctorScheduleCandidatesQueryRepository.findByScheduleId(schedule.getId());
     }

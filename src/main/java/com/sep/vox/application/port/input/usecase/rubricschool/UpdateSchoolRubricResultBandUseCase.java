@@ -50,7 +50,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
         requireActiveSchoolMember(currentUserId, command.schoolId());
 
         RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Result Band was not found."));
         RubricVersion version = loadDraftVersionOwnedBySchool(resultBand, command.schoolId());
 
         // The code must not change after creation, so it is never updated.
@@ -60,7 +60,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
         boolean descriptionProvided = command.descriptionProvided() && !descriptionBlank;
         String safeDesc = (command.description() != null && !descriptionBlank) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
         if (command.order() != null && command.order() <= 0) {
-            throw new IllegalArgumentException("Thứ tự (order) phải lớn hơn 0.");
+            throw new IllegalArgumentException("The order must be greater than 0.");
         }
         requireValidRangeAndOrder(command, resultBand, version, safeName);
 
@@ -70,32 +70,32 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
 
     private void requireActiveSchoolMember(UUID currentUserId, UUID schoolId) {
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản chưa liên kết với trường học."));
+                .orElseThrow(() -> new ForbiddenException("The account is not linked to a school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền sửa dữ liệu của trường khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to edit data of another school.");
         }
         School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học."));
+                .orElseThrow(() -> new ResourceNotFoundException("School not found."));
         if (!school.isActive()) {
-            throw new ForbiddenException("Trường học này đang bị vô hiệu hóa.");
+            throw new ForbiddenException("This school is disabled.");
         }
     }
 
     // The Result Band must belong to a Rubric of the caller's school.
     private RubricVersion loadDraftVersionOwnedBySchool(RubricResultBand resultBand, UUID schoolId) {
         RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa Dải điểm Kết quả này."));
+                .orElseThrow(() -> new ResourceNotFoundException("The Rubric Version containing this Result Band was not found."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể sửa Dải điểm Kết quả khi phiên bản Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Result Bands can only be edited while the Rubric version is in DRAFT status.");
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SCHOOL || !rubric.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Hành động bị từ chối: Dải điểm Kết quả này không thuộc về trường học của bạn.");
+            throw new ForbiddenException("Action denied: this Result Band does not belong to your school.");
         }
         return version;
     }
@@ -105,7 +105,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
         BigDecimal finalMinScore = command.scoreMin() != null ? command.scoreMin() : resultBand.getScoreMin();
         BigDecimal finalMaxScore = command.scoreMax() != null ? command.scoreMax() : resultBand.getScoreMax();
         if (finalMinScore.compareTo(finalMaxScore) > 0) {
-            throw new IllegalArgumentException("Điểm sàn (scoreMin) không được lớn hơn điểm trần (scoreMax).");
+            throw new IllegalArgumentException("The floor score (scoreMin) must not be greater than the ceiling score (scoreMax).");
         }
 
         List<RubricResultBand> siblingBands = rubricResultBandRepository.findByRubricVersionId(resultBand.getRubricVersionId())
@@ -139,7 +139,7 @@ public class UpdateSchoolRubricResultBandUseCase implements IUseCase<UpdateSchoo
                     command.order()
             );
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Không thể cập nhật Dải điểm Kết quả do dữ liệu bị trùng hoặc không hợp lệ.");
+            throw new IllegalArgumentException("Cannot update the Result Band because the data is duplicated or invalid.");
         }
     }
 }

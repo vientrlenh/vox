@@ -42,7 +42,7 @@ public class PreviewBulkFinalizeUseCase implements IUseCase<UUID, BulkFinalizePr
     public BulkFinalizePreviewInfo execute(UUID assessmentId) {
         UUID currentUserId = assessmentGradingAccessService.requireActiveUserId();
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra."));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found."));
         assessmentGradingAccessService.authorizeSchoolAdminOrAssessmentChair(
             assessment.getSchoolId(), assessment.getId(), currentUserId);
         return assessmentGradingQueryRepository.previewBulkFinalize(assessment.getSchoolId(), assessmentId);

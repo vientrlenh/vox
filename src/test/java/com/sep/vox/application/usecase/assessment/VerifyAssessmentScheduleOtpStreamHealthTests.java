@@ -46,12 +46,12 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Bài có giám sát bằng stream thì phải biết service streaming còn sống TRƯỚC khi phát vé vào thi:
- * nếu để học sinh vào rồi service mới chết thì bài làm vẫn chạy nhưng không có dữ liệu giám sát nào
- * được ghi, và lúc đó không còn cách nào phân biệt được em nào gian lận.
+ * An assessment proctored by stream must know the streaming service is alive BEFORE the entry ticket is issued:
+ * if the student gets in and the service dies afterwards, the attempt keeps running but no proctoring data is
+ * recorded, and there is then no way to tell which student cheated.
  *
- * <p>Kiểm tra này KHÔNG phân biệt kỳ thi tập trung hay bài kiểm tra trên lớp — class test cũng có
- * tuỳ chọn bật stream, nên chỉ cần bài có {@code requiredStreamType} là phải kiểm tra.
+ * <p>This check does NOT distinguish a centralized assessment from a class test -- a class test can also turn
+ * streaming on, so any assessment with a {@code requiredStreamType} must be checked.
  */
 class VerifyAssessmentScheduleOtpStreamHealthTests {
 
@@ -112,7 +112,7 @@ class VerifyAssessmentScheduleOtpStreamHealthTests {
         verify(healthCheckPort).checkStreamingOk();
     }
 
-    /** Đây là lý do bỏ điều kiện {@code kind == CENTRALIZED}: class test cũng bật stream được. */
+    /** This is why the {@code kind == CENTRALIZED} condition was dropped: a class test can turn streaming on too. */
     @Test
     void should_check_streaming_health_when_class_test_is_monitored() {
         when(assessmentRepository.findById(ASSESSMENT_ID))
@@ -134,7 +134,7 @@ class VerifyAssessmentScheduleOtpStreamHealthTests {
     void should_refuse_entry_ticket_when_streaming_service_is_down() {
         when(assessmentRepository.findById(ASSESSMENT_ID))
             .thenReturn(Optional.of(assessment(AssessmentKind.CLASS_TEST, AssessmentRequiredStreamType.SCREEN)));
-        doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
+        doThrow(new ServiceUnavailableException("Streaming service is not running"))
             .when(healthCheckPort).checkStreamingOk();
 
         assertThatThrownBy(() -> useCase.execute(new VerifyAssessmentScheduleOtpCommand(ASSESSMENT_ID, OTP)))
@@ -148,7 +148,7 @@ class VerifyAssessmentScheduleOtpStreamHealthTests {
      */
     @Test
     void should_still_issue_entry_ticket_for_unmonitored_assessment_when_streaming_is_down() {
-        doThrow(new ServiceUnavailableException("Streaming service hiện không hoạt động"))
+        doThrow(new ServiceUnavailableException("Streaming service is not running"))
             .when(healthCheckPort).checkStreamingOk();
 
         AssessmentEntryTicketResponse result = useCase.execute(new VerifyAssessmentScheduleOtpCommand(ASSESSMENT_ID, OTP));

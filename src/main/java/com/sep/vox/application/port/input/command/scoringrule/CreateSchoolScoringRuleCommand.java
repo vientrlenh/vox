@@ -7,8 +7,7 @@ import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleSeverity;
 
-// Lệnh tạo mới 1 Scoring Rule cho 1 Assessment Policy của trường học.
-// schoolId dùng để double-check quyền sở hữu (Policy phải thuộc đúng trường học đã đăng nhập).
+// schoolId is used to double-check ownership (the Policy must belong to the school of the logged-in user).
 public record CreateSchoolScoringRuleCommand(
         UUID schoolId,
         UUID policyId,

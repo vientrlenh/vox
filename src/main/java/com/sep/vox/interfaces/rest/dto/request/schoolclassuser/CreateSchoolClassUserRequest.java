@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateSchoolClassUserRequest(
-    @NotNull(message = "ID người dùng không được để trống")
+    @NotNull(message = "User ID must not be blank")
     UUID userId
 ) {
 

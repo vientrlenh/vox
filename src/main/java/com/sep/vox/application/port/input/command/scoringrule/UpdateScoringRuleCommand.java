@@ -7,9 +7,8 @@ import com.sep.vox.domain.model.scoringrule.ScoringRuleActionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleConditionType;
 import com.sep.vox.domain.model.scoringrule.ScoringRuleSeverity;
 
-// Lệnh cập nhật 1 Scoring Rule đã tồn tại.
-// - policyId: lấy từ path để đối chiếu với policyId thật của rule (double-check bảo mật, tránh sửa nhầm rule của Policy khác).
-// - code: KHÔNG có trong lệnh này vì code là bất biến (immutable) sau khi tạo (giống cột DB updatable = false).
+// - policyId: taken from the path to compare with the rule's real policyId (a security double-check, to avoid editing a rule of another Policy by mistake).
+// - code: NOT in this command because code is immutable after creation (like the DB column updatable = false).
 public record UpdateScoringRuleCommand(
         UUID ruleId,
         UUID policyId,

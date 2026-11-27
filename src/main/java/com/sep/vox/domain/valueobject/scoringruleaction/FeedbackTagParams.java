@@ -6,10 +6,10 @@ public record FeedbackTagParams(
 ) implements ScoringRuleActionParams {
     public FeedbackTagParams {
         if (tagCode == null || tagCode.isBlank()) {
-            throw new IllegalArgumentException("Tag code không được để trống");
+            throw new IllegalArgumentException("The tag code must not be blank");
         }
         if (message == null || message.isBlank()) {
-            throw new IllegalArgumentException("Thông điệp không được để trống");
+            throw new IllegalArgumentException("The message must not be blank");
         }
     }
 }

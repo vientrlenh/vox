@@ -15,36 +15,36 @@ import com.sep.vox.domain.repository.PracticeQuestionRepository;
 import com.sep.vox.domain.repository.StudentQuestionExposureRepository;
 
 /**
- * Trả câu hỏi ĐÃ CHỌN nhưng học sinh CHƯA BAO GIỜ trả lời về lại kho, khi phiên đóng.
+ * Returns the questions that were SELECTED but the student NEVER answered back to the bank, when the session closes.
  *
- * <p><b>Vì sao cần.</b> Chọn một câu ghi ba thứ, không phải một:
+ * <p><b>Why needed.</b> Selecting one question writes three things, not one:
  *
  * <ol>
- *   <li>{@code practice_paper_items} -- câu đã vào đề</li>
- *   <li>{@code student_question_exposures} -- <b>dấu "đã gặp"</b>, và mọi truy vấn chọn câu đều
- *       lọc {@code exposure.id IS NULL}</li>
+ *   <li>{@code practice_paper_items} -- the question went into the paper</li>
+ *   <li>{@code student_question_exposures} -- <b>the "already seen" mark</b>, and every question-selection query
+ *       filters on {@code exposure.id IS NULL}</li>
  *   <li>{@code practice_questions.usage_count += 1}</li>
  * </ol>
  *
- * Thứ hai mới là thứ đau: một câu chỉ được chọn rồi bỏ dở sẽ <b>biến mất vĩnh viễn</b> khỏi kho
- * của học sinh đó, dù em ấy chưa từng nhìn thấy nó.
+ * The second one is what hurts: a question that was only selected and then abandoned <b>disappears forever</b> from
+ * that student's bank, even though they never saw it.
  *
- * <p><b>Khi nào xảy ra.</b> Hai đường, và đường thứ hai là mới:
+ * <p><b>When it happens.</b> Two paths, and the second is new:
  *
  * <ul>
- *   <li>Học sinh được đẩy câu rồi đóng app không trả lời -- vốn đã có từ trước.</li>
- *   <li>Nạp trước (prefetch) phía Python: câu tiếp theo được sinh sẵn trong lúc học sinh còn
- *       đang follow-up, để giấu 10-40 giây gọi LLM. Chuỗi follow-up kết thúc bình thường thì
- *       câu đó được dùng ngay; phiên đứt giữa chừng thì nó thừa ra.</li>
+ *   <li>A student is pushed a question and closes the app without answering -- this already existed.</li>
+ *   <li>Prefetch on the Python side: the next question is generated in advance while the student is still
+ *       in a follow-up, to hide the 10-40 second LLM call. When the follow-up chain ends normally
+ *       that question is used right away; when the session breaks midway it is left over.</li>
  * </ul>
  *
- * <p><b>Chỉ kiểm slot CUỐI.</b> Slot ở giữa không thể chưa trả lời: nếu có,
- * {@code ResolveNextPracticeQuestionClaimService} đã trả lại chính nó (nhánh idempotent
- * {@code existsResponse}) thay vì chọn câu mới, nên không bao giờ có slot mới chèn sau nó.
+ * <p><b>Only check the LAST slot.</b> A middle slot cannot be unanswered: if it were,
+ * {@code ResolveNextPracticeQuestionClaimService} would have returned that very one (the idempotent branch
+ * {@code existsResponse}) instead of picking a new question, so no new slot is ever inserted after it.
  *
- * <p><b>{@code REQUIRES_NEW}.</b> Gọi từ {@code PracticeSessionClosedHandler} -- nơi đã chạy
- * trong transaction riêng và có thể ném ra ngoài. Dọn dẹp hỏng KHÔNG được phép kéo theo việc
- * ghi điểm quan tâm hay đóng phiên: phiên đã đóng là sự thật, còn đây chỉ là trả lại kho.
+ * <p><b>{@code REQUIRES_NEW}.</b> Called from {@code PracticeSessionClosedHandler} -- which already runs
+ * in its own transaction and may throw out. A failed cleanup must NOT be allowed to drag down writing the interest score or
+ * closing the session: the session being closed is the truth, this is only returning to the bank.
  */
 @Service
 @RequiredArgsConstructor
@@ -81,7 +81,7 @@ public class UndeliveredQuestionCleanupService {
         studentQuestionExposureRepository.removeExposure(studentId, lastQuestionId);
         practiceQuestionRepository.decrementUsageCount(lastQuestionId);
         log.info(
-            "Trả câu {} về kho: đã chọn cho phiên {} nhưng học sinh chưa trả lời.",
+            "Returning question {} to the bank: selected for session {} but the student has not answered.",
             lastQuestionId,
             sessionId
         );

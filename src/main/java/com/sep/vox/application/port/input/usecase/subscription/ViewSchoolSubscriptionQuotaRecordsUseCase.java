@@ -28,7 +28,7 @@ public class ViewSchoolSubscriptionQuotaRecordsUseCase implements IUseCase<ViewS
     @Transactional(readOnly = true)
     public List<SchoolSubscriptionQuotaRecordDto> execute(ViewSchoolSubscriptionQuotaRecordsQuery input) {
         if (!userContextPort.isSystemAdmin() && !input.schoolId().equals(userContextPort.getCurrentSchoolId())) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         SchoolSubscription activeSubscription = schoolSubscriptionRepository.findActiveBySchoolId(input.schoolId())

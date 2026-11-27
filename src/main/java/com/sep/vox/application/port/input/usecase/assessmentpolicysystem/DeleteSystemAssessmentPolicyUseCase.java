@@ -29,24 +29,21 @@ public class DeleteSystemAssessmentPolicyUseCase implements IUseCase<DeleteSyste
     @Override
     @Transactional
     public Void execute(DeleteSystemAssessmentPolicyCommand command) {
-        // 1. Kiểm tra tài khoản System Admin
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản đã bị khóa.");
+            throw new UnauthorizedException("The account has been locked.");
         }
 
-        // 2. Kiểm tra Assessment Policy tồn tại và thuộc phạm vi toàn hệ thống
         AssessmentPolicy policy = assessmentPolicyRepository.findById(command.policyId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Assessment Policy."));
+                .orElseThrow(() -> new ResourceNotFoundException("Assessment Policy not found."));
         if (policy.getSchoolId() != null) {
-            throw new ForbiddenException("Không thể can thiệp vào Assessment Policy của trường học.");
+            throw new ForbiddenException("A school's Assessment Policy cannot be modified here.");
         }
 
-        // 3. Chỉ được xóa cứng khi đang DRAFT, các trạng thái khác dùng chức năng Lưu trữ (Archive) riêng
         if (policy.getStatus() != AssessmentPolicyStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể xóa Assessment Policy đang ở trạng thái DRAFT. Vui lòng dùng chức năng Lưu trữ (Archive) nếu Policy đã PUBLISHED.");
+            throw new IllegalArgumentException("Only an Assessment Policy in the DRAFT status can be deleted. Use Archive if the Policy is already PUBLISHED.");
         }
         assessmentPolicyRepository.deleteById(policy.getId());
         return null;

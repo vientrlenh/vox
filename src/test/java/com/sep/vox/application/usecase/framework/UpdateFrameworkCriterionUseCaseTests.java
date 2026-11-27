@@ -63,7 +63,7 @@ class UpdateFrameworkCriterionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Mã tiêu chí đã tồn tại");
+            .hasMessage("Criterion code already exists");
     }
 
     private FrameworkCriterion storedCriterion() {

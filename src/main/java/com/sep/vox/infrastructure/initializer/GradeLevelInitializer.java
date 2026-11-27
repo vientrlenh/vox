@@ -16,39 +16,39 @@ import com.sep.vox.domain.model.gradelevel.GradeLevelStatus;
 import com.sep.vox.domain.repository.GradeLevelRepository;
 
 /**
- * Dựng sẵn catalog khối lớp THPT (Khối 10, 11, 12) dùng chung toàn hệ thống.
+ * Builds the catalog of high-school grades (Grade 10, 11, 12) shared across the whole system.
  *
- * <p>Đoạn seed này trước nằm ở bước 8 của {@code V41__grade_level_global_catalog.sql}. Chuyển ra
- * đây vì ba lý do:
- *
- * <ul>
- *   <li>Migration KHÔNG chạy trong test: {@code src/test/resources/application-test.yaml} đặt
- *       {@code ddl-auto: create-drop}, nên Flyway bị bỏ qua hoàn toàn khi chạy {@code ./gradlew
- *       test}. Dữ liệu seed nằm trong file .sql là dữ liệu không test nào nhìn thấy.</li>
- *   <li>Migration chỉ chạy đúng một lần. Sửa nội dung seed sau khi V41 đã áp lên một môi trường
- *       nào đó là đổi checksum -- Flyway sẽ từ chối khởi động. Initializer chạy lại mỗi lần boot
- *       nên sửa được.</li>
- *   <li>Ba khối này là dữ liệu nghiệp vụ chứ không phải cấu trúc bảng. Để cạnh
- *       {@link FrameworkInitializer} và {@link SystemRubricTemplateInitializer} thì tìm được bằng
- *       cách đọc code Java, thay vì phải nhớ là nó nằm lẫn trong một file migration.</li>
- * </ul>
- *
- * <h2>Chỉ seed khi catalog HOÀN TOÀN trống</h2>
- *
- * <p>Giữ nguyên ngữ nghĩa của câu {@code where not exists (select 1 from grade_levels)} ở V41, chứ
- * không kiểm theo từng mã. Hai lý do:
+ * <p>This seed used to be in step 8 of {@code V41__grade_level_global_catalog.sql}. It moved
+ * here for three reasons:
  *
  * <ul>
- *   <li>{@code grade_level_order} unique toàn cục ({@code idx_grade_levels_order}). Chèn GRADE_10 ở
- *       thứ tự 1 vào một catalog đã có khối khác chiếm thứ tự 1 sẽ nổ ràng buộc ngay lúc khởi
- *       động.</li>
- *   <li>Một hệ đã chạy thật có catalog do V41 gộp lên từ {@code school_grade_levels} của các
- *       trường. Chồng thêm bộ THPT mặc định lên trên đó là thêm khối trùng nghĩa mà không ai
- *       khai.</li>
+ *   <li>Migrations do NOT run in tests: {@code src/test/resources/application-test.yaml} sets
+ *       {@code ddl-auto: create-drop}, so Flyway is skipped entirely when running {@code ./gradlew
+ *       test}. Seed data living in a .sql file is data no test ever sees.</li>
+ *   <li>A migration runs exactly once. Changing the seed content after V41 has been applied to some
+ *       environment changes the checksum -- Flyway will refuse to start. An initializer runs again on every boot
+ *       so it can be edited.</li>
+ *   <li>These three grades are business data and not table structure. Next to
+ *       {@link FrameworkInitializer} and {@link SystemRubricTemplateInitializer} they can be found by
+ *       reading Java code, instead of having to remember that they sit inside a migration file.</li>
  * </ul>
  *
- * <p>Nghĩa là: xóa hết khối đi rồi khởi động lại thì bộ mặc định quay về; xóa đúng một khối thì
- * không. Chủ ý -- xóa một khối là một quyết định, không phải sự cố cần initializer chữa.
+ * <h2>Only seeds when the catalog is COMPLETELY empty</h2>
+ *
+ * <p>Keeps the semantics of the {@code where not exists (select 1 from grade_levels)} statement in V41, rather than
+ * checking per code. Two reasons:
+ *
+ * <ul>
+ *   <li>{@code grade_level_order} is globally unique ({@code idx_grade_levels_order}). Inserting GRADE_10 at
+ *       order 1 into a catalog where another grade already holds order 1 would blow up the constraint right at
+ *       startup.</li>
+ *   <li>A system already running for real has a catalog that V41 merged up from the {@code school_grade_levels} of the
+ *       schools. Stacking the default high-school set on top of that adds grades with duplicate meaning that nobody
+ *       declared.</li>
+ * </ul>
+ *
+ * <p>Meaning: delete all grades and restart and the default set comes back; delete exactly one grade and it
+ * does not. Intentional -- deleting one grade is a decision, not an incident for the initializer to heal.
  */
 @Component
 @Order(7)
@@ -80,7 +80,7 @@ public class GradeLevelInitializer implements ApplicationRunner {
         // size)), so the first page is 1, not 0. Size 1 is used because only totalElements is needed.
         PageResult<GradeLevel> existing = gradeLevelRepository.findAll(null, null, 1, 1);
         if (existing.totalElements() > 0) {
-            log.info("Catalog khối lớp đã có {} bản ghi. Bỏ qua khởi tạo khối lớp mặc định",
+            log.info("The grade catalog already has {} records. Skipping default grade initialization",
                 existing.totalElements());
             return;
         }
@@ -95,7 +95,7 @@ public class GradeLevelInitializer implements ApplicationRunner {
                 .build());
         }
 
-        log.info("Đã khởi tạo {} khối lớp mặc định bậc THPT", GRADE_LEVELS.size());
+        log.info("Initialized {} default high-school grades", GRADE_LEVELS.size());
     }
 
     private record GradeLevelSeed(String code, String name, String description, int order) {}

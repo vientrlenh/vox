@@ -58,14 +58,14 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
 
     private void requireReassignable(AssessmentGradingAssignment assignment, UUID teacherId, UUID schoolId) {
         if (assignment.isCompleted()) {
-            throw new IllegalArgumentException("Không thể đổi giáo viên cho bài đã chấm xong.");
+            throw new IllegalArgumentException("The teacher cannot be changed for a submission that has been graded.");
         }
         if (teacherId == null) {
-            throw new IllegalArgumentException("Thiếu giáo viên cần phân công.");
+            throw new IllegalArgumentException("The teacher to assign is missing.");
         }
         assessmentGradingAccessService.rejectClassTestCoordination(assignment.getCandidateResultId());
         if (!assessmentGradingAccessService.isTeacherOfSchool(teacherId, schoolId)) {
-            throw new IllegalArgumentException("Người chấm phải là giáo viên thuộc cùng trường với bài thi.");
+            throw new IllegalArgumentException("The grader must be a teacher of the same school as the assessment.");
         }
         if (assignment.getRoundType() == GradingRoundType.APPEAL) {
             rejectPreviousGrader(assignment, teacherId);
@@ -77,8 +77,8 @@ public class ReassignGradingUseCase implements IUseCase<ReassignGradingCommand, 
             .findTeacherIdsWithHumanEvaluation(assignment.getCandidateResultId());
         if (conflicted.contains(teacherId)) {
             throw new IllegalArgumentException(
-                "Giáo viên này đã từng chấm bài thi này nên không được chấm phúc khảo. "
-                    + "Đổi người chấm ở màn đơn phúc khảo nếu cần ghi lý do ngoại lệ.");
+                "This teacher has graded this submission before, so they cannot grade the appeal. "
+                    + "Change the grader on the appeal screen if an exception reason has to be recorded.");
         }
     }
 

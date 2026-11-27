@@ -128,7 +128,7 @@ public class AssessmentSessionResultCalculator {
             AssessmentItemResponse response, Map<UUID, AssessmentItemEvaluation> evaluationsByResponseId) {
         AssessmentItemEvaluation evaluation = evaluationsByResponseId.get(response.getId());
         if (evaluation == null) {
-            throw new ResourceNotFoundException("Khong tim thay evaluation cho cau tra loi " + response.getId());
+            throw new ResourceNotFoundException("No evaluation found for answer " + response.getId());
         }
         return evaluation.getItemScore() == null ? BigDecimal.ZERO : evaluation.getItemScore();
     }
@@ -172,7 +172,7 @@ public class AssessmentSessionResultCalculator {
             Map<UUID, BigDecimal> itemScoreByResponseId) {
         AssessmentPaperItem paperItem = loaded.paperItemsById().get(response.getPaperItemId());
         if (paperItem == null) {
-            throw new ResourceNotFoundException("Khong tim thay paper item " + response.getPaperItemId());
+            throw new ResourceNotFoundException("Paper item not found: " + response.getPaperItemId());
         }
         BigDecimal rawScore = itemScoreByResponseId.getOrDefault(response.getId(), BigDecimal.ZERO);
         BigDecimal itemScore = scaled(rawScore == null ? BigDecimal.ZERO : rawScore);
@@ -231,9 +231,9 @@ public class AssessmentSessionResultCalculator {
     /** Everything one scoring run needs, loaded exactly once for both calculate and preview. */
     private LoadedSession load(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay phien thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         Assessment assessment = assessmentRepository.findById(session.getAssessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay bai kiem tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         AssessmentPolicy policy = loadPolicyOf(assessment);
         List<AssessmentPaperSection> orderedSections = orderedSectionsOfPaper(session.getPaperId());
         Map<UUID, AssessmentPaperItem> paperItemsById = paperItemsById(session.getPaperId());
@@ -246,10 +246,10 @@ public class AssessmentSessionResultCalculator {
 
     private AssessmentPolicy loadPolicyOf(Assessment assessment) {
         if (assessment.getAssessmentPolicyId() == null) {
-            throw new ResourceNotFoundException("Bai kiem tra chua gan assessment policy");
+            throw new ResourceNotFoundException("The assessment has no assessment policy assigned");
         }
         return assessmentPolicyRepository.findById(assessment.getAssessmentPolicyId())
-            .orElseThrow(() -> new ResourceNotFoundException("Khong tim thay assessment policy"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment policy not found"));
     }
 
     private List<AssessmentPaperSection> orderedSectionsOfPaper(UUID paperId) {
@@ -324,15 +324,15 @@ public class AssessmentSessionResultCalculator {
             .toList();
         if (matchingBands.isEmpty()) {
             log.info(
-                "Không có dải điểm kết quả nào khớp tổng điểm {} (rubricVersionId={}) -- lưu kết quả không kèm xếp loại.",
+                "No result band matches the total score {} (rubricVersionId={}) -- saving the result without a classification.",
                 totalScore, policy.getRubricVersionId()
             );
             return null;
         }
         if (matchingBands.size() > 1) {
             log.error(
-                "Cấu hình dải điểm CHỒNG LẤN: tổng điểm {} khớp {} dải của rubricVersionId={}."
-                    + " Lấy dải order nhỏ nhất ({}). Quản trị cần sửa lại dải.",
+                "Result band configuration OVERLAPS: the total score {} matches {} bands of rubricVersionId={}."
+                    + " Using the band with the smallest order ({}). An admin needs to fix the bands.",
                 totalScore, matchingBands.size(), policy.getRubricVersionId(),
                 matchingBands.get(0).getCode()
             );
@@ -352,12 +352,12 @@ public class AssessmentSessionResultCalculator {
     }
 
     /**
-     * Sàn thang của rubric mà policy này dùng -- điểm cho một phần/bài không có gì để tính.
+     * The floor of the rubric scale used by this policy -- the score of a section/submission that has nothing to compute.
      *
-     * <p>Trước 2026-08-11 những chỗ đó trả thẳng 0. Số 0 chỉ đúng khi thang bắt đầu từ 0; thang
-     * 4-10 thì nó nằm dưới sàn và không dải xếp loại nào chứa được.
+     * <p>Before 2026-08-11 those places returned a plain 0. 0 is only right when the scale starts at 0; on a
+     * 4-10 scale it sits below the floor and no classification band can contain it.
      *
-     * <p>Không tra được rubric version thì lùi về 0, giữ hành vi cũ cho dữ liệu thiếu cấu hình.
+     * <p>If the rubric version cannot be resolved, fall back to 0, keeping the old behavior for data with missing configuration.
      */
     private BigDecimal resolveScaleFloor(AssessmentPolicy policy) {
         if (policy.getRubricVersionId() == null) {
@@ -370,24 +370,24 @@ public class AssessmentSessionResultCalculator {
     }
 
     /**
-     * Chuẩn hoá điểm phần: {@code Σ(điểm_câu × trọng_số_câu) / Σ trọng_số_câu}.
+     * Normalizes the section score: {@code Σ(questionScore × questionWeight) / Σ questionWeight}.
      *
-     * <p>Phép chia này THÊM 2026-08-11. Trước đó tầng câu→phần chỉ cộng tích mà không chia, trong
-     * khi tầng phần→tổng ngay bên dưới lại có chia -- hai quy ước ngược nhau trong cùng một hàm.
-     * Nó vô hại đúng một trường hợp: trọng số các câu trong phần cộng lại vừa bằng 1. Lệch khỏi đó
-     * là điểm phần rời khỏi thang rubric, và khi tổng điểm rời thang thì KHÔNG dải xếp loại nào
-     * khớp -- học sinh có điểm mà không có xếp loại.
+     * <p>This division was ADDED on 2026-08-11. Before that, the question→section level only summed the products
+     * without dividing, while the section→total level right below it did divide -- two opposite conventions in the
+     * same function. It was harmless in exactly one case: the question weights in a section add up to exactly 1.
+     * Any deviation makes the section score leave the rubric scale, and when the total leaves the scale NO
+     * classification band matches -- the student has a score but no classification.
      *
-     * <p>Ví dụ đã đo: một phần có 2 câu, mỗi câu trọng số 1.00, hai câu được 83.47 và 74.78 trên
-     * thang 100. Bản cũ cho điểm phần 158.25; bản này cho 79.13.
+     * <p>A measured example: a section with 2 questions, each of weight 1.00, scoring 83.47 and 74.78 on a
+     * scale of 100. The old version gave a section score of 158.25; this version gives 79.13.
      *
-     * <p>Hai mức lùi khi không chia được, cả hai đều cho ra điểm NẰM TRONG thang:
+     * <p>Two fallbacks when the division is impossible, both producing a score INSIDE the scale:
      *
      * <ul>
-     *   <li>Mọi câu trong phần đều trọng số 0 -- trả trung bình cộng các câu. Đọc đúng ý "không ai
-     *       khai trọng số thì các câu ngang nhau", chứ không phải "mọi câu đều vô giá trị": bản
-     *       trước trả về tổng đã nhân, tức 0, và trên thang 4-10 thì 0 nằm ngoài thang.
-     *   <li>Phần không có câu nào -- trả sàn thang, cũng vì lý do đó.
+     *   <li>Every question in the section has weight 0 -- return the arithmetic mean of the questions. This reads the
+     *       intent "if nobody declared weights, the questions are equal", not "every question is worthless": the
+     *       previous version returned the weighted sum, i.e. 0, and on a 4-10 scale 0 is outside the scale.
+     *   <li>A section with no question -- return the scale floor, for the same reason.
      * </ul>
      */
     private BigDecimal normalizedSectionScore(
@@ -436,7 +436,7 @@ public class AssessmentSessionResultCalculator {
         List<AssessmentPaperSection> orderedSections,
         List<AssessmentItemResponse> responses,
         Map<UUID, AssessmentPaperItem> paperItemsById,
-        /** Sàn thang rubric -- điểm của một phần/bài không có gì để tính. */
+        /** The rubric scale floor -- the score of a section/submission that has nothing to compute. */
         BigDecimal scaleFloor
     ) {
     }
@@ -477,7 +477,7 @@ public class AssessmentSessionResultCalculator {
     ) {
     }
 
-    /** Kết quả "chấm thử": chỉ những gì màn chấm cần, không có gì để ghi xuống DB. */
+    /** Result of a "trial grading": only what the grading screen needs, nothing to be written to the DB. */
     public record PreviewedAssessmentSessionResult(
         BigDecimal totalScore,
         String resultBandName,

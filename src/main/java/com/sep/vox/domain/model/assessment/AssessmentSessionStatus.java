@@ -10,8 +10,8 @@ public enum AssessmentSessionStatus {
     INTERRUPTED,
     GRADING,
     GRADED,
-    EXPIRED, // hết thời gian nộp
-    GRADING_FAILED, // AI chấm lỗi
+    EXPIRED, // submission time ran out
+    GRADING_FAILED, // AI grading failed
     /**
      * Soft-deleted (see {@code DeleteAssessmentSessionUseCase}). Not a step in the lifecycle of an assessment attempt
      * but a stopping point.
@@ -30,14 +30,14 @@ public enum AssessmentSessionStatus {
     DELETED;
 
     /**
-     * Các trạng thái mà một phiên thi vẫn còn được coi là đang dùng được: học viên có thể vào lại,
-     * và hệ thống vẫn phải nhận dữ liệu giám sát của phiên đó.
+     * The statuses in which an assessment session is still considered usable: the student can re-enter,
+     * and the system must still accept the monitoring data of that session.
      *
-     * <p>Định nghĩa nằm ở đây thay vì viết {@code EnumSet.of(...)} tại từng nơi dùng, vì trước đây
-     * hai chỗ đã lệch nhau: luồng vào thi coi INTERRUPTED là vào lại được, còn luồng phát token
-     * stream chỉ chấp nhận IN_PROGRESS - nên đúng tình huống cần nhất (máy học viên mất kết nối rồi
-     * quay lại với các đoạn ghi đang nằm trong buffer) lại là tình huống không xin được token để
-     * đẩy dữ liệu lên.
+     * <p>Defined here instead of writing {@code EnumSet.of(...)} at each place of use, because previously the two
+     * places drifted apart: the enter-exam flow treated INTERRUPTED as re-enterable, while the stream token
+     * issuing flow only accepted IN_PROGRESS - so precisely the situation that needs it most (the student's machine
+     * loses connection and comes back with recording chunks sitting in the buffer) was the one where no token could
+     * be obtained to push the data up.
      */
     public static final Set<AssessmentSessionStatus> RESUMABLE =
         Collections.unmodifiableSet(EnumSet.of(IN_PROGRESS, INTERRUPTED));

@@ -14,9 +14,9 @@ import com.sep.vox.infrastructure.persistence.entity.question.QuestionBankJpaEnt
 public interface SpringDataQuestionBankRepository extends JpaRepository<QuestionBankJpaEntity, UUID> {
 
     /**
-     * Trọn danh sách ngân hàng của MỘT phạm vi sở hữu, cho import đối chiếu trùng code.
-     * {@code schoolId} null nghĩa là phạm vi hệ thống (ngân hàng SYSTEM không thuộc trường nào),
-     * nên phải so bằng {@code IS NULL} chứ không so bằng tham số.
+     * The complete list of banks of ONE ownership scope, for import duplicate-code matching.
+     * A null {@code schoolId} means system scope (SYSTEM banks belong to no school),
+     * so it must be compared with {@code IS NULL} and not with a parameter.
      */
     @Query("""
         SELECT qb

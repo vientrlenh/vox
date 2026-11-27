@@ -11,39 +11,39 @@ import com.sep.vox.domain.model.school.SchoolBalanceEntry;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 
 /**
- * Sổ cái append-only của SchoolBalance -- CỐ Ý không có update/delete: sửa một bút toán đã ghi là sai
- * nghiệp vụ, muốn điều chỉnh thì ghi thêm dòng ADJUSTMENT.
+ * The append-only ledger of SchoolBalance -- DELIBERATELY has no update/delete: editing a recorded entry is wrong by
+ * business rule, to adjust you append an ADJUSTMENT row.
  *
- * <p>Mọi khoảng thời gian ở đây là NỬA MỞ {@code [from, to)} -- xem javadoc từng method.
+ * <p>Every time range here is HALF-OPEN {@code [from, to)} -- see the javadoc of each method.
  */
 public interface SchoolBalanceEntryRepository {
     Optional<SchoolBalanceEntry> findById(UUID id);
     SchoolBalanceEntry save(SchoolBalanceEntry entry);
 
     /**
-     * Sao kê của trường, mới nhất trước (khớp idx_school_balance_entries_school_occurred).
-     * {@code page} đếm TỪ 1 theo quy ước chung của dự án.
+     * Statement of the school, newest first (matches idx_school_balance_entries_school_occurred).
+     * {@code page} counts FROM 1 per the project-wide convention.
      *
-     * @param entryType null = không lọc theo loại bút toán
-     * @param from bao gồm, {@code to} KHÔNG bao gồm. Cả hai BẮT BUỘC khác null -- người gọi muốn
-     *     "toàn bộ lịch sử" thì truyền {@link java.time.Instant#EPOCH} và thời điểm hiện tại. Cố ý
-     *     không nhận null: một tham số Instant null trong JPQL buộc phải bọc CAST để Postgres suy
-     *     được kiểu, và cái bẫy đó không đáng đánh đổi lấy một tham số tiện tay.
+     * @param entryType null = no filter by entry type
+     * @param from inclusive, {@code to} is NOT inclusive. Both MUST be non-null -- a caller who wants
+     *     "the whole history" passes {@link Instant#EPOCH} and the current time. Deliberately
+     *     does not accept null: a null Instant parameter in JPQL has to be wrapped in a CAST so Postgres can infer
+     *     the type, and that trap is not worth trading for a convenience parameter.
      */
     PageResult<SchoolBalanceEntry> findBySchoolId(
         UUID schoolId, SchoolBalanceEntryType entryType, Instant from, Instant to, int page, int size);
 
-    /** @param from bao gồm, {@code to} KHÔNG bao gồm -- hai kỳ liền nhau không đếm trùng mốc giao. */
+    /** @param from inclusive, {@code to} is NOT inclusive -- two consecutive periods do not count the shared boundary twice. */
     List<SchoolBalanceEntry> findBySchoolIdInRange(UUID schoolId, Instant from, Instant to);
 
     /**
-     * Chốt chặn idempotent cho đường cộng tiền, soi đúng cặp cột của
-     * uq_school_balance_entries_order (order_id, entry_type): webhook cổng và PendingOrderReconciler
-     * có thể cùng chốt một đơn, không có guard này thì tiền vào số dư hai lần.
+     * Idempotency guard for the money-adding path, matching exactly the column pair of
+     * uq_school_balance_entries_order (order_id, entry_type): the gateway webhook and PendingOrderReconciler
+     * may settle the same order, and without this guard the money enters the balance twice.
      */
     boolean existsByOrderIdAndEntryType(UUID orderId, SchoolBalanceEntryType entryType);
 
-    /** Trả 0 (không phải null) khi không có bút toán nào. {@code from} bao gồm, {@code to} không. */
+    /** Returns 0 (not null) when there are no entries. {@code from} is inclusive, {@code to} is not. */
     BigDecimal sumAmountBySchoolIdAndEntryTypeInRange(
         UUID schoolId, SchoolBalanceEntryType entryType, Instant from, Instant to);
 }

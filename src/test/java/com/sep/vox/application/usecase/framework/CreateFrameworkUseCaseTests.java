@@ -33,6 +33,6 @@ class CreateFrameworkUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessage("Mã framework đã tồn tại");
+            .hasMessage("Framework code already exists");
     }
 }

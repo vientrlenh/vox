@@ -69,7 +69,7 @@ class QuestionImportCommitHandlerTests {
         assertThat(result.created()).isZero();
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(row.getStatus()).isEqualTo(ImportRowStatus.FAILED);
-        assertThat(row.getErrorsJson()).contains("Không thể tạo câu hỏi từ dữ liệu import");
+        assertThat(row.getErrorsJson()).contains("Cannot create a question from the import data");
     }
 
     private ImportRow row() {

@@ -84,7 +84,7 @@ public class RedisCacheManagerRepository implements CacheManagerPort {
             return deleted != null && deleted > 0;
         } catch (RuntimeException exception) {
             log.warn(
-                "Không nhả được khoá {} -- để TTL tự dọn.", key, exception
+                "Could not release lock {} -- leaving it for the TTL to clean up.", key, exception
             );
             return false;
         }

@@ -36,14 +36,14 @@ public class DeleteQuestionBankGradeUseCase implements IUseCase<DeleteQuestionBa
             .orElse(null);
 
         QuestionBank questionBank = questionBankRepository.findById(input.questionBankId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
 
         QuestionBankGrade grade = questionBankGradeRepository.findById(input.gradeRowId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khối lớp đã gắn"));
+            .orElseThrow(() -> new ResourceNotFoundException("Attached grade level not found"));
         if (!grade.getQuestionBankId().equals(questionBank.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy khối lớp đã gắn");
+            throw new ResourceNotFoundException("Attached grade level not found");
         }
 
         questionBankGradeRepository.deleteById(grade.getId());
@@ -53,12 +53,12 @@ public class DeleteQuestionBankGradeUseCase implements IUseCase<DeleteQuestionBa
     private void validateAccess(QuestionBankOwnerType ownerType, UUID schoolId, UUID currentSchoolId) {
         if (ownerType == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
+                throw new ForbiddenException("Access denied");
             }
             return;
         }
         if (currentSchoolId == null || !currentSchoolId.equals(schoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 }

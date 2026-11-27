@@ -74,7 +74,6 @@ public class GraphQLScoringRuleController {
                 new SearchSchoolScoringRuleQuery(schoolId, policyId, keyword, isActive, page, size));
     }
 
-    // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy hệ thống.
     @QueryMapping(name = "viewAllSystemScoringRules")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public PageResult<ScoringRuleDto> viewAllSystemScoringRules(
@@ -85,7 +84,6 @@ public class GraphQLScoringRuleController {
         return viewAllSystemScoringRuleUseCase.execute(new ViewAllScoringRuleQuery(policyId, page, size));
     }
 
-    // Xem toàn bộ (phân trang) danh sách Scoring Rule thuộc 1 Assessment Policy của trường học.
     @QueryMapping(name = "viewAllSchoolScoringRules")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public PageResult<ScoringRuleDto> viewAllSchoolScoringRules(
@@ -98,7 +96,6 @@ public class GraphQLScoringRuleController {
                 new ViewAllSchoolScoringRuleQuery(schoolId, policyId, page, size));
     }
 
-    // Xem chi tiết 1 Scoring Rule của Assessment Policy hệ thống.
     @QueryMapping(name = "viewSystemScoringRuleDetails")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ScoringRuleDto viewSystemScoringRuleDetails(
@@ -107,7 +104,6 @@ public class GraphQLScoringRuleController {
         return viewSystemScoringRuleDetailUseCase.execute(new ViewScoringRuleDetailQuery(policyId, ruleId));
     }
 
-    // Xem chi tiết 1 Scoring Rule của Assessment Policy của trường học.
     @QueryMapping(name = "viewSchoolScoringRuleDetails")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ScoringRuleDto viewSchoolScoringRuleDetails(
@@ -117,7 +113,7 @@ public class GraphQLScoringRuleController {
         return viewSchoolScoringRuleDetailUseCase.execute(new ViewSchoolScoringRuleDetailQuery(schoolId, policyId, ruleId));
     }
 
-    // Cập nhật Scoring Rule (chỉ khi Policy đang DRAFT - business rule được kiểm tra trong UseCase)
+    // Updates a Scoring Rule (only when the Policy is DRAFT - the business rule is checked in the UseCase)
     @MutationMapping(name = "updateSystemScoringRule")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public UUID updateSystemScoringRule(

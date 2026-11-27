@@ -52,7 +52,7 @@ public class AssessmentResultAccessService {
     @Transactional(readOnly = true)
     public SessionAccess authorizeSession(UUID sessionId) {
         AssessmentSession session = assessmentSessionRepository.findById(sessionId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment session not found"));
         boolean candidateOwner = authorize(session.getAssessmentId(), session.getCandidateId());
         return new SessionAccess(session, candidateOwner);
     }
@@ -60,7 +60,7 @@ public class AssessmentResultAccessService {
     @Transactional(readOnly = true)
     public ResponseAccess authorizeResponse(UUID answerId) {
         AssessmentItemResponse response = assessmentItemResponseRepository.findById(answerId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy câu trả lời của thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate's response not found"));
         return new ResponseAccess(response, authorizeSession(response.getSessionId()));
     }
 
@@ -75,9 +75,9 @@ public class AssessmentResultAccessService {
     }
 
     /**
-     * Như {@link #authorizeSession}, nhưng chính chủ chỉ qua được khi bài đã có kết luận.
-     * Dùng cho các endpoint trả chi tiết chấm điểm — màn tổng kết quả thì che field chứ
-     * không chặn, vì trang vẫn phải mở được để học sinh thấy bài mình đang ở đâu.
+     * Like {@link #authorizeSession}, but the owner only gets through once the assessment has a conclusion.
+     * Used for endpoints that return grading detail — the results summary screen hides fields
+     * instead of blocking, because the page must still open so the student can see where their assessment stands.
      */
     @Transactional(readOnly = true)
     public SessionAccess requireCandidateVisibleSession(UUID sessionId) {
@@ -95,15 +95,15 @@ public class AssessmentResultAccessService {
 
     private void requireVisibleToCaller(SessionAccess access) {
         if (!access.candidateOwner()) {
-            // Giáo viên / admin: quyền "ai" đã đủ, không có luật "khi nào" — họ cần thấy
-            // điểm chưa công bố để có căn cứ mà chấm.
+            // Teacher / admin: the "who" permission is enough, there is no "when" rule — they need to see
+            // unpublished scores to have a basis for grading.
             return;
         }
         AssessmentCandidateResultStatus status = assessmentCandidateResultRepository.findBySessionId(access.session().getId())
             .map(result -> result.getStatus())
             .orElse(null);
         if (!AssessmentCandidateResultStatus.isVisibleToCandidate(status)) {
-            throw new ForbiddenException("Kết quả bài thi chưa được công bố");
+            throw new ForbiddenException("The assessment result has not been published");
         }
     }
 
@@ -115,18 +115,18 @@ public class AssessmentResultAccessService {
         }
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(candidateId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của phiên thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the assessment session not found"));
         if (candidate.getStudentId().equals(currentUserId)) {
             return true;
         }
 
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         if (isSchoolAdminOfAssessmentSchool(currentUserId, assessment) || isMemberWithAccess(assessmentId, currentUserId)) {
             return false;
         }
 
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 
     private boolean isSchoolAdminOfAssessmentSchool(UUID currentUserId, Assessment assessment) {

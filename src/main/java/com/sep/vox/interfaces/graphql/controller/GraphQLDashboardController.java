@@ -80,10 +80,10 @@ public class GraphQLDashboardController {
     }
 
     /**
-     * Chỗ đáp của dòng "AI chấm lỗi, chưa ai xử lý" trên trang tổng quan của trường.
+     * Landing spot of the "AI grading failed, nobody has handled it yet" row on the school overview page.
      *
-     * <p>Không nhận schoolId: use case lấy phạm vi từ người đang đăng nhập, nên một quản trị trường
-     * không có đường nào đọc bài của trường khác qua query này.
+     * <p>Takes no schoolId: the use case derives the scope from the logged-in user, so a school admin
+     * has no way to read another school's results through this query.
      */
     @QueryMapping(name = "schoolGradingFailures")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")

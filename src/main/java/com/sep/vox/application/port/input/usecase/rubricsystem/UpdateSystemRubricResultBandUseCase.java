@@ -48,7 +48,7 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
         requireActiveCurrentUser();
 
         RubricResultBand resultBand = rubricResultBandRepository.findById(command.resultBandId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Dải điểm Kết quả (Result Band) này."));
+                .orElseThrow(() -> new ResourceNotFoundException("This Result Band was not found."));
         RubricVersion version = loadDraftVersionOfSystemRubric(resultBand);
 
         // The code must not change after creation, so it is never updated.
@@ -59,7 +59,7 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
         String safeDesc = (command.description() != null && !descriptionBlank) ? StringNormalization.trimAndCollapseSpaces(command.description()) : null;
 
         if (command.order() != null && command.order() <= 0) {
-            throw new IllegalArgumentException("Thứ tự (order) phải lớn hơn 0.");
+            throw new IllegalArgumentException("The order must be greater than 0.");
         }
         requireValidRangeAndOrder(command, resultBand, version, safeName);
 
@@ -71,22 +71,22 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản không tồn tại hoặc bị khóa.");
+            throw new UnauthorizedException("The account does not exist or is locked.");
         }
     }
 
     // A ResultBand hangs directly off the Version, and that Version must be a DRAFT of a SYSTEM rubric.
     private RubricVersion loadDraftVersionOfSystemRubric(RubricResultBand resultBand) {
         RubricVersion version = rubricVersionRepository.findById(resultBand.getRubricVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric Version chứa Dải điểm Kết quả này."));
+                .orElseThrow(() -> new ResourceNotFoundException("The Rubric Version containing this Result Band was not found."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ có thể sửa Dải điểm Kết quả khi phiên bản Rubric đang ở trạng thái DRAFT.");
+            throw new IllegalArgumentException("Result Bands can only be edited while the Rubric version is in DRAFT status.");
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric gốc."));
+                .orElseThrow(() -> new ResourceNotFoundException("Parent Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Hành động bị từ chối: Dải điểm Kết quả này thuộc về Trường học, không phải của Hệ thống.");
+            throw new ForbiddenException("Action denied: this Result Band belongs to a School, not to the System.");
         }
         return version;
     }
@@ -97,7 +97,7 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
         BigDecimal finalMaxScore = command.scoreMax() != null ? command.scoreMax() : resultBand.getScoreMax();
 
         if (finalMinScore.compareTo(finalMaxScore) > 0) {
-            throw new IllegalArgumentException("Điểm sàn (scoreMin) không được lớn hơn điểm trần (scoreMax).");
+            throw new IllegalArgumentException("The floor score (scoreMin) must not be greater than the ceiling score (scoreMax).");
         }
 
         List<RubricResultBand> siblingBands = rubricResultBandRepository.findByRubricVersionId(resultBand.getRubricVersionId())
@@ -136,7 +136,7 @@ public class UpdateSystemRubricResultBandUseCase implements IUseCase<UpdateSyste
                     command.order()
             );
         } catch (DataConflictException e) {
-            throw new IllegalArgumentException("Không thể cập nhật Dải điểm Kết quả do dữ liệu bị trùng hoặc không hợp lệ.");
+            throw new IllegalArgumentException("Cannot update the Result Band because the data is duplicated or invalid.");
         }
     }
 }

@@ -20,22 +20,22 @@ import com.sep.vox.application.port.output.PracticeGenerationConfigPort;
 import com.sep.vox.domain.model.personalization.PracticeQuestion;
 
 /**
- * Resolve ĐÚNG 1 câu MAIN tiếp theo trong lúc phiên luyện đang chạy -- gọi từ Python (nội bộ,
- * PracticeInternalSecretFilter bảo vệ) khi decision.should_continue == False. Xem gói 11 mục
- * 2.4 bước 4.
+ * Resolves EXACTLY ONE next MAIN question while the practice session is running -- called from Python (internal,
+ * protected by PracticeInternalSecretFilter) when decision.should_continue == False. See package 11 section 2.4
+ * step 4.
  *
- * KHÔNG @Transactional ở tầng này: selectionService.resolveNextQuestion (gọi trong doExecute)
- * có thể gọi LLM sinh câu hỏi trực tiếp (bậc 4, 10-20s) khi topic còn thưa câu -- giữ 1
- * transaction/connection DB mở suốt lúc đó từng gây HikariCP cạn pool dưới tải thật (xem
- * BuildPracticePaperUseCase, cùng lớp bug, sửa cùng đợt).
+ * NOT @Transactional at this layer: selectionService.resolveNextQuestion (called inside doExecute) may call the LLM
+ * to generate a question directly (band 4, 10-20s) when the topic is short of questions -- holding 1 DB
+ * transaction/connection open the whole time once exhausted the HikariCP pool under real load (see
+ * BuildPracticePaperUseCase, the same class of bug, fixed in the same round).
  *
- * Việc serialize các lời gọi trùng cho CÙNG 1 session (Python's timeout-retry-8s racing lần gọi
- * gốc vẫn đang chạy, xem practice_session_client.py) trước đây dựa vào SELECT ... FOR UPDATE giữ
- * suốt cả method -- giờ thay bằng khoá JVM keyed theo sessionId, giữ đúng phạm vi tương đương
- * (đủ vì Python luôn retry vào lại đúng instance vox-app này) nhưng không chiếm connection DB khi
- * đang chờ mạng. Transaction thật (FOR UPDATE + đọc, rồi ghi) được tách thành 2 bean riêng
- * (ResolveNextPracticeQuestionClaimService / ...PersistenceService) bao quanh đúng phần DB, với
- * cuộc gọi LLM chậm nằm GIỮA, ngoài mọi transaction.
+ * Serializing duplicate calls for the SAME session (Python's timeout-retry-8s racing the original call that is still
+ * running, see practice_session_client.py) used to rely on SELECT ... FOR UPDATE held across the whole method -- now
+ * replaced by a JVM lock keyed by sessionId, keeping an equivalent scope (enough because Python always retries into
+ * this same vox-app instance) but not occupying a DB connection while waiting on the network. The real transaction
+ * (FOR UPDATE + read, then write) is split into 2 separate beans
+ * (ResolveNextPracticeQuestionClaimService / ...PersistenceService) wrapping exactly the DB part, with the slow LLM
+ * call in the MIDDLE, outside every transaction.
  */
 @Service
 @RequiredArgsConstructor
@@ -122,16 +122,16 @@ public class ResolveNextPracticeQuestionUseCase {
     }
 
     /**
-     * Cổng NGOÀI: khoá phân tán, chặn trùng giữa các pod.
+     * The OUTER gate: a distributed lock, blocking duplicates between pods.
      *
-     * <p>Người trượt khoá phải CHỜ chứ không được trả lỗi: chờ xong thì {@code claim()} thấy câu đã
-     * được ghi và trả về qua nhánh {@code idempotentQuestion} -- đúng thứ khoá JVM đang làm hôm
-     * nay, và đúng hợp đồng Python trông đợi ("a retry returns that SAME item instead of picking a
-     * new one").
+     * <p>Whoever loses the lock must WAIT rather than return an error: once done waiting, {@code claim()} sees the
+     * question was already written and returns it through the {@code idempotentQuestion} branch -- exactly what the
+     * JVM lock does today, and exactly the contract Python expects ("a retry returns that SAME item instead of
+     * picking a new one").
      *
-     * <p>Nhả khoá nằm ở {@code finally} NGOÀI {@code doExecute}, tức sau khi transaction ghi câu đã
-     * commit. Nhả sớm hơn là người chờ chạy {@code claim()} lúc câu chưa commit rồi lại sinh câu
-     * thứ hai -- đúng lỗi vừa sửa.
+     * <p>The lock is released in the {@code finally} OUTSIDE {@code doExecute}, i.e. after the transaction that
+     * writes the question has committed. Releasing earlier lets a waiter run {@code claim()} while the question is
+     * not yet committed and generate a second question -- exactly the bug that was just fixed.
      */
     private Result executeWithClusterLock(UUID sessionId) {
         String key = CLUSTER_LOCK_KEY_PREFIX + sessionId;
@@ -164,23 +164,23 @@ public class ResolveNextPracticeQuestionUseCase {
         // outlive its TTL). Carry on without the lock instead of throwing: at this point throwing ends the
         // student's practice session, while the risk of generating a duplicate is already very small.
         log.warn(
-            "Chờ quá {} mà không lấy được khoá {} -- chạy tiếp không khoá.", ttl, key
+            "Waited more than {} without getting lock {} -- continuing without the lock.", ttl, key
         );
         return doExecute(sessionId);
     }
 
     /**
-     * TTL suy TỪ cấu hình, không viết cứng: ai chỉnh
-     * {@code PERSONALIZATION_ONLINE_GENERATION_BUDGET} lên thì TTL tự dài theo. Viết cứng một con
-     * số ở đây là gài mìn cho lần chỉnh cấu hình sau.
+     * The TTL is DERIVED from configuration, not hard-coded: whoever raises
+     * {@code PERSONALIZATION_ONLINE_GENERATION_BUDGET} makes the TTL grow with it. Hard-coding a number here
+     * would plant a mine for the next configuration change.
      */
     private Duration clusterLockTtl() {
         return generationConfig.onlineBudget().plus(CLUSTER_LOCK_MARGIN);
     }
 
     /**
-     * Bị ngắt thì đặt lại cờ rồi chờ tiếp, KHÔNG thoát sớm -- {@code ReentrantLock.lock()} mà nó
-     * thay thế cũng không ngắt được. Vòng lặp vẫn dừng nhờ {@code deadline}.
+     * When interrupted, restore the flag and keep waiting, do NOT leave early -- the {@code ReentrantLock.lock()} it
+     * replaces cannot be interrupted either. The loop still ends because of {@code deadline}.
      */
     private void sleepQuietly() {
         try {
@@ -248,19 +248,19 @@ public class ResolveNextPracticeQuestionUseCase {
     }
 
     /**
-     * May đo thời lượng câu hỏi theo ngân sách CÒN LẠI của phiên.
+     * Tailors the question duration to the session's REMAINING budget.
      *
-     * Khi phần còn lại không đủ cho một câu cỡ bình thường, thay vì từ chối phát câu (bỏ
-     * phí phần thời gian đó) thì cắt câu cho vừa: trần = đúng số giây còn lại, sàn = một
-     * nửa. Học sinh vẫn nói được thêm một lượt trọn vẹn theo cỡ nhỏ hơn, rồi phiên đóng.
+     * When the remainder is not enough for a normal-sized question, instead of refusing to issue the question (wasting
+     * that time) it cuts the question to fit: ceiling = exactly the seconds left, floor = half of it. The student can
+     * still speak one more complete turn at a smaller size, and then the session closes.
      *
-     * KHÔNG ghi đè vào bản ghi câu hỏi trong kho -- câu hỏi dùng chung cho mọi học sinh,
-     * sửa nó là làm hỏng cho người khác. Chỉ đổi con số gửi xuống cho phiên NÀY.
+     * Does NOT write over the question record in the pool -- the question is shared by every student, and editing it
+     * would break it for others. Only the number sent down for THIS session is changed.
      */
     private QuestionPayload toPayload(PracticeQuestion question, int slot, int remainingSeconds) {
-        // > 1 chứ không > 0: còn đúng 1 giây thì cắt ra sàn = trần = 1, mà sàn phải NHỎ HƠN
-        // trần -- bằng nhau thì SignalNode coi mọi câu trả lời là chưa đạt và hỏi mãi.
-        // Dưới ngưỡng đó cứ giữ nguyên số của câu; phiên sẽ đóng ở chốt ngân sách lần sau.
+        // > 1 and not > 0: with exactly 1 second left the cut gives floor = ceiling = 1, but the floor must be SMALLER
+        // than the ceiling -- when they are equal SignalNode treats every answer as not good enough and asks forever.
+        // Below that threshold just keep the question's own number; the session closes at the next budget check.
         boolean last = remainingSeconds > 1 && remainingSeconds < question.getMaxResponseSeconds();
         int maxSeconds = last ? remainingSeconds : question.getMaxResponseSeconds();
         int minSeconds = Math.max(1, Math.min(

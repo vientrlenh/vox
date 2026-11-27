@@ -32,7 +32,7 @@ public class JpaPracticeTopicQueryRepository implements PracticeTopicQueryReposi
 
     @Override
     public List<TopicSearchRowInfo> findActiveByIds(UUID studentId, java.util.Collection<UUID> topicIds) {
-        // IN () rỗng là lỗi cú pháp SQL, không phải "không khớp gì" -- chặn từ đây.
+        // An empty IN () is an SQL syntax error, not "matches nothing" -- blocked here.
         return topicIds.isEmpty() ? List.of() : repository.findActiveByIds(studentId, topicIds);
     }
 

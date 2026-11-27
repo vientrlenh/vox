@@ -94,7 +94,7 @@ class ViewMyGradingQueueScopeTests {
         assertThat(kind.getValue()).isEqualTo("CENTRALIZED");
     }
 
-    /** Dropdown và bảng phải lọc trên cùng một tập, nếu không nó liệt kê ra kỳ thi rỗng. */
+    /** The dropdown and the table must filter on the same set, otherwise it lists an empty assessment. */
     @Test
     void should_scope_the_assessment_picker_to_the_caller_and_to_centralized_assessments() {
         assessmentsUseCase.execute(null);

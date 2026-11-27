@@ -80,7 +80,7 @@ public class RestAssessmentBlueprintController {
     public ResponseEntity<ApiResponse<AssessmentBlueprintDto>> create(@Valid @RequestBody CreateAssessmentBlueprintRequest request) {
         AssessmentBlueprintDto data = createAssessmentBlueprintUseCase.execute(CreateAssessmentBlueprintRequest.toCommand(request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo blueprint đề thi thành công", data));
+            .body(ApiResponse.success("Assessment blueprint created successfully", data));
     }
 
     @PutMapping("/assessment-blueprints/{id}")
@@ -89,7 +89,7 @@ public class RestAssessmentBlueprintController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentBlueprintRequest request) {
         AssessmentBlueprintDto data = updateAssessmentBlueprintUseCase.execute(UpdateAssessmentBlueprintRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật blueprint đề thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Assessment blueprint updated successfully", data));
     }
 
     @PatchMapping("/assessment-blueprints/{id}/active")
@@ -100,14 +100,14 @@ public class RestAssessmentBlueprintController {
         AssessmentBlueprintDto data = updateAssessmentBlueprintActiveStatusUseCase.execute(
             new UpdateAssessmentBlueprintActiveStatusCommand(id, request.isActive())
         );
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái kích hoạt blueprint thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Blueprint activation status updated successfully", data));
     }
 
     @DeleteMapping("/assessment-blueprints/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") UUID id) {
         deleteAssessmentBlueprintUseCase.execute(new DeleteAssessmentBlueprintCommand(id));
-        return ResponseEntity.ok(ApiResponse.success("Xóa blueprint đề thi thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Assessment blueprint deleted successfully"));
     }
 
     @PostMapping("/assessment-blueprints/{id}/versions")
@@ -117,7 +117,7 @@ public class RestAssessmentBlueprintController {
             @Valid @RequestBody CreateAssessmentBlueprintVersionRequest request) {
         AssessmentBlueprintVersionDto data = createAssessmentBlueprintVersionUseCase.execute(CreateAssessmentBlueprintVersionRequest.toCommand(id, request));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo version blueprint đề thi thành công", data));
+            .body(ApiResponse.success("Assessment blueprint version created successfully", data));
     }
 
     @PostMapping("/assessment-blueprint-versions/{id}/duplicate")
@@ -125,7 +125,7 @@ public class RestAssessmentBlueprintController {
     public ResponseEntity<ApiResponse<AssessmentBlueprintVersionDto>> duplicateVersion(@PathVariable("id") UUID id) {
         AssessmentBlueprintVersionDto data = duplicateAssessmentBlueprintVersionUseCase.execute(new DuplicateAssessmentBlueprintVersionCommand(id));
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Nhân bản version blueprint đề thi thành công", data));
+            .body(ApiResponse.success("Assessment blueprint version duplicated successfully", data));
     }
 
     @PutMapping("/assessment-blueprint-versions/{id}")
@@ -134,7 +134,7 @@ public class RestAssessmentBlueprintController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateAssessmentBlueprintVersionRequest request) {
         AssessmentBlueprintVersionDto data = updateAssessmentBlueprintVersionUseCase.execute(UpdateAssessmentBlueprintVersionRequest.toCommand(id, request));
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật version blueprint đề thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Assessment blueprint version updated successfully", data));
     }
 
     @PatchMapping("/assessment-blueprint-versions/{id}/status")
@@ -145,7 +145,7 @@ public class RestAssessmentBlueprintController {
         AssessmentBlueprintVersionDto data = updateAssessmentBlueprintVersionStatusUseCase.execute(
             UpdateAssessmentBlueprintVersionStatusRequest.toCommand(id, request)
         );
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái version blueprint đề thi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Assessment blueprint version status updated successfully", data));
     }
 
     @PostMapping("/assessment-blueprint-versions/{versionId}/sections")
@@ -157,7 +157,7 @@ public class RestAssessmentBlueprintController {
             CreateAssessmentBlueprintSectionItemRequest.toCommand(versionId, request)
         );
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo section thành công", data));
+            .body(ApiResponse.success("Section created successfully", data));
     }
 
     @PutMapping("/assessment-blueprint-sections/{sectionId}")
@@ -168,14 +168,14 @@ public class RestAssessmentBlueprintController {
         AssessmentBlueprintSectionDto data = updateAssessmentBlueprintSectionUseCase.execute(
             UpdateAssessmentBlueprintSectionRequest.toCommand(sectionId, request)
         );
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật section thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Section updated successfully", data));
     }
 
     @DeleteMapping("/assessment-blueprint-sections/{sectionId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSection(@PathVariable("sectionId") UUID sectionId) {
         deleteAssessmentBlueprintSectionUseCase.execute(new DeleteAssessmentBlueprintSectionCommand(sectionId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa section thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Section deleted successfully"));
     }
 
     @PostMapping("/assessment-blueprint-sections/{sectionId}/slots")
@@ -187,7 +187,7 @@ public class RestAssessmentBlueprintController {
             CreateAssessmentBlueprintSlotItemRequest.toCommand(sectionId, request)
         );
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(ApiResponse.success("Tạo slot thành công", data));
+            .body(ApiResponse.success("Slot created successfully", data));
     }
 
     @PutMapping("/assessment-blueprint-slots/{slotId}")
@@ -198,20 +198,20 @@ public class RestAssessmentBlueprintController {
         AssessmentBlueprintSlotDto data = updateAssessmentBlueprintSlotUseCase.execute(
             UpdateAssessmentBlueprintSlotRequest.toCommand(slotId, request)
         );
-        return ResponseEntity.ok(ApiResponse.success("Cập nhật slot thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Slot updated successfully", data));
     }
 
     @DeleteMapping("/assessment-blueprint-slots/{slotId}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSlot(@PathVariable("slotId") UUID slotId) {
         deleteAssessmentBlueprintSlotUseCase.execute(new DeleteAssessmentBlueprintSlotCommand(slotId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa slot thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Slot deleted successfully"));
     }
 
     @DeleteMapping("/assessment-blueprint-versions/{id}")
     @PreAuthorize("hasAnyRole('TEACHER', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteVersion(@PathVariable("id") UUID id) {
         deleteAssessmentBlueprintVersionUseCase.execute(new DeleteAssessmentBlueprintVersionCommand(id));
-        return ResponseEntity.ok(ApiResponse.success("Xóa phiên bản blueprint đề thi thành công"));
+        return ResponseEntity.ok(ApiResponse.success("Assessment blueprint version deleted successfully"));
     }
 }

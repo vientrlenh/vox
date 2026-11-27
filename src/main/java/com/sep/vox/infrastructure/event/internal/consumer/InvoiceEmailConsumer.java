@@ -40,11 +40,11 @@ import com.sep.vox.domain.repository.UserRepository;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Mail báo hóa đơn đã thu tiền, gửi cho mọi SCHOOL_ADMIN của trường.
+ * Emails that an invoice has been paid, sent to every SCHOOL_ADMIN of the school.
  *
- * <p>Thay cho {@code InvoicePaidEmailListener} cũ chạy in-process sau commit. Phần dựng nội
- * dung giữ nguyên; cái đổi là nó nay nằm sau outbox nên mất tiến trình không mất thông báo,
- * và lỗi ở đây không còn dội ngược thành 500 cho webhook cổng thanh toán.
+ * <p>Replaces the old {@code InvoicePaidEmailListener} that ran in-process after commit. The content building
+ * is unchanged; what changed is that it now sits behind the outbox, so losing the process does not lose the notification,
+ * and a failure here no longer bounces back as a 500 to the payment gateway webhook.
  */
 @Component
 @RequiredArgsConstructor
@@ -104,7 +104,7 @@ public class InvoiceEmailConsumer {
     }
 
     private void skipWithoutSchoolAdmins(InvoicePaidPayloadV1 payload, UUID eventId, Acknowledgment ack) {
-        log.warn("Skip mail, trường không còn admin nào: eventId={}, schoolId={}",
+        log.warn("Skip mail, the school has no admin left: eventId={}, schoolId={}",
             eventId, payload.schoolId());
         markProcessed(eventId);
         ack.acknowledge();
@@ -112,13 +112,13 @@ public class InvoiceEmailConsumer {
 
     private void deliverInvoice(InvoicePaidPayloadV1 payload, UUID eventId) {
         String html = renderHtml(payload, eventId);
-        String subject = "Hóa đơn thanh toán #" + payload.invoiceNumber();
+        String subject = "Payment invoice #" + payload.invoiceNumber();
 
         int failed = sendToSchoolAdmins(payload.schoolAdminIds(), subject, html, eventId);
 
         if (failed > 0) {
             throw new IllegalStateException(
-                "Gửi mail hóa đơn thất bại cho " + failed + " người nhận: eventId=" + eventId);
+                "Failed to send the invoice email to " + failed + " recipients: eventId=" + eventId);
         }
 
         markProcessed(eventId);
@@ -138,7 +138,7 @@ public class InvoiceEmailConsumer {
         for (UUID recipientId : recipientIds) {
             User recipient = userRepository.findById(recipientId).orElse(null);
             if (recipient == null) {
-                log.warn("Bỏ qua người nhận không còn tồn tại: eventId={}, userId={}", eventId, recipientId);
+                log.warn("Skipping a recipient that no longer exists: eventId={}, userId={}", eventId, recipientId);
                 continue;
             }
             try {
@@ -154,7 +154,7 @@ public class InvoiceEmailConsumer {
     private String renderHtml(InvoicePaidPayloadV1 payload, UUID eventId) {
         School school = schoolRepository.findById(payload.schoolId())
             .orElseThrow(() -> new IllegalStateException(
-                "Không tìm thấy trường: eventId=" + eventId + ", schoolId=" + payload.schoolId()));
+                "School not found: eventId=" + eventId + ", schoolId=" + payload.schoolId()));
         boolean isTopUp = payload.sourceType() == InvoiceSourceType.TOPUP;
         SchoolSubscription subscription = findSubscription(payload, isTopUp, eventId);
         String itemTitle = resolveItemTitle(isTopUp, subscription, eventId);
@@ -182,22 +182,22 @@ public class InvoiceEmailConsumer {
         // A PLAN invoice whose period cannot be looked up must still fail loudly as before: that is corrupt data, not
         // a valid shape.
         if (subscription == null && !isTopUp) {
-            throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
+            throw new IllegalStateException("Subscription plan not found: eventId=" + eventId);
         }
         return subscription;
     }
 
     private String resolveItemTitle(boolean isTopUp, @Nullable SchoolSubscription subscription, UUID eventId) {
         if (isTopUp) {
-            return "Mua thêm hạn mức";
+            return "Additional quota purchase";
         }
         // The subscription null check is required here, the analyzer flags subscription.getSubscriptionPlanId() as a possible null reference
         if (subscription == null) {
-            throw new IllegalStateException("Không tìm thấy gói đăng ký: eventId=" + eventId);
+            throw new IllegalStateException("Subscription plan not found: eventId=" + eventId);
         }
         SubscriptionPlan plan = subscriptionPlanRepository.findById(subscription.getSubscriptionPlanId())
-            .orElseThrow(() -> new IllegalStateException("Không tìm thấy gói: eventId=" + eventId));
-        return "Gói " + plan.getName();
+            .orElseThrow(() -> new IllegalStateException("Plan not found: eventId=" + eventId));
+        return "Plan " + plan.getName();
     }
 
     private InvoicePaidPayloadV1 parse(String value, UUID eventId) {
@@ -205,7 +205,7 @@ public class InvoiceEmailConsumer {
             return jsonMapper.readValue(value, InvoicePaidPayloadV1.class);
         } catch (Exception e) {
             log.error("Invalid payload: eventId={}, value={}", eventId, value, e);
-            throw new IllegalStateException("Payload invoice không hợp lệ, eventId=" + eventId, e);
+            throw new IllegalStateException("Invalid invoice payload, eventId=" + eventId, e);
         }
     }
 

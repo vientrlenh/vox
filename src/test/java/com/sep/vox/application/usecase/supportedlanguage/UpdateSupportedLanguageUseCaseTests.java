@@ -121,7 +121,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         ResourceDuplicatedException exception = assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: FR");
+        assertThat(exception).hasMessage("Language already exists with code: FR");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
             any(), any(Boolean.class), any(), any(Boolean.class));
     }
@@ -156,7 +156,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Cần cung cấp ít nhất một trường để cập nhật");
+        assertThat(exception).hasMessage("At least one field must be provided to update");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
             any(), any(Boolean.class), any(), any(Boolean.class));
     }
@@ -168,7 +168,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Tên ngôn ngữ không được để trống");
+        assertThat(exception).hasMessage("Language name must not be empty");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
             any(), any(Boolean.class), any(), any(Boolean.class));
     }
@@ -191,7 +191,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Mô tả ngôn ngữ không được vượt quá 2048 ký tự");
+        assertThat(exception).hasMessage("Language description must not exceed 2048 characters");
         verify(supportedLanguageRepository, never()).updateMutableFields(any(), any(), any(Boolean.class), any(), any(Boolean.class),
             any(), any(Boolean.class), any(), any(Boolean.class));
     }
@@ -215,7 +215,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
+        assertThat(exception).hasMessage("Language not found");
     }
 
     @Test
@@ -237,7 +237,7 @@ class UpdateSupportedLanguageUseCaseTests {
 
         ResourceDuplicatedException exception = assertThrows(ResourceDuplicatedException.class, () -> useCase.execute(command));
 
-        assertThat(exception).hasMessage("Ngôn ngữ đã tồn tại với mã: FR");
+        assertThat(exception).hasMessage("Language already exists with code: FR");
     }
 
     private static SupportedLanguage language(UUID id, String code, String name, String description, boolean active) {

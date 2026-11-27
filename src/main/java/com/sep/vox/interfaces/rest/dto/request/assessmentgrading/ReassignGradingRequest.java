@@ -6,7 +6,7 @@ import java.util.UUID;
 import jakarta.validation.constraints.NotNull;
 
 public record ReassignGradingRequest(
-    @NotNull(message = "Thiếu giáo viên cần phân công")
+    @NotNull(message = "The teacher to assign is missing")
     UUID teacherId
 ) {
 

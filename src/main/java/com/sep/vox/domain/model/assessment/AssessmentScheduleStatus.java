@@ -9,34 +9,35 @@ public enum AssessmentScheduleStatus {
     DELETED;
 
     /**
-     * Ca đã xoá mềm hoặc đã dời hết người sang ca khác thì coi như không còn tồn tại: mọi màn đọc
-     * (lịch của học sinh, lịch giám thị, điểm danh) phải bỏ qua. CANCELLED vẫn hiện để người dùng
-     * biết ca bị huỷ.
+     * A schedule that is soft-deleted or has had everyone moved to another schedule is treated as nonexistent: every
+     * read screen (student schedule, proctor schedule, attendance) must skip it. CANCELLED is still shown so users know
+     * the schedule was cancelled.
      */
     public boolean isRemoved() {
         return this == MOVED || this == DELETED;
     }
 
     /**
-     * Ca còn hiệu lực: sẽ diễn ra, hoặc đã diễn ra thật. Ca đã huỷ/dời/xoá thì không -- mọi luật
-     * nghiệp vụ nói "ca thi nào cũng phải..." đều ngầm hiểu là ca còn hiệu lực, vì bắt một ca không
-     * bao giờ diễn ra phải đủ phòng/giám thị thì chỉ chặn được người dùng chứ không bảo vệ buổi thi.
+     * A schedule that is in effect: it will take place, or it really did take place. A cancelled/moved/deleted one is
+     * not -- every business rule that says "every schedule must have..." implicitly means a schedule in effect, because
+     * forcing a schedule that will never take place to have enough rooms/proctors only blocks users and does not protect
+     * the exam.
      */
     public boolean isInEffect() {
         return !isRemoved() && this != CANCELLED;
     }
 
     /**
-     * Chỉ ca còn hiệu lực mới điểm danh được -- ca đã huỷ/dời/xoá thì không.
+     * Only a schedule in effect can take attendance -- a cancelled/moved/deleted one cannot.
      */
     public boolean allowsAttendance() {
         return isInEffect();
     }
 
     /**
-     * Ca thi học sinh được phép nhìn thấy. DRAFT là ca chưa publish -- tức lịch thi chưa xếp xong --
-     * nên không được lộ cho thí sinh; MOVED/DELETED thì đã bị thay thế/xoá. CANCELLED vẫn hiện để
-     * học sinh biết ca đã bị huỷ.
+     * Schedules a student may see. DRAFT is a schedule that is not yet published -- i.e. the timetable is not finished --
+     * so it must not be exposed to candidates; MOVED/DELETED have been replaced/deleted. CANCELLED is still shown so
+     * the student knows the schedule was cancelled.
      */
     public boolean isVisibleToStudent() {
         return this == PUBLISHED || this == COMPLETED || this == CANCELLED;

@@ -110,7 +110,7 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
             row.setStatus(ImportRowStatus.IMPORTED);
             return outcome;
         } catch (DataConflictException e) {
-            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "Mã trường đã tồn tại"))));
+            row.setErrorsJson(jsonSerializationPort.toJson(List.of(error("code", "School code already exists"))));
             row.setStatus(ImportRowStatus.FAILED);
             return RowOutcome.INVALID;
         }
@@ -185,21 +185,21 @@ public class SchoolDirectoryImportCommitHandler implements ImportCommitHandler {
     private List<Map<String, String>> validateRow(Map<String, String> data, Set<String> seenCodes) {
         List<Map<String, String>> errors = new ArrayList<Map<String, String>>();
 
-        addMissingError(errors, data, "code", "Mã trường không được để trống");
-        addMissingError(errors, data, "name", "Tên trường không được để trống");
-        addMissingError(errors, data, "provinceCode", "Mã tỉnh không được để trống");
-        addMissingError(errors, data, "provinceName", "Tên tỉnh không được để trống");
-        addMissingError(errors, data, "districtName", "Tên quận/huyện không được để trống");
-        addMissingError(errors, data, "address", "Địa chỉ không được để trống");
+        addMissingError(errors, data, "code", "School code must not be blank");
+        addMissingError(errors, data, "name", "School name must not be blank");
+        addMissingError(errors, data, "provinceCode", "Province code must not be blank");
+        addMissingError(errors, data, "provinceName", "Province name must not be blank");
+        addMissingError(errors, data, "districtName", "District name must not be blank");
+        addMissingError(errors, data, "address", "Address must not be blank");
 
         String code = data.get("code");
         if (isPresent(code) && !seenCodes.add(code)) {
-            errors.add(error("code", "Mã trường bị trùng trong file import"));
+            errors.add(error("code", "School code is duplicated in the import file"));
         }
 
         String domain = data.get("domain");
         if (isPresent(domain) && !DOMAIN_PATTERN.matcher(domain).matches()) {
-            errors.add(error("domain", "Tên miền trường không hợp lệ (phải kết thúc bằng .edu.vn)"));
+            errors.add(error("domain", "School domain is invalid (must end with .edu.vn)"));
         }
 
         return errors;

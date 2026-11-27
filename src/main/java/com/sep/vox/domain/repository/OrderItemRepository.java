@@ -13,6 +13,6 @@ public interface OrderItemRepository {
     List<OrderItem> saveAll(Collection<OrderItem> items);
     List<OrderItem> findByOrderId(UUID orderId);
 
-    /** Nạp dòng hàng cho nhiều đơn một lượt -- tránh N+1 ở màn lịch sử đơn / dashboard. */
+    /** Loads line items for several orders in one go -- avoids N+1 on the order history screen / dashboard. */
     List<OrderItem> findByOrderIdIn(Collection<UUID> orderIds);
 }

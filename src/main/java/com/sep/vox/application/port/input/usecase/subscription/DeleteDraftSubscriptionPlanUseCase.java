@@ -23,20 +23,20 @@ public class DeleteDraftSubscriptionPlanUseCase implements IUseCase<DeleteDraftS
     @Transactional
     public Void execute(DeleteDraftSubscriptionPlanCommand input) {
         SubscriptionPlan plan = subscriptionPlanRepository.findById(input.subscriptionPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
-        // Gói đã publish thì có thể đã có trường mua, và kể cả chưa có thì dòng đơn hàng
-        // (order_items.item_id) vẫn trỏ về id này -- xóa cứng là làm mồ côi chứng từ. Cột đó cố ý
-        // KHÔNG phải khóa ngoại (đa hình theo order_items.type) nên DB không chặn giúp. DRAFT thì
-        // chưa từng bán được nên xóa hẳn mới sạch, thay vì để lại rác ARCHIVED không ai dùng.
+        // A published plan may already have been bought by schools, and even if not, the order line
+        // (order_items.item_id) still points at this id -- a hard delete would orphan the documents. That column is
+        // deliberately NOT a foreign key (polymorphic by order_items.type), so the DB does not block it. A DRAFT was
+        // never sold, so deleting it outright is cleaner than leaving unused ARCHIVED garbage behind.
         if (plan.getStatus() != SubscriptionPlanStatus.DRAFT) {
             throw new IllegalArgumentException(
-                "Chỉ có thể xóa cứng gói đang ở trạng thái nháp. Gói đã xuất bản thì phải lưu trữ (archive) thay vì xóa.");
+                "Only a plan in DRAFT status can be hard-deleted. A published plan must be archived instead of deleted.");
         }
 
-        // Xóa hạn mức trước rồi mới tới gói. subscription_plan_quotas.subscription_plan_id KHÔNG có
-        // khóa ngoại trỏ về gói (bảng chỉ có mỗi primary key), nên không gì ở tầng DB dọn hộ hay chặn
-        // hộ: bỏ dòng này là để lại hạn mức mồ côi trỏ vào một gói không còn tồn tại.
+        // Delete the quotas first, then the plan. subscription_plan_quotas.subscription_plan_id has NO foreign key to
+        // the plan (the table only has a primary key), so nothing at the DB layer cleans up or blocks for us:
+        // dropping this line leaves orphan quotas pointing at a plan that no longer exists.
         subscriptionPlanQuotaRepository.deleteBySubscriptionPlanId(plan.getId());
         subscriptionPlanRepository.deleteById(plan.getId());
 

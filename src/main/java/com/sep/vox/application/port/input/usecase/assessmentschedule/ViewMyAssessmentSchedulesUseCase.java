@@ -42,7 +42,7 @@ public class ViewMyAssessmentSchedulesUseCase
             .filter(candidate -> input.assessmentId() == null || input.assessmentId().equals(candidate.getAssessmentId()))
             .toList();
         if (input.assessmentId() != null && candidates.isEmpty()) {
-            throw new ForbiddenException("Bạn không phải là thí sinh của bài kiểm tra này.");
+            throw new ForbiddenException("You are not a candidate of this assessment.");
         }
 
         Set<UUID> publishedAssessmentIds = publishedAssessmentIdsOf(candidates);

@@ -14,13 +14,13 @@ public record QuestionSelectionSpec(
 ) {
     public QuestionSelectionSpec {
         if (questionType == null && difficulty == null && targetBandLevel == null && skillCode == null && topicId == null) {
-            throw new IllegalArgumentException("Tiêu chí không được để trống");
+            throw new IllegalArgumentException("The criterion must not be blank");
         }
         if (skillCode != null && skillCode.isBlank()) {
-            throw new IllegalArgumentException("Skill code không được để trống");
+            throw new IllegalArgumentException("The skill code must not be blank");
         }
         if (targetBandLevel != null && targetBandLevel.isBlank()) {
-            throw new IllegalArgumentException("Target band id không được để trống");
+            throw new IllegalArgumentException("The target band id must not be blank");
         }
     }
 }

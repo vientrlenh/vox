@@ -18,9 +18,8 @@ import com.sep.vox.domain.model.personalization.InterestDimension;
 import com.sep.vox.domain.repository.InterestDimensionRepository;
 
 /**
- * Quản lý danh mục chiều sở thích (SYSTEM_ADMIN). Xem V15__personalize.sql, mục
- * 19. interest_dimensions, để biết vì sao danh mục này phải là dữ liệu chứ không phải hằng số
- * cứng trong code.
+ * Manages the interest-dimension catalogue (SYSTEM_ADMIN). See V15__personalize.sql, section
+ * 19. interest_dimensions, for why this catalogue must be data and not a hard-coded constant in the code.
  */
 @Service
 @RequiredArgsConstructor
@@ -43,7 +42,7 @@ public class ManageInterestDimensionUseCase {
     public InterestDimensionResponse create(UpsertInterestDimensionCommand input) {
         String code = normalizeCode(input.code());
         if (repository.findByCode(code).isPresent()) {
-            throw new ResourceDuplicatedException("Mã chiều sở thích đã tồn tại: " + code);
+            throw new ResourceDuplicatedException("Interest dimension code already exists: " + code);
         }
         requireLabel(input.label());
         InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(InterestDimension.defined(
@@ -66,7 +65,7 @@ public class ManageInterestDimensionUseCase {
     public InterestDimensionResponse update(UpsertInterestDimensionCommand input) {
         String code = normalizeCode(input.code());
         InterestDimension existing = repository.findByCode(code)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chiều sở thích: " + code));
+            .orElseThrow(() -> new ResourceNotFoundException("Interest dimension not found: " + code));
         // The code is the key and is already assigned to practice_topics/dimension_interest_scores, so it cannot change:
         // only the display fields and flags are editable. To change a code, create a new one and deactivate the old one.
         InterestDimensionResponses.InterestDimensionResponse saved = toResponse(repository.save(existing.withEditableFields(
@@ -96,20 +95,20 @@ public class ManageInterestDimensionUseCase {
     public boolean deactivate(String code) {
         String normalized = normalizeCode(code);
         repository.findByCode(normalized)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chiều sở thích: " + normalized));
-        // Tắt mềm, không xoá: điểm số và chủ đề đã gán chiều này vẫn phải đọc được.
+            .orElseThrow(() -> new ResourceNotFoundException("Interest dimension not found: " + normalized));
+        // Soft disable, no delete: scores and topics already assigned this dimension must stay readable.
         repository.deactivate(normalized);
         return true;
     }
 
     private static String normalizeCode(String code) {
         if (code == null || code.isBlank()) {
-            throw new IllegalArgumentException("Mã chiều sở thích không được để trống");
+            throw new IllegalArgumentException("Interest dimension code must not be empty");
         }
         String normalized = code.strip().toUpperCase(Locale.ROOT);
         if (!CODE_PATTERN.matcher(normalized).matches()) {
             throw new IllegalArgumentException(
-                "Mã chiều sở thích phải viết HOA, 3-32 ký tự, chỉ gồm chữ/số/gạch dưới"
+                "Interest dimension code must be UPPERCASE, 3-32 characters, letters/digits/underscores only"
             );
         }
         return normalized;
@@ -117,7 +116,7 @@ public class ManageInterestDimensionUseCase {
 
     private static void requireLabel(String label) {
         if (label == null || label.isBlank()) {
-            throw new IllegalArgumentException("Tên hiển thị của chiều sở thích không được để trống");
+            throw new IllegalArgumentException("Interest dimension display name must not be empty");
         }
     }
 

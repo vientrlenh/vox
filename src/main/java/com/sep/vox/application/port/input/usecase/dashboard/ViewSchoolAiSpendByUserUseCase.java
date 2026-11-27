@@ -19,7 +19,7 @@ import com.sep.vox.application.query.repository.SchoolAiCostQueryRepository;
 import com.sep.vox.application.response.input.dashboard.SchoolAiSpendByUserPageResponse;
 import com.sep.vox.domain.common.DecimalText;
 
-/** Bảng "ai đang tiêu hạn mức", đứng ngay dưới biểu đồ chi phí AI và đọc cùng một cửa sổ. */
+/** The "who is spending the quota" table, directly below the AI cost chart and reading the same window. */
 @Service
 @RequiredArgsConstructor
 public class ViewSchoolAiSpendByUserUseCase

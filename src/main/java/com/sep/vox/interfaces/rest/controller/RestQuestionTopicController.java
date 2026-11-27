@@ -75,7 +75,7 @@ public class RestQuestionTopicController {
         PreviewImportResponse data = previewQuestionTopicImportFromFileUseCase.execute(
             new PreviewQuestionTopicImportFromFileCommand(questionBankId, uploadedFile)
         );
-        return ResponseEntity.ok(ApiResponse.success("Xem trước import chủ đề câu hỏi thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Question topic import previewed successfully", data));
     }
 
     @PostMapping("/import/{sessionId}/accept")
@@ -86,7 +86,7 @@ public class RestQuestionTopicController {
         acceptQuestionTopicImportUseCase.execute(
             new AcceptQuestionTopicImportCommand(sessionId, request.confirmedMapping())
         );
-        return ResponseEntity.ok(ApiResponse.success("Đã tiếp nhận yêu cầu import chủ đề câu hỏi, đang xử lý"));
+        return ResponseEntity.ok(ApiResponse.success("Question topic import request accepted, processing"));
     }
 
     @PostMapping
@@ -94,7 +94,7 @@ public class RestQuestionTopicController {
     public ResponseEntity<ApiResponse<CreateQuestionTopicResponse>> create(@Valid @RequestBody CreateQuestionTopicRequest request) {
         CreateQuestionTopicCommand command = CreateQuestionTopicRequest.toCommand(request);
         CreateQuestionTopicResponse data = createQuestionTopicUseCase.execute(command);
-        ApiResponse<CreateQuestionTopicResponse> response = ApiResponse.success("Tạo chủ đề câu hỏi thành công", data);
+        ApiResponse<CreateQuestionTopicResponse> response = ApiResponse.success("Question topic created successfully", data);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -105,7 +105,7 @@ public class RestQuestionTopicController {
             @Valid @RequestBody UpdateQuestionTopicRequest request) {
         UpdateQuestionTopicCommand command = UpdateQuestionTopicRequest.toCommand(id, request);
         QuestionTopicDto data = updateQuestionTopicUseCase.execute(command);
-        ApiResponse<QuestionTopicDto> response = ApiResponse.success("Cập nhật chủ đề câu hỏi thành công", data);
+        ApiResponse<QuestionTopicDto> response = ApiResponse.success("Question topic updated successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -116,15 +116,15 @@ public class RestQuestionTopicController {
             @Valid @RequestBody UpdateQuestionTopicStatusRequest request) {
         UpdateQuestionTopicStatusCommand command = UpdateQuestionTopicStatusRequest.toCommand(id, request);
         QuestionTopicDto data = updateQuestionTopicStatusUseCase.execute(command);
-        ApiResponse<QuestionTopicDto> response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi thành công", data);
+        ApiResponse<QuestionTopicDto> response = ApiResponse.success("Question topic status updated successfully", data);
         return ResponseEntity.ok(response);
     }
 
     /**
-     * Thành công một phần: mục hợp lệ thì đổi, mục không thì nằm trong {@code failed} kèm lý do.
+     * Partial success: valid items are changed, the others are listed in {@code failed} with a reason.
      *
-     * <p>Bước hay vấp nhất khi nạp dữ liệu: import câu hỏi chỉ nhận chủ đề đã PUBLISHED, mà chủ đề
-     * nhập từ Excel luôn vào ở DRAFT.
+     * <p>The step people trip over most when loading data: question import only accepts PUBLISHED topics, while
+     * topics imported from Excel always enter as DRAFT.
      */
     @PatchMapping("/bulk/status")
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
@@ -132,7 +132,7 @@ public class RestQuestionTopicController {
             @Valid @RequestBody BulkUpdateQuestionScopeStatusRequest request) {
         BulkUpdateQuestionTopicStatusResponse data = bulkUpdateQuestionTopicStatusUseCase.execute(
             new BulkUpdateQuestionScopeStatusCommand(request.ids(), request.action()));
-        ApiResponse<BulkUpdateQuestionTopicStatusResponse> response = ApiResponse.success("Cập nhật trạng thái chủ đề câu hỏi hàng loạt thành công", data);
+        ApiResponse<BulkUpdateQuestionTopicStatusResponse> response = ApiResponse.success("Question topic statuses updated in bulk successfully", data);
         return ResponseEntity.ok(response);
     }
 
@@ -140,7 +140,7 @@ public class RestQuestionTopicController {
     @PreAuthorize("hasAnyRole('SYSTEM_ADMIN', 'SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable(name = "id") UUID id) {
         deleteQuestionTopicUseCase.execute(new DeleteQuestionTopicCommand(id));
-        ApiResponse<Void> response = ApiResponse.success("Xóa chủ đề câu hỏi thành công");
+        ApiResponse<Void> response = ApiResponse.success("Question topic deleted successfully");
         return ResponseEntity.ok(response);
     }
 }

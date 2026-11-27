@@ -34,10 +34,10 @@ public class ViewMySchoolClassesUseCase implements IUseCase<ViewMySchoolClassesQ
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+            throw new UnauthorizedException("The user status is invalid");
         }
         if (!schoolUserRepository.existsBySchoolIdAndUserId(input.schoolId(), callerId)) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
+            throw new ForbiddenException("The access permission is invalid");
         }
 
         PageResult<SchoolClass> schoolClassesPage = schoolClassRepository.findByUserId(

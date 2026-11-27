@@ -14,12 +14,12 @@ import com.sep.vox.domain.model.personalization.InterestQuizSeedItem;
 import com.sep.vox.domain.repository.InterestQuizItemRepository;
 
 /**
- * Bổ sung kho quiz sở thích khi có chiều chưa được phủ đủ.
+ * Tops up the interest-quiz bank when a dimension is not covered enough.
  *
- * Vì sao cần: thêm một chiều mới vào danh mục KHÔNG tự làm nó xuất hiện trong quiz -- mọi
- * triplet trong kho đều đã gắn sẵn 3 chiều cũ. Không sinh bổ sung thì chiều mới vĩnh viễn
- * không bao giờ được hỏi, tức điểm của nó luôn rỗng: đúng kiểu "thêm vào nhưng im lặng vô
- * hiệu" mà việc đưa danh mục ra thành dữ liệu nhằm tránh.
+ * Why needed: adding a new dimension to the catalog does NOT make it appear in the quiz by itself -- every
+ * triplet in the bank is already tied to the 3 old dimensions. Without generating more, the new dimension is never
+ * asked about, so its score is always empty: exactly the "added but silently ineffective" kind of bug that making the catalog
+ * into data was meant to avoid.
  *
  * Runs in the background (through PracticeGenerationExecutorPort) because the LLM call is slow; the admin does not
  * have to wait after clicking to create a new dimension.
@@ -47,9 +47,9 @@ public class InterestQuizBankTopUpService {
         try {
             topUp();
         } catch (RuntimeException exception) {
-            // Nuốt lỗi có chủ đích: đây là việc nền làm giàu kho, hỏng thì quiz vẫn chạy
-            // bằng item cũ. Không được để nó làm hỏng luồng tạo chiều của admin.
-            log.warn("Bổ sung kho quiz sở thích thất bại", exception);
+            // Swallowing the error is deliberate: this is a background job that enriches the bank, and if it fails the quiz still runs
+            // on the old items. It must not break the admin's dimension-creation flow.
+            log.warn("Topping up the interest quiz bank failed", exception);
         }
     }
 
@@ -65,7 +65,7 @@ public class InterestQuizBankTopUpService {
         }
 
         log.info(
-            "Kho quiz sở thích thiếu phủ cho {} -- sinh bổ sung",
+            "Interest quiz bank lacks coverage for {} -- generating more",
             underCovered
         );
         List<InterestQuizSeedItem> usable = generateUsableItems(pool, dimensions, underCovered);
@@ -105,7 +105,7 @@ public class InterestQuizBankTopUpService {
             .toList();
     }
 
-    /** Lưu vào kho DÙNG CHUNG (student_id = null) chứ không gắn cho học sinh nào. */
+    /** Saved to the SHARED bank (student_id = null), not attached to any student. */
     private void saveShared(List<InterestQuizSeedItem> items) {
         quizItemRepository.saveGeneratedForStudent(null, items);
     }

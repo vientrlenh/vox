@@ -44,7 +44,7 @@ import com.sep.vox.domain.repository.SchoolClassUserRepository;
 public class ViewTeacherDashboardUseCase implements IUseCase<Void, TeacherDashboardSummaryResponse> {
 
     private static final int MAX_CLASS_TESTS_FOR_DASHBOARD = 500;
-    private static final String UNKNOWN_CLASS_NAME = "Không xác định";
+    private static final String UNKNOWN_CLASS_NAME = "Unknown";
 
     private final UserContextPort userContextPort;
     private final AssessmentRepository assessmentRepository;

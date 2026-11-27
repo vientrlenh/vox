@@ -29,8 +29,8 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.AssessmentScheduleRepository;
 
 /**
- * Lịch thi của học sinh trước đây chỉ loại ca DELETED, nên ca DRAFT (chưa publish) và ca đã dời vẫn
- * hiện, lại không sắp xếp gì cả.
+ * A student's exam schedule used to exclude only DELETED schedules, so a DRAFT schedule (not yet published) and a moved schedule were still
+ * shown, and nothing was sorted.
  */
 class ViewMyAssessmentSchedulesUseCaseTests {
 

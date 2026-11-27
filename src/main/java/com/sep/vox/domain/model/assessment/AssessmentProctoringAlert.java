@@ -43,8 +43,8 @@ public class AssessmentProctoringAlert {
      * because they sit on two sides of a deploy. The type has never changed.
      */
     public static final Set<String> INTEGRITY_ALERT_TYPES = Set.of(
-        // Người thứ hai trong khung: tín hiệu liêm chính mạnh nhất mà hệ có với một bài thi NÓI --
-        // câu hỏi "ai đang trả lời" là câu hỏi mà điểm số không trả lời được.
+        // A second person in the frame: the strongest integrity signal the system has for a SPOKEN assessment --
+        // "who is answering" is a question the score cannot answer.
         "MULTIPLE_PERSONS",
         "PHONE_DETECTED",
         "PROHIBITED_OBJECT"

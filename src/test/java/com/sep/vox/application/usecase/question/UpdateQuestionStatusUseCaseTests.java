@@ -35,11 +35,11 @@ import com.sep.vox.domain.repository.QuestionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Endpoint cập nhật trạng thái một câu hỏi.
+ * The endpoint that updates the status of a single question.
  *
- * <p>Quy tắc nghiệp vụ đã chuyển sang {@code QuestionStatusTransition} dùng chung với đường đi
- * hàng loạt; lớp test này canh phần dịch ngược lý do từ chối thành exception, vì đó là thứ quyết
- * định HTTP status client nhận được (404 / 403 / 400) và không được đổi khi refactor.
+ * <p>The business rules moved to {@code QuestionStatusTransition}, shared with the bulk path;
+ * this test class guards the translation of the rejection reason back into an exception, because that decides the
+ * HTTP status the client receives (404 / 403 / 400) and must not change during refactors.
  */
 class UpdateQuestionStatusUseCaseTests {
 
@@ -102,7 +102,7 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(UUID.randomUUID(), "SUBMIT", null)))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("Không tìm thấy câu hỏi");
+            .hasMessage("Question not found");
     }
 
     @Test
@@ -113,7 +113,7 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
             .isInstanceOf(ResourceNotFoundException.class)
-            .hasMessage("Không tìm thấy ngân hàng câu hỏi");
+            .hasMessage("Question bank not found");
     }
 
     @Test
@@ -124,7 +124,7 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessage("Không thể gửi duyệt: bạn không phải người tạo hoặc người cộng tác có quyền sửa câu hỏi này");
+            .hasMessage("Cannot submit for review: you are not the creator or a collaborator with edit rights on this question");
     }
 
     @Test
@@ -134,8 +134,8 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "SUBMIT", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Không thể gửi duyệt: câu hỏi đang ở trạng thái \"Chờ duyệt\", "
-                + "thao tác này chỉ áp dụng cho câu hỏi ở trạng thái \"Bản nháp\" hoặc \"Yêu cầu sửa\"");
+            .hasMessage("Cannot submit for review: the question is in status \"Awaiting review\", "
+                + "this action only applies to questions in status \"Draft\" or \"Revision requested\"");
     }
 
     @Test
@@ -145,7 +145,7 @@ class UpdateQuestionStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateQuestionStatusCommand(question.getId(), "DEMOLISH", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Action không hợp lệ");
+            .hasMessage("Invalid action");
     }
 
     private void mockQuestion(Question question) {

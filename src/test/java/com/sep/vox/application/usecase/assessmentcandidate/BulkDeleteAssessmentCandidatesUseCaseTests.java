@@ -34,10 +34,10 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Xoá hàng loạt thí sinh khỏi kỳ thi: all-or-nothing.
+ * Bulk deletion of candidates from an assessment: all-or-nothing.
  *
- * <p>Xoá một phần rồi báo lỗi chung chung sẽ khiến người dùng không biết ai đã bị xoá và ai chưa,
- * mà đây là thao tác không hoàn tác được.
+ * <p>Deleting part of them and then reporting a generic error would leave the user not knowing who was deleted and
+ * who was not, and this operation cannot be undone.
  */
 public class BulkDeleteAssessmentCandidatesUseCaseTests {
 
@@ -120,7 +120,7 @@ public class BulkDeleteAssessmentCandidatesUseCaseTests {
         verify(assessmentCandidateRepository, never()).deleteByIdIn(any());
     }
 
-    /** Thiếu dòng = có id không tồn tại hoặc thuộc kỳ thi khác — hỏng cả lượt, không xoá một phần. */
+    /** A missing row = an id that does not exist or belongs to another assessment -- the whole batch fails, nothing is deleted partially. */
     @Test
     void should_refuse_when_an_id_does_not_belong_to_the_assessment() {
         when(assessmentCandidateRepository.findByIdInAndAssessmentId(anyCollection(), any()))
@@ -143,7 +143,7 @@ public class BulkDeleteAssessmentCandidatesUseCaseTests {
 
         assertThatThrownBy(() -> delete(candidateA, candidateB))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã có bài thi");
+            .hasMessageContaining("already have a submission");
 
         verify(assessmentCandidateRepository, never()).deleteByIdIn(any());
     }

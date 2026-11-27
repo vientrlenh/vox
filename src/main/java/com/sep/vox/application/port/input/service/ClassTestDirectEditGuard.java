@@ -35,16 +35,16 @@ public class ClassTestDirectEditGuard {
 
     public void requireDirectlyEditable(Assessment assessment, UUID currentUserId) {
         if (assessment.getKind() != AssessmentKind.CLASS_TEST) {
-            throw new ForbiddenException("Chỉ áp dụng cho bài kiểm tra trên lớp");
+            throw new ForbiddenException("Only applicable to class tests");
         }
         if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (assessment.getStatus() != AssessmentStatus.DRAFT && assessment.getStatus() != AssessmentStatus.SCHEDULED) {
-            throw new IllegalArgumentException("Chỉ được sửa khi bài kiểm tra chưa bắt đầu");
+            throw new IllegalArgumentException("Can only be edited before the assessment has started");
         }
         if (assessmentRepository.existsSubmittedSessionByAssessmentId(assessment.getId())) {
-            throw new IllegalArgumentException("Không thể sửa câu hỏi khi đã có học sinh nộp bài");
+            throw new IllegalArgumentException("Questions cannot be edited once a student has submitted");
         }
         requireNoAttachedBlueprint(assessment);
     }
@@ -55,13 +55,13 @@ public class ClassTestDirectEditGuard {
      */
     public Question loadUsableQuestion(Assessment assessment, UUID questionId, UUID currentUserId) {
         Question question = questionRepository.findAccessibleById(questionId, currentUserId, assessment.getSchoolId(), false, false)
-            .orElseThrow(() -> new ForbiddenException("Không có quyền dùng câu hỏi " + questionId));
+            .orElseThrow(() -> new ForbiddenException("No permission to use question " + questionId));
         boolean isOwner = question.isCreatedBy(currentUserId);
         boolean isSchoolShared = question.getSharing() == QuestionSharing.SCHOOL_SHARED;
         if (!isOwner && !isSchoolShared) {
             Optional<QuestionCollaborator> collaborator = questionCollaboratorRepository.findByQuestionIdAndUserId(question.getId(), currentUserId);
             if (collaborator.isEmpty() || collaborator.get().getPermission() == QuestionCollaboratorPermission.READ_ONLY) {
-                throw new ForbiddenException("Quyền READ_ONLY không được phép dùng câu hỏi trong bài kiểm tra");
+                throw new ForbiddenException("READ_ONLY permission does not allow using questions in an assessment");
             }
         }
         return question;
@@ -70,7 +70,7 @@ public class ClassTestDirectEditGuard {
     private void requireNoAttachedBlueprint(Assessment assessment) {
         if (assessment.getBlueprintId() != null) {
             throw new IllegalArgumentException(
-                "Bài đang dùng blueprint dùng chung, không thể sửa câu hỏi trực tiếp — dùng \"Đổi blueprint khác\" ở tab Blueprint để thay đổi cấu trúc");
+                "The assessment uses a shared blueprint, so questions cannot be edited directly — use \"Switch to another blueprint\" in the Blueprint tab to change the structure");
         }
     }
 }

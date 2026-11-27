@@ -26,9 +26,9 @@ WORKDIR /app
 COPY --from=build /workspace/build/libs/*.jar app.jar
 
 EXPOSE 8080
-# Khớp với múi giờ mà test chạy (build.gradle đặt user.timezone=Asia/Ho_Chi_Minh chỉ
-# cho task test). Không đặt ở đây thì container chạy UTC và mọi mốc thời gian hiển thị
-# lệch 7 tiếng so với môi trường test — loại lỗi xanh trên CI, đỏ ngoài đời.
+# Match the time zone the tests run in (build.gradle sets user.timezone=Asia/Ho_Chi_Minh only
+# for the test task). If it is not set here the container runs in UTC and every displayed timestamp
+# is 7 hours off compared to the test environment -- a bug that is green on CI and red in real life.
 ENV TZ=Asia/Ho_Chi_Minh
 ENV JAVA_OPTS=""
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

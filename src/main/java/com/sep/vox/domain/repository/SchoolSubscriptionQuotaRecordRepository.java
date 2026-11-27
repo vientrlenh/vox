@@ -17,21 +17,21 @@ public interface SchoolSubscriptionQuotaRecordRepository {
     void addAllocation(UUID quotaId, BigDecimal amount);
 
     /**
-     * Chuyển tiền từ ví tự nạp vào ví hạn mức: cộng vào cả {@code totalAllocatedAmountVnd} lẫn
-     * {@code fundedFromBalanceVnd} trong cùng một câu lệnh. Chỗ gọi PHẢI đã trừ ví và ghi bút toán
-     * QUOTA_FUNDING trong cùng transaction -- xem FundQuotaFromBalanceUseCase.
+     * Moves money from the self-funded balance into the quota wallet: adds to both {@code totalAllocatedAmountVnd} and
+     * {@code fundedFromBalanceVnd} in the same statement. The caller MUST have already debited the balance and written the
+     * QUOTA_FUNDING entry in the same transaction -- see FundQuotaFromBalanceUseCase.
      */
     void addFundingFromBalance(UUID quotaId, BigDecimal amount);
 
     /**
-     * Ví của những kỳ ĐÃ tới ngày bắt đầu mà còn một cái hẹn mang tiền tự nạp sang (V13). Rỗng ở trạng
-     * thái bình thường -- chỉ gia hạn SỚM mới sinh ra hẹn, và chỉ tới lần job kế tiếp.
+     * Wallets of periods whose start date HAS arrived and that still hold a pending appointment carrying self-funded money across (V13). Empty in the
+     * normal state -- only an EARLY renewal creates an appointment, and only until the next job run.
      */
     List<SchoolSubscriptionQuotaRecord> findDueFundingCarries(Instant now);
 
     /**
-     * Xoá cái hẹn của một ví. Gọi SAU khi đã cộng tiền, trong cùng transaction -- đây là thứ biến phép
-     * mang sang thành đúng một lần.
+     * Deletes the appointment of a wallet. Call it AFTER the money has been added, in the same transaction -- this is what turns the
+     * carry-over into exactly once.
      */
     void clearFundingCarry(UUID quotaId);
 
@@ -39,10 +39,10 @@ public interface SchoolSubscriptionQuotaRecordRepository {
     boolean tryConsume(UUID quotaId, BigDecimal amount);
 
     /**
-     * Unconditional -- always succeeds. Chỉ dùng để tiêu NỐT phần hạn mức còn lại cho đầy khi một
-     * khoản chi vắt qua trần (ConsumeQuotaService.chargeOverage); chỗ gọi tự kẹp amount về đúng phần
-     * còn lại. KHÔNG dùng để ghi nợ nữa: nợ giờ là balance_vnd âm, và usedAmountVnd vượt
-     * totalAllocatedAmountVnd là dữ liệu hỏng chứ không còn là một trạng thái hợp lệ.
+     * Unconditional -- always succeeds. Only used to spend the REMAINING quota to fill it up when an
+     * expense straddles the ceiling (ConsumeQuotaService.chargeOverage); the caller clamps amount to the exact remaining part itself.
+     * NOT used to record debt any more: debt is now a negative balance_vnd, and usedAmountVnd exceeding
+     * totalAllocatedAmountVnd is corrupt data and no longer a valid state.
      */
     void addUsage(UUID quotaId, BigDecimal amount);
 }

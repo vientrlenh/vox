@@ -8,39 +8,39 @@ import com.sep.vox.domain.model.rubric.RubricCriterion;
 import com.sep.vox.domain.model.rubric.RubricTotalScoreMethod;
 
 /**
- * Chốt chặn lúc PUBLISH: bộ tiêu chí phải khớp với cách khai trọng số, nếu không điểm câu sẽ rời
- * khỏi thang rubric.
+ * Guard at PUBLISH time: the set of criteria must match the way weights are declared, otherwise the question score would leave
+ * the rubric scale.
  *
- * <p>Tách ra dùng chung 2026-08-14. Trước đó phép kiểm này nằm dưới dạng phương thức private trong
- * {@code ChangeSchoolRubricVersionStatusUseCase}, còn
- * {@code ChangeSystemRubricVersionStatusUseCase} thì KHÔNG kiểm gì -- nghĩa là system admin ban
- * hành được một phiên bản mà điểm câu vọt ra ngoài thang. Đặt ở domain service để hai đường publish
- * gọi chung một bản, không sinh ra bản chép thứ hai rồi trôi lệch.
+ * <p>Extracted to be shared 2026-08-14. Before that this check lived as a private method in
+ * {@code ChangeSchoolRubricVersionStatusUseCase}, while
+ * {@code ChangeSystemRubricVersionStatusUseCase} checked NOTHING -- meaning a system admin could publish
+ * a version whose question score shoots outside the scale. Placed in a domain service so both publish paths
+ * call one shared version, instead of a second copy that drifts apart.
  *
- * <h2>Vì sao kiểm ở lúc publish</h2>
+ * <h2>Why check at publish time</h2>
  *
- * <p>Mọi thao tác thêm/sửa/xoá tiêu chí và sửa thang điểm đều chỉ cho phép khi version còn DRAFT.
- * Nên PUBLISH là cửa duy nhất một cấu hình đi từ "đang soạn" sang "dùng để chấm thật" -- chặn ở đây
- * là kín, và không cần kiểm lặp lại ở từng thao tác sửa lẻ.
+ * <p>Every add/edit/delete of a criterion and every edit of the scale is only allowed while the version is DRAFT.
+ * So PUBLISH is the only gate through which a configuration goes from "being drafted" to "used for real grading" -- blocking here
+ * is airtight, and there is no need to repeat the check at each individual edit.
  *
- * <h2>Hai kiểu khai trọng số</h2>
+ * <h2>Two ways to declare weights</h2>
  *
- * <p>Cả hai đều chấm mỗi tiêu chí trên TOÀN thang rồi gộp bằng cùng một công thức
- * {@code Σ(điểm × trọng số) / Σtrọng số} (xem {@code RubricItemScoreFormula}). Khác nhau ở ràng
- * buộc tổng trọng số, và đó là khác biệt về CÁCH KHAI, không phải về phép tính:
+ * <p>Both grade each criterion on the WHOLE scale and then combine with the same formula
+ * {@code Σ(score × weight) / Σweight} (see {@code RubricItemScoreFormula}). They differ in the
+ * total-weight constraint, and that is a difference in HOW THEY ARE DECLARED, not in the calculation:
  *
  * <ul>
- *   <li>{@code SUM} -- phân bổ. Trọng số là phần chia của tiêu chí trong tổng, cộng lại đúng 1
- *       (100%). Hợp khi các tiêu chí nặng nhẹ khác nhau: "phát âm chiếm 30% điểm".
- *   <li>{@code WEIGHTED_AVERAGE} -- trung bình. Mọi tiêu chí cân bằng, mỗi cái trọng số 1 (100%),
- *       nên tổng bằng đúng số tiêu chí. Gộp lại chính là trung bình cộng.
+ *   <li>{@code SUM} -- allocation. A weight is the criterion's share of the total, adding up to exactly 1
+ *       (100%). Suitable when criteria differ in importance: "pronunciation counts for 30% of the score".
+ *   <li>{@code WEIGHTED_AVERAGE} -- average. Every criterion is balanced, each with weight 1 (100%),
+ *       so the total equals exactly the number of criteria. Combined, it is simply the arithmetic mean.
  * </ul>
  *
- * <p>Hai ràng buộc này đều bảo đảm cùng một điều: trần thang luôn với tới được. Học sinh đạt tối đa
- * mọi tiêu chí thì {@code Σ(max × w) / Σw = max}, bất kể trọng số chia thế nào.
+ * <p>Both constraints guarantee the same thing: the scale ceiling is always reachable. A student who achieves the maximum on
+ * every criterion gets {@code Σ(max × w) / Σw = max}, however the weights are split.
  *
- * <p>Lỗi đã gặp thật trước khi có chốt chặn: 5 tiêu chí mỗi cái tối đa 10 điểm trên thang 0-10,
- * cộng thẳng ra 38.4 rồi bị kẹp còn 10 -- mọi bài đều 10/10.
+ * <p>A bug really encountered before the guard existed: 5 criteria each worth at most 10 points on a 0-10 scale,
+ * added directly gave 38.4 and was then clamped to 10 -- every result got 10/10.
  */
 public final class RubricScoringConsistencyValidator {
 
@@ -58,7 +58,7 @@ public final class RubricScoringConsistencyValidator {
             List<RubricCriterion> criteria) {
         if (criteria == null || criteria.isEmpty()) {
             throw new IllegalArgumentException(
-                    "Không thể ban hành: phiên bản này chưa có tiêu chí nào.");
+                    "Cannot publish: this version has no criteria yet.");
         }
 
         assertEveryCriterionCoversScale(scaleMin, scaleMax, criteria);
@@ -86,9 +86,9 @@ public final class RubricScoringConsistencyValidator {
         BigDecimal expected = BigDecimal.valueOf(criteriaCount);
         if (weightSum.compareTo(expected) != 0) {
             throw new IllegalArgumentException(String.format(
-                    "Không thể ban hành: phương pháp Trung bình yêu cầu mọi tiêu chí cân bằng ở"
-                            + " trọng số 100%%, nên tổng trọng số của %d tiêu chí phải bằng %s."
-                            + " Hiện đang là %s.",
+                    "Cannot publish: the Average method requires every criterion to be balanced at"
+                            + " weight 100%%, so the total weight of %d criteria must equal %s."
+                            + " It is currently %s.",
                     criteriaCount, expected.toPlainString(), weightSum.toPlainString()));
         }
     }
@@ -96,8 +96,8 @@ public final class RubricScoringConsistencyValidator {
     private static void assertWeightsSumToOne(int criteriaCount, BigDecimal weightSum) {
         if (weightSum.compareTo(BigDecimal.ONE) != 0) {
             throw new IllegalArgumentException(String.format(
-                    "Không thể ban hành: phương pháp Phân bổ yêu cầu tổng trọng số của %d tiêu chí"
-                            + " phải bằng 100%% (tức 1), hiện đang là %s (%s%%).",
+                    "Cannot publish: the Allocation method requires the total weight of %d criteria"
+                            + " to equal 100%% (i.e. 1), it is currently %s (%s%%).",
                     criteriaCount, weightSum.toPlainString(),
                     weightSum.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString()));
         }
@@ -130,10 +130,10 @@ public final class RubricScoringConsistencyValidator {
             return;
         }
         throw new IllegalArgumentException(String.format(
-                "Không thể ban hành: tiêu chí \"%s\" có khoảng điểm %s - %s, trong khi thang của"
-                        + " phiên bản là %s - %s. Mỗi tiêu chí phải phủ đúng thang; mức quan trọng"
-                        + " khác nhau giữa các tiêu chí thể hiện bằng TRỌNG SỐ, không phải bằng"
-                        + " khoảng điểm.",
+                "Cannot publish: criterion \"%s\" has score range %s - %s, while the scale of the"
+                        + " version is %s - %s. Each criterion must cover exactly the scale; differing"
+                        + " importance between criteria is expressed with WEIGHT, not with"
+                        + " the score range.",
                 mismatched.getName(),
                 mismatched.getMinScore() == null ? "?" : mismatched.getMinScore().toPlainString(),
                 mismatched.getMaxScore() == null ? "?" : mismatched.getMaxScore().toPlainString(),

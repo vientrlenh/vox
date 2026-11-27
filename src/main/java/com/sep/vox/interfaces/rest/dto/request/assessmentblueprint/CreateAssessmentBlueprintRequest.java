@@ -7,15 +7,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateAssessmentBlueprintRequest(
-    @NotNull(message = "LanguageId là bắt buộc")
+    @NotNull(message = "LanguageId is required")
     UUID languageId,
 
     UUID gradeLevelId,
 
-    @NotBlank(message = "Mã blueprint là bắt buộc")
+    @NotBlank(message = "Blueprint code is required")
     String code,
 
-    @NotBlank(message = "Tên blueprint là bắt buộc")
+    @NotBlank(message = "Blueprint name is required")
     String name,
 
     String description

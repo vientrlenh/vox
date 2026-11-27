@@ -43,12 +43,12 @@ import com.sep.vox.domain.repository.AssessmentRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Kỳ thi tập trung có hai đường khoá mã đề, chọn theo ai soạn ra nó.
+ * A centralized assessment has two ways to lock a paper, chosen by who authored it.
  *
- * <p>Mã đề do người khác soạn vẫn phải qua đủ DRAFT → IN_REVIEW → APPROVED → LOCKED, nên
- * {@code APPROVED} giữ nguyên nghĩa "đã qua mắt người thứ hai". Mã đề do chính người quyết định soạn
- * thì đi tắt một bước DRAFT → LOCKED: bắt họ tự nộp duyệt rồi tự duyệt chỉ tạo ra một dấu APPROVED
- * giả, còn cấm hẳn thì trường ít người không khoá nổi mã đề để phân đề.
+ * <p>A paper authored by someone else must still go through DRAFT → IN_REVIEW → APPROVED → LOCKED, so
+ * {@code APPROVED} keeps its meaning "a second pair of eyes has seen it". A paper authored by the decision maker
+ * themselves takes the shortcut DRAFT → LOCKED: forcing them to submit for review and approve their own paper only creates a fake
+ * APPROVED mark, while forbidding it outright means a small school cannot lock a paper to assign papers.
  */
 class UpdateAssessmentPaperStatusUseCaseTests {
 
@@ -101,7 +101,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         givenCallerRole(AssessmentMemberRole.CHAIR);
     }
 
-    // --- Đường tắt: người quyết định tự soạn mã đề ---
+    // --- Shortcut: the decision maker authors the paper themselves ---
 
     @Test
     void should_let_the_chair_lock_their_own_paper_in_one_step() {
@@ -129,7 +129,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("còn ô câu hỏi chưa được gán");
+            .hasMessageContaining("unassigned question slots");
         verify(assessmentPaperRepository, never()).save(any());
     }
 
@@ -146,11 +146,11 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         assertThat(result.status()).isEqualTo(AssessmentPaperStatus.DRAFT);
     }
 
-    // --- Khoá mã đề cuối cùng là lúc phân đề tự động chạy được ---
+    // --- Locking the final paper is when automatic paper assignment can run ---
 
     /**
-     * Xếp thí sinh vào ca thường làm trước khi mã đề được khoá, nên gán đề lúc đó không chạy. Khoá mã
-     * đề là thời điểm điều kiện vừa đủ -- gán bù ở đây, nếu không thí sinh kẹt "chưa có đề".
+     * Candidates are usually placed in an assessment schedule before the paper is locked, so assigning papers back then does not run. Locking the
+     * paper is the moment the condition is just satisfied -- assign here to catch up, otherwise the candidate is stuck at "no paper yet".
      */
     @Test
     void should_backfill_papers_after_locking() {
@@ -200,7 +200,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         verify(assessmentCandidateRepository, never()).saveAll(any());
     }
 
-    // --- Đường đủ ba bước: mã đề do người khác soạn ---
+    // --- The full three-step path: the paper was authored by someone else ---
 
     @Test
     void should_reject_locking_someone_elses_draft_paper_without_review() {
@@ -208,7 +208,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Trạng thái đề thi hiện tại không hợp lệ");
+            .hasMessageContaining("The current paper status is not valid");
         verify(assessmentPaperRepository, never()).save(any());
     }
 
@@ -230,14 +230,14 @@ class UpdateAssessmentPaperStatusUseCaseTests {
         assertThat(result.status()).isEqualTo(AssessmentPaperStatus.APPROVED);
     }
 
-    /** Chốt hồi quy cho maker-checker: đường tắt chỉ nới nhánh LOCK, không nới nhánh duyệt. */
+    /** Regression lock for maker-checker: the shortcut only widens the LOCK branch, not the approval branch. */
     @Test
     void should_still_reject_approving_ones_own_paper() {
         givenPaper(AssessmentPaperStatus.IN_REVIEW, CALLER_ID);
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "APPROVE", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Không được tự duyệt đề thi do chính mình tạo");
+            .hasMessageContaining("You cannot approve a paper you created yourself");
     }
 
     @Test
@@ -247,10 +247,10 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "APPROVE", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Không được tự duyệt");
+            .hasMessageContaining("You cannot approve");
     }
 
-    // --- Ranh giới vai trò ---
+    // --- Role boundary ---
 
     @Test
     void should_let_an_author_submit_their_paper_for_review() {
@@ -269,7 +269,7 @@ class UpdateAssessmentPaperStatusUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new UpdateAssessmentPaperStatusCommand(PAPER_ID, "LOCK", null)))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("Quyền truy cập bị từ chối");
+            .hasMessageContaining("Access denied");
     }
 
     @Test

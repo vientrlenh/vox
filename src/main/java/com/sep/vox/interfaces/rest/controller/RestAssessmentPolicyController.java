@@ -75,8 +75,7 @@ public class RestAssessmentPolicyController {
     private final ArchiveSystemAssessmentPolicyUseCase archiveSystemAssessmentPolicyUseCase;
     private final ArchiveSchoolAssessmentPolicyUseCase archiveSchoolAssessmentPolicyUseCase;
 
-    // Tạo mới Assessment Policy áp dụng toàn hệ thống (System Admin) - có thể gửi 1 lúc nhiều Policy
-    @Operation(summary = "Tạo mới một hoặc nhiều Assessment Policy cho hệ thống (áp dụng toàn hệ thống, trạng thái khởi tạo DRAFT)")
+    @Operation(summary = "Creates one or more system-wide Assessment Policies (applies to the whole system, initial status DRAFT)")
     @PostMapping("/system")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSystemAssessmentPolicy(
@@ -84,11 +83,10 @@ public class RestAssessmentPolicyController {
     ) {
         List<CreateAssessmentPolicyCommand> commands = CreateSystemAssessmentPolicyRequest.toCommands(requests);
         List<UUID> policyIds = createSystemAssessmentPolicyUseCase.execute(commands);
-        return ResponseEntity.ok(ApiResponse.success("Tạo Assessment Policy hệ thống thành công", policyIds));
+        return ResponseEntity.ok(ApiResponse.success("System Assessment Policy created successfully", policyIds));
     }
 
-    // Tạo mới Assessment Policy cho một trường học (School Admin) - có thể gửi 1 lúc nhiều Policy
-    @Operation(summary = "Tạo mới một hoặc nhiều Assessment Policy cho Trường học (trạng thái khởi tạo DRAFT)")
+    @Operation(summary = "Creates one or more Assessment Policies for a school (initial status DRAFT)")
     @PostMapping("/schools/{schoolId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> createSchoolAssessmentPolicy(
@@ -97,22 +95,20 @@ public class RestAssessmentPolicyController {
     ) {
         List<CreateAssessmentPolicyCommand> commands = CreateSchoolAssessmentPolicyRequest.toCommands(schoolId, requests);
         List<UUID> policyIds = createSchoolAssessmentPolicyUseCase.execute(commands);
-        return ResponseEntity.ok(ApiResponse.success("Tạo Assessment Policy cho trường học thành công", policyIds));
+        return ResponseEntity.ok(ApiResponse.success("School Assessment Policy created successfully", policyIds));
     }
 
-    // Xóa Assessment Policy áp dụng toàn hệ thống (System Admin)
-    @Operation(summary = "Xóa Assessment Policy hệ thống (DRAFT sẽ bị xóa cứng, PUBLISHED sẽ chuyển sang ARCHIVED)")
+    @Operation(summary = "Deletes a system Assessment Policy (DRAFT is hard-deleted, PUBLISHED becomes ARCHIVED)")
     @DeleteMapping("/system/{policyId}")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSystemAssessmentPolicy(
             @PathVariable("policyId") UUID policyId
     ) {
         deleteSystemAssessmentPolicyUseCase.execute(new DeleteSystemAssessmentPolicyCommand(policyId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa Assessment Policy hệ thống thành công"));
+        return ResponseEntity.ok(ApiResponse.success("System Assessment Policy deleted successfully"));
     }
 
-    // Xóa Assessment Policy của một trường học (School Admin)
-    @Operation(summary = "Xóa Assessment Policy của trường học (DRAFT sẽ bị xóa cứng, PUBLISHED sẽ chuyển sang ARCHIVED)")
+    @Operation(summary = "Deletes a school Assessment Policy (DRAFT is hard-deleted, PUBLISHED becomes ARCHIVED)")
     @DeleteMapping("/schools/{schoolId}/{policyId}")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteSchoolAssessmentPolicy(
@@ -120,22 +116,20 @@ public class RestAssessmentPolicyController {
             @PathVariable("policyId") UUID policyId
     ) {
         deleteSchoolAssessmentPolicyUseCase.execute(new DeleteSchoolAssessmentPolicyCommand(schoolId, policyId));
-        return ResponseEntity.ok(ApiResponse.success("Xóa Assessment Policy của trường học thành công"));
+        return ResponseEntity.ok(ApiResponse.success("School Assessment Policy deleted successfully"));
     }
 
-    // Lưu trữ (ARCHIVE) Assessment Policy áp dụng toàn hệ thống đang PUBLISHED
-    @Operation(summary = "Lưu trữ (ARCHIVE) Assessment Policy hệ thống đang PUBLISHED")
+    @Operation(summary = "Archives a PUBLISHED system Assessment Policy")
     @PatchMapping("/system/{policyId}/archive")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSystemAssessmentPolicy(
             @PathVariable("policyId") UUID policyId
     ) {
         UUID policyIdResult = archiveSystemAssessmentPolicyUseCase.execute(new ArchiveSystemAssessmentPolicyCommand(policyId));
-        return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy hệ thống thành công", policyIdResult));
+        return ResponseEntity.ok(ApiResponse.success("System Assessment Policy archived successfully", policyIdResult));
     }
 
-    // Lưu trữ (ARCHIVE) Assessment Policy của một trường học đang PUBLISHED
-    @Operation(summary = "Lưu trữ (ARCHIVE) Assessment Policy của trường học đang PUBLISHED")
+    @Operation(summary = "Archives a PUBLISHED school Assessment Policy")
     @PatchMapping("/schools/{schoolId}/{policyId}/archive")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> archiveSchoolAssessmentPolicy(
@@ -143,22 +137,20 @@ public class RestAssessmentPolicyController {
             @PathVariable("policyId") UUID policyId
     ) {
         UUID policyIdResult = archiveSchoolAssessmentPolicyUseCase.execute(new ArchiveSchoolAssessmentPolicyCommand(schoolId, policyId));
-        return ResponseEntity.ok(ApiResponse.success("Lưu trữ Assessment Policy của trường học thành công", policyIdResult));
+        return ResponseEntity.ok(ApiResponse.success("School Assessment Policy archived successfully", policyIdResult));
     }
 
-    // Xuất bản Assessment Policy áp dụng toàn hệ thống (System Admin)
-    @Operation(summary = "Xuất bản (PUBLISH) Assessment Policy hệ thống đang ở trạng thái DRAFT")
+    @Operation(summary = "Publishes a system Assessment Policy that is in DRAFT status")
     @PatchMapping("/system/{policyId}/publish")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishSystemAssessmentPolicy(
             @PathVariable("policyId") UUID policyId
     ) {
         UUID policyIdResult = publishSystemAssessmentPolicyUseCase.execute(new PublishSystemAssessmentPolicyCommand(policyId));
-        return ResponseEntity.ok(ApiResponse.success("Xuất bản Assessment Policy hệ thống thành công", policyIdResult));
+        return ResponseEntity.ok(ApiResponse.success("System Assessment Policy published successfully", policyIdResult));
     }
 
-    // Xuất bản Assessment Policy của một trường học (School Admin)
-    @Operation(summary = "Xuất bản (PUBLISH) Assessment Policy của trường học đang ở trạng thái DRAFT")
+    @Operation(summary = "Publishes a school Assessment Policy that is in DRAFT status")
     @PatchMapping("/schools/{schoolId}/{policyId}/publish")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<UUID>> publishSchoolAssessmentPolicy(
@@ -166,11 +158,10 @@ public class RestAssessmentPolicyController {
             @PathVariable("policyId") UUID policyId
     ) {
         UUID policyIdResult = publishSchoolAssessmentPolicyUseCase.execute(new PublishSchoolAssessmentPolicyCommand(schoolId, policyId));
-        return ResponseEntity.ok(ApiResponse.success("Xuất bản Assessment Policy của trường học thành công", policyIdResult));
+        return ResponseEntity.ok(ApiResponse.success("School Assessment Policy published successfully", policyIdResult));
     }
 
-    // Xuất bản hàng loạt tất cả Assessment Policy hệ thống (DRAFT) liên kết với một Rubric Version
-    @Operation(summary = "Xuất bản (PUBLISH) toàn bộ Assessment Policy hệ thống đang DRAFT liên kết với một Rubric Version (chuẩn bị để publish Rubric Version)")
+    @Operation(summary = "Publishes all DRAFT system Assessment Policies linked to a Rubric Version (preparation for publishing the Rubric Version)")
     @PatchMapping("/system/rubric-version/{rubricVersionId}/publish-all")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> publishSystemAssessmentPoliciesByRubricVersion(
@@ -178,11 +169,10 @@ public class RestAssessmentPolicyController {
     ) {
         List<UUID> policyIds = publishSystemAssessmentPoliciesByRubricVersionUseCase.execute(
                 new PublishSystemAssessmentPoliciesByRubricVersionCommand(rubricVersionId));
-        return ResponseEntity.ok(ApiResponse.success("Xuất bản hàng loạt Assessment Policy hệ thống thành công", policyIds));
+        return ResponseEntity.ok(ApiResponse.success("System Assessment Policies published in bulk successfully", policyIds));
     }
 
-    // Xuất bản hàng loạt tất cả Assessment Policy của một trường (DRAFT) liên kết với một Rubric Version
-    @Operation(summary = "Xuất bản (PUBLISH) toàn bộ Assessment Policy của trường học đang DRAFT liên kết với một Rubric Version (chuẩn bị để publish Rubric Version)")
+    @Operation(summary = "Publishes all DRAFT school Assessment Policies linked to a Rubric Version (preparation for publishing the Rubric Version)")
     @PatchMapping("/schools/{schoolId}/rubric-version/{rubricVersionId}/publish-all")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<List<UUID>>> publishSchoolAssessmentPoliciesByRubricVersion(
@@ -191,22 +181,20 @@ public class RestAssessmentPolicyController {
     ) {
         List<UUID> policyIds = publishSchoolAssessmentPoliciesByRubricVersionUseCase.execute(
                 new PublishSchoolAssessmentPoliciesByRubricVersionCommand(schoolId, rubricVersionId));
-        return ResponseEntity.ok(ApiResponse.success("Xuất bản hàng loạt Assessment Policy của trường học thành công", policyIds));
+        return ResponseEntity.ok(ApiResponse.success("School Assessment Policies published in bulk successfully", policyIds));
     }
 
-    // Review File Import Assessment Policy của hệ thống
-    @Operation(summary = "Upload file Excel/CSV danh sách Assessment Policy cho hệ thống (Bước 1: Preview)")
+    @Operation(summary = "Uploads an Excel/CSV file of system Assessment Policies (Step 1: Preview)")
     @PostMapping(value = "/system/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewAssessmentPolicyImportResponse>> previewSystemAssessmentPolicyImport(
             @RequestParam("file") MultipartFile file) {
         PreviewSystemAssessmentPolicyImportFromFileCommand command = PreviewAssessmentPolicyImportFromFileCommandMapper.fromSystemRequest(file);
         PreviewAssessmentPolicyImportResponse response = previewSystemAssessmentPolicyImportFromFileUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách Assessment Policy thành công. Tạo phiên làm việc (Session) hoàn tất.", response));
+        return ResponseEntity.ok(ApiResponse.success("Assessment Policy file loaded successfully. Session created.", response));
     }
 
-    // Xác nhận import Assessment Policy của hệ thống
-    @Operation(summary = "Xác nhận và nhập dữ liệu Assessment Policy hệ thống vào DB (Bước 2: Accept)")
+    @Operation(summary = "Confirms and imports system Assessment Policies into the DB (Step 2: Accept)")
     @PostMapping("/system/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SYSTEM_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptAssessmentPolicyImportResponse>> acceptSystemAssessmentPolicyImport(
@@ -214,11 +202,10 @@ public class RestAssessmentPolicyController {
             @Valid @RequestBody AcceptImportRequest request) {
         AcceptSystemAssessmentPolicyImportCommand command = AcceptImportRequest.toAcceptSystemAssessmentPolicyImportCommand(sessionId, request);
         AcceptAssessmentPolicyImportResponse response = acceptSystemAssessmentPolicyImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Assessment Policy hệ thống vào hàng đợi ngầm xử lý.", response));
+        return ResponseEntity.ok(ApiResponse.success("System Assessment Policy import request has been queued for background processing.", response));
     }
 
-    // Preview Assessment Policy của trường học
-    @Operation(summary = "Upload file Excel/CSV danh sách Assessment Policy cho Trường học (Bước 1: Preview)")
+    @Operation(summary = "Uploads an Excel/CSV file of school Assessment Policies (Step 1: Preview)")
     @PostMapping(value = "/schools/{schoolId}/import/preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<PreviewAssessmentPolicyImportResponse>> previewSchoolAssessmentPolicyImport(
@@ -226,11 +213,10 @@ public class RestAssessmentPolicyController {
             @RequestParam("file") MultipartFile file) {
         PreviewSchoolAssessmentPolicyImportFromFileCommand command = PreviewAssessmentPolicyImportFromFileCommandMapper.fromSchoolRequest(schoolId, file);
         PreviewAssessmentPolicyImportResponse response = previewSchoolAssessmentPolicyImportFromFileUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Nạp file danh sách Assessment Policy thành công. Tạo phiên làm việc (Session) hoàn tất.", response));
+        return ResponseEntity.ok(ApiResponse.success("Assessment Policy file loaded successfully. Session created.", response));
     }
 
-    // Chấp nhận import Assessment Policy của trường
-    @Operation(summary = "Xác nhận và nhập dữ liệu Assessment Policy cho Trường học từ Session nháp (Bước 2: Accept)")
+    @Operation(summary = "Confirms and imports school Assessment Policies from the draft Session (Step 2: Accept)")
     @PostMapping("/schools/{schoolId}/import/{sessionId}/accept")
     @PreAuthorize("hasRole('SCHOOL_ADMIN')")
     public ResponseEntity<ApiResponse<AcceptAssessmentPolicyImportResponse>> acceptSchoolAssessmentPolicyImport(
@@ -239,6 +225,6 @@ public class RestAssessmentPolicyController {
             @Valid @RequestBody AcceptImportRequest request) {
         AcceptSchoolAssessmentPolicyImportCommand command = AcceptImportRequest.toAcceptSchoolAssessmentPolicyImportCommand(schoolId, sessionId, request);
         AcceptAssessmentPolicyImportResponse response = acceptSchoolAssessmentPolicyImportUseCase.execute(command);
-        return ResponseEntity.ok(ApiResponse.success("Đã đưa yêu cầu Import Assessment Policy của trường vào hàng đợi ngầm xử lý.", response));
+        return ResponseEntity.ok(ApiResponse.success("School Assessment Policy import request has been queued for background processing.", response));
     }
 }

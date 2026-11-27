@@ -1,8 +1,8 @@
 package com.sep.vox.application.port.output;
 
 /**
- * Tham số quiz sở thích mà application cần đọc. Giá trị thật bind từ application.yaml
- * ({@code app.personalization.quiz.*}) ở InterestQuizProperties.
+ * Interest quiz parameters that the application needs to read. The real values are bound from
+ * application.yaml ({@code app.personalization.quiz.*}) in InterestQuizProperties.
  */
 public interface InterestQuizConfigPort {
 

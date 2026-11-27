@@ -63,9 +63,10 @@ public class AssessmentQuestionSecureLockService {
     }
 
     /**
-     * Xoá hẳn kỳ thi thì kho câu hỏi mật của nó cũng biến mất, nên phải mở khoá mọi câu hỏi đang
-     * trỏ vào pool trước rồi mới xoá pool. Bỏ bước này là câu hỏi nằm lại ngân hàng đề ở trạng thái
-     * khoá với securePoolId trỏ vào một pool không còn tồn tại — không còn đường nào giải phóng.
+     * When an assessment is deleted outright its secret question pool disappears too, so every question that
+     * points at the pool must be unlocked before the pool is deleted. Skipping this step leaves the question
+     * in the paper bank in a locked state with a securePoolId that points at a pool that no longer exists, and
+     * nothing can release it any more.
      */
     @Transactional
     public void releaseAllForAssessment(UUID assessmentId, UUID currentUserId) {

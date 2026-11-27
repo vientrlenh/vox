@@ -202,7 +202,7 @@ class RestAuthControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Đăng xuất thành công");
+            .extractingPath("$.message").isEqualTo("Logout successful");
         verify(logoutUseCase).execute(new LogoutCommand("old-refresh-token", "device-1"));
         verify(httpCookieProvider).clearCookie(any(HttpServletResponse.class), eq("refresh_token"));
     }
@@ -231,7 +231,7 @@ class RestAuthControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Mã OTP đặt lại mật khẩu đã được gửi");
+            .extractingPath("$.message").isEqualTo("Password reset OTP has been sent");
         verify(sendResetPasswordOtpUseCase).execute(new SendResetPasswordOtpCommand("admin@example.com"));
     }
 
@@ -256,7 +256,7 @@ class RestAuthControllerTests {
             .exchange();
 
         assertThat(result).hasStatusOk().bodyJson()
-            .extractingPath("$.message").isEqualTo("Mật khẩu đã thay đổi thành công");
+            .extractingPath("$.message").isEqualTo("Password changed successfully");
         verify(resetPasswordUseCase)
             .execute(new ResetPasswordCommand("admin@example.com", "new-password", "1234567"));
     }

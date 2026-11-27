@@ -55,7 +55,7 @@ public final class SchoolBalanceEntryMapper {
         try {
             return SchoolBalanceEntryType.valueOf(entryType);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại bút toán số dư khi chuyển đổi sang domain model không hợp lệ: " + entryType);
+            throw new IllegalArgumentException("Invalid balance entry type when converting to the domain model: " + entryType);
         }
     }
 
@@ -66,7 +66,7 @@ public final class SchoolBalanceEntryMapper {
         try {
             return QuotaType.valueOf(quotaType);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại quota khi chuyển đổi sang domain model không hợp lệ: " + quotaType);
+            throw new IllegalArgumentException("Invalid quota type when converting to the domain model: " + quotaType);
         }
     }
 

@@ -23,16 +23,16 @@ import com.sep.vox.domain.model.subscription.SchoolSubscriptionQuotaRecord;
 import com.sep.vox.domain.repository.SchoolSubscriptionQuotaRecordRepository;
 
 /**
- * Chốt phần tiền tự nạp mang sang tại ĐÚNG ranh giới hai kỳ -- nửa còn lại của lỗi gia hạn sớm.
+ * Pins the self-funded money carried over at EXACTLY the boundary between two periods -- the other half of the early-renewal bug.
  *
- * <p>{@code OrderSettlementQuotaCarryForwardTests} canh nửa kia: lúc chốt đơn thì KHÔNG được chốt con
- * số. File này canh chuyện gì xảy ra khi kỳ mới thật sự bắt đầu, và ba tính chất ở đây là ba thứ khiến
- * phép mang sang muộn an toàn hơn phép chụp ảnh sớm:
+ * <p>{@code OrderSettlementQuotaCarryForwardTests} guards the other half: at order settlement the figure must NOT be fixed. This
+ * file guards what happens when the new period really starts, and the three properties here are why a late carry-over is safer
+ * than an early snapshot:
  *
  * <ul>
- *   <li><b>Đọc muộn</b> nên thấy đúng con số sau khi kỳ cũ đã tiêu/nạp xong.</li>
- *   <li><b>Cộng thêm chứ không gán</b> nên không xoá khoản trường tự nạp vào kỳ mới trong lúc chờ job.</li>
- *   <li><b>Đúng một lần</b> vì cái hẹn bị xoá ngay -- cộng thêm mà chạy hai lần là nhân đôi tiền.</li>
+ *   <li><b>Read late</b> so it sees the right figure after the old period has finished spending/topping up.</li>
+ *   <li><b>Add, don't assign</b> so it does not erase what the school topped up into the new period while waiting for the job.</li>
+ *   <li><b>Exactly once</b> because the marker is cleared right away -- adding twice doubles the money.</li>
  * </ul>
  */
 class CarryQuotaFundingAtPeriodStartServiceTests {
@@ -77,8 +77,8 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
 
     @Test
     void the_amount_is_read_at_the_boundary_so_spending_in_the_window_reduces_it() {
-        // Cả điểm của việc hoãn: trường tiêu 12tr trên kỳ cũ SAU khi đã trả tiền gia hạn. Ảnh chụp lúc
-        // chốt đơn sẽ nói 5tr; con số đúng ở ranh giới là 3tr.
+        // The whole point of deferring: the school spends 12M on the old period AFTER paying for the renewal. A snapshot at
+        // settlement time would say 5M; the correct figure at the boundary is 3M.
         givenSourcePool(QuotaType.PRACTICE, 15_000_000, 12_000_000, 5_000_000);
         givenDueCarry(QuotaType.PRACTICE);
 
@@ -90,8 +90,8 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
 
     @Test
     void funding_added_during_the_window_is_carried_too_instead_of_being_destroyed() {
-        // Chiều ngược lại: trường NẠP THÊM 3tr sau khi trả tiền gia hạn. Khoản đó vào ví kỳ cũ, không
-        // có trong ảnh chụp lúc chốt đơn, và trước V13 nó chết ở ranh giới.
+        // The opposite direction: the school TOPS UP 3M after paying for the renewal. That money goes into the old period's quota record, is not
+        // in the snapshot taken at settlement, and before V13 it died at the boundary.
         givenSourcePool(QuotaType.PRACTICE, 18_000_000, 0, 8_000_000);
         givenDueCarry(QuotaType.PRACTICE);
 
@@ -103,8 +103,8 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
 
     @Test
     void carrying_adds_to_the_new_pool_rather_than_overwriting_what_it_already_holds() {
-        // Kỳ mới đã bắt đầu và trường tự nạp 2tr vào nó trước khi job kịp chạy. Một phép GÁN
-        // "funded = phần chưa tiêu của kỳ cũ" sẽ xoá đúng khoản đó.
+        // The new period has already started and the school topped up 2M into it before the job could run. An ASSIGNMENT
+        // "funded = unspent part of the old period" would erase exactly that amount.
         givenSourcePool(QuotaType.PRACTICE, 15_000_000, 0, 5_000_000);
         givenDueCarry(QuotaType.PRACTICE, 2_000_000);
 
@@ -127,7 +127,7 @@ class CarryQuotaFundingAtPeriodStartServiceTests {
 
     @Test
     void the_promise_is_cleared_even_when_there_is_nothing_left_to_carry() {
-        // Kỳ cũ tiêu cạn. Không xoá hẹn thì job đọc lại dòng này mỗi giờ, mãi mãi.
+        // The old period is spent out. Without clearing the marker the job re-reads this row every hour, forever.
         givenSourcePool(QuotaType.PRACTICE, 15_000_000, 15_000_000, 5_000_000);
         givenDueCarry(QuotaType.PRACTICE);
 

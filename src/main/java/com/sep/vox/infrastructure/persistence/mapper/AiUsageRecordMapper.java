@@ -58,7 +58,7 @@ public final class AiUsageRecordMapper {
         try {
             return AiUsageType.valueOf(type);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại sử dụng của AI model khi chuyển đổi sang domain model không hợp lệ: " + type);
+            throw new IllegalArgumentException("Invalid AI model usage type when converting to the domain model: " + type);
         }
     }
 

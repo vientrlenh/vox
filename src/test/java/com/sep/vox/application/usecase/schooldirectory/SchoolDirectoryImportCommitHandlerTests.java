@@ -50,7 +50,7 @@ class SchoolDirectoryImportCommitHandlerTests {
         assertThat(result.created()).isZero();
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(row.getStatus()).isEqualTo(ImportRowStatus.FAILED);
-        assertThat(row.getErrorsJson()).contains("Mã trường đã tồn tại");
+        assertThat(row.getErrorsJson()).contains("School code already exists");
     }
 
     private ImportRow row(Map<String, String> rawData) {

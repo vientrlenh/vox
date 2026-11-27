@@ -70,7 +70,7 @@ class DeleteSupportedLanguageUseCaseTests {
 
         ResourceNotFoundException exception = assertThrows(ResourceNotFoundException.class, () -> useCase.execute(new DeleteSupportedLanguageCommand(id)));
 
-        assertThat(exception).hasMessage("Không tìm thấy ngôn ngữ");
+        assertThat(exception).hasMessage("Language not found");
         verify(supportedLanguageRepository, never()).save(any());
     }
 

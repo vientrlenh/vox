@@ -33,11 +33,13 @@ import com.sep.vox.domain.repository.SchoolSubscriptionEventRepository;
 import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 
 /**
- * Đình chỉ là cưỡng chế cắt quyền dùng NGAY, nên ba điều kiện bao quanh nó mới là phần đáng test:
- * phải có lý do, chỉ áp cho gói đang ACTIVE, và KHÔNG được cắt giữa ca thi đang diễn ra.
+ * Suspension is a forced and IMMEDIATE cut of access, so the three conditions around it are what is worth testing:
+ * a reason is required, it only applies to an ACTIVE plan, and it must NOT cut in the middle of a running
+ * assessment schedule.
  *
- * <p>Sổ audit bền vững là SchoolSubscriptionEvent chứ không còn FinancialEvent -- ba cột suspended_*
- * trên chính gói bị xóa trắng lúc gỡ đình chỉ nên chỉ phản ánh lần đình chỉ ĐANG hiệu lực.
+ * <p>The durable audit ledger is SchoolSubscriptionEvent, no longer FinancialEvent -- the three suspended_*
+ * columns on the plan itself are wiped when the suspension is lifted, so they only reflect the suspension that is
+ * IN FORCE.
  */
 class ForceSuspendSubscriptionUseCaseTests {
 
@@ -127,7 +129,7 @@ class ForceSuspendSubscriptionUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new ForceSuspendSubscriptionCommand(SUBSCRIPTION_ID, REASON)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("ca thi");
+            .hasMessageContaining("assessment schedule");
         verify(schoolSubscriptionRepository, never()).save(any());
         verify(schoolSubscriptionEventRepository, never()).save(any());
     }

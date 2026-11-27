@@ -27,7 +27,7 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
         "templates/email/appeal-rejected.html";
     private static final String APPEAL_PUBLISHED_TEMPLATE =
         "templates/email/appeal-published.html";
-    /** Khung dùng chung cho các thông báo vòng đời điểm — xem javadoc ở MailTemplatePort. */
+    /** Shared frame for the score lifecycle notifications — see the javadoc in MailTemplatePort. */
     private static final String RESULT_NOTIFICATION_TEMPLATE =
         "templates/email/result-notification.html";
     private static final String INVOICE_PAID_TEMPLATE =
@@ -89,86 +89,86 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
             .replace("{{scoreAfter}}", escapeHtml(scoreAfter));
     }
 
-    // ---- thông báo vòng đời điểm ------------------------------------------
+    // ---- score lifecycle notifications ------------------------------------------
 
     @Override
     public String renderResultReleasedEmail(String assessmentName, String totalScore) {
         return renderNotification(
-            "Điểm thi của bạn đã có",
-            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName) + "</strong> đã được chấm xong.",
-            "Kết quả",
-            "Tổng điểm: <strong>" + escapeHtml(totalScore) + "</strong>");
+            "Your assessment score is available",
+            "Your submission for the assessment <strong>" + escapeHtml(assessmentName) + "</strong> has been graded.",
+            "Result",
+            "Total score: <strong>" + escapeHtml(totalScore) + "</strong>");
     }
 
     @Override
     public String renderResultRegradedEmail(
             String assessmentName, String roundLabel, String scoreBefore, String scoreAfter) {
         return renderNotification(
-            "Điểm thi của bạn đã thay đổi",
-            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName)
-                + "</strong> vừa được " + escapeHtml(roundLabel) + ".",
-            "Điểm sau khi chấm lại",
-            "Điểm trước: " + escapeHtml(scoreBefore)
-                + "<br><strong>Điểm sau: " + escapeHtml(scoreAfter) + "</strong>");
+            "Your assessment score has changed",
+            "Your submission for the assessment <strong>" + escapeHtml(assessmentName)
+                + "</strong> has just been " + escapeHtml(roundLabel) + ".",
+            "Score after regrading",
+            "Previous score: " + escapeHtml(scoreBefore)
+                + "<br><strong>New score: " + escapeHtml(scoreAfter) + "</strong>");
     }
 
     @Override
     public String renderResultInvalidatedEmail(String assessmentName, String reason) {
         return renderNotification(
-            "Bài thi của bạn đã bị vô hiệu",
-            "Bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName)
-                + "</strong> đã bị kết luận vi phạm quy chế.",
-            "Lý do",
+            "Your submission has been invalidated",
+            "Your submission for the assessment <strong>" + escapeHtml(assessmentName)
+                + "</strong> has been found in violation of the assessment rules.",
+            "Reason",
             escapeHtml(reason));
     }
 
     @Override
     public String renderResultInvalidClearedEmail(String assessmentName, String reason) {
         return renderNotification(
-            "Bài thi của bạn đã được khôi phục",
-            "Sau khi xem xét lại, bài thi của bạn ở kỳ thi <strong>" + escapeHtml(assessmentName)
-                + "</strong> không bị coi là vi phạm và sẽ được chấm lại.",
-            "Lý do",
+            "Your submission has been reinstated",
+            "After review, your submission for the assessment <strong>" + escapeHtml(assessmentName)
+                + "</strong> is not considered a violation and will be graded again.",
+            "Reason",
             escapeHtml(reason));
     }
 
     @Override
     public String renderAppealApprovedEmail(String assessmentName, String deadline) {
         return renderNotification(
-            "Đơn phúc khảo của bạn đã được duyệt",
-            "Đơn phúc khảo cho kỳ thi <strong>" + escapeHtml(assessmentName)
-                + "</strong> đã được duyệt và đang được chấm lại.",
-            "Hạn xử lý",
+            "Your appeal has been approved",
+            "Your appeal for the assessment <strong>" + escapeHtml(assessmentName)
+                + "</strong> has been approved and is being regraded.",
+            "Processing deadline",
             escapeHtml(deadline));
     }
 
     @Override
     public String renderResultOutcomeDecidedEmail(String assessmentName, String outcomeLabel, String totalScore) {
         return renderNotification(
-            "Kết quả cuối cùng của bạn",
-            "Kỳ thi <strong>" + escapeHtml(assessmentName) + "</strong> đã chốt kết quả.",
-            "Kết quả",
-            "Xếp loại: <strong>" + escapeHtml(outcomeLabel) + "</strong>"
-                + "<br>Tổng điểm: " + escapeHtml(totalScore));
+            "Your final result",
+            "The result for the assessment <strong>" + escapeHtml(assessmentName) + "</strong> is final.",
+            "Result",
+            "Classification: <strong>" + escapeHtml(outcomeLabel) + "</strong>"
+                + "<br>Total score: " + escapeHtml(totalScore));
     }
 
     @Override
     public String renderGradingDeadlineReminderEmail(String assessmentName, String roundLabel, String deadline) {
         return renderNotification(
-            "Nhắc hạn chấm bài",
-            "Bạn còn một bài chưa chấm xong ở kỳ thi <strong>" + escapeHtml(assessmentName) + "</strong>.",
-            "Chi tiết",
-            "Vòng chấm: " + escapeHtml(roundLabel) + "<br><strong>Hạn: " + escapeHtml(deadline) + "</strong>");
+            "Grading deadline reminder",
+            "You still have a submission left to grade in the assessment <strong>" + escapeHtml(assessmentName) + "</strong>.",
+            "Details",
+            "Grading round: " + escapeHtml(roundLabel) + "<br><strong>Deadline: " + escapeHtml(deadline) + "</strong>");
     }
 
     @Override
     public String renderGradingDeclinedEmail(String assessmentName, String teacherName, String reason) {
         return renderNotification(
-            "Có giáo viên trả lại phân công chấm bài",
-            "Một phân công ở kỳ thi <strong>" + escapeHtml(assessmentName)
-                + "</strong> vừa được trả lại và đang chờ giao cho người khác.",
-            "Chi tiết",
-            "Giáo viên: " + escapeHtml(teacherName) + "<br>Lý do: " + escapeHtml(reason));
+            "A teacher returned a grading assignment",
+            "An assignment in the assessment <strong>" + escapeHtml(assessmentName)
+                + "</strong> was just returned and is waiting to be assigned to someone else.",
+            "Details",
+            "Teacher: " + escapeHtml(teacherName) + "<br>Reason: " + escapeHtml(reason));
     }
 
     @Override
@@ -184,62 +184,62 @@ public class SmtpEmailTemplateRenderService implements MailTemplatePort {
             .replace("{{validUntilLabel}}", escapeHtml(validUntilLabel));
     }
 
-    // ---- nợ hạn mức AI ------------------------------------------------
+    // ---- AI quota debt ------------------------------------------------
 
     @Override
     public String renderDebtCapExceededEmail(String schoolName, String quotaLabel, String overageLabel, String capLabel) {
         return renderNotification(
-            "Cảnh báo: nợ hạn mức AI vượt trần",
-            "Trường <strong>" + escapeHtml(schoolName) + "</strong> có chi phí AI thực tế vượt hạn mức "
-                + "đã cấp và hiện vượt cả trần cảnh báo.",
-            "Chi tiết",
-            "Hạn mức: " + escapeHtml(quotaLabel) + "<br>Đang nợ: <strong>" + escapeHtml(overageLabel)
-                + "</strong><br>Trần cảnh báo: " + escapeHtml(capLabel));
+            "Warning: AI quota debt exceeds the cap",
+            "The actual AI cost of the school <strong>" + escapeHtml(schoolName) + "</strong> exceeds the allocated "
+                + "quota and now also exceeds the warning cap.",
+            "Details",
+            "Quota: " + escapeHtml(quotaLabel) + "<br>Debt: <strong>" + escapeHtml(overageLabel)
+                + "</strong><br>Warning cap: " + escapeHtml(capLabel));
     }
 
     @Override
     public String renderSchoolLockedDueToDebtEmail(String schoolName) {
         return renderNotification(
-            "Trường đang bị khóa do nợ hạn mức AI",
-            "Chi phí AI thực tế của trường <strong>" + escapeHtml(schoolName)
-                + "</strong> đã vượt hạn mức được cấp.",
-            "Cần làm gì",
-            "Vui lòng thanh toán hoặc gia hạn/nâng cấp gói để tiếp tục tổ chức thi.");
+            "The school is locked due to AI quota debt",
+            "The actual AI cost of the school <strong>" + escapeHtml(schoolName)
+                + "</strong> has exceeded the allocated quota.",
+            "What to do",
+            "Please pay, or renew or upgrade the plan, to continue organizing assessments.");
     }
 
     @Override
     public String renderSchoolDebtClearedEmail(String schoolName) {
         return renderNotification(
-            "Trường đã hết nợ hạn mức AI",
-            "Trường <strong>" + escapeHtml(schoolName) + "</strong> đã đủ hạn mức trở lại.",
-            "Trạng thái",
-            "Có thể tổ chức thi bình thường.");
+            "The school has cleared its AI quota debt",
+            "The school <strong>" + escapeHtml(schoolName) + "</strong> has enough quota again.",
+            "Status",
+            "Assessments can be organized as normal.");
     }
 
-    // ---- đình chỉ/gỡ đình chỉ gói subscription -----------------------------
+    // ---- subscription plan suspension/unsuspension -----------------------------
 
     @Override
     public String renderSchoolSubscriptionSuspendedEmail(String schoolName, String reason) {
         return renderNotification(
-            "Gói subscription bị đình chỉ",
-            "Gói subscription của trường <strong>" + escapeHtml(schoolName) + "</strong> vừa bị đình chỉ.",
-            "Lý do",
+            "Subscription plan suspended",
+            "The subscription plan of the school <strong>" + escapeHtml(schoolName) + "</strong> has just been suspended.",
+            "Reason",
             escapeHtml(reason));
     }
 
     @Override
     public String renderSchoolSubscriptionUnsuspendedEmail(String schoolName) {
         return renderNotification(
-            "Gói subscription đã được gỡ đình chỉ",
-            "Gói subscription của trường <strong>" + escapeHtml(schoolName) + "</strong> đã được gỡ đình chỉ.",
-            "Trạng thái",
-            "Trường có thể sử dụng bình thường trở lại.");
+            "Subscription plan unsuspended",
+            "The subscription plan of the school <strong>" + escapeHtml(schoolName) + "</strong> has been unsuspended.",
+            "Status",
+            "The school can use the system as normal again.");
     }
 
     /**
-     * Các tham số ở đây đã là HTML (có thẻ {@code <strong>}) và ĐÃ được escape ở từng
-     * method gọi vào — đừng escape thêm lần nữa ở đây, nếu không thẻ sẽ hiện ra dưới
-     * dạng chữ trong mail.
+     * The parameters here are already HTML (they contain {@code <strong>} tags) and HAVE been escaped in each
+     * calling method — do not escape again here, otherwise the tags would show up as
+     * text in the mail.
      */
     private String renderNotification(String heading, String intro, String panelTitle, String panelBody) {
         return loadTemplate(RESULT_NOTIFICATION_TEMPLATE)

@@ -13,12 +13,12 @@ public interface AssessmentResultAppealRepository {
     Optional<AssessmentResultAppeal> findById(UUID id);
     AssessmentResultAppeal save(AssessmentResultAppeal appeal);
     boolean existsOpenByCandidateResultId(UUID candidateResultId);
-    /** Số vòng phúc khảo đã thực sự chấm lại và công bố — đơn bị từ chối không tính. */
+    /** Number of appeal rounds actually re-graded and published — rejected appeals do not count. */
     long countPublishedByCandidateResultId(UUID candidateResultId);
     List<AssessmentResultAppeal> findByCandidateResultId(UUID candidateResultId);
     void deleteByIdIn(Collection<UUID> ids);
     long countBySchoolIdAndStatusIn(UUID schoolId, Collection<AssessmentAppealStatus> statuses);
 
-    /** Mốc nộp của đơn chờ xử lý lâu nhất của trường; null khi hàng đợi sạch — null KHÁC 0 ngày. */
+    /** Submission time of the longest-waiting pending appeal of the school; null when the queue is clean — null is NOT 0 days. */
     Instant findOldestPendingRequestedAt(UUID schoolId);
 }

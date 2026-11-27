@@ -41,12 +41,12 @@ import com.sep.vox.domain.repository.RubricResultBandRepository;
 import com.sep.vox.domain.repository.RubricVersionRepository;
 
 /**
- * Cửa duy nhất học sinh xem kết quả của mình, nên đây là chỗ khoá hai bất biến:
- * bài chưa có kết luận thì không lộ điểm cho chính chủ, còn giáo viên/admin thì luôn
- * xem được — họ cần điểm chưa công bố để có căn cứ mà chấm.
+ * The only door through which a student views their own result, so this is where two invariants are locked:
+ * a submission with no conclusion does not reveal the score to its owner, while a teacher/admin can always
+ * see it -- they need the unpublished score as a basis for grading.
  *
- * <p>Trang vẫn phải mở được khi bị che: nếu ném lỗi thì học sinh chỉ thấy "không tìm thấy"
- * và không biết bài mình đang ở đâu.
+ * <p>The page must still open when masked: if it threw an error the student would only see "not found"
+ * and would not know where their submission stands.
  */
 class ViewAssessmentSessionResultUseCaseTests {
 
@@ -85,8 +85,8 @@ class ViewAssessmentSessionResultUseCaseTests {
         assessmentItemEvaluationRepository = mock(AssessmentItemEvaluationRepository.class);
         assessmentPaperItemRepository = mock(AssessmentPaperItemRepository.class);
         questionAssetRepository = mock(com.sep.vox.domain.repository.QuestionAssetRepository.class);
-        // Mặc định câu KHÔNG có asset: mọi test sẵn có đều dựng câu hỏi trần, và trả rỗng giữ
-        // nguyên hành vi chúng đang khẳng định.
+        // By default a question has NO asset: every existing test builds a bare question, and returning empty keeps
+        // the behavior they assert.
         when(questionAssetRepository.findByQuestionId(any())).thenReturn(java.util.List.of());
         useCase = new ViewAssessmentSessionResultUseCase(
             assessmentCandidateResultRepository,

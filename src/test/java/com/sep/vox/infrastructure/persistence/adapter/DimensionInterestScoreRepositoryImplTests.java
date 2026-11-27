@@ -15,12 +15,12 @@ import com.sep.vox.domain.repository.DimensionInterestScoreRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Học sinh làm lại quiz sở thích -- mọi lần thứ hai trở đi -- gọi {@code replaceScores} với cùng
- * {@code learner_profile_id} đã có dòng cũ. Chạy trên DB thật vì lỗi này là lỗi THỨ TỰ FLUSH của
- * Hibernate: {@code deleteByLearnerProfileId} (không {@code @Modifying}) chỉ xếp hàng một
- * {@code EntityDeleteAction}, và Hibernate luôn thực thi insert TRƯỚC delete trong hàng đợi flush
- * bất kể thứ tự gọi trong code -- unit test với repository giả lập không bao giờ thấy được điều
- * này, vì mock không có hàng đợi flush nào cả.
+ * A student retaking the interest quiz -- every time from the second on -- calls {@code replaceScores} with the same
+ * {@code learner_profile_id} that already has old rows. Runs on a real DB because this bug is a FLUSH ORDER bug of
+ * Hibernate: {@code deleteByLearnerProfileId} (not {@code @Modifying}) only queues one
+ * {@code EntityDeleteAction}, and Hibernate always executes inserts BEFORE deletes in the flush queue
+ * regardless of the call order in code -- a unit test with a mock repository can never see this,
+ * because a mock has no flush queue at all.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport

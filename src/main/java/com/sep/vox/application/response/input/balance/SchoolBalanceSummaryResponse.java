@@ -5,23 +5,23 @@ import java.math.BigDecimal;
 import com.sep.vox.domain.common.DecimalText;
 
 /**
- * Cộng dồn sổ cái ví theo một khoảng thời gian, gom theo bốn nhóm bút toán.
+ * The wallet ledger accumulated over a time range, grouped into four groups of entries.
  *
- * <p>Bốn nhóm này phủ HẾT năm loại bút toán (TOP_UP và REFUND gộp làm một), và đó là điều kiện để ô
- * tổng làm được việc của nó: giải thích đủ mọi thay đổi của số dư trong dải. Thêm một loại bút toán
- * mới mà không thêm nhóm ở đây thì sao kê hiện một ví tụt đi không rõ vì sao -- đúng ca QUOTA_FUNDING
- * đã gây ra một lần.
+ * <p>These four groups cover ALL five entry types (TOP_UP and REFUND merged into one), and that is the condition for the
+ * total box to do its job: explain every change of the balance within the range. Adding a new entry type
+ * without adding a group here makes the statement show a wallet that dropped for no visible reason -- exactly the case
+ * QUOTA_FUNDING caused once.
  *
- * <p>Là RESPONSE của use case chứ không phải DTO ở domain, khác với {@code SchoolBalanceDto} và
- * {@code SchoolBalanceEntryDto}: hai cái kia ánh xạ 1-1 từ một domain model có thật, còn cái này
- * không có model nào đứng sau -- nó là kết quả use case ghép từ năm phép cộng dồn riêng biệt. Đặt ở
- * domain/dto thì phải bịa ra một "SchoolBalanceSummary" mà nghiệp vụ không hề có.
+ * <p>It is the RESPONSE of a use case and not a DTO in the domain, unlike {@code SchoolBalanceDto} and
+ * {@code SchoolBalanceEntryDto}: those two map 1-1 from a real domain model, while this one has
+ * no model behind it -- it is a use-case result assembled from five separate accumulations. Placed in
+ * domain/dto it would force inventing a "SchoolBalanceSummary" that the business does not have.
  *
- * <p>Phải tính ở DB chứ không dựng được ở client: client chỉ cầm một trang 20 dòng, còn dải cần cộng
- * có thể hàng nghìn. Đây cũng là nguồn cho con số "đã trừ trong 30 ngày qua" trên trang Số dư ví.
+ * <p>It must be computed in the DB and cannot be built on the client: the client holds only one page of 20 rows, while the range to accumulate
+ * may have thousands. It is also the source of the "deducted in the last 30 days" number on the Wallet Balance page.
  *
- * <p>CỐ Ý không có số đếm bút toán: con số đó đã nằm ở {@code totalElements} của trang sao kê, và
- * hai nơi cùng đếm một thứ là hai nơi có thể lệch nhau.
+ * <p>DELIBERATELY has no entry count: that number is already in {@code totalElements} of the statement page, and
+ * two places counting the same thing are two places that can disagree.
  */
 public record SchoolBalanceSummaryResponse(
     String creditedVnd,
@@ -31,13 +31,13 @@ public record SchoolBalanceSummaryResponse(
 ) {
 
     /**
-     * @param topUp        tổng TOP_UP  ({@code >= 0})
-     * @param refund       tổng REFUND  ({@code >= 0}) -- gộp chung với nạp vì với người đọc sao kê thì
-     *                     cả hai đều là "tiền vào ví"; tách ra là bắt họ tự cộng lại
-     * @param overage      tổng OVERAGE_CHARGE ({@code <= 0})
-     * @param quotaFunding tổng QUOTA_FUNDING ({@code <= 0}) -- KHÔNG gộp vào overage dù cùng dấu:
-     *                     tiền chuyển sang ví hạn mức chưa hề bị tiêu, gộp là báo sai một khoản chi
-     * @param adjustment   tổng ADJUSTMENT (dấu nào cũng có thể)
+     * @param topUp        total TOP_UP  ({@code >= 0})
+     * @param refund       total REFUND  ({@code >= 0}) -- merged with top-ups because to the reader of the statement
+     *                     both are "money into the wallet"; separating them makes them add it up themselves
+     * @param overage      total OVERAGE_CHARGE ({@code <= 0})
+     * @param quotaFunding total QUOTA_FUNDING ({@code <= 0}) -- NOT merged into overage even though the sign is the same:
+     *                     money moved to the quota wallet has not been spent, and merging would report a spend that did not happen
+     * @param adjustment   total ADJUSTMENT (may have either sign)
      */
     public static SchoolBalanceSummaryResponse of(
             BigDecimal topUp, BigDecimal refund, BigDecimal overage, BigDecimal quotaFunding,
@@ -50,8 +50,8 @@ public record SchoolBalanceSummaryResponse(
         );
     }
 
-    // Repository đã COALESCE về 0, nhưng cộng hai giá trị lại thì một null lọt qua sẽ thành
-    // NullPointerException ở đúng ca "trường chưa có bút toán nào" -- ca thường gặp nhất.
+    // The repository already COALESCEs to 0, but when adding two values a null that slips through would become a
+    // NullPointerException in exactly the "school has no entries yet" case -- the most common one.
     private static BigDecimal nullSafe(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
     }

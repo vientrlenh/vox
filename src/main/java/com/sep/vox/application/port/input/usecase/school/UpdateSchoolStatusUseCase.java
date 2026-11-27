@@ -32,13 +32,13 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
     @Transactional
     public UUID execute(UpdateSchoolStatusCommand command) {
         School school = schoolRepository.findById(command.id())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học với ID đã cho."));
+                .orElseThrow(() -> new ResourceNotFoundException("No school found with the given ID."));
 
         requireCallerMayChangeStatusOf(school);
 
         // Avoid a redundant update
         if (school.isActive() == command.isActive()) {
-            throw new IllegalArgumentException("Trường học này đã ở trạng thái " + (command.isActive() ? "Hoạt động" : "Vô hiệu hóa") + ". Không cần cập nhật.");
+            throw new IllegalArgumentException("This school is already " + (command.isActive() ? "active" : "deactivated") + ". No update needed.");
         }
 
         school.setActive(command.isActive());
@@ -51,7 +51,7 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
     private void requireCallerMayChangeStatusOf(School school) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         if (!userRepository.existsByIdAndStatus(currentUserId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Tài khoản của bạn không tồn tại hoặc đã bị khóa.");
+            throw new UnauthorizedException("Your account does not exist or has been locked.");
         }
 
         // SECURITY GUARD: checked through the SchoolUser link
@@ -61,7 +61,7 @@ public class UpdateSchoolStatusUseCase implements IUseCase<UpdateSchoolStatusCom
         if (schoolUserOpt.isPresent()) {
             SchoolUser schoolUser = schoolUserOpt.get();
             if (!schoolUser.getSchoolId().equals(school.getId())) {
-                throw new ForbiddenException("BẢO MẬT: Bạn không có quyền cập nhật trạng thái trường học của đơn vị khác.");
+                throw new ForbiddenException("SECURITY: You are not allowed to update the status of another organization's school.");
             }
         }
     }

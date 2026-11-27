@@ -246,7 +246,7 @@ class S3BucketInitializerTests {
 
         assertThatCode(() -> initializer().run(null)).doesNotThrowAnyException();
 
-        // Buoc sau van chay du buoc truoc that bai.
+        // The later step still runs even though the earlier step failed.
         verify(s3Client).putBucketCors(any(PutBucketCorsRequest.class));
     }
 
@@ -270,6 +270,6 @@ class S3BucketInitializerTests {
 
         assertThatThrownBy(() -> initializer().run(null))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("Khong the tao bucket S3");
+            .hasMessageContaining("Could not create S3 bucket");
     }
 }

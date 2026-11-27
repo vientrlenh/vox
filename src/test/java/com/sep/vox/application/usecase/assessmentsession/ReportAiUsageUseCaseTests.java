@@ -32,10 +32,10 @@ import com.sep.vox.domain.repository.AssessmentCandidateRepository;
 import com.sep.vox.domain.repository.AssessmentSessionRepository;
 
 /**
- * ReportAiUsageUseCase là đường REST song song với AiUsageRecordedConsumer (Kafka) -- điểm khác
- * biệt duy nhất cần test riêng là ownership check (học viên chỉ báo được usage cho CHÍNH phiên thi
- * của mình); phần idempotency/lưu trữ đã có RecordAiUsageUseCaseTests bao phủ, ở đây chỉ verify nó
- * được gọi đúng số lần.
+ * ReportAiUsageUseCase is the REST path running parallel to AiUsageRecordedConsumer (Kafka) -- the only difference
+ * that needs its own test is the ownership check (an examinee can only report usage for THEIR OWN session);
+ * idempotency/storage are already covered by RecordAiUsageUseCaseTests, so here we only verify that it is
+ * called the right number of times.
  */
 class ReportAiUsageUseCaseTests {
 

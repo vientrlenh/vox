@@ -28,6 +28,6 @@ public class RestAssessmentTurnController {
             @RequestParam(name = "attemptAnswerId") UUID attemptAnswerId,
             @RequestParam(name = "turnOrder") int turnOrder) {
         TurnUploadUrlResponse data = getTurnUploadUrlUseCase.execute(new GetTurnUploadUrlQuery(attemptAnswerId, turnOrder));
-        return ResponseEntity.ok(ApiResponse.success("Lấy upload URL thành công", data));
+        return ResponseEntity.ok(ApiResponse.success("Upload URL retrieved successfully", data));
     }
 }

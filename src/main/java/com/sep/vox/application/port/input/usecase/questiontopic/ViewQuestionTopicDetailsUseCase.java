@@ -22,7 +22,7 @@ public class ViewQuestionTopicDetailsUseCase implements IUseCase<ViewQuestionTop
     @Transactional(readOnly = true)
     public QuestionTopicDto execute(ViewQuestionTopicDetailsQuery input) {
         QuestionTopic topic = questionTopicRepository.findById(input.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question topic not found"));
         return QuestionTopicDtoMapper.toDto(topic);
     }
 }

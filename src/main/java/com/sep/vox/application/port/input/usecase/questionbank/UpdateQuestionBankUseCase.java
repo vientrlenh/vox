@@ -38,12 +38,12 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
             .orElse(null);
 
         QuestionBank questionBank = questionBankRepository.findById(command.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         validateAccess(questionBank.getOwnerType(), questionBank.getSchoolId(), currentSchoolId);
 
         if (questionBank.getStatus() != QuestionBankStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ được cập nhật ngân hàng câu hỏi đang ở trạng thái DRAFT");
+            throw new IllegalArgumentException("Only a question bank in DRAFT status can be updated");
         }
 
         if (command.name() != null) {
@@ -58,12 +58,12 @@ public class UpdateQuestionBankUseCase implements IUseCase<UpdateQuestionBankCom
     private void validateAccess(QuestionBankOwnerType ownerType, java.util.UUID schoolId, java.util.UUID currentSchoolId) {
         if (ownerType == QuestionBankOwnerType.SYSTEM) {
             if (!userContextPort.isSystemAdmin()) {
-                throw new ForbiddenException("Quyền truy cập bị từ chối");
+                throw new ForbiddenException("Access denied");
             }
             return;
         }
         if (currentSchoolId == null || !currentSchoolId.equals(schoolId)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 

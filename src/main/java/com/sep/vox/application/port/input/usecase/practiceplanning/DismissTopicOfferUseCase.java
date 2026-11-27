@@ -30,7 +30,7 @@ public class DismissTopicOfferUseCase implements IUseCase<DismissTopicOfferComma
     public Boolean execute(DismissTopicOfferCommand input) {
         UUID studentId = userContextPort.getCurrentAuthenticatedUserId();
         if (!practiceTopicRepository.existsActiveById(input.topicId())) {
-            throw new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập.");
+            throw new ResourceNotFoundException("Practice topic not found.");
         }
         interestVectorService.appendInterestEvent(
             studentId, input.topicId(), null, EVENT_TYPE, BORED_SIGNAL

@@ -9,15 +9,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 
 public record CreateFrameworkResultBandsRequest(
-        @NotEmpty(message = "Phải gửi lên ít nhất 1 mức kết quả")
+        @NotEmpty(message = "At least 1 result band must be submitted")
         @Valid
         List<ResultBandItemRequest> bands
 ) {
     public record ResultBandItemRequest(
-            @NotBlank(message = "Mã kết quả không được để trống")
+            @NotBlank(message = "Result code must not be blank")
             String code,
 
-            @NotBlank(message = "Nhãn kết quả không được để trống")
+            @NotBlank(message = "Result label must not be blank")
             String label,
 
             String description,

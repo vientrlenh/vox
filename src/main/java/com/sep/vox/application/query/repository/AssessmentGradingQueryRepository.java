@@ -32,7 +32,7 @@ import com.sep.vox.domain.common.PageResult;
  */
 public interface AssessmentGradingQueryRepository {
 
-    /** Bảng điều phối của school admin: mọi bài trong phạm vi lọc, gồm cả bài chưa gán. */
+    /** The school admin's dispatch table: every submission in the filter scope, including unassigned ones. */
     PageResult<GradingAssignmentRowInfo> searchAssignments(GradingAssignmentFilter filter, int page, int size);
 
     /** @param assessmentKind {@code CENTRALIZED} / {@code CLASS_TEST}; {@code null} = both. */
@@ -52,54 +52,54 @@ public interface AssessmentGradingQueryRepository {
         UUID teacherId, UUID assessmentId, String assessmentKind, String status, String roundType, int page, int size);
 
     /**
-     * Những kỳ thi giáo viên này ĐANG hoặc ĐÃ có phân công chấm, kèm số bài mỗi kỳ.
-     * Nguồn của bộ lọc kỳ thi trên hàng đợi giáo viên.
+     * The assessments in which this teacher CURRENTLY has or HAS HAD a grading assignment, with the
+     * number of submissions per assessment. The source of the assessment filter on the teacher queue.
      *
-     * <p>Không dùng lại lối đọc kỳ thi của trường: điều kiện hiển thị ở đó là system
-     * admin / school admin / thành viên kỳ thi / kỳ thi đã đóng, mà giáo viên được giao
-     * chấm không rơi vào ô nào — quyền của họ đến từ chính dòng phân công, nên phạm vi
-     * dropdown cũng phải suy ra từ đó.
+     * <p>Does not reuse the school's assessment read path: the visibility conditions there are system
+     * admin / school admin / assessment member / closed assessment, and a teacher assigned to grade
+     * falls into none of those -- their permission comes from the assignment row itself, so the scope
+     * of the dropdown must be derived from it too.
      *
-     * <p>Không phân trang: tập này đóng theo số phân công của MỘT người, và dropdown
-     * phân trang thì không tự dựng được nhãn cho mục đang chọn nếu nó rơi sang trang sau.
+     * <p>Not paged: this set is bounded by the number of assignments of ONE person, and a paged dropdown
+     * cannot build the label of the selected entry if it falls on a later page.
      */
     List<GradingAssessmentOptionInfo> findAssessmentsWithTasksByTeacherId(UUID teacherId, String assessmentKind);
 
-    /** Màn chấm. Trả empty nếu người gọi không phải giáo viên được gán bài này. */
+    /** The grading screen. Returns empty if the caller is not the teacher assigned to this submission. */
     Optional<GradingTaskDetailInfo> findTaskDetail(UUID assignmentId, UUID teacherId);
 
     List<AssignableTeacherInfo> findAssignableTeachers(UUID schoolId, String keyword);
 
     /**
-     * Trong tập {@code userIds}, những ai là giáo viên ACTIVE thuộc {@code schoolId}.
-     * Dùng để validate cả nhóm gán tay / auto-assign trong một query, thay cho việc
-     * gọi {@code isTeacherOfSchool} lặp từng người (N+1).
+     * Within {@code userIds}, those who are ACTIVE teachers of {@code schoolId}.
+     * Used to validate a whole group of manual / auto-assign in one query, instead of calling
+     * {@code isTeacherOfSchool} once per person (N+1).
      */
     Set<UUID> findTeacherIdsInSchool(UUID schoolId, Collection<UUID> userIds);
 
     /**
-     * Số phân công ĐANG MỞ mỗi giáo viên đang giữ, không phân biệt vòng. Auto-assign
-     * lấy đây làm điểm xuất phát để lần chạy thứ hai không dồn hết vào người đầu.
+     * The number of OPEN assignments each teacher currently holds, regardless of round. Auto-assign
+     * uses this as the starting point so that a second run does not pile everything onto the first person.
      */
     Map<UUID, Long> assignedLoadByTeacherIds(Collection<UUID> teacherIds);
 
     /**
-     * Bài đủ điều kiện cho một vòng chấm và CHƯA có phân công đang mở.
+     * Submissions eligible for a grading round that have NO open assignment yet.
      *
-     * <p>Trạng thái hợp lệ do {@code GradingRoundPolicy} quyết, truyền vào đây — luật
-     * nghiệp vụ không nằm trong SQL. Bài đang có đơn phúc khảo mở bị loại ở mọi vòng
-     * khác {@code APPEAL}: hai luồng cùng ghi điểm một bài là nguồn của review BE-4.
+     * <p>The valid statuses are decided by {@code GradingRoundPolicy} and passed in -- the business
+     * rule does not live in SQL. A submission with an open appeal is excluded in every round other than
+     * {@code APPEAL}: two flows writing scores to one submission is the source of review BE-4.
      *
-     * <p>CHỈ kỳ thi tập trung. Auto-assign là hành động của nhà trường, mà nhà trường
-     * không phân công bài kiểm tra trên lớp — để lọt vào đây thì mỗi lần chạy đều gắp
-     * lên một mớ bài rồi bị {@code rejectClassTestCoordination} chặn ở tầng dưới.
+     * <p>ONLY centralized assessments. Auto-assign is an action of the school, and the school does not
+     * assign in-class tests -- if they leaked in here, every run would pick up a batch of submissions
+     * and then be blocked by {@code rejectClassTestCoordination} in the lower layer.
      */
     List<UUID> findAssignableResultIds(
         UUID schoolId, UUID assessmentId, UUID scheduleId, Collection<String> resultStatuses);
 
     /**
-     * Tín hiệu rủi ro của một tập bài, một query cho cả tập. Xếp hạng làm ở
-     * {@code GradingSampleSelector} chứ không ở SQL.
+     * The risk signals of a set of submissions, one query for the whole set. Ranking is done in
+     * {@code GradingSampleSelector}, not in SQL.
      */
     List<GradingRiskInfo> findRiskInfos(Collection<UUID> candidateResultIds);
 
@@ -113,18 +113,18 @@ public interface AssessmentGradingQueryRepository {
     Set<UUID> findTeacherIdsWithHumanEvaluation(UUID candidateResultId);
 
     /**
-     * Ảnh chụp tình trạng chấm của một kỳ thi, để admin quyết trước khi chốt sổ.
-     * Đây là lối thoát cho tình trạng một bài treo chặn cả kỳ thi (review BE-5).
+     * A snapshot of the grading state of an assessment, for the admin to decide before closing out.
+     * This is the way out of the situation where one stuck submission blocks the whole assessment (review BE-5).
      */
     BulkFinalizePreviewInfo previewBulkFinalize(UUID schoolId, UUID assessmentId);
 
     /**
-     * Bảng điểm để xuất file. Không phân trang — xuất là xuất hết, nên người gọi phải
-     * tự chốt phạm vi (kỳ thi hoặc ca thi) trước khi vào đây.
+     * The score sheet for file export. Not paged -- an export exports everything, so the caller must
+     * fix the scope (assessment or schedule) itself before getting here.
      *
-     * <p>Nhận cùng {@link GradingAssignmentFilter} với {@link #searchAssignments} chứ
-     * không phải ba tham số rời: file xuất ra phải là đúng cái người dùng đang nhìn trên
-     * bảng, mà cách duy nhất bảo đảm điều đó là hai bên dùng chung một bộ vị ngữ.
+     * <p>Takes the same {@link GradingAssignmentFilter} as {@link #searchAssignments} rather than three
+     * loose parameters: the exported file must be exactly what the user is looking at in the table, and
+     * the only way to guarantee that is for both sides to share one set of predicates.
      */
     List<AssessmentScoreRowInfo> findScoreRows(GradingAssignmentFilter filter);
 }

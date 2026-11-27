@@ -60,7 +60,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         MonitorAccess access = resolveMonitorAccess(assessment, selectedSchedules, requestedIds, userId);
 
         if (access.schedules().isEmpty()) {
-            throw new ForbiddenException("Bạn không được phân công vào ca thi đang diễn ra nào");
+            throw new ForbiddenException("You are not assigned to any assessment schedule in progress");
         }
 
         return generateMonitorToken(userId, schoolId, assessment, access, now);
@@ -87,14 +87,14 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
 
     private Assessment findMonitorableAssessment(UUID assessmentId, UUID schoolId) {
         Assessment assessment = assessmentRepository.findById(assessmentId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy kỳ thi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         if (schoolId == null || !assessment.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bạn không có quyền giám sát kỳ thi của trường được yêu cầu");
+            throw new ForbiddenException("You are not allowed to proctor assessments of the requested school");
         }
 
         if (assessment.getRequiredStreamType() == null) {
-            throw new IllegalArgumentException("Kỳ thi không hỗ trợ chức năng giám sát stream");
+            throw new IllegalArgumentException("The assessment does not support stream monitoring");
         }
         return assessment;
     }
@@ -103,7 +103,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         List<AssessmentSchedule> activeSchedules = assessmentScheduleRepository.findByAssessmentIdAndInSchedule(assessment.getId(), now);
 
         if (activeSchedules.isEmpty()) {
-            throw new ResourceNotFoundException("Kỳ thi đang không có ca thi diễn ra");
+            throw new ResourceNotFoundException("The assessment has no schedule in progress");
         }
         return activeSchedules;
     }
@@ -116,7 +116,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         Map<UUID, AssessmentSchedule> activeScheduleByIds = activeSchedules.stream()
             .collect(Collectors.toMap(s -> s.getId(), s -> s));
         if (!activeScheduleByIds.keySet().containsAll(requestedIds)) {
-            throw new IllegalArgumentException("Một hoặc nhiều ca thi không hợp lệ, không thuộc kỳ thi hoặc không đang diễn ra");
+            throw new IllegalArgumentException("One or more schedules are invalid, do not belong to the assessment, or are not in progress");
         }
         return requestedIds.stream()
             .map(activeScheduleByIds::get)
@@ -129,7 +129,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
             return new MonitorAccess(SCOPE_SCHOOL_ADMIN, "SCHOOL_ADMIN", selectedSchedules);
         }
         if (!userContextPort.isTeacher()) {
-            throw new ForbiddenException("Vai trò hiện tại không được phép giám sát thi");
+            throw new ForbiddenException("The current role is not allowed to proctor assessments");
         }
 
         boolean isChair = assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), userId, AssessmentMemberRole.CHAIR);
@@ -161,7 +161,7 @@ public class IssueMonitorTokenUseCase implements IUseCase<IssueMonitorTokenComma
         List<UUID> scheduleIds = schedules.stream().map(s -> s.getId()).toList();
         Set<UUID> proctoredIds = new HashSet<>(assessmentScheduleProctorRepository.findScheduleIdsByTeacherIdAndScheduleIdIn(teacherId, scheduleIds));
         if (!explicityRequestedIds.isEmpty() && !proctoredIds.containsAll(explicityRequestedIds)) {
-            throw new ForbiddenException("Bạn không được phân công vào một hoặc nhiều ca thi được yêu cầu");
+            throw new ForbiddenException("You are not assigned to one or more of the requested schedules");
         }
         return schedules.stream().filter(s -> proctoredIds.contains(s.getId())).toList();
     }

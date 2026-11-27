@@ -39,10 +39,10 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Xoá bài thi là xoá MỀM: dữ liệu bài làm phải còn nguyên để đối chiếu khi học sinh thắc mắc điểm,
- * và phải ghi lại xoá lúc nào, vì sao.
+ * Deleting a submission is a SOFT delete: the answer data must stay intact for cross-checking when a student questions a score,
+ * and when and why it was deleted must be recorded.
  *
- * <p>Bản trước xoá cứng cả cây dữ liệu qua hơn mười bảng; những test đó đã bỏ cùng với cascade.
+ * <p>The previous version hard-deleted the whole data tree across more than ten tables; those tests were dropped together with the cascade.
  */
 public class DeleteAssessmentSessionUseCaseTests {
 
@@ -126,7 +126,7 @@ public class DeleteAssessmentSessionUseCaseTests {
         assertThat(reason.getValue()).isEqualTo("Vào phòng thi lỗi, phải thi lại");
     }
 
-    /** Điểm phải biến mất khỏi bảng kết quả, hàng đợi chấm và phúc khảo cùng lúc với phiên thi. */
+    /** The score must disappear from the result table, the grading queue and the appeals at the same time as the session. */
     @Test
     void should_soft_delete_the_candidate_result_together_with_the_session() {
         delete("Chấm lỗi");
@@ -138,7 +138,7 @@ public class DeleteAssessmentSessionUseCaseTests {
     void should_reject_a_blank_reason() {
         assertThatThrownBy(() -> delete("   "))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("lý do");
+            .hasMessageContaining("reason");
 
         verify(assessmentSessionRepository, never()).softDelete(any(), any(), any());
     }
@@ -151,8 +151,8 @@ public class DeleteAssessmentSessionUseCaseTests {
     }
 
     /**
-     * Kỳ thi đã đóng hoặc đã công bố kết quả thì điểm đã (hoặc sắp) đến tay học sinh — xoá lúc này
-     * làm điểm biến mất khỏi bảng kết quả mà học sinh không hiểu vì sao.
+     * Once the assessment has closed or its results are published, the score has reached (or is about to reach) the student -- deleting at this point
+     * makes the score vanish from the result table without the student understanding why.
      */
     @Test
     void should_refuse_when_the_assessment_is_closed() {
@@ -160,7 +160,7 @@ public class DeleteAssessmentSessionUseCaseTests {
 
         assertThatThrownBy(() -> delete("Chấm lỗi"))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("đã đóng");
+            .hasMessageContaining("closed");
 
         verify(assessmentSessionRepository, never()).softDelete(any(), any(), any());
     }
@@ -175,8 +175,8 @@ public class DeleteAssessmentSessionUseCaseTests {
     }
 
     /**
-     * Xoá phiên hỏng NGAY TRONG lúc thi chính là lý do tính năng này tồn tại (vào phòng lỗi, chấm
-     * lỗi), nên IN_PROGRESS phải vẫn xoá được.
+     * Deleting a broken session RIGHT DURING the assessment is the very reason this feature exists (a bad room entry, a bad
+     * grading run), so IN_PROGRESS must still be deletable.
      */
     @Test
     void should_allow_deleting_while_the_assessment_is_in_progress() {
@@ -187,7 +187,7 @@ public class DeleteAssessmentSessionUseCaseTests {
         verify(assessmentSessionRepository).softDelete(eq(sessionId), any(Instant.class), any());
     }
 
-    /** Bấm xoá hai lần không được ghi đè lý do và mốc thời gian của lần đầu. */
+    /** Clicking delete twice must not overwrite the reason and the timestamp of the first time. */
     @Test
     void should_not_touch_the_result_when_the_session_was_already_deleted() {
         when(assessmentSessionRepository.softDelete(eq(sessionId), any(), any())).thenReturn(0);
@@ -248,7 +248,7 @@ public class DeleteAssessmentSessionUseCaseTests {
 
         assertThatThrownBy(() -> delete("Chấm lỗi"))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("phúc khảo");
+            .hasMessageContaining("appeal");
 
         verify(assessmentSessionRepository, never()).softDelete(any(), any(), any());
     }

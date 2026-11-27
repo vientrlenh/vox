@@ -8,7 +8,7 @@ import com.sep.vox.application.port.input.usecase.IUseCase;
 import com.sep.vox.application.port.output.FileProcessingPort;
 import com.sep.vox.application.port.output.JsonSerializationPort;
 import com.sep.vox.application.port.output.UserContextPort;
-import com.sep.vox.application.response.input.importfile.PreviewRubricVersionImportResponse; // 👉 IMPORT THÊM RESPONSE MỚI
+import com.sep.vox.application.response.input.importfile.PreviewRubricVersionImportResponse;
 import com.sep.vox.application.response.output.ParseImportFileResult;
 import com.sep.vox.domain.model.importfile.ImportRow;
 import com.sep.vox.domain.model.importfile.ImportSession;
@@ -68,24 +68,24 @@ public class PreviewSystemRubricVersionImportFromFileUseCase implements IUseCase
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
     }
 
     private void requireSystemOwnedRubric(UUID rubricId) {
         Rubric rubric = rubricRepository.findById(rubricId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ Rubric hệ thống yêu cầu."));
+                .orElseThrow(() -> new ResourceNotFoundException("The requested system Rubric was not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Bộ Rubric này thuộc về trường học. System Admin không thể nạp Version vào đây.");
+            throw new ForbiddenException("This Rubric belongs to a school. A System Admin cannot load a Version into it.");
         }
     }
 
     private ParseImportFileResult parseNonEmptyFile(PreviewRubricVersionImportFromFileCommand command) {
         ParseImportFileResult parsedResult = fileProcessingPort.parse(command.file(), ImportType.RUBRIC_VERSION);
         if (parsedResult.rows() == null || parsedResult.rows().isEmpty()) {
-            throw new IllegalArgumentException("File tải lên trống hoặc không chứa dòng dữ liệu hợp lệ.");
+            throw new IllegalArgumentException("The uploaded file is empty or contains no valid data row.");
         }
         return parsedResult;
     }

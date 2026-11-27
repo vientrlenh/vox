@@ -87,16 +87,16 @@ public interface SpringDataAssessmentRepository extends JpaRepository<Assessment
     boolean existsSubmittedSessionByAssessmentId(@Param("assessmentId") UUID assessmentId);
 
     /**
-     * Bài thi còn chấm được, đang có bài chờ soát điểm AI, và CHƯA nhắc lần nào.
+     * Assessments that can still be graded, have results waiting for AI score review, and have NOT been reminded even once.
      *
-     * <p>Gồm cả IN_PROGRESS lẫn CLOSED có chủ ý: ca thi kết thúc sớm đã ra kết quả ngay khi bài
-     * thi còn đang diễn ra, nên chờ tới lúc đóng bài là vứt đi phần lớn thời gian chấm được.
-     * CLOSED vẫn nằm trong danh sách để bài đóng trước khi lượt quét kịp chạy không bị bỏ sót.
+     * <p>Both IN_PROGRESS and CLOSED are included on purpose: a schedule that ended early already produced results while
+     * the assessment was still running, so waiting until it closes would throw away most of the gradable time.
+     * CLOSED stays in the list so an assessment closed before the sweep got to run is not missed.
      *
-     * <p>Native + {@code FOR UPDATE SKIP LOCKED} vì cùng lý do với
-     * {@code findDueForReminder}: {@code human_grading_notified_at} một mình chỉ chống trùng qua
-     * các LƯỢT chạy, không chống trùng giữa các INSTANCE -- hai replica cùng đọc trước khi bên nào
-     * commit thì cả hai đều thấy NULL và cùng phát event.
+     * <p>Native + {@code FOR UPDATE SKIP LOCKED} for the same reason as
+     * {@code findDueForReminder}: {@code human_grading_notified_at} alone only prevents duplicates
+     * across RUNS, not across INSTANCES -- two replicas both reading before either
+     * commits both see NULL and both emit the event.
      */
     @Query(value = """
         SELECT * FROM assessments e

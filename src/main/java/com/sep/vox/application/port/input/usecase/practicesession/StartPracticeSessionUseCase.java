@@ -11,11 +11,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * KHÔNG @Transactional ở tầng này: agentAvailabilityPort.requireReady() gọi ra ngoài (Python
- * readiness check, timeout cấu hình tới 12s) -- giữ connection DB mở suốt lúc đó từng gây
- * HikariCP cạn pool dưới tải (cùng lớp bug với BuildPracticePaperUseCase, sửa cùng đợt). Phần
- * ghi DB thật (đọc đề đã giữ chỗ + tạo session + đổi trạng thái đề) nằm trong
- * StartPracticeSessionPersistenceService, transaction riêng, chạy SAU khi readiness-check xong.
+ * NOT @Transactional at this layer: agentAvailabilityPort.requireReady() calls out (the Python readiness check,
+ * configured timeout up to 12s) -- holding a DB connection open the whole time once exhausted the HikariCP pool
+ * under load (the same class of bug as BuildPracticePaperUseCase, fixed in the same round). The real DB writes
+ * (read the reserved paper + create the session + change the paper status) live in
+ * StartPracticeSessionPersistenceService, a separate transaction that runs AFTER the readiness check finishes.
  */
 @Service
 @RequiredArgsConstructor

@@ -83,7 +83,7 @@ public class ClearInvalidResultUseCase implements IUseCase<GradingDecisionComman
 
     private void unblockCandidate(AssessmentCandidateResult result, UUID currentUserId, Instant now) {
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(result.getCandidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh của bài thi."));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate of the submission not found."));
         if (candidate.getBlockedAt() != null) {
             candidate.setBlockedAt(null);
             candidate.setUpdatedAt(now);

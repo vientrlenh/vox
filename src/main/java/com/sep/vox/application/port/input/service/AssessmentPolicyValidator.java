@@ -28,12 +28,12 @@ public class AssessmentPolicyValidator {
     private final AssessmentPolicyRepository assessmentPolicyRepository;
 
     /**
-     * Bắt buộc phải có policy hợp lệ. Bài trên lớp chốt policy ngay lúc tạo, không để trôi sang bước
-     * sửa — giáo viên tạo xong là chấm được luôn.
+     * A valid policy is required. A class test settles its policy right at creation, not left to drift into
+     * the edit step — once the teacher creates it, it can be graded right away.
      */
     public void requirePublishedInSchool(UUID assessmentPolicyId, UUID schoolId) {
         if (assessmentPolicyId == null) {
-            throw new IllegalArgumentException("Bộ tiêu chí đánh giá là bắt buộc");
+            throw new IllegalArgumentException("The assessment criteria set is required");
         }
         validate(assessmentPolicyId, schoolId);
     }
@@ -52,12 +52,12 @@ public class AssessmentPolicyValidator {
 
     private void validate(UUID assessmentPolicyId, UUID schoolId) {
         AssessmentPolicy policy = assessmentPolicyRepository.findById(assessmentPolicyId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bộ tiêu chí đánh giá"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment criteria set not found"));
         if (policy.getStatus() != AssessmentPolicyStatus.PUBLISHED) {
-            throw new IllegalArgumentException("Chỉ được dùng bộ tiêu chí đã xuất bản");
+            throw new IllegalArgumentException("Only a published criteria set may be used");
         }
         if (policy.getSchoolId() != null && !policy.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("Bộ tiêu chí không thuộc trường của bạn");
+            throw new ForbiddenException("The criteria set does not belong to your school");
         }
     }
 }

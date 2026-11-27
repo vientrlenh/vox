@@ -23,10 +23,10 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Chạy SQL THẬT trên Postgres thật. Test unit của use case mock repository nên chứng minh được phần
- * dựng chuỗi ngày, nhưng KHÔNG chứng minh được gì về bản thân câu SQL: {@code COUNT(*) FILTER},
- * {@code AT TIME ZONE}, và cách Hibernate trả cột {@code date} lẫn giá trị {@code COUNT} về Java đều
- * chỉ lộ ra khi có DB thật — đúng loại bẫy đã gây ClassCastException ở
+ * Runs REAL SQL on a real Postgres. The use case's unit test mocks the repository, so it proves the part that
+ * builds the date series but proves NOTHING about the SQL itself: {@code COUNT(*) FILTER},
+ * {@code AT TIME ZONE}, and the way Hibernate returns the {@code date} column and the {@code COUNT} value to Java are
+ * all only exposed with a real DB -- exactly the kind of trap that caused a ClassCastException in
  * {@code JpaTokenUsageTimeseriesQueryRepository}.
  */
 @RepositoryTest

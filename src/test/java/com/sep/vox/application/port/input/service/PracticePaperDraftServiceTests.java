@@ -23,7 +23,7 @@ import com.sep.vox.application.response.input.practiceplanning.PracticePlanningR
 @ExtendWith(MockitoExtension.class)
 class PracticePaperDraftServiceTests {
 
-    private static final String GENERIC_MESSAGE = "Không dựng được đề luyện lúc này, vui lòng thử lại.";
+    private static final String GENERIC_MESSAGE = "Cannot build a practice paper right now, please try again.";
 
     @Mock
     private PracticeGenerationExecutorPort practiceGenerationExecutorPort;

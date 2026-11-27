@@ -12,7 +12,7 @@ import jakarta.validation.constraints.NotEmpty;
  *        counted as overdue)
  */
 public record SetGradingDeadlineRequest(
-    @NotEmpty(message = "Phải chọn ít nhất một phân công để đặt hạn")
+    @NotEmpty(message = "At least one assignment must be selected to set a deadline")
     List<UUID> assignmentIds,
 
     Instant deadlineAt

@@ -56,19 +56,19 @@ public class RestAssessmentResultController {
     private final ExportAssessmentScoresUseCase exportAssessmentScoresUseCase;
     private final ExportAssessmentScoresExcelUseCase exportAssessmentScoresExcelUseCase;
 
-    @Operation(summary = "Xem trước việc chốt sổ kỳ thi: còn bao nhiêu bài chưa chấm, "
-        + "đang chấm dở, và đơn phúc khảo chưa xong. KHÔNG ghi gì.")
+    @Operation(summary = "Previews the finalization of an assessment: how many results are still ungraded, "
+        + "half-graded, and how many appeals are unresolved. Writes NOTHING.")
     @GetMapping("/finalize/preview")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<BulkFinalizePreviewInfo>> previewFinalize(
             @RequestParam("assessmentId") UUID assessmentId) {
         return ResponseEntity.ok(
-            ApiResponse.success("Lấy thông tin chốt sổ thành công!", previewBulkFinalizeUseCase.execute(assessmentId)));
+            ApiResponse.success("Finalization info retrieved successfully!", previewBulkFinalizeUseCase.execute(assessmentId)));
     }
 
-    @Operation(summary = "Chốt sổ kỳ thi: công bố (RELEASED) các bài còn chờ người chấm theo điểm AI "
-        + "đang có, để kỳ thi publish được. Nếu còn bài dở, phải bật `releasePendingWithAiScores` "
-        + "để xác nhận. Bài đang phúc khảo chặn cứng; bài RELEASED/INVALID giữ nguyên.")
+    @Operation(summary = "Finalizes an assessment: releases (RELEASED) the results still waiting for a grader using the current AI score, "
+        + "so the assessment can be published. If half-graded results remain, `releasePendingWithAiScores` must be set "
+        + "to confirm. Results under appeal block it; RELEASED/INVALID results are left unchanged.")
     @PostMapping("/finalize")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<ApiResponse<Integer>> finalizeResults(
@@ -76,12 +76,12 @@ public class RestAssessmentResultController {
         BulkFinalizeAssessmentResultsCommand command = new BulkFinalizeAssessmentResultsCommand(
             request.assessmentId(), Boolean.TRUE.equals(request.releasePendingWithAiScores()));
         return ResponseEntity.ok(
-            ApiResponse.success("Chốt sổ kỳ thi thành công!", bulkFinalizeAssessmentResultsUseCase.execute(command)));
+            ApiResponse.success("Assessment finalized successfully!", bulkFinalizeAssessmentResultsUseCase.execute(command)));
     }
 
-    @Operation(summary = "Xuất bảng điểm ra CSV (UTF-8 có BOM để Excel đọc đúng tiếng Việt). "
-        + "Phải truyền ít nhất một trong `assessmentId` / `scheduleId`. Bộ lọc nhận vào giống hệt "
-        + "bảng điều phối, `kind` bỏ trống được hiểu là `CENTRALIZED`.")
+    @Operation(summary = "Exports the score sheet to CSV (UTF-8 with BOM so that Excel reads Vietnamese correctly). "
+        + "At least one of `assessmentId` / `scheduleId` must be passed. The filter is identical to the "
+        + "dispatch board; an empty `kind` is read as `CENTRALIZED`.")
     @GetMapping(value = "/export", produces = "text/csv")
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> exportScores(
@@ -105,10 +105,10 @@ public class RestAssessmentResultController {
             .body(csv.getBytes(StandardCharsets.UTF_8));
     }
 
-    @Operation(summary = "Xuất bảng điểm ra Excel (.xlsx): cùng 13 cột với bản CSV nhưng điểm là ô "
-        + "số và mốc thời gian là ô ngày, nên sort/lọc/tính được. Phải truyền ít nhất một trong "
-        + "`assessmentId` / `scheduleId`. Bộ lọc nhận vào giống hệt bảng điều phối, `kind` bỏ trống "
-        + "được hiểu là `CENTRALIZED`.")
+    @Operation(summary = "Exports the score sheet to Excel (.xlsx): the same 13 columns as the CSV, but scores are numeric cells "
+        + "and timestamps are date cells, so they can be sorted, filtered and calculated. At least one of "
+        + "`assessmentId` / `scheduleId` must be passed. The filter is identical to the dispatch board; an empty "
+        + "`kind` is read as `CENTRALIZED`.")
     @GetMapping(value = "/export/excel", produces = XLSX_MEDIA_TYPE)
     @PreAuthorize("hasAnyRole('SCHOOL_ADMIN', 'TEACHER')")
     public ResponseEntity<byte[]> exportScoresExcel(
@@ -134,8 +134,8 @@ public class RestAssessmentResultController {
     }
 
     /**
-     * Hai endpoint xuất chỉ khác nhau ở cách ghi file, nên bộ lọc phải dựng ở một chỗ:
-     * viết hai lần là mở đường cho CSV và Excel cùng một màn hình trả về hai tập dòng khác nhau.
+     * The two export endpoints differ only in how the file is written, so the filter is built in one place:
+     * writing it twice invites the CSV and the Excel export of the same screen to return two different sets of rows.
      */
     private ExportAssessmentScoresQuery toQuery(
             UUID assessmentId, UUID scheduleId, UUID teacherId, AssessmentCandidateResultStatus resultStatus,

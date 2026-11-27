@@ -32,17 +32,17 @@ public class ViewSchoolUserDetailsUseCase implements IUseCase<ViewSchoolUserDeta
         UUID callerId = userContextPort.getCurrentAuthenticatedUserId();
 
         if (!userRepository.existsByIdAndStatus(callerId, UserStatus.ACTIVE)) {
-            throw new UnauthorizedException("Trạng thái người dùng không hợp lệ");
+            throw new UnauthorizedException("The user status is invalid");
         }
 
         if (!userContextPort.isSystemAdmin() && !schoolUserRepository.existsBySchoolIdAndUserId(input.schoolId(), callerId)) {
-            throw new ForbiddenException("Quyền truy cập không hợp lệ");
+            throw new ForbiddenException("The access permission is invalid");
         }
 
-        // Admin có thể xem cả người dùng đã vô hiệu hóa (DISABLED) — FE có bộ lọc "Hiện người dùng
-        // đã vô hiệu hóa" và cho xem chi tiết. Quyền đã được giới hạn ở SCHOOL_ADMIN/SYSTEM_ADMIN phía trên.
+        // An admin may also see deactivated (DISABLED) users -- the FE has a "Show deactivated users" filter and
+        // allows viewing their details. Access is already restricted to SCHOOL_ADMIN/SYSTEM_ADMIN above.
         SchoolUser schoolUser = schoolUserRepository.findBySchoolIdAndUserId(input.schoolId(), input.userId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng nhà trường theo yêu cầu"));
+            .orElseThrow(() -> new ResourceNotFoundException("The requested school user was not found"));
 
         return SchoolUserDtoMapper.toSchoolUserDto(schoolUser);
     }

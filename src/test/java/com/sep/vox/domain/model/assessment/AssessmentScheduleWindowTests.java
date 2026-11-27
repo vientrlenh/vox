@@ -78,7 +78,7 @@ class AssessmentScheduleWindowTests {
 
     @Test
     void should_skip_assessment_window_check_when_bound_not_set() {
-        // Kỳ thi thường được phép chưa set openAt/closeAt -- mỗi cận kiểm tra độc lập.
+        // An assessment is normally allowed to leave openAt/closeAt unset -- each bound is checked independently.
         assertThat(assessmentWithWindow(null, null).isScheduleWindowOutsideAssessmentWindow(start, start.plus(9, ChronoUnit.HOURS))).isFalse();
         assertThat(assessmentWithWindow(start, null).isScheduleWindowOutsideAssessmentWindow(start, start.plus(9, ChronoUnit.HOURS))).isFalse();
         assertThat(assessmentWithWindow(null, start).isScheduleWindowOutsideAssessmentWindow(start.minus(9, ChronoUnit.HOURS), start)).isFalse();

@@ -35,7 +35,7 @@ public class ViewAssessmentStatusCountsUseCase implements IUseCase<ViewAssessmen
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         if (!systemAdmin && currentSchoolId == null) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
 
         return assessmentStatusCountsQueryRepository.countAccessibleByStatus(

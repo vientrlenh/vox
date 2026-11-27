@@ -24,10 +24,10 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
 /**
- * Chạy SQL THẬT trên Postgres thật: gần như toàn bộ logic của repository này nằm trong những thứ
- * không mock được — hàm {@code vox_grading_error_signature} do V6 tạo ra,
- * {@code IS NOT DISTINCT FROM}, {@code COUNT(...) FILTER}, và {@code COUNT(DISTINCT ...)} bỏ qua
- * null. Một test với repository giả sẽ khẳng định đúng những gì nó tự dựng ra.
+ * Runs REAL SQL on a real Postgres: nearly all the logic of this repository lives in things that
+ * cannot be mocked -- the function {@code vox_grading_error_signature} created by V6,
+ * {@code IS NOT DISTINCT FROM}, {@code COUNT(...) FILTER}, and {@code COUNT(DISTINCT ...)} ignoring
+ * null. A test with a fake repository would only assert exactly what it built itself.
  */
 @RepositoryTest
 @Import(JpaGradingFailureQueryRepository.class)
@@ -36,7 +36,7 @@ class JpaGradingFailureQueryRepositoryTests {
     private static final Instant WINDOW_FROM = Instant.parse("2026-08-17T00:00:00Z");
     private static final Instant WINDOW_TO = Instant.parse("2026-08-31T00:00:00Z");
 
-    /** Hai thông điệp cùng sự cố, khác nhau ĐÚNG ở phần uuid và số — thứ chuẩn hóa phải xóa đi. */
+    /** Two messages of the same incident, differing EXACTLY in the uuid and number parts -- what normalization must erase. */
     private static final String TIMEOUT_A =
         "Upstream AI service timed out after 30000ms for attempt 3f9a1c22-1111-4aaa-8bbb-1c2d3e4f5a6b";
     private static final String TIMEOUT_B =

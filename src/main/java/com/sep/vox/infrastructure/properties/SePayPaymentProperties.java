@@ -3,36 +3,36 @@ package com.sep.vox.infrastructure.properties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Cấu hình cổng thanh toán SePay (SePay Payment Gateway — KHÔNG phải dòng Banking API/webhook biến
- * động số dư ở docs.sepay.vn, hai dòng sản phẩm này có payload và cách xác thực hoàn toàn khác nhau).
+ * Configuration of the SePay payment gateway (SePay Payment Gateway -- NOT the Banking API/balance-change
+ * webhook line at docs.sepay.vn, these two product lines have entirely different payloads and authentication).
  */
 @ConfigurationProperties(prefix = "sepay.pg")
 public record SePayPaymentProperties(
     SePayEnvironment env,
     String merchantId,
-    // Khóa ký HMAC của merchant, đồng thời là password của Basic auth khi gọi Open API.
+    // The merchant's HMAC signing key, and also the Basic auth password when calling the Open API.
     String secretKey,
-    // Giá trị của header X-Secret-Key trên IPN, cấu hình riêng ở dashboard (Payment Gateway ->
-    // Cấu hình -> IPN). Tách khỏi secretKey một cách có chủ đích: dùng chung một giá trị nghĩa là
-    // khóa dùng để KÝ bị gửi qua mạng trong mọi lần SePay gọi IPN.
+    // The value of the X-Secret-Key header on the IPN, configured separately in the dashboard (Payment Gateway ->
+    // Configuration -> IPN). Intentionally kept apart from secretKey: sharing one value would mean the
+    // key used to SIGN is sent over the network on every IPN call from SePay.
     String ipnSecretKey,
     SePayCheckoutMethod paymentMethod,
     String returnBaseUrl
 ) {
 
-    // Mặc định về sandbox thay vì để null: thiếu cấu hình mà mặc định vào production là kiểu hỏng
-    // nguy hiểm nhất — nó thu tiền thật.
+    // Default to the sandbox instead of null: a missing configuration that defaults to production is the most dangerous
+    // kind of failure -- it charges real money.
     public SePayPaymentProperties {
         env = env == null ? SePayEnvironment.SANDBOX : env;
         paymentMethod = paymentMethod == null ? SePayCheckoutMethod.BANK_TRANSFER : paymentMethod;
     }
 
-    /** Đích POST của form checkout. */
+    /** The POST target of the checkout form. */
     public String checkoutUrl() {
         return env.payBaseUrl() + "/v1/checkout/init";
     }
 
-    /** Gốc của Open API, đã kèm version — SDK chính thức luôn gọi dưới dạng {base}/v1/{resource}. */
+    /** Root of the Open API, already including the version — the official SDK always calls it as {base}/v1/{resource}. */
     public String apiBaseUrl() {
         return env.pgApiBaseUrl() + "/v1";
     }
@@ -46,9 +46,9 @@ public record SePayPaymentProperties(
     }
 
     /**
-     * URL được derive từ env chứ không khai từng cái trong yaml: hai cặp URL này đi theo nhau, khai
-     * rời rạc thì một lần deploy quên đổi một dòng là form checkout trỏ production còn API tra cứu
-     * vẫn trỏ sandbox — mọi hóa đơn sẽ bị đối soát thành "không tồn tại".
+     * URLs are derived from the env rather than declared one by one in yaml: the two URL pairs go together, and declared
+     * separately a deploy that forgets to change one line leaves the checkout form pointing to production while the lookup API
+     * still points to the sandbox -- every invoice would be reconciled as "does not exist".
      */
     public enum SePayEnvironment {
 
@@ -72,7 +72,7 @@ public record SePayPaymentProperties(
         }
     }
 
-    /** Giá trị hợp lệ của field {@code payment_method} trên form checkout. */
+    /** Valid values of the {@code payment_method} field on the checkout form. */
     public enum SePayCheckoutMethod {
         BANK_TRANSFER,
         NAPAS_BANK_TRANSFER,

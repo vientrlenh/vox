@@ -11,13 +11,13 @@ import com.sep.vox.application.response.output.PushDispatchResult;
 import com.sep.vox.application.response.output.PushMessage;
 
 /**
- * Bản thay thế khi {@code firebase.enabled} không bật: máy dev chưa có service account,
- * CI, và mọi @SpringBootTest.
+ * The stand-in when {@code firebase.enabled} is not on: dev machines without a service account,
+ * CI, and every @SpringBootTest.
  *
- * <p>Điều kiện ở đây là phần bù chính xác của FcmNotificationService (havingValue="false"
- * + matchIfMissing=true) chứ không dùng @ConditionalOnMissingBean, vì thứ tự đăng ký bean
- * khi component scan không được đảm bảo -- @ConditionalOnMissingBean giữa hai bean cùng
- * được scan có thể cho ra kết quả khác nhau tuỳ thứ tự duyệt.
+ * <p>The condition here is the exact complement of FcmNotificationService (havingValue="false"
+ * + matchIfMissing=true) rather than @ConditionalOnMissingBean, because the order in which beans are registered
+ * during component scanning is not guaranteed -- @ConditionalOnMissingBean between two beans that are both
+ * scanned can give different results depending on the traversal order.
  */
 @Service
 @ConditionalOnProperty(prefix = "firebase", name = "enabled", havingValue = "false", matchIfMissing = true)

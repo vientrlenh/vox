@@ -20,10 +20,10 @@ import com.sep.vox.infrastructure.persistence.adapter.AssessmentItemEvaluationRe
 import com.sep.vox.support.RepositoryTest;
 
 /**
- * {@code findLatestAiByResponseId} cố ý KHÔNG lọc theo status — đó là điểm khác biệt duy
- * nhất so với {@code findLatestByResponseId}, và cũng là lý do nó tồn tại: sau khi giáo
- * viên chấm lại, bản AI mang SUPERSEDED nhưng nó vẫn là nơi duy nhất có lượt nói và bằng
- * chứng AI. Viết bằng Testcontainers vì cái cần kiểm là JPQL thật, không phải mock.
+ * {@code findLatestAiByResponseId} intentionally does NOT filter by status -- that is the only difference from
+ * {@code findLatestByResponseId}, and also the reason it exists: after a teacher
+ * regrades, the AI version carries SUPERSEDED but it is still the only place that has the speaking turns and the AI
+ * evidence. Written with Testcontainers because what needs checking is the real JPQL, not a mock.
  */
 @RepositoryTest
 @Import(AssessmentItemEvaluationRepositoryImpl.class)

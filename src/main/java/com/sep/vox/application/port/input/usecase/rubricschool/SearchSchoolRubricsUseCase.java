@@ -58,16 +58,16 @@ public class SearchSchoolRubricsUseCase implements IUseCase<SearchSchoolRubricsQ
     private void requireSchoolAdminOfSchool(UUID schoolId) {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new UnauthorizedException("Không tìm thấy tài khoản."));
+                .orElseThrow(() -> new UnauthorizedException("Account not found."));
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new UnauthorizedException("Tài khoản của bạn đã bị khóa.");
+            throw new UnauthorizedException("Your account has been locked.");
         }
 
         // Security gate: the School Admin must belong to this school.
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUserId)
-                .orElseThrow(() -> new ForbiddenException("Tài khoản của bạn không được liên kết với bất kỳ trường học nào."));
+                .orElseThrow(() -> new ForbiddenException("Your account is not linked to any school."));
         if (!schoolUser.getSchoolId().equals(schoolId)) {
-            throw new ForbiddenException("BẢO MẬT: Bạn không có quyền tìm kiếm Rubric của trường học khác.");
+            throw new ForbiddenException("SECURITY: you are not allowed to search the Rubrics of another school.");
         }
     }
 }

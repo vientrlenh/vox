@@ -6,19 +6,19 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.domain.model.school.SchoolDebtEvent;
 
 /**
- * Sổ audit "nguyên nhân nợ hạn mức AI" -- append-only, chỉ ghi lúc trạng thái nợ ĐỔI. Mirror của
- * {@link SchoolBalanceEntryRepository}: cùng một cái ví, một bên kể tiền đi đâu, một bên kể vì sao
- * trường bị khoá.
+ * Audit ledger of "the cause of AI quota debt" -- append-only, written only when the debt state CHANGES. Mirror of
+ * {@link SchoolBalanceEntryRepository}: the same wallet, one side tells where the money went, the other tells why
+ * the school was locked.
  */
 public interface SchoolDebtEventRepository {
     SchoolDebtEvent save(SchoolDebtEvent event);
 
     /**
-     * Nhật ký của trường, mới nhất trước. {@code page} đếm TỪ 1 theo quy ước chung của dự án.
+     * Log of the school, newest first. {@code page} counts FROM 1 per the project-wide convention.
      *
-     * <p>Thay cho bản trả {@code List} không phân trang trước đây: sổ này thưa với phần lớn trường
-     * nhưng một trường liên tục vượt hạn mức thì không, và đường đọc duy nhất của nó là một trang
-     * giao diện có phân trang.
+     * <p>Replaces the earlier unpaginated {@code List} version: this ledger is sparse for most schools
+     * but not for a school that keeps exceeding its quota, and its only read path is a paginated
+     * UI page.
      */
     PageResult<SchoolDebtEvent> findBySchoolId(UUID schoolId, int page, int size);
 }

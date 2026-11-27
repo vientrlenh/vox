@@ -49,7 +49,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
 
         int updatedRows = updateMutableFields(command, schoolId, status);
         if (updatedRows == 0) {
-            throw new ResourceNotFoundException("Không tìm thấy lớp học");
+            throw new ResourceNotFoundException("Class not found");
         }
 
         return new UpdateSchoolClassResponse(command.id());
@@ -84,7 +84,7 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
 
     private void validateCommand(UpdateSchoolClassCommand command) {
         if (!command.nameProvided() && !command.descriptionProvided() && !command.statusProvided()) {
-            throw new IllegalArgumentException("Cần cung cấp ít nhất một trường để cập nhật");
+            throw new IllegalArgumentException("At least one field must be provided to update");
         }
         if (command.nameProvided()) {
             validateName(command.name());
@@ -99,49 +99,49 @@ public class UpdateSchoolClassUseCase implements IUseCase<UpdateSchoolClassComma
 
     private void validateName(String name) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("Tên lớp học không được để trống");
+            throw new IllegalArgumentException("The class name must not be empty");
         }
         if (name.length() > MAX_NAME_LENGTH) {
-            throw new IllegalArgumentException("Tên lớp học không được vượt quá 255 ký tự");
+            throw new IllegalArgumentException("The class name must not exceed 255 characters");
         }
     }
 
     private void validateDescription(String description) {
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
-            throw new IllegalArgumentException("Mô tả không được vượt quá 2048 ký tự");
+            throw new IllegalArgumentException("The description must not exceed 2048 characters");
         }
     }
 
     private void validateStatus(SchoolClassStatus status) {
         if (status == null) {
-            throw new IllegalArgumentException("Trạng thái lớp học không hợp lệ");
+            throw new IllegalArgumentException("The class status is invalid");
         }
     }
 
     private User findCurrentUser(UUID currentUserId) {
         User user = userRepository.findById(currentUserId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng hiện tại"));
+            .orElseThrow(() -> new ResourceNotFoundException("Current user not found"));
         validateCurrentUserIsActive(user);
         return user;
     }
 
     private void validateCurrentUserIsActive(User currentUser) {
         if (currentUser.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalArgumentException("Người dùng hiện tại không hoạt động");
+            throw new IllegalArgumentException("The current user is not active");
         }
     }
 
     private UUID getSchoolId(User currentUser) {
         SchoolUser schoolUser = schoolUserRepository.findByUserId(currentUser.getId())
-            .orElseThrow(() -> new IllegalArgumentException("Người dùng hiện tại không thuộc trường nào"));
+            .orElseThrow(() -> new IllegalArgumentException("The current user does not belong to any school"));
         return schoolUser.getSchoolId();
     }
 
     private void validateSchool(UUID schoolId) {
         School school = schoolRepository.findById(schoolId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trường học"));
+            .orElseThrow(() -> new ResourceNotFoundException("School not found"));
         if (!school.isActive()) {
-            throw new IllegalArgumentException("Trường học không hoạt động");
+            throw new IllegalArgumentException("The school is not active");
         }
     }
 }

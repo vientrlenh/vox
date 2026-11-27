@@ -33,9 +33,9 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
         RubricVersion version = loadDraftVersionOfSystemRubric(command.versionId());
 
         RubricCriterion criterion = rubricCriterionRepository.findById(command.criterionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Tiêu chí."));
+                .orElseThrow(() -> new ResourceNotFoundException("Criterion not found."));
         if (!criterion.getRubricVersionId().equals(version.getId())) {
-            throw new IllegalArgumentException("Tiêu chí sai phiên bản.");
+            throw new IllegalArgumentException("The criterion belongs to a different version.");
         }
 
         rubricCriterionRepository.deleteById(criterion.getId());
@@ -45,21 +45,21 @@ public class DeleteSystemRubricCriterionUseCase implements IUseCase<DeleteSystem
 
     private void requireActiveCurrentUser() {
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
-        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Lỗi tài khoản."));
-        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("Tài khoản bị khóa.");
+        User currentUser = userRepository.findById(currentUserId).orElseThrow(() -> new UnauthorizedException("Account error."));
+        if (currentUser.getStatus() != UserStatus.ACTIVE) throw new UnauthorizedException("The account is locked.");
     }
 
     private RubricVersion loadDraftVersionOfSystemRubric(UUID versionId) {
         RubricVersion version = rubricVersionRepository.findById(versionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản."));
+                .orElseThrow(() -> new ResourceNotFoundException("Version not found."));
         if (version.getStatus() != RubricStatus.DRAFT) {
-            throw new IllegalArgumentException("Chỉ xóa được khi là DRAFT.");
+            throw new IllegalArgumentException("Can only be deleted while DRAFT.");
         }
 
         Rubric rubric = rubricRepository.findById(version.getRubricId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Rubric."));
+                .orElseThrow(() -> new ResourceNotFoundException("Rubric not found."));
         if (rubric.getOwnerType() != RubricOwnerType.SYSTEM) {
-            throw new ForbiddenException("Không thể xóa dữ liệu của trường.");
+            throw new ForbiddenException("Cannot delete data of a school.");
         }
         return version;
     }

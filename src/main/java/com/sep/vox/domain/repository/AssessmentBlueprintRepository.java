@@ -29,7 +29,7 @@ public interface AssessmentBlueprintRepository {
     boolean canEditBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     boolean canChangeVersionStatus(UUID blueprintId, UUID userId, UUID schoolId);
 
-    /** CHAIR của một kỳ thi đang gắn blueprint này -- chỉ CHAIR, không tính REVIEWER. */
+    /** The CHAIR of an assessment currently attached to this blueprint -- only CHAIR, REVIEWER does not count. */
     boolean isChairOfAssessmentUsingBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     boolean canViewBlueprint(UUID blueprintId, UUID userId, UUID schoolId);
     void deleteById(UUID id);

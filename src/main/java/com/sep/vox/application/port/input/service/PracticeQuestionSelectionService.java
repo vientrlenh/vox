@@ -25,13 +25,13 @@ import com.sep.vox.domain.service.personalization.SubAttributePolicy;
 import com.sep.vox.domain.service.personalization.TensePolicy;
 
 /**
- * Chọn/sinh ĐÚNG 1 câu MAIN tiếp theo trong lúc phiên luyện đang chạy -- tách từ
- * BuildPracticePaperUseCase vì giờ có 2 caller (buildPracticePaper cho câu đầu tiên,
- * ResolveNextPracticeQuestionUseCase cho các câu sau).
+ * Picks/generates EXACTLY 1 next MAIN question while a practice session is running -- split out of
+ * BuildPracticePaperUseCase because there are now 2 callers (buildPracticePaper for the first question,
+ * ResolveNextPracticeQuestionUseCase for the later ones).
  *
- * <p>Thang leo còn BA bậc: đọc kho đúng tiêu chí -> đọc kho bỏ lọc tiêu chí -> nhờ LLM sinh mới.
- * Bậc "hàng xóm ngữ nghĩa (Chroma)" đã bỏ 2026-08-05 vì nó kéo câu của CHỦ ĐỀ KHÁC lên -- lý do
- * đầy đủ ghi ở {@link #ladderCandidatesForOneQuestion}.
+ * <p>The ladder has THREE tiers left: read the bank by exact criterion -> read the bank without the criterion filter -> ask the LLM to generate new.
+ * The "semantic neighbour (Chroma)" tier was dropped 2026-08-05 because it pulled in questions from OTHER TOPICS -- the
+ * full reason is recorded at {@link #ladderCandidatesForOneQuestion}.
  */
 @Service
 @RequiredArgsConstructor
@@ -93,7 +93,7 @@ public class PracticeQuestionSelectionService {
     private PracticeFocusInfo forcedFocus(String forcedSubAttribute) {
         String forcedCriterion = SubAttributePolicy.criterionForSubAttribute(forcedSubAttribute);
         if (forcedCriterion == null) {
-            throw new IllegalArgumentException("Sub-attribute không thuộc taxonomy luyện tập.");
+            throw new IllegalArgumentException("The sub-attribute does not belong to the practice taxonomy.");
         }
         // The student pressed "practise this mistake again" -- force exactly one criterion, with NO mixing. This is a
         // deliberate choice of the learner, not a place for the system to balance things on its own.
@@ -125,7 +125,7 @@ public class PracticeQuestionSelectionService {
         return ordered;
     }
 
-    /** Câu đã chọn + toàn bộ metadata slot đi kèm -- để caller ghi PracticePaperItem không phải tự suy lại tiêu chí/rank theo slot. */
+    /** The chosen question + all the slot metadata that goes with it -- so the caller writing PracticePaperItem does not have to re-derive the criterion/rank per slot. */
     public record NextQuestionSelection(
         PracticeQuestion question, int slot, String criterion, String subAttribute, int targetRank) {
     }
@@ -237,20 +237,20 @@ public class PracticeQuestionSelectionService {
     }
 
     /**
-     * Hai khoá sắp xếp, KHÔNG trọng số nào: gần độ khó mong muốn nhất trước; bằng nhau thì câu
-     * ép ĐÚNG thì đang cần trước.
+     * Two sort keys, NO weights: closest to the desired difficulty first; on a tie the question that
+     * forces the CORRECT tense is needed first.
      *
-     * <p>Khoá phụ trước đây là "nhắm đúng nhãn điểm yếu". Nhãn đó đã chết: bảng
-     * {@code sub_attribute_priority} bị gỡ nên {@code subAttribute} luôn null, tức khoá phụ
-     * luôn trả 1 cho mọi câu và không phá hoà được gì. Thì thay đúng vai đó -- và nó phân biệt
-     * được thật, vì thang leo cố ý nhận cả câu {@code target_tense IS NULL}.
+     * <p>The secondary key used to be "aim at the exact weakness label". That label is dead: the table
+     * {@code sub_attribute_priority} was removed so {@code subAttribute} is always null, meaning the secondary key
+     * always returns 1 for every question and breaks no ties. So the role is replaced -- and it really does tell
+     * questions apart, because the ladder deliberately accepts questions with {@code target_tense IS NULL}.
      *
-     * <p>Bản trước nữa là tổng có trọng số bốn hạng {@code 0.40·zpd + 0.30·sub
-     * + 0.20·criterionMatch + 0.10·fresh}. Hai hạng cuối không đổi được kết quả nào có ý nghĩa:
-     * {@code zpd} nhảy theo bước 0,20 sau khi nhân trọng số, trong khi biên độ tối đa của
-     * {@code criterionMatch} là 0,12 và của {@code fresh} là 0,10 -- không hạng nào một mình
-     * lật nổi một bước độ khó. Chúng chỉ phá hoà giữa các câu đã bằng điểm, mà ngay dòng dưới
-     * {@code limit(5)} + {@code ThreadLocalRandom} đã CỐ Ý chọn ngẫu nhiên trong nhóm hoà đó rồi.
+     * <p>The version before that was a four-term weighted sum {@code 0.40·zpd + 0.30·sub
+     * + 0.20·criterionMatch + 0.10·fresh}. The last two terms could not change any meaningful outcome:
+     * {@code zpd} jumps in steps of 0.20 after weighting, while the maximum amplitude of
+     * {@code criterionMatch} is 0.12 and of {@code fresh} is 0.10 -- no term alone could
+     * flip a difficulty step. They only broke ties between questions with equal scores, and the very next line,
+     * {@code limit(5)} + {@code ThreadLocalRandom}, already DELIBERATELY picks at random within that tied group.
      */
     private Comparator<PracticeQuestion> rankThenTense(String tense, int targetRank) {
         return Comparator
@@ -317,7 +317,7 @@ public class PracticeQuestionSelectionService {
                 Math.min(bandCount, targetRank + 1)
             ).forEach(question -> putIfNotExcluded(selected, question, excludeIds));
         } catch (RuntimeException exception) {
-            log.warn("Hết bậc sinh trực tiếp cho câu tiếp theo trong phiên.", exception);
+            log.warn("Direct-generation tier exhausted for the next question in the session.", exception);
         }
         return List.copyOf(selected.values());
     }

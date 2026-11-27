@@ -13,8 +13,8 @@ import com.sep.vox.domain.mapper.FrameworkCriterionDtoMapper;
 import com.sep.vox.domain.repository.FrameworkCriterionRepository;
 import com.sep.vox.domain.repository.FrameworkVersionRepository;
 
-// Query gốc cho System Admin: lấy toàn bộ FrameworkCriterion của 1 FrameworkVersion bất kỳ trạng thái
-// (System Admin được xem cả DRAFT vì họ là người biên soạn Framework).
+// Root query for System Admin: all FrameworkCriterion of any FrameworkVersion, whatever its status
+// (System Admin may also see DRAFT because they author the Framework).
 @Service
 @RequiredArgsConstructor
 public class ViewFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCriteriaQuery, List<FrameworkCriterionDto>> {
@@ -24,11 +24,9 @@ public class ViewFrameworkCriteriaUseCase implements IUseCase<ViewFrameworkCrite
 
     @Override
     public List<FrameworkCriterionDto> execute(ViewFrameworkCriteriaQuery query) {
-        // 1. Kiểm tra FrameworkVersion tồn tại
         frameworkVersionRepository.findById(query.frameworkVersionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy phiên bản Framework."));
+                .orElseThrow(() -> new ResourceNotFoundException("Framework version not found."));
 
-        // 2. Lấy Criteria + Band tương ứng, map sang DTO
         List<FrameworkCriterion> criteria = frameworkCriterionRepository.findByFrameworkVersionId(query.frameworkVersionId());
 
         return criteria.stream()

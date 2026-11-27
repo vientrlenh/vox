@@ -4,27 +4,27 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.sep.vox.application.response.output.BankTransferDetails;
+import com.sep.vox.application.response.output.CheckoutAction;
 import com.sep.vox.application.response.output.PaymentCheckoutResult;
 import com.sep.vox.domain.model.payment.PaymentProvider;
 
 /**
- * Mọi thứ FE cần để đưa trường sang trang thanh toán.
+ * Everything the FE needs to send the school to the payment page.
  *
- * <p>FE nhìn {@code action} để biết phải làm gì, KHÔNG nhìn {@code provider}: provider chỉ để hiển
- * thị ("Thanh toán qua PayOS") và tra soát. Rẽ nhánh theo tên cổng nghĩa là thêm cổng mới lại phải
- * sửa FE -- đúng cái mà {@link com.sep.vox.application.response.output.CheckoutAction} sinh ra để
- * tránh.
+ * <p>The FE looks at {@code action} to know what to do, NOT at {@code provider}: provider is only for display
+ * ("Pay via PayOS") and reconciliation. Branching on the gateway name would mean adding a new gateway requires changing the FE --
+ * exactly what {@link CheckoutAction} exists to avoid.
  *
- * @param orderId          đơn đang được trả -- KHÔNG phải invoiceId như PaymentLinkDto cũ: hóa đơn
- *                         giờ chỉ phát sau khi tiền về, lúc phát link chưa có hóa đơn nào tồn tại
- * @param paymentId        lần thử thanh toán tương ứng, để FE hỏi lại trạng thái
- * @param providerOrderRef mã đơn phía cổng, dạng chuỗi chứ không phải Long: orderCode dạng số là quy
- *                         ước riêng của PayOS
- * @param fields           field ẩn phải POST khi {@code action} là FORM_POST, rỗng khi REDIRECT.
- *                         Thứ tự key là một phần của hợp đồng (SePay ký trên chuỗi ghép theo đúng
- *                         thứ tự đó). CÓ CHỨA CHỮ KÝ nên không được ghi log và không lưu xuống DB
- * @param qrCode           chuỗi VietQR để FE tự vẽ mã, null khi action không phải QR
- * @param transfer         thông tin chuyển khoản tay đi kèm mã QR, null khi không có QR
+ * @param orderId          the order being paid -- NOT invoiceId as in the old PaymentLinkDto: the invoice
+ *                         is now only issued after the money arrives, and no invoice exists when the link is issued
+ * @param paymentId        the corresponding payment attempt, so the FE can ask for its status again
+ * @param providerOrderRef the order code on the gateway side, as a string and not a Long: a numeric orderCode is
+ *                         PayOS's own convention
+ * @param fields           the hidden fields to POST when {@code action} is FORM_POST, empty for REDIRECT.
+ *                         The key order is part of the contract (SePay signs the string joined in exactly
+ *                         that order). CONTAINS THE SIGNATURE so it must not be logged or stored in the DB
+ * @param qrCode           the VietQR string for the FE to draw the code itself, null when the action is not QR
+ * @param transfer         the manual transfer details that go with the QR code, null when there is no QR
  */
 public record PaymentCheckoutResponse(
     UUID orderId,
@@ -55,8 +55,8 @@ public record PaymentCheckoutResponse(
     }
 
     /**
-     * Dựng lại từ một lần thử ĐANG TREO mà ta chỉ còn giữ checkout_url. Luôn là REDIRECT: cổng dạng
-     * FORM_POST không tái tạo được ở đây vì bộ field mang chữ ký, mà chữ ký thì cố ý không lưu.
+     * Rebuilt from a PENDING attempt of which we only still hold the checkout_url. Always REDIRECT: a FORM_POST
+     * gateway cannot be recreated here because the field set carries a signature, and the signature is deliberately not stored.
      */
     public static PaymentCheckoutResponse redirectTo(
             UUID orderId, UUID paymentId, String providerOrderRef, PaymentProvider provider, String checkoutUrl) {
@@ -65,11 +65,11 @@ public record PaymentCheckoutResponse(
     }
 
     /**
-     * Dựng lại một lần thử ĐANG TREO của cổng có QR, từ payload đã lưu ở payment_records.
+     * Rebuilt from a PENDING attempt of a QR gateway, from the payload stored in payment_records.
      *
-     * <p>Đây là lý do phải LƯU chuỗi QR chứ không chỉ checkout_url: hỏi trạng thái chỉ trả về trạng
-     * thái, cổng không phát lại mã. Không lưu thì trường rời trang rồi quay lại sẽ không thấy mã của
-     * chính mình nữa -- mà rời trang để mở app ngân hàng chính là đường đi bình thường ở đây.
+     * <p>This is why the QR string must be STORED and not only checkout_url: a status query returns only the
+     * status, the gateway does not reissue the code. Without storing it, a school that leaves the page and comes back would no longer see its
+     * own code -- and leaving the page to open the banking app is the normal path here.
      */
     public static PaymentCheckoutResponse qrFor(
             UUID orderId, UUID paymentId, String providerOrderRef, PaymentProvider provider,

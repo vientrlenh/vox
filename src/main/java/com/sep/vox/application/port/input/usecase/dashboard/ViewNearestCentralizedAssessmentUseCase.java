@@ -12,7 +12,7 @@ import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.dto.NearestCentralizedAssessmentDto;
 import com.sep.vox.application.query.repository.NearestCentralizedAssessmentQueryRepository;
 
-/** Kỳ thi tập trung gần thời điểm hiện tại nhất của trường — dùng cho dashboard school admin. */
+/** The centralized assessment closest to the current time for a school -- used by the school admin dashboard. */
 @Service
 @RequiredArgsConstructor
 public class ViewNearestCentralizedAssessmentUseCase implements IUseCase<Void, Optional<NearestCentralizedAssessmentDto>> {

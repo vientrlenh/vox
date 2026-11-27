@@ -203,7 +203,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws Exception {
         SupportedLanguage language = supportedLanguageRepository.findByCode(LANGUAGE_CODE).orElse(null);
         if (language == null) {
-            log.warn("Chưa có ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống", LANGUAGE_CODE);
+            log.warn("No language {}. Skipping system sample criteria set initialization", LANGUAGE_CODE);
             return;
         }
 
@@ -212,7 +212,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
         // for English by hand, this seed will no longer run -- to get the templates, create them by hand, like
         // FrameworkInitializer.
         if (rubricRepository.existsByOwnerTypeAndLanguageId(RubricOwnerType.SYSTEM.name(), language.getId())) {
-            log.info("Hệ thống đã có bộ tiêu chí cho ngôn ngữ {}. Bỏ qua khởi tạo bộ tiêu chí mẫu",
+            log.info("The system already has a criteria set for language {}. Skipping sample criteria set initialization",
                 LANGUAGE_CODE);
             return;
         }
@@ -223,14 +223,14 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     private void seedFromActiveFramework(SupportedLanguage language) {
         Framework framework = frameworkRepository.findByCode(FRAMEWORK_CODE).orElse(null);
         if (framework == null || !framework.isActive()) {
-            log.warn("Chưa có khung {} đang hoạt động. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
+            log.warn("No active framework {}. Skipping system sample criteria set initialization",
                 FRAMEWORK_CODE);
             return;
         }
 
         FrameworkVersion frameworkVersion = latestPublishedVersion(framework.getId());
         if (frameworkVersion == null) {
-            log.warn("Khung {} chưa có phiên bản nào được ban hành. Bỏ qua khởi tạo bộ tiêu chí mẫu",
+            log.warn("Framework {} has no published version. Skipping sample criteria set initialization",
                 FRAMEWORK_CODE);
             return;
         }
@@ -251,7 +251,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             .filter(code -> !criterionByCode.containsKey(code))
             .toList();
         if (!missingCodes.isEmpty()) {
-            log.warn("Khung {} thiếu các tiêu chí {}. Bỏ qua khởi tạo bộ tiêu chí mẫu của hệ thống",
+            log.warn("Framework {} lacks criteria {}. Skipping system sample criteria set initialization",
                 FRAMEWORK_CODE, missingCodes);
             return;
         }
@@ -261,7 +261,7 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
             createTemplate(template, language.getId(), framework.getId(), criterionByCode, now);
         }
 
-        log.info("Đã khởi tạo {} bộ tiêu chí mẫu của hệ thống cho ngôn ngữ {}", TEMPLATES.size(), LANGUAGE_CODE);
+        log.info("Initialized {} system sample criteria sets for language {}", TEMPLATES.size(), LANGUAGE_CODE);
     }
 
     private FrameworkVersion latestPublishedVersion(UUID frameworkId) {
@@ -364,6 +364,6 @@ public class SystemRubricTemplateInitializer implements ApplicationRunner {
     private record ResultBandSeed(
         String code, String name, String description, BigDecimal scoreMin, BigDecimal scoreMax, int order) {}
 
-    /** @param weights trọng số theo mã tiêu chí của khung; tổng phải bằng 1.00. */
+    /** @param weights weights by the framework's criterion code; the sum must equal 1.00. */
     private record TemplateSeed(String code, String name, String description, Map<String, BigDecimal> weights) {}
 }

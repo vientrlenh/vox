@@ -36,10 +36,10 @@ import com.sep.vox.domain.repository.AssessmentSessionRepository;
 import com.sep.vox.domain.repository.SchoolUserRepository;
 
 /**
- * Chốt hai điều dễ sai nhất khi gộp "ai được xem" với "khi nào được xem":
- * cờ {@code candidateOwner} chỉ bật cho đúng thí sinh của bài (system admin KHÔNG phải
- * chính chủ), và luật trạng thái chỉ áp cho chính chủ — giáo viên vẫn phải đọc được bài
- * chưa công bố, nếu không thì không còn gì để mà chấm.
+ * Pins the two things most easily gotten wrong when merging "who may view" with "when may view":
+ * the {@code candidateOwner} flag is only set for exactly the candidate of the assessment (a system admin is NOT the
+ * owner), and the status rule only applies to the owner — a teacher must still be able to read an
+ * unpublished assessment, otherwise there would be nothing left to grade.
  */
 class AssessmentResultAccessServiceTests {
 
@@ -126,8 +126,8 @@ class AssessmentResultAccessServiceTests {
     }
 
     /**
-     * System admin thoát sớm khỏi nhánh phân quyền — nếu vì thế mà bị coi là chính chủ thì
-     * họ sẽ mất quyền xem bài chưa công bố, đúng thứ họ cần nhất.
+     * A system admin exits the authorization branch early — if that got them treated as the owner then
+     * they would lose the right to view unpublished assessments, exactly what they need most.
      */
     @Test
     void should_not_report_candidate_owner_for_system_admin() {
@@ -160,7 +160,7 @@ class AssessmentResultAccessServiceTests {
 
         assertThatThrownBy(() -> service.requireCandidateVisibleSession(SESSION_ID))
             .isInstanceOf(ForbiddenException.class)
-            .hasMessageContaining("chưa được công bố");
+            .hasMessageContaining("has not been published");
     }
 
     @Test
@@ -181,7 +181,7 @@ class AssessmentResultAccessServiceTests {
         assertThat(service.requireCandidateVisibleSession(SESSION_ID).candidateOwner()).isFalse();
     }
 
-    /** Chưa có dòng kết quả nào thì chưa có gì để công bố — chính chủ không qua được. */
+    /** No result row yet means nothing to publish — the owner does not get through. */
     @Test
     void should_reject_candidate_when_result_row_is_missing() {
         givenCurrentUser(STUDENT_ID, false);

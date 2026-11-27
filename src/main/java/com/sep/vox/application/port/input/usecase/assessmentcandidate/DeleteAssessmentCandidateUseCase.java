@@ -45,18 +45,18 @@ public class DeleteAssessmentCandidateUseCase implements IUseCase<DeleteAssessme
     @Transactional
     public Void execute(DeleteAssessmentCandidateCommand input) {
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
         authorize(assessment);
         AssessmentEditingGuard.requireScheduleEditable(assessment);
 
         AssessmentCandidate candidate = assessmentCandidateRepository.findById(input.candidateId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thí sinh"));
+            .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
         if (!candidate.getAssessmentId().equals(assessment.getId())) {
-            throw new ResourceNotFoundException("Không tìm thấy thí sinh");
+            throw new ResourceNotFoundException("Candidate not found");
         }
 
         if (!assessmentSessionRepository.findByCandidateId(candidate.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Thí sinh đã có bài thi — không thể xóa khỏi kỳ thi");
+            throw new IllegalArgumentException("The candidate already has a submission and cannot be removed from the assessment");
         }
 
         assessmentCandidateRepository.deleteById(candidate.getId());
@@ -77,6 +77,6 @@ public class DeleteAssessmentCandidateUseCase implements IUseCase<DeleteAssessme
         if (assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessment.getId(), currentUserId, AssessmentMemberRole.CHAIR)) {
             return currentUserId;
         }
-        throw new ForbiddenException("Quyền truy cập bị từ chối");
+        throw new ForbiddenException("Access denied");
     }
 }

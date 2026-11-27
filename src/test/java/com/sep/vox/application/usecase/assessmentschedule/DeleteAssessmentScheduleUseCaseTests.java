@@ -88,7 +88,7 @@ class DeleteAssessmentScheduleUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(new DeleteAssessmentScheduleCommand(assessmentId, scheduleId)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("giám thị");
+            .hasMessageContaining("proctors");
         verify(assessmentScheduleRepository, never()).save(any());
     }
 

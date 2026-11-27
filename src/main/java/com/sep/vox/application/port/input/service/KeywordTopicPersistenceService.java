@@ -13,16 +13,16 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.TopicSuggestionRepository;
 
 /**
- * Ghi topic mới sinh từ từ khoá + ghi dòng nhật ký yêu cầu -- HAI lệnh ghi GẮN VỚI NHAU về
- * nghiệp vụ, nên phải cùng thành công hoặc cùng huỷ: topic tồn tại mà không có dòng nhật ký
- * nào trỏ tới thì sau này không truy được nó ra đời từ từ khoá nào của ai.
+ * Writes a topic newly generated from a keyword + writes the request log row -- TWO writes TIED TOGETHER by
+ * business meaning, so they must succeed or be cancelled together: a topic that exists with no log row
+ * pointing at it can later not be traced back to which keyword of whom created it.
  *
- * Từ 2026-08-07 dòng nhật ký này KHÔNG còn chi phối gì (hạn mức 3 lượt/tuần đã gỡ, tìm bằng
- * AI không giới hạn số lần) -- nhưng tính nguyên tử vẫn giữ, vì lý do truy vết ở trên.
+ * Since 2026-08-07 this log row NO LONGER governs anything (the 3-per-week quota was removed, AI search has no
+ * limit on the number of times) -- but atomicity is kept, for the traceability reason above.
  *
- * Là bean riêng, KHÔNG phải method trong TopicSuggestionService, vì:
- * (a) self-invocation bỏ qua proxy AOP nên @Transactional sẽ không có tác dụng;
- * (b) generateFromKeyword có gọi LLM chậm ở giữa, không được nằm trong transaction.
+ * A separate bean, NOT a method in TopicSuggestionService, because:
+ * (a) self-invocation bypasses the AOP proxy so @Transactional would have no effect;
+ * (b) generateFromKeyword makes a slow LLM call in the middle, which must not sit inside a transaction.
  */
 @Service
 @RequiredArgsConstructor

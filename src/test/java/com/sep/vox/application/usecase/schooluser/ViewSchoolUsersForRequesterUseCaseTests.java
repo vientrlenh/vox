@@ -69,8 +69,8 @@ class ViewSchoolUsersForRequesterUseCaseTests {
 
     @Test
     void should_reject_teacher_without_teacher_role() {
-        // Fail-safe: TEACHER (theo security) nhưng thiếu role row TEACHER trong DB -> từ chối,
-        // không được rơi vào nhánh roleId=null (lộ toàn bộ học sinh).
+        // Fail-safe: a TEACHER (per security) without a TEACHER role row in the DB -> rejected, and must not fall
+        // into the roleId=null branch (which would expose every student).
         when(userRoleQueryRepository.findByUserIdWithRoleInfo(callerId)).thenReturn(List.of());
 
         assertThatThrownBy(() -> useCase.execute(new ViewSchoolUsersBySchoolQuery(schoolId, 1, 20, null, null, null)))

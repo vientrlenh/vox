@@ -1,11 +1,11 @@
 package com.sep.vox.application.event;
 
 /**
- * Yêu cầu gửi OTP đặt lại mật khẩu.
+ * A request to send the OTP that resets a password.
  *
- * <p>Payload KHÔNG mang mã OTP -- xem {@code EventTypeConstant.RESET_PASSWORD_OTP_REQUESTED}.
- * Mã được sinh ở consumer ngay trước lúc gửi mail, nên nó không bao giờ tồn tại trong
- * {@code outboxes.payload} hay trong topic Kafka.
+ * <p>The payload does NOT carry the OTP code -- see {@code EventTypeConstant.RESET_PASSWORD_OTP_REQUESTED}.
+ * The code is generated in the consumer right before the mail is sent, so it never exists in
+ * {@code outboxes.payload} or in the Kafka topic.
  */
 public record ResetPasswordOtpRequestedPayloadV1(
     String to

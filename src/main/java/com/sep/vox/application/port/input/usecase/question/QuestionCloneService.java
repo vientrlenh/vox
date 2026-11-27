@@ -37,7 +37,7 @@ public class QuestionCloneService {
         return questionAssetRepository.findByQuestionId(clonedQuestionId).stream()
             .filter(asset -> asset.getOrder() == order)
             .findFirst()
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài nguyên câu hỏi trong bản nháp mới"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question asset not found in the new draft"));
     }
 
     private void cloneAssets(UUID sourceQuestionId, UUID targetQuestionId) {

@@ -67,7 +67,7 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
             .anyMatch(role -> "SCHOOL_ADMIN".equals(role.roleCode()));
 
         Assessment assessment = assessmentRepository.findById(input.assessmentId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài kiểm tra"));
+            .orElseThrow(() -> new ResourceNotFoundException("Assessment not found"));
 
         authorizeDelete(assessment.getId(), assessment.getSchoolId(), assessment.getKind(), currentUserId, currentSchoolId, schoolAdmin);
 
@@ -77,7 +77,7 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
     private DeleteAssessmentResponse deleteOrCancelByStatus(Assessment assessment, UUID currentUserId) {
         return switch (assessment.getStatus()) {
             case RESULTS_PUBLISHED ->
-                throw new IllegalArgumentException("Không thể xoá kỳ thi đã công bố kết quả");
+                throw new IllegalArgumentException("An assessment whose results have been published cannot be deleted");
             // Already cancelled: pressing delete again has nothing to do, so return the same result instead of throwing.
             case CANCELLED -> new DeleteAssessmentResponse(false, true);
             case DRAFT -> {
@@ -147,10 +147,10 @@ public class DeleteAssessmentUseCase implements IUseCase<DeleteAssessmentCommand
             if (schoolAdmin && currentSchoolId != null && currentSchoolId.equals(assessmentSchoolId)) {
                 return;
             }
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
         if (!assessmentMemberRepository.existsByAssessmentIdAndUserIdAndRole(assessmentId, currentUserId, AssessmentMemberRole.CHAIR)) {
-            throw new ForbiddenException("Quyền truy cập bị từ chối");
+            throw new ForbiddenException("Access denied");
         }
     }
 }

@@ -34,10 +34,10 @@ import com.sep.vox.domain.model.user.SchoolRoleCodes;
 import com.sep.vox.domain.repository.SchoolClassRepository;
 
 /**
- * Phạm vi danh bạ kỳ thi theo `schoolWide`.
+ * The scope of the assessment directory by `schoolWide`.
  *
- * <p>Điểm phải giữ: nhánh CLASS_TEST không bao giờ được rơi về truy vấn toàn trường —
- * đó chính là chỗ nới quyền nếu ai đó sửa nhầm.
+ * <p>The point to keep: the CLASS_TEST branch must never fall back to the school-wide query --
+ * that is exactly where permission would be widened if someone edited it by mistake.
  */
 class ViewAssessmentDirectoryUseCasesTests {
 
@@ -57,7 +57,7 @@ class ViewAssessmentDirectoryUseCasesTests {
         schoolClassRepository = mock(SchoolClassRepository.class);
     }
 
-    // ---------- lớp ----------
+    // ---------- class ----------
 
     @Test
     void should_list_all_school_classes_when_scope_is_school_wide() {
@@ -91,7 +91,7 @@ class ViewAssessmentDirectoryUseCasesTests {
             .findBySchoolId(any(), any(), any(), any(), any(), anyInt(), anyInt());
     }
 
-    // ---------- niên khóa ----------
+    // ---------- school year ----------
 
     @Test
     void should_list_grades_when_scope_is_school_wide() {
@@ -113,11 +113,11 @@ class ViewAssessmentDirectoryUseCasesTests {
         ForbiddenException exception = assertThrows(ForbiddenException.class, () -> useCase.execute(query));
 
         assertThat(exception.getMessage())
-            .isEqualTo("Bài kiểm tra trên lớp không hỗ trợ nhập thí sinh theo niên khóa");
+            .isEqualTo("A class test does not support importing candidates by school year");
         verify(queryRepository, never()).findGradesBySchoolId(any(), any(), anyInt(), anyInt());
     }
 
-    // ---------- học sinh ----------
+    // ---------- student ----------
 
     @Test
     void should_list_all_school_students_when_scope_is_school_wide() {
@@ -150,7 +150,7 @@ class ViewAssessmentDirectoryUseCasesTests {
         verify(queryRepository, never()).findUsersBySchoolId(any(), any(), any(), any(), anyInt(), anyInt());
     }
 
-    // ---------- giám thị ----------
+    // ---------- proctor ----------
 
     @Test
     void should_always_list_school_teachers_for_proctors() {

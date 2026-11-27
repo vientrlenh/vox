@@ -57,10 +57,10 @@ public class RejectAssessmentAppealUseCase implements IUseCase<RejectAssessmentA
 
     private void requireRejectable(AssessmentResultAppeal appeal, RejectAssessmentAppealCommand command) {
         if (appeal.getStatus() != AssessmentAppealStatus.PENDING) {
-            throw new IllegalArgumentException("Chỉ có thể từ chối đơn phúc khảo đang ở trạng thái Chờ duyệt.");
+            throw new IllegalArgumentException("Only an appeal in the Pending status can be rejected.");
         }
         if (command.reason() == null || command.reason().isBlank()) {
-            throw new IllegalArgumentException("Phải nêu lý do từ chối đơn phúc khảo.");
+            throw new IllegalArgumentException("A reason for rejecting the appeal must be given.");
         }
     }
 

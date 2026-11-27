@@ -20,21 +20,21 @@ import com.sep.vox.application.query.dto.LiveSessionCountsDto;
  */
 public interface PlatformOperationalHealthQueryRepository {
 
-    /** Ảnh chụp tại thời điểm gọi: phiên đang thi, số kỳ thi có phiên đang chạy, và hàng chờ chấm. */
+    /** A snapshot at the moment of the call: sessions in progress, assessments with running sessions, and the grading queue. */
     LiveSessionCountsDto countLiveSessions();
 
     /**
-     * Số phiên chấm xong / chấm lỗi theo từng ngày lịch, chỉ trả về ngày CÓ dữ liệu — nơi gọi tự
-     * chèn ngày trống thành 0.
+     * The number of sessions graded / failed grading per calendar day, returning only days that HAVE data -- the
+     * caller fills empty days with 0 itself.
      *
-     * <p>Gộp theo {@code submitted_at} chứ không {@code started_at}: một phiên thi đêm khuya nộp
-     * sang ngày hôm sau thì kết quả chấm thuộc về ngày nộp, và đó cũng là mốc duy nhất mà mọi phiên
-     * đã chấm chắc chắn có.
+     * <p>Grouped by {@code submitted_at} and not {@code started_at}: a late-night session submitted on the next
+     * day has its grading result belonging to the submission day, and that is also the only timestamp that every
+     * graded session is certain to have.
      *
-     * @param from mốc đầu, BAO GỒM
-     * @param to   mốc cuối, KHÔNG bao gồm — hai dải liền nhau sẽ đếm trùng phiên rơi đúng ranh giới
-     *             nếu dùng {@code <=}; cùng quy ước với {@code schoolBalanceSummary}
-     * @param zone múi giờ dùng để cắt ngày lịch
+     * @param from the start, INCLUSIVE
+     * @param to   the end, EXCLUSIVE -- two adjacent ranges would count a session that lands exactly on the boundary
+     *             twice if {@code <=} were used; the same convention as {@code schoolBalanceSummary}
+     * @param zone the time zone used to cut calendar days
      */
     List<GradingOutcomeBucketDto> findGradingOutcomeByDay(Instant from, Instant to, ZoneId zone);
 }

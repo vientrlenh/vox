@@ -96,10 +96,10 @@ public class JwtAuthTokenProvider implements AuthTokenPort {
                 .getPayload();
         } catch (ExpiredJwtException e) {
             log.info("JWT Token expired: {}", e.getMessage());
-            throw new IllegalArgumentException("Token đã hết hạn");
+            throw new IllegalArgumentException("Token has expired");
         } catch (JwtException e) {
             log.info("JWT Token error: {}", e.getMessage());
-            throw new IllegalArgumentException("Token không hợp lệ");
+            throw new IllegalArgumentException("Invalid token");
         }
     }
 

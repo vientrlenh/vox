@@ -18,7 +18,7 @@ public record UpdateFrameworkVersionInput(
     public static UpdateFrameworkVersionCommand toCommand(UUID frameworkId, UUID versionId, UpdateFrameworkVersionInput input) {
         Instant effectiveTo = input.effectiveTo().value();
         if (input.effectiveFrom() != null && effectiveTo != null && effectiveTo.isBefore(input.effectiveFrom()))
-            throw new IllegalArgumentException("Ngày kết thúc hiệu lực phải sau ngày bắt đầu hiệu lực");
+            throw new IllegalArgumentException("The effective end date must be after the effective start date");
 
         return new UpdateFrameworkVersionCommand(
             frameworkId,

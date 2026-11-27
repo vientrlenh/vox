@@ -3,7 +3,7 @@ package com.sep.vox.application.event;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/** Kết quả phúc khảo đã công bố cho học sinh. */
+/** The appeal result has been published to the student. */
 public record AssessmentAppealPublishedPayloadV1(
     UUID appealId,
     UUID studentId,

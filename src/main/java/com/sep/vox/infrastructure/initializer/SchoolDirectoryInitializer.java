@@ -24,17 +24,17 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Nạp sẵn danh mục trường THPT từ school/school-directory-seed.json (sinh từ file Excel do nghiệp
- * vụ cung cấp) để hệ thống có sẵn danh mục cho luồng đăng ký, thay vì phải import tay qua
- * PreviewSchoolDirectoryImportFromFileUseCase mỗi lần dựng môi trường mới.
+ * Preloads the directory of high schools from school/school-directory-seed.json (generated from the Excel file the
+ * business provided) so the system has the directory ready for the registration flow, instead of importing by hand through
+ * PreviewSchoolDirectoryImportFromFileUseCase every time a new environment is built.
  *
- * <p>Ghi bằng origin OFFICIAL_IMPORT và verified = true: đây là danh sách chính thức được nạp sẵn
- * (không phải admin gõ từng dòng), và đã tin cậy sẵn nên trường có email đúng tên miền đăng ký
- * được qua OTP thay vì phải nộp tài liệu -- xem RegisterFromSchoolDirectoryUseCase.
+ * <p>Written with origin OFFICIAL_IMPORT and verified = true: this is the official list loaded up front
+ * (not typed row by row by an admin), and already trusted, so a school with an email on the registered domain
+ * can pass via OTP instead of submitting documents -- see RegisterFromSchoolDirectoryUseCase.
  *
- * <p>Idempotent theo MÃ TRƯỜNG chứ không phải theo "bảng có rỗng hay không": chỉ chèn những mã
- * chưa có. Nhờ vậy thêm trường mới vào file seed rồi khởi động lại là nạp được phần thiếu, mà
- * KHÔNG đụng vào entry admin đã sửa tay hay đã xác minh trước đó.
+ * <p>Idempotent by SCHOOL CODE and not by "is the table empty": it only inserts the codes that
+ * do not exist yet. So adding a new school to the seed file and restarting loads the missing part, while
+ * NOT touching entries an admin edited by hand or verified earlier.
  */
 @Component
 @Order(5)
@@ -52,7 +52,7 @@ public class SchoolDirectoryInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) throws IOException {
         List<SeedRow> seeds = readSeeds();
         if (seeds.isEmpty()) {
-            log.info("[school-directory] File seed rỗng, bỏ qua khởi tạo danh mục trường");
+            log.info("[school-directory] The seed file is empty, skipping school directory initialization");
             return;
         }
 
@@ -71,7 +71,7 @@ public class SchoolDirectoryInitializer implements ApplicationRunner {
             inserted++;
         }
 
-        log.info("[school-directory] Đã nạp {} danh mục trường mới, bỏ qua {} mã đã có",
+        log.info("[school-directory] Loaded {} new school directory entries, skipped {} existing codes",
             inserted, seeds.size() - inserted);
     }
 

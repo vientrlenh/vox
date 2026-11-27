@@ -46,11 +46,11 @@ import com.sep.vox.domain.repository.SchoolUserRepository;
 import com.sep.vox.domain.repository.UserRepository;
 
 /**
- * Sao bộ tiêu chí mẫu kèm luôn chính sách chấm mẫu.
+ * Copying a template rubric together with its template scoring policies.
  *
- * <p>Việc tạo chính sách uỷ hết cho {@code CreateSchoolAssessmentPolicyUseCase}, nên các test ở đây
- * kiểm đúng phần use case này chịu trách nhiệm: lệnh dựng ra có sao đúng thông số của bản mẫu không,
- * phạm vi có theo luật kế thừa Khối không, và bản mẫu lạ có bị chặn không.
+ * <p>Creating the policy is delegated entirely to {@code CreateSchoolAssessmentPolicyUseCase}, so the tests here
+ * check exactly what this use case is responsible for: whether the command it builds copies the template's parameters
+ * correctly, whether the scope follows the grade level inheritance rule, and whether a foreign template is rejected.
  */
 class CloneSystemRubricToSchoolUseCaseTests {
 
@@ -148,7 +148,7 @@ class CloneSystemRubricToSchoolUseCaseTests {
         return captor.getValue();
     }
 
-    // Giữ nguyên hành vi cũ: nút "sao bộ tiêu chí" đang có vẫn gửi lên đúng như trước.
+    // Keeps the old behaviour: the existing "clone rubric" button still sends exactly what it did before.
     @Test
     void clonesRubricOnly_whenNoPolicyIsChosen() {
         assertThat(useCase.execute(command(List.of()))).isEqualTo(CLONED_VERSION_ID);
@@ -177,8 +177,8 @@ class CloneSystemRubricToSchoolUseCaseTests {
         assertThat(created.schoolClassId()).isEqualTo(classId);
     }
 
-    // Lý do phạm vi phải đi theo TỪNG chính sách: hai bản mẫu khác bậc mục tiêu dùng chung một phiên
-    // bản Rubric chỉ cùng tồn tại được khi chúng nằm ở hai phạm vi khác nhau.
+    // Why the scope must follow EACH policy: two templates with different target bands that share one Rubric
+    // version can only coexist when they sit in two different scopes.
     @Test
     void carriesADistinctScopePerChosenPolicy() {
         UUID otherTemplateId = UUID.randomUUID();
@@ -223,11 +223,11 @@ class CloneSystemRubricToSchoolUseCaseTests {
 
         assertThatThrownBy(() -> useCase.execute(command(List.of(choice(null, null, UUID.randomUUID())))))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("giữ nguyên khối");
+                .hasMessageContaining("keeps that grade level");
     }
 
-    // Bản mẫu của phiên bản KHÁC mang thông số soạn cho bộ tiêu chí khác, nên gắn nó vào bản sao này
-    // là chấm bằng một thang không khớp.
+    // A template of ANOTHER version carries parameters written for a different rubric, so attaching it to this
+    // copy would grade with a scale that does not match.
     @Test
     void rejects_whenTheChosenTemplateBelongsToAnotherRubricVersion() {
         assertThatThrownBy(() -> useCase.execute(command(List.of(

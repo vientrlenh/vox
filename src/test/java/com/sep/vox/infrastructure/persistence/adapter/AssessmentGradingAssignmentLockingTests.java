@@ -25,21 +25,21 @@ import com.sep.vox.domain.repository.AssessmentGradingAssignmentRepository;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Khoá bi quan trên phân công chấm — thứ thay thế cột {@code version} đã bỏ.
+ * Pessimistic lock on grading assignments -- the replacement for the removed {@code version} column.
  *
- * <p>Vì sao cần: domain được map ra POJO detached nên {@code save} là {@code merge} ghi
- * đè TOÀN BỘ cột, không có dirty checking. Hai transaction cùng đọc một dòng ASSIGNED
- * rồi cùng ghi thì cả hai UPDATE đều thành công và người sau xoá mất việc của người
- * trước — mà không lỗi, không log. {@code findByIdForUpdate} là chỗ duy nhất chặn.
+ * <p>Why it is needed: the domain is mapped to a detached POJO, so {@code save} is a {@code merge} that
+ * overwrites ALL columns, with no dirty checking. Two transactions that both read one ASSIGNED row
+ * and then both write will both succeed with their UPDATE, and the later one erases the work of the
+ * earlier -- with no error and no log. {@code findByIdForUpdate} is the only thing that blocks it.
  *
- * <p>Lớp này KHÔNG {@code @Transactional}: hai luồng phải nằm trong hai transaction
- * thật thì khoá mới có gì để chặn.
+ * <p>This class is NOT {@code @Transactional}: the two threads must be in two real transactions
+ * for the lock to have anything to block.
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
 class AssessmentGradingAssignmentLockingTests {
 
-    /** Trần chờ cho mọi lần join luồng — để bug về khoá thành test đỏ, không thành build treo. */
+    /** Wait cap for every thread join -- so a locking bug becomes a red test, not a hanging build. */
     private static final int TIMEOUT_SECONDS = 20;
 
     @Autowired
@@ -137,7 +137,7 @@ class AssessmentGradingAssignmentLockingTests {
     private static void awaitQuietly(CountDownLatch latch) {
         try {
             if (!latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("Quá hạn chờ luồng kia — nhiều khả năng khoá bị kẹt.");
+                throw new IllegalStateException("Timed out waiting for the other thread -- the lock is most likely stuck.");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

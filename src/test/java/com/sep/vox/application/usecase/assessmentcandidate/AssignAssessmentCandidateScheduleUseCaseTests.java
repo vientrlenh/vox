@@ -71,15 +71,15 @@ class AssignAssessmentCandidateScheduleUseCaseTests {
         schoolUserRepository = mock(SchoolUserRepository.class);
         userRoleQueryRepository = mock(UserRoleQueryRepository.class);
         userContextPort = mock(UserContextPort.class);
-        // Access service thật trên các repository đã mock: luật phân quyền vẫn được test đúng như
-        // trước khi nó được tách ra khỏi use case.
+        // The real access service on mocked repositories: the authorization rule is still tested exactly as it was
+        // before it was extracted from the use case.
         useCase = new AssignAssessmentCandidateScheduleUseCase(
             assessmentRepository, assessmentCandidateRepository, assessmentScheduleRepository,
             new AssessmentPaperAutoAssigner(mock(AssessmentPaperRepository.class), assessmentCandidateRepository),
             new AssessmentScheduleManageAccessService(
                 assessmentMemberRepository, schoolUserRepository, userRoleQueryRepository, userContextPort),
-            // Validator thật chạy trên candidate repository đã mock: luật "không xếp học sinh vào hai
-            // ca trùng giờ" được test qua chính use case thay vì phải tin một mock trả sẵn.
+            // The real validator runs on the mocked candidate repository: the rule "do not place a student in two
+            // assessment schedules that overlap" is tested through the use case itself instead of trusting a canned mock.
             new AssessmentScheduleCandidateConflictValidator(assessmentCandidateRepository, mock(UserRepository.class)));
 
         when(assessmentCandidateRepository.findConflictsForStudents(anyCollection(), any(), any(), any()))
@@ -150,7 +150,7 @@ class AssignAssessmentCandidateScheduleUseCaseTests {
         assertThatThrownBy(() -> useCase.execute(
                 new AssignAssessmentCandidateScheduleCommand(assessmentId, candidateId, scheduleId)))
             .isInstanceOf(ResourceDuplicatedException.class)
-            .hasMessageContaining("khoảng thời gian này");
+            .hasMessageContaining("in this time range");
         verify(assessmentCandidateRepository, never()).save(any());
     }
 

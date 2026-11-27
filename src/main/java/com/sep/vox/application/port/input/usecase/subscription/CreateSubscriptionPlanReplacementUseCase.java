@@ -35,12 +35,12 @@ public class CreateSubscriptionPlanReplacementUseCase
     @Transactional
     public UUID execute(CreateSubscriptionPlanReplacementCommand input) {
         SubscriptionPlan replacedPlan = subscriptionPlanRepository.findById(input.replacedPlanId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy gói"));
+            .orElseThrow(() -> new ResourceNotFoundException("Plan not found"));
 
         // Only for plans ON SALE: an ARCHIVED plan that needs its replacement fixed goes through
         // UpdateSubscriptionPlanReplacementUseCase, and a DRAFT plan has no users yet so it needs no replacement.
         if (replacedPlan.getStatus() != SubscriptionPlanStatus.ACTIVE) {
-            throw new IllegalArgumentException("Chỉ tạo được gói thay thế cho gói đang bán.");
+            throw new IllegalArgumentException("A replacement plan can only be created for a plan that is on sale.");
         }
 
         UUID newPlanId = createSubscriptionPlanUseCase.execute(input.newPlan());

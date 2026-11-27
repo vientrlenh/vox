@@ -21,7 +21,7 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
     boolean existsByFrameworkId(UUID frameworkId);
     Optional<FrameworkVersionJpaEntity> findByCode(String code);
     Optional<FrameworkVersionJpaEntity> findByName(String name);
-    // Nhận input đã được Impl uppercase sẵn; entity-side vẫn bọc UPPER() để phòng dữ liệu cũ lỡ không đồng nhất case.
+    // Receives input already uppercased by the Impl; the entity side still wraps UPPER() in case old data has inconsistent case.
     @Query("SELECT v FROM FrameworkVersionJpaEntity v WHERE UPPER(v.code) IN :codes")
     List<FrameworkVersionJpaEntity> findByCodeIn(@Param("codes") Collection<String> codes);
     List<FrameworkVersionJpaEntity> findByNameIn(Collection<String> names);
@@ -31,16 +31,16 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
     Optional<FrameworkVersionJpaEntity> findByFrameworkIdAndVersion(UUID frameworkId, int version);
 
     /**
-     * Mỗi khung đánh giá còn hiệu lực kèm BẢN MỚI NHẤT đã ban hành của nó -- nguồn cho ô chọn
-     * khung ở màn luyện tập.
+     * Every active assessment framework together with its LATEST published VERSION -- the source for the framework
+     * picker on the practice screen.
      *
-     * <p>{@code DISTINCT ON (f.id)} cộng {@code ORDER BY f.id, fv.version DESC} cho đúng một
-     * dòng mỗi khung, là bản version cao nhất. Cùng bộ điều kiện hiệu lực với
-     * {@code findActiveVersionId} -- hai đường phải nhất quán, nếu không màn hình liệt kê ra
-     * một khung mà chỗ khác lại không chọn nó.
+     * <p>{@code DISTINCT ON (f.id)} plus {@code ORDER BY f.id, fv.version DESC} gives exactly one
+     * row per framework, the one with the highest version. Same validity conditions as
+     * {@code findActiveVersionId} -- the two paths must be consistent, otherwise the screen lists
+     * a framework that the other place would not pick.
      *
-     * <p>Khác {@code findActiveVersionId} ở chỗ: hàm kia trả về ĐÚNG MỘT khung cho cả hệ, còn
-     * hàm này trả về TẤT CẢ để học sinh tự chọn.
+     * <p>Differs from {@code findActiveVersionId}: that one returns EXACTLY ONE framework for the whole system, while
+     * this one returns ALL of them so the student can choose.
      */
     @Query(value = """
         SELECT DISTINCT ON (f.id)
@@ -79,20 +79,20 @@ public interface SpringDataFrameworkVersionRepository extends JpaRepository<Fram
     int updateStatus(@Param("id") UUID id, @Param("status") String status);
 
     /**
-     * Bản khung đánh giá đang hiệu lực của TOÀN HỆ, dùng cho luyện tập.
+     * The framework version currently in force for the WHOLE SYSTEM, used for practice.
      *
-     * <p>Vì sao không đi qua {@code assessment_policies} như đường thi: policy được chọn theo
-     * lớp học sinh đang thuộc (ưu tiên lớp &gt; khối &gt; trường). Ba hệ quả không muốn ở luyện
-     * tập -- trường chưa cấu hình policy thì học sinh không vào được phiên; hai học sinh cùng
-     * trường khác lớp luyện dưới hai thang khác nhau; và một học sinh thuộc nhiều lớp active
-     * thì policy nào thắng là chuyện của thứ tự chứ không phải của ý định.
+     * <p>Why it does not go through {@code assessment_policies} like the assessment path: a policy is chosen by
+     * the class the student belongs to (priority class &gt; grade &gt; school). Three consequences we do not want in
+     * practice -- a school that has not configured a policy leaves the student unable to enter a session; two students
+     * of the same school in different classes practice under two different scales; and a student in several active
+     * classes gets whichever policy wins by ordering rather than by intent.
      *
-     * <p>{@code frameworks} không gắn trường hay ngôn ngữ nên đây là khái niệm toàn hệ -- tra
-     * một câu là ra, không có nhập nhằng phạm vi.
+     * <p>{@code frameworks} are not tied to a school or a language, so this is a system-wide concept -- one
+     * lookup answers it, with no scope ambiguity.
      *
-     * <p>{@code :code} cho phép chỉ định thẳng qua config
-     * ({@code app.practice.framework-version-code}); để null thì tự chọn bản đang hoạt động.
-     * Có đường này để trường nhiều khung không phải phụ thuộc vào cờ {@code is_active}.
+     * <p>{@code :code} allows pinning directly through config
+     * ({@code app.practice.framework-version-code}); when null the active version is picked automatically.
+     * This path exists so that a school with several frameworks does not depend on the {@code is_active} flag.
      */
     @Query(value = """
         SELECT fv.id

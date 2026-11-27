@@ -44,7 +44,7 @@ public class OAuth2LoginUseCase implements IUseCase<OAuth2LoginCommand, LoginRes
     @Transactional
     public LoginResponse execute(OAuth2LoginCommand input) {
         User user = userRepository.findByEmailAndStatus(input.email(), UserStatus.ACTIVE)
-            .orElseThrow(() -> new UnauthorizedException("Người dùng hiện chưa tồn tại. Vui lòng gửi đơn đăng ký hoặc liên hệ bên nhà trường để được hỗ trợ"));
+            .orElseThrow(() -> new UnauthorizedException("The user does not exist yet. Please submit a registration form or contact your school for support"));
 
         Instant now = Instant.now();
         List<String> userRoles = getUserRoles(user.getId());

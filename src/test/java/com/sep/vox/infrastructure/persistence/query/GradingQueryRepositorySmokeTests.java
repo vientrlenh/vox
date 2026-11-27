@@ -21,14 +21,14 @@ import com.sep.vox.domain.common.PageResult;
 import com.sep.vox.support.IntegrationTest;
 
 /**
- * Mọi câu ở hai repository này dựng bằng {@code em.createQuery} — tức chỉ được phân
- * tích cú pháp lúc GỌI, không phải lúc khởi động như {@code @Query} của Spring Data.
- * Một câu JPQL sai ngoặc vì thế lọt qua cả compile lẫn context load và chỉ nổ khi người
- * dùng bấm nút. Đúng chuyện đã xảy ra với {@code previewBulkFinalize}: dấu ngoặc của
- * {@code EXISTS (} không được đóng, và không test nào chạm tới nên nó im lặng nằm đó.
+ * Every statement in these two repositories is built with {@code em.createQuery} -- so it is only
+ * parsed at CALL time, not at startup like a Spring Data {@code @Query}.
+ * A JPQL statement with unbalanced parentheses therefore slips through both compile and context load and only blows up when a user
+ * presses the button. Exactly what happened with {@code previewBulkFinalize}: the parenthesis of
+ * {@code EXISTS (} was never closed, and no test touched it so it sat there silently.
  *
- * <p>Lớp này chạy từng method một lần với phạm vi rỗng. Không kiểm nghiệp vụ — cái đó
- * là việc của test use case — chỉ kiểm "câu này chạy được trên Postgres thật".
+ * <p>This class runs each method once with an empty scope. It does not check business rules -- that
+ * is the job of the use case tests -- it only checks "this statement runs on a real Postgres".
  */
 @IntegrationTest
 @AutoConfigureTestGrpcTransport
@@ -129,8 +129,8 @@ class GradingQueryRepositorySmokeTests {
     }
 
     /**
-     * Câu xuất bảng điểm nay dùng chung WHERE_CLAUSE với bảng điều phối, nên phải chạy
-     * được với MỌI vị ngữ trong đó — kể cả các EXISTS lồng và tham số Boolean nullable.
+     * The grade export statement now shares WHERE_CLAUSE with the coordination board, so it must run
+     * with EVERY predicate in it -- including the nested EXISTS and nullable Boolean parameters.
      */
     @Test
     void should_run_the_score_export_query() {

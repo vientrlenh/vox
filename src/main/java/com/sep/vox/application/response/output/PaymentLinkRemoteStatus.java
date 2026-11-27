@@ -9,15 +9,15 @@ public enum PaymentLinkRemoteStatus {
     EXPIRED,
     FAILED,
     /**
-     * Cổng khẳng định KHÔNG có phiên nào mang mã này -- khác hẳn "hỏi không được" (mất mạng, 5xx,
-     * quá rate limit), thứ phải ném ra ngoài chứ không được quy về đây.
+     * The gateway asserts that NO session carries this code -- very different from "could not ask" (network down, 5xx,
+     * rate limit exceeded), which must be thrown outward and must not be mapped to this.
      *
-     * <p>Sinh ra từ khi dòng payment_records được commit TRƯỚC lúc gọi sang cổng
-     * (CreatePaymentCheckoutUrlUseCase): nếu lời gọi tạo link hỏng trước khi cổng kịp dựng phiên, dòng
-     * PENDING đó vẫn nằm lại và mang một mã mà bên cổng chưa từng thấy. Không phân biệt được ca này
-     * thì lần thử đó treo tới lúc đơn hết hạn, còn trường thì không xin được link mới.
+     * <p>It exists since the payment_records row is committed BEFORE calling the gateway
+     * (CreatePaymentCheckoutUrlUseCase): if the link-creation call fails before the gateway has built a session, that
+     * PENDING row stays behind and carries a code the gateway has never seen. Without telling this case apart, that attempt
+     * hangs until the order expires, and the school cannot request a new link.
      *
-     * <p>An toàn để coi là đã chết: cổng không biết mã thì không có đường nào tiền về theo mã đó.
+     * <p>Safe to treat as dead: the gateway does not know the code, so there is no way money can arrive under that code.
      */
     NOT_FOUND
 }

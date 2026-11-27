@@ -73,7 +73,7 @@ class RubricCriterionImportCommitHandlerTests {
 
         assertThatThrownBy(() -> handler.commit(session(), List.of(row())))
             .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageStartingWith("Lỗi lưu dữ liệu: Mã tiêu chí hoặc Khung tiêu chuẩn (Framework) bị trùng lặp")
+            .hasMessageStartingWith("Data save error: the criterion code or standard Framework is duplicated")
             .hasCauseInstanceOf(DataConflictException.class);
     }
 

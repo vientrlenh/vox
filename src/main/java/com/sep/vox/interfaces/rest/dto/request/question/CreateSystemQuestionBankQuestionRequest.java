@@ -14,19 +14,19 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateSystemQuestionBankQuestionRequest(
-    @NotNull(message = "ID ngân hàng không được để trống")
+    @NotNull(message = "Bank ID must not be blank")
     UUID questionBankId,
 
-    @NotNull(message = "ID chủ đề không được để trống")
+    @NotNull(message = "Topic ID must not be blank")
     UUID questionTopicId,
 
-    @NotBlank(message = "Mã câu hỏi không được để trống")
-    @Size(max = 100, message = "Mã câu hỏi không được vượt quá 100 ký tự")
+    @NotBlank(message = "Question code must not be blank")
+    @Size(max = 100, message = "Question code must not exceed 100 characters")
     String code,
 
     String instructionText,
 
-    @NotBlank(message = "Nội dung câu hỏi không được để trống")
+    @NotBlank(message = "Question content must not be blank")
     String questionText,
 
     String promptText,
@@ -45,19 +45,19 @@ public record CreateSystemQuestionBankQuestionRequest(
 
     String commonMistakes,
 
-    @NotNull(message = "Loại câu hỏi không được để trống")
+    @NotNull(message = "Question type must not be blank")
     QuestionType type,
 
-    @NotNull(message = "Thời gian chuẩn bị không được để trống")
-    @Min(value = 0, message = "Thời gian chuẩn bị không được dưới 0")
+    @NotNull(message = "Preparation time must not be blank")
+    @Min(value = 0, message = "Preparation time must not be below 0")
     Integer preparationTimeSeconds,
 
-    @NotNull(message = "Thời gian trả lời tối thiểu không được để trống")
-    @Min(value = 0, message = "Thời gian trả lời tối thiểu không được nhỏ hơn 0")
+    @NotNull(message = "Minimum answer time must not be blank")
+    @Min(value = 0, message = "Minimum answer time must not be less than 0")
     Integer minResponseSeconds,
 
-    @NotNull(message = "Thoi gian tra loi toi da khong duoc de trong")
-    @Min(value = 0, message = "Thoi gian tra loi toi da phai lon hon hoac bang 0")
+    @NotNull(message = "Maximum answer time must not be blank")
+    @Min(value = 0, message = "Maximum answer time must be greater than or equal to 0")
     Integer maxResponseSeconds,
 
     QuestionSharing sharing,
@@ -66,7 +66,7 @@ public record CreateSystemQuestionBankQuestionRequest(
     List<CreateQuestionAssetRequest> assets
 ) {
 
-    @AssertTrue(message = "Thời gian trả lời tối thiểu không được lớn hơn thời gian trả lời tối đa")
+    @AssertTrue(message = "Minimum answer time must not be greater than maximum answer time")
     public boolean isResponseDurationRangeValid() {
         return minResponseSeconds == null
             || maxResponseSeconds == null

@@ -1,8 +1,8 @@
 package com.sep.vox.domain.model.gradelevel;
 
-// Giữ nguyên ACTIVE/INACTIVE như SchoolGradeLevelStatus cũ -- check constraint
-// chk_school_grade_levels_status_valid trong DB và type SchoolGradeLevelStatus phía web
-// (vox-client-web/src/features/grades/types.ts) đều đang chốt đúng 2 giá trị này.
+// Keeps ACTIVE/INACTIVE as in the old SchoolGradeLevelStatus -- the check constraint
+// chk_school_grade_levels_status_valid in the DB and the SchoolGradeLevelStatus type on the web side
+// (vox-client-web/src/features/grades/types.ts) both pin exactly these 2 values.
 public enum GradeLevelStatus {
     ACTIVE,
     INACTIVE

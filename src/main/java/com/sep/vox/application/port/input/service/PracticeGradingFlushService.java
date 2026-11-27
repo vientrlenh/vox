@@ -14,21 +14,21 @@ import com.sep.vox.application.port.output.ExternalEventPublisherPort;
 import com.sep.vox.domain.repository.PracticeItemResponseRepository;
 
 /**
- * Xả chấm những câu học sinh đã nói nhưng bỏ dở, lúc đóng phiên.
+ * Flushes grading for the questions a student spoke but left unfinished, when the session closes.
  *
- * Vì sao cần: bài chấm chỉ được kích hoạt ở lượt CUỐI của một câu
- * ({@code SubmitPracticeTurnUseCase} bắn sự kiện khi {@code questionComplete}). Học sinh nói
- * một lượt rồi rớt mạng hoặc đóng app thì chuỗi follow-up không bao giờ kết thúc, nên câu đó
- * không bao giờ được chấm -- trong khi quota ĐÃ TRỪ, lượt ĐÃ GHI, lỗi sai ĐÃ hiện lên màn
- * hình. Công sức có thật mà hệ thống coi như không có.
+ * Why needed: grading is only triggered on the LAST turn of a question
+ * ({@code SubmitPracticeTurnUseCase} fires the event when {@code questionComplete}). A student who
+ * speaks one turn and then drops off the network or closes the app never finishes the follow-up chain, so that question
+ * is never graded -- while the quota HAS BEEN deducted, the turn HAS BEEN recorded, and the mistake HAS been shown on
+ * screen. Real effort that the system treats as if it did not exist.
  *
- * Hệ quả dây chuyền còn xa hơn điểm số: không có bản chấm thì không có
- * {@code weakness_observation}, nên hồ sơ điểm yếu đứng yên, nên vòng xoay chọn tiêu chí
- * không có gì mới để xoay.
+ * The knock-on effect reaches further than the score: with no grading there is no
+ * {@code weakness_observation}, so the weakness profile stands still, so the criterion rotation
+ * has nothing new to rotate.
  *
- * Điểm phiên KHÔNG tính những câu này -- xem {@code question_complete} trong
- * {@code SpringDataPracticeItemEvaluationRepository}. Chấm một câu dở dang theo rubric của câu
- * đầy đủ thì chắc chắn thấp; lấy tín hiệu thì được, tính điểm thì không công bằng.
+ * The session score does NOT count these questions -- see {@code question_complete} in
+ * {@code SpringDataPracticeItemEvaluationRepository}. Grading an unfinished question against the rubric of a
+ * complete one is bound to score low; taking a signal from it is fine, scoring with it is not fair.
  */
 @Service
 @RequiredArgsConstructor
@@ -40,13 +40,13 @@ public class PracticeGradingFlushService {
     private final ExternalEventPublisherPort eventPublisher;
 
     /**
-     * Quét các phiên ĐÃ ĐÓNG còn lượt chưa chấm và xả chấm cho chúng.
+     * Sweeps CLOSED sessions that still have ungraded turns and flushes grading for them.
      *
-     * Xả lúc đóng phiên không phủ được hai nhóm: phiên đóng trước khi có cơ chế đó, và phiên
-     * mà lần bắn sự kiện bị hỏng. Không quét lại thì chúng nằm mồ côi vĩnh viễn -- điểm phiên
-     * thiếu, hồ sơ điểm yếu thiếu, và màn tổng kết báo "đang chấm" không bao giờ dứt.
+     * Flushing at session close covers neither of two groups: sessions closed before that mechanism existed, and sessions
+     * where firing the event failed. Without a re-sweep they stay orphaned forever -- the session score
+     * is missing, the weakness profile is missing, and the summary screen says "grading" and never finishes.
      *
-     * @return số câu đã bắn lại.
+     * @return the number of questions fired again.
      */
     public int sweepEndedSessions(Instant since) {
         List<UUID> sessionIds = practiceItemResponseRepository.findEndedSessionsWithUngradedResponses(since);
@@ -55,29 +55,29 @@ public class PracticeGradingFlushService {
             total += flush(sessionId);
         }
         if (total > 0) {
-            log.info("Quét lại: xả chấm {} câu mồ côi ở {} phiên đã đóng.", total, sessionIds.size());
+            log.info("Re-sweep: flushing grading of {} orphaned questions in {} closed sessions.", total, sessionIds.size());
         }
         return total;
     }
 
     /**
-     * Cửa sổ NGUỘI: đã gửi yêu cầu chấm trong khoảng này thì coi như đang chạy, không gửi lại.
+     * The COLD window: if a grading request was sent within this window, treat it as running and do not resend.
      *
-     * 15 phút chọn theo thời gian chấm đo được (~3,5 phút/câu) cộng thời gian xếp hàng khi nhiều
-     * câu về cùng lúc. Ngắn hơn thì lại sinh trùng lặp -- đúng thứ cột này sinh ra để chặn; dài
-     * hơn thì yêu cầu thất lạc thật phải nằm chờ lâu hơn mức cần thiết.
+     * 15 minutes is chosen from the measured grading time (~3.5 minutes/question) plus queueing time when many
+     * questions arrive at once. Shorter would create duplicates again -- exactly what this column exists to block; longer
+     * would make a truly lost request wait longer than necessary.
      */
     private static final Duration REQUEST_COOLDOWN = Duration.ofMinutes(15);
 
     /**
-     * Trần số lần thử chấm một câu. Hỏng do DỮ LIỆU (audio vỡ, transcript rỗng, câu quá ngắn tới
-     * mức không dựng nổi prompt) thì thử bao nhiêu lần cũng hỏng y hệt -- bắn lại vô hạn chỉ đốt
-     * tiền LLM và giữ màn tổng kết quay mãi. Ba lần đủ để vượt qua lỗi thoáng qua (nghẽn mạng,
-     * rate limit) mà không biến lỗi cố định thành vòng lặp vĩnh viễn.
+     * The cap on grading attempts for one question. A failure caused by DATA (broken audio, empty transcript, a question so short
+     * that no prompt can be built) fails identically however many times you try -- firing endlessly only burns
+     * LLM money and keeps the summary screen spinning. Three attempts are enough to get past a transient error (network congestion,
+     * rate limit) without turning a permanent error into an endless loop.
      */
     public static final int MAX_GRADING_ATTEMPTS = 3;
 
-    /** @return số câu đã bắn yêu cầu chấm bổ sung. */
+    /** @return the number of questions that had a supplementary grading request fired. */
     public int flush(UUID sessionId) {
         List<PendingEvaluationResponse> pending = practiceItemResponseRepository.findResponsesAwaitingFlush(
             sessionId, Instant.now().minus(REQUEST_COOLDOWN), MAX_GRADING_ATTEMPTS
@@ -89,7 +89,7 @@ public class PracticeGradingFlushService {
             }
         }
         if (flushed > 0) {
-            log.info("Đã xả chấm {} câu dở dang của phiên {}.", flushed, sessionId);
+            log.info("Flushed grading of {} unfinished questions of session {}.", flushed, sessionId);
         }
         return flushed;
     }
@@ -109,7 +109,7 @@ public class PracticeGradingFlushService {
             // One failing question must not drag down the session close with it: closing the session is the
             // student's action, while flushing the grading is the system's housekeeping.
             log.warn(
-                "Không xả được chấm cho câu {} của phiên {}.",
+                "Could not flush grading for question {} of session {}.",
                 row.getQuestionId(), sessionId, exception
             );
             return false;

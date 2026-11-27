@@ -25,9 +25,9 @@ public class DateMapperTests {
         assertThat(DateMapper.toLocalDate("24/05/2026")).isEqualTo(LocalDate.of(2026, 5, 24));
     }
 
-    // Định dạng kiểu Mỹ đã bị bỏ có chủ đích: khi cả dd/MM và MM/dd cùng được nhận thì "03/04/2026"
-    // và "04/13/2026" cho ra hai cách hiểu khác nhau mà không hề báo lỗi -- ngày sai âm thầm còn tệ
-    // hơn một request bị từ chối.
+    // The US format was dropped on purpose: when both dd/MM and MM/dd are accepted, "03/04/2026"
+    // and "04/13/2026" produce two different readings without any error -- a silently wrong date is
+    // worse than a rejected request.
     @Test
     void should_no_longer_accept_us_month_first_formats() {
         assertThrows(IllegalArgumentException.class, () -> DateMapper.toLocalDate("05-24-2026"));
@@ -51,36 +51,36 @@ public class DateMapperTests {
     }
 
     /**
-     * Bảng này là lý do tồn tại của việc gọi thẳng {@code OffsetDateTime.parse} thay vì so với một
-     * danh sách {@code ofPattern} viết tay. Mỗi dòng ở đây từng bị một danh sách pattern như thế từ
-     * chối, nên nếu ai đó thu hẹp tập chấp nhận lại thì phải thấy test đỏ chứ không phải thấy một
-     * lỗi 400 lúc người dùng bấm lưu.
+     * This table is the reason for calling {@code OffsetDateTime.parse} directly instead of comparing
+     * against a hand-written list of {@code ofPattern}. Every row here was once rejected by such a
+     * pattern list, so if someone narrows the accepted set again the test must turn red, instead of
+     * users seeing a 400 error when they press save.
      */
     @Nested
-    @DisplayName("toInstant: input tự mang offset")
+    @DisplayName("toInstant: input that carries its own offset")
     class SelfDescribingInput {
 
         @ParameterizedTest(name = "{0} -> {1}")
         @CsvSource({
-            // dạng chuẩn RFC 3339
+            // the standard RFC 3339 form
             "2026-07-28T09:30:00+07:00, 2026-07-28T02:30:00Z",
             "2026-07-28T09:30:00Z,      2026-07-28T09:30:00Z",
             "2026-07-28T09:30:00-05:00, 2026-07-28T14:30:00Z",
-            // giây là tùy chọn trong ISO-8601
+            // seconds are optional in ISO-8601
             "2026-07-28T09:30+07:00,    2026-07-28T02:30:00Z",
-            // offset dạng ngắn
+            // short-form offset
             "2026-07-28T09:30:00+07,    2026-07-28T02:30:00Z",
-            // chữ 't' thường vẫn hợp lệ theo ISO-8601
+            // a lowercase 't' is still valid per ISO-8601
             "2026-07-28t09:30:00Z,      2026-07-28T09:30:00Z",
-            // khoảng trắng hai đầu phải được bỏ qua
+            // surrounding whitespace must be ignored
             "'  2026-07-28T09:30:00Z  ', 2026-07-28T09:30:00Z",
         })
         void should_accept_every_iso_offset_spelling(String raw, String expected) {
             assertThat(DateMapper.toInstant(raw)).isEqualTo(Instant.parse(expected));
         }
 
-        // Đây là output của new Date().toISOString() trong JavaScript -- payload mà web client thật
-        // sự gửi. Một danh sách pattern "yyyy-MM-dd'T'HH:mm:ssXXX" sẽ từ chối chính dòng này.
+        // This is the output of new Date().toISOString() in JavaScript -- the payload the real web client
+        // sends. A pattern list such as "yyyy-MM-dd'T'HH:mm:ssXXX" would reject this very line.
         @ParameterizedTest(name = "{0}")
         @ValueSource(strings = {
             "2026-07-28T09:30:00.000Z",
@@ -94,35 +94,35 @@ public class DateMapperTests {
 
         @Test
         void should_map_equivalent_spellings_to_the_same_instant() {
-            // Cùng một khoảnh khắc, hai cách viết. Đây là điều khiến client ở múi giờ nào cũng đúng.
+            // The same instant written two ways. This is what makes the client correct in any time zone.
             assertThat(DateMapper.toInstant("2026-07-28T10:00:00+07:00"))
                 .isEqualTo(DateMapper.toInstant("2026-07-28T03:00:00.000Z"));
         }
 
         @Test
         void should_ignore_default_zone_when_input_carries_an_offset() {
-            // +07:00 mặc định không được phép chen vào khi input đã tự nói rõ múi giờ của nó.
+            // The default +07:00 must not be allowed in when the input already states its own time zone.
             assertThat(DateMapper.toInstant("2026-07-28T09:30:00-05:00"))
                 .isEqualTo(Instant.parse("2026-07-28T14:30:00Z"));
         }
     }
 
     @Nested
-    @DisplayName("toInstant: nhánh tương thích cho input không có offset")
+    @DisplayName("toInstant: compatibility branch for input without an offset")
     class ZonelessInput {
 
-        // Web client đang gửi date-only từ <input type="date">. Nhánh này giữ cho luồng đó không
-        // chết trong lúc client chưa chuyển sang ISO có offset -- xóa test này cùng lúc xóa nhánh đó.
+        // The web client sends date-only values from <input type="date">. This branch keeps that flow
+        // from breaking while the client has not yet moved to ISO with an offset -- delete this test together with that branch.
         @Test
         void should_resolve_date_only_at_start_of_day_in_default_zone() {
             assertThat(DateMapper.toInstant("2026-07-28"))
-                .isEqualTo(Instant.parse("2026-07-27T17:00:00Z")); // 00:00 giờ Việt Nam
+                .isEqualTo(Instant.parse("2026-07-27T17:00:00Z")); // 00:00 Vietnam time
         }
 
         @Test
         void should_resolve_local_date_time_in_default_zone() {
-            // Trạng thái nửa vời rất dễ xảy ra: client đổi sang <input type="datetime-local"> nhưng
-            // gửi thẳng e.target.value mà quên toISOString().
+            // A half-migrated state is very easy to reach: the client switches to <input type="datetime-local">
+            // but sends e.target.value directly and forgets toISOString().
             assertThat(DateMapper.toInstant("2026-07-28T09:30"))
                 .isEqualTo(Instant.parse("2026-07-28T02:30:00Z"));
         }
@@ -135,7 +135,7 @@ public class DateMapperTests {
     }
 
     @Nested
-    @DisplayName("toInstant: từ chối")
+    @DisplayName("toInstant: rejection")
     class Rejected {
 
         @Test
@@ -146,9 +146,9 @@ public class DateMapperTests {
 
         @ParameterizedTest(name = "{0}")
         @ValueSource(strings = {
-            "2026-07-28 09:30:00+07:00",                  // dấu cách thay vì 'T'
-            "2026-07-28T09:30:00+0700",                   // offset dạng basic, ISO_OFFSET không nhận
-            "2026-07-28T09:30:00+07:00[Asia/Ho_Chi_Minh]", // có zone id, dạng của Temporal/luxon
+            "2026-07-28 09:30:00+07:00",                  // a space instead of 'T'
+            "2026-07-28T09:30:00+0700",                   // basic-format offset, which ISO_OFFSET does not accept
+            "2026-07-28T09:30:00+07:00[Asia/Ho_Chi_Minh]", // has a zone id, the Temporal/luxon form
             "2026.07.28",
             "hom nay",
         })
@@ -156,33 +156,33 @@ public class DateMapperTests {
             assertThrows(IllegalArgumentException.class, () -> DateMapper.toInstant(raw));
         }
 
-        // Thông báo lỗi phải nêu ví dụ, vì "phải kèm múi giờ" là ràng buộc mới mà client chưa biết.
+        // The error message must include an example, because "must include a time zone" is a new constraint the client does not know yet.
         @Test
         void should_explain_the_expected_shape_in_the_error_message() {
             assertThatThrownBy(() -> DateMapper.toInstant("hom nay"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("múi giờ")
+                .hasMessageContaining("time zone")
                 .hasMessageContaining("2026-07-28T09:30:00+07:00");
         }
     }
 
     @Nested
-    @DisplayName("toImportedInstant: đường import file")
+    @DisplayName("toImportedInstant: file import path")
     class ImportedInput {
 
         private static final ZoneId HANOI = ZoneId.of("Asia/Ho_Chi_Minh");
         private static final ZoneId NEW_YORK = ZoneId.of("America/New_York");
 
-        // Ô Excel chỉ có ngày là hợp lệ ở đây, không phải nợ kỹ thuật: người gõ tay không có múi giờ
-        // nào để kèm theo.
+        // A date-only Excel cell is valid here, and it is not technical debt: someone typing by hand has
+        // no time zone to attach.
         @Test
         void should_accept_date_only_cell() {
             assertThat(DateMapper.toImportedInstant("28/07/2026", HANOI))
                 .isEqualTo(Instant.parse("2026-07-27T17:00:00Z"));
         }
 
-        // Đây là điều mà tham số zone bắt buộc mua được: cùng một ô, hai múi giờ, hai thời điểm khác
-        // nhau -- và lựa chọn đó hiện ra ở call site chứ không nằm ẩn trong bộ parse.
+        // This is what the mandatory zone parameter buys: the same cell, two time zones, two different
+        // instants -- and that choice is visible at the call site instead of hidden inside the parser.
         @Test
         void should_honour_the_zone_it_is_given() {
             assertThat(DateMapper.toImportedInstant("2026-07-28", NEW_YORK))

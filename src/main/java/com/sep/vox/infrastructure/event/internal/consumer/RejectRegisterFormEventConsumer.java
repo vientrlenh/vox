@@ -29,7 +29,7 @@ import tools.jackson.databind.json.JsonMapper;
 public class RejectRegisterFormEventConsumer {
 
     private static final String CONSUMER_GROUP = "reject-register-form-email";
-    private static final String SUBJECT = "Thông báo kết quả đăng ký VOX";
+    private static final String SUBJECT = "VOX registration result notification";
     
     private final MailSendingPort mailSendingPort;
     private final MailTemplatePort mailTemplatePort;
@@ -72,7 +72,7 @@ public class RejectRegisterFormEventConsumer {
             return jsonMapper.readValue(value, RegisterFormRejectedPayloadV1.class);
         } catch (Exception e) {
             log.error("Invalid payload: eventId={}, value={}", eventId, value);
-            throw new IllegalStateException("Payload register-form-rejected không hợp lệ, eventId= " + eventId, e);
+            throw new IllegalStateException("Payload register-form-rejected is invalid, eventId= " + eventId, e);
         }
     }
 
@@ -82,7 +82,7 @@ public class RejectRegisterFormEventConsumer {
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             log.error("Send mail error: eventId={}, to={}", eventId, payload.to());
-            throw new IllegalStateException("Gửi mail từ chối đơn đăng ký thất bại: eventId=" + eventId, e);
+            throw new IllegalStateException("Failed to send the registration rejection email: eventId=" + eventId, e);
         }
     }
 

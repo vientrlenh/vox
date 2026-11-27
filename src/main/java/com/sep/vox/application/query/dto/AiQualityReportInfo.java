@@ -5,18 +5,18 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * "AI chấm lệch bao nhiêu", đo bằng chính dữ liệu hậu kiểm đã có — không phải thu
- * thập gì thêm.
+ * "How far off is the AI grading", measured with the post-review data that already exists -- nothing
+ * extra is collected.
  *
- * <p>Mẫu số là các vòng {@code SPOT_CHECK} đã hoàn thành: giáo viên đã thật sự đọc
- * lại bài và ra kết luận. Vòng {@code INITIAL} không tính vì ở đó AI vốn chưa được
- * coi là chốt.
+ * <p>The denominator is the completed {@code SPOT_CHECK} rounds: a teacher actually re-read the
+ * submission and reached a conclusion. {@code INITIAL} rounds do not count because the AI is not
+ * considered final there.
  *
- * @param upheld      số bài giáo viên xác nhận điểm AI đúng
- * @param regraded    số bài giáo viên phải sửa điểm
- * @param invalidated số bài hoá ra là vi phạm
- * @param averageDelta lệch tuyệt đối trung bình giữa điểm lúc giao và điểm sau khi
- *                     chấm lại; chỉ tính trên các bài {@code REGRADED}
+ * @param upheld      number of submissions where the teacher confirmed the AI score was right
+ * @param regraded    number of submissions where the teacher had to change the score
+ * @param invalidated number of submissions found to be violations
+ * @param averageDelta average absolute difference between the score at assignment time and the score
+ *                     after re-grading; counted only over {@code REGRADED} submissions
  */
 public record AiQualityReportInfo(
     int reviewed,

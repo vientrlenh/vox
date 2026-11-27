@@ -39,19 +39,20 @@ import com.sep.vox.domain.repository.SchoolSubscriptionRepository;
 import com.sep.vox.domain.repository.TurnCorrectionRepository;
 
 /**
- * Python gọi /internal/practice-sessions/{id}/turns và có thể GỬI LẠI đúng một lượt khi mất response
- * HTTP -- PracticeResponseTurnRepositoryImpl.save đã dựng riêng để chịu được điều đó.
+ * Python calls /internal/practice-sessions/{id}/turns and may RESEND exactly one turn when the HTTP response is lost --
+ * PracticeResponseTurnRepositoryImpl.save was built specifically to tolerate that.
  *
- * <p>Nhưng bảng lượt nói là thứ DUY NHẤT idempotent trong luồng này. Ba việc chạy sau nó thì không, và
- * cả ba đều tốn tiền hoặc bịa dữ liệu nếu chạy hai lần:
+ * <p>But the speaking-turn table is the ONLY idempotent thing in this flow. The three steps that run after it are
+ * not, and all three cost money or invent data if run twice:
  * <ul>
- *   <li>trừ chi phí AI vào ví trường -- và sổ cái vẫn CÂN sau khi trừ đôi (bút toán lẫn số dư cùng
- *       bị trừ), nên bất biến SUM(entries.amount_vnd) = balance_vnd không bắt được;</li>
- *   <li>ghi dòng sửa lỗi -- turn_corrections không có ràng buộc duy nhất nào;</li>
- *   <li>bắn yêu cầu chấm sang Kafka -- một lượt chấm AI thứ hai cho cùng một câu trả lời.</li>
+ *   <li>charging the AI cost to the school balance -- and the ledger still BALANCES after a double charge (the
+ *       entry and the balance are both deducted), so the invariant SUM(entries.amount_vnd) = balance_vnd does not
+ *       catch it;</li>
+ *   <li>writing the correction lines -- turn_corrections has no unique constraint at all;</li>
+ *   <li>firing the grading request to Kafka -- a second AI grading of the same answer.</li>
  * </ul>
  *
- * <p>Bộ test này giữ đúng chỗ đó: lượt MỚI làm đủ ba việc, lượt GỬI LẠI không làm việc nào.
+ * <p>This test suite guards exactly that: a NEW turn does all three, a RESENT turn does none of them.
  */
 class SubmitPracticeTurnUseCaseReplayTests {
 
@@ -134,8 +135,8 @@ class SubmitPracticeTurnUseCaseReplayTests {
     }
 
     /**
-     * Cùng một lượt gửi lại: bảng lượt nói trả về dòng cũ (created=false) và KHÔNG có việc nào trong ba
-     * việc kia được chạy lần thứ hai. Đây là test giữ cho tiền thật không bị trừ đôi.
+     * The same turn sent again: the speaking-turn table returns the old row (created=false) and NONE of the three
+     * other steps runs a second time. This is the test that keeps real money from being charged twice.
      */
     @Test
     void should_do_nothing_billable_when_python_resends_the_same_turn() {

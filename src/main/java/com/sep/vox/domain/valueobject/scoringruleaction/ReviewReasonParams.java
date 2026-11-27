@@ -6,10 +6,10 @@ public record ReviewReasonParams(
 ) implements ScoringRuleActionParams {
     public ReviewReasonParams {
         if (reasonCode == null || reasonCode.isBlank()) {
-            throw new IllegalArgumentException("Reason code không được để trống");
+            throw new IllegalArgumentException("The reason code must not be blank");
         }
         if (message == null || message.isBlank()) {
-            throw new IllegalArgumentException("Thông điệp không được để trống");
+            throw new IllegalArgumentException("The message must not be blank");
         }
     }
 }

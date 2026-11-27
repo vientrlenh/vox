@@ -68,8 +68,8 @@ public class PracticeQuestionGenerationService {
     private void warnNothingGenerated(
             UUID topicId, String criterionCode, String subAttribute, int targetRank, int bandCount) {
         log.warn(
-            "Pipeline sinh cau tra ve 0 cau (HTTP 2xx) cho topic={} criterion={} "
-                + "subAttribute={} targetRank={} bandCount={} -- khong co gi de luu.",
+            "The generation pipeline returned 0 questions (HTTP 2xx) for topic={} criterion={} "
+                + "subAttribute={} targetRank={} bandCount={} -- nothing to save.",
             topicId,
             criterionCode,
             subAttribute,
@@ -84,7 +84,7 @@ public class PracticeQuestionGenerationService {
                 questionGenerationPort.index(question);
             } catch (RuntimeException exception) {
                 log.warn(
-                    "Đã lưu câu {} nhưng chưa cập nhật được Chroma.",
+                    "Saved question {} but could not update Chroma.",
                     question.id(),
                     exception
                 );
@@ -95,7 +95,7 @@ public class PracticeQuestionGenerationService {
     private TopicDetails topicDetails(UUID topicId) {
         PracticeTopic topic = practiceTopicRepository.findTopicById(topicId)
             .filter(candidate -> candidate.isActive())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chủ đề luyện tập."));
+            .orElseThrow(() -> new ResourceNotFoundException("Practice topic not found."));
         return new TopicDetails(
             topic.getId(),
             topic.getName(),

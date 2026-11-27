@@ -4,19 +4,19 @@ spring:
   
   boot:
     admin:
-      # Đường dẫn gốc của SBA server: mọi @AdminController (kể cả POST /instances để đăng ký)
-      # được map lại thành /admin/**, xem AdminControllerHandlerMapping.
+      # Root path of the SBA server: every @AdminController (including POST /instances for registration)
+      # is remapped to /admin/**, see AdminControllerHandlerMapping.
       context-path: /admin
       client:
-        # PHẢI kèm context-path ở trên. Client tự nối "/instances" vào url này
-        # (ClientProperties.apiPath), nên thiếu /admin là POST thẳng vào /instances -> 404.
+        # MUST include the context-path above. The client appends "/instances" to this url itself
+        # (ClientProperties.apiPath), so without /admin it POSTs straight to /instances -> 404.
         url: http://localhost:8081/admin
-        # Tài khoản Basic mà client gắn vào request đăng ký. Trỏ về app.admin.* ở cuối file để
-        # chỉ có MỘT chỗ phải sửa -- lệch nhau giữa hai bên thì client kẹt ở 401 và cứ 10 giây
-        # thử lại một lần, log đầy nhưng không nói ra là do sai mật khẩu.
+        # Basic account the client attaches to the registration request. Points at app.admin.* at the end of the file so
+        # that there is only ONE place to change -- if the two sides differ the client is stuck on 401 and retries
+        # every 10 seconds, filling the log without saying that the password is wrong.
         username: ${app.admin.username}
         password: ${app.admin.password}
-        # Ngược lại, đây là URL của CHÍNH app này để SBA server gọi actuator -- không có /admin.
+        # Conversely, this is the URL of THIS app itself, which the SBA server calls to reach the actuator -- no /admin.
         instance:
           service-url: http://localhost:8081
 
@@ -51,11 +51,11 @@ spring:
           inbound: 
             message:
               max-size: 8MB
-        # vox-streaming chạy trong docker với network_mode: host, còn vox-app ở bridge
-        # network riêng -- từ trong container vox, "0.0.0.0" trỏ về CHÍNH NÓ, không bao giờ
-        # tới được service kia. Chạy trong compose thì biến này được đặt thành
-        # host.docker.internal:9096 (xem docker-compose.yml); mặc định dưới đây dành cho lúc
-        # chạy vox thẳng trên máy.
+        # vox-streaming runs in docker with network_mode: host, while vox-app is on its own bridge
+        # network -- from inside the vox container, "0.0.0.0" points at ITSELF and never
+        # reaches the other service. When running in compose this variable is set to
+        # host.docker.internal:9096 (see docker-compose.yml); the default below is for
+        # running vox directly on the machine.
         vox-streaming:
           target: ${VOX_STREAMING_GRPC_TARGET:0.0.0.0:9096}
           inbound: 
@@ -68,23 +68,23 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     baseline-version: 1
-    # Cửa XÓA SẠCH DB, mặc định khóa.
+    # Gate that WIPES THE DB, locked by default.
     #
-    # V1 hiện tại là baseline gộp thay cho toàn bộ V1..V44 cũ. Mọi database đã từng chạy chuỗi
-    # migration cũ đều đang giữ checksum của V1 cũ trong flyway_schema_history, nên Flyway sẽ
-    # từ chối khởi động với "Migration checksum mismatch for version 1".
+    # V1 is now a merged baseline replacing all of the old V1..V44. Every database that ever ran the old
+    # migration chain holds the old V1 checksum in flyway_schema_history, so Flyway will
+    # refuse to start with "Migration checksum mismatch for version 1".
     #
-    # Cách dựng lại DB dev: chạy ĐÚNG MỘT LẦN với hai biến này bật, Flyway sẽ drop sạch schema
-    # rồi dựng lại từ V1, sau đó bỏ biến đi:
+    # How to rebuild a dev DB: run EXACTLY ONCE with these two variables enabled, Flyway drops the schema
+    # completely and rebuilds it from V1, then remove the variables:
     #
     #   FLYWAY_CLEAN_DISABLED=false FLYWAY_CLEAN_ON_VALIDATION_ERROR=true ./gradlew bootRun
     #
-    # Với DB chạy bằng docker-compose thì cách gọn hơn là xóa hẳn volume:
+    # For a DB run by docker-compose the tidier way is to delete the volume:
     #   docker compose down -v && docker compose up -d postgres
     #
-    # KHÔNG đặt mặc định thành true/false ngược lại: chỉ có một application.yaml dùng chung cho
-    # mọi môi trường, mà clean-on-validation-error xóa toàn bộ dữ liệu và không hỏi lại lần nào.
-    # Bật sẵn trong file này là đặt sẵn một quả mìn cho production.
+    # Do NOT flip the defaults to true/false: there is a single application.yaml shared by
+    # every environment, and clean-on-validation-error deletes all data without asking again.
+    # Enabling it by default in this file would plant a mine for production.
     clean-disabled: ${FLYWAY_CLEAN_DISABLED:true}
 
   kafka:
@@ -153,8 +153,8 @@ spring:
           auth: true
           starttls:
             enable: true
-          # Không có timeout thì thread gửi mail treo vô hạn khi SMTP không phản hồi —
-          # queue mail đầy dần và (với CallerRunsPolicy) thread import bị giữ luôn.
+          # Without a timeout the mail-sending thread hangs forever when SMTP does not respond --
+          # the mail queue fills up and (with CallerRunsPolicy) the import thread is held as well.
           connectiontimeout: 5000
           timeout: 10000
           writetimeout: 10000
@@ -177,12 +177,12 @@ spring:
     password: ${DB_PASSWORD}
     hikari:
       pool-name: vox-hikari
-      # Log kèm stack trace nếu 1 connection bị giữ >5s — cho biết đúng request/repo nào
-      # đang ôm connection khiến các request khác phải xếp hàng chờ rồi timeout.
+      # Log with a stack trace if a connection is held for more than 5s -- shows exactly which request/repo
+      # is hogging a connection while other requests queue up and then time out.
       leak-detection-threshold: 5000
-      # Mặc định Spring Boot chỉ 10 — quá ít khi nhiều tab/request đồng thời cùng gọi
-      # GraphQL (mỗi request giữ 1 connection suốt thời gian resolve). Postgres cho phép
-      # tới 100 connection, còn dư nhiều nên tăng lên đây để giảm nghẽn hàng đợi.
+      # Spring Boot's default is only 10 -- too few when many tabs/requests call
+      # GraphQL concurrently (each request holds 1 connection for the whole resolve time). Postgres allows
+      # up to 100 connections, with plenty to spare, so it is raised here to reduce queue congestion.
       maximum-pool-size: 25
       minimum-idle: 5
 
@@ -270,60 +270,60 @@ practice:
 
 app:
   avatar:
-    # Host được phép xuất hiện trong users.avatar_url, ngăn cách bởi dấu phẩy.
+    # Hosts allowed in users.avatar_url, separated by commas.
     #
-    # Ảnh đại diện do CLIENT tự tải lên kho của nó (hiện là Firebase Storage) rồi gửi về đây đúng
-    # một chuỗi URL -- backend không nhận file, nên chuỗi này là thứ duy nhất kiểm được. Bỏ trống
-    # thì chỉ còn ràng buộc "phải là URL https", nghĩa là người dùng trỏ được ảnh sang máy chủ bất
-    # kỳ, và mọi giáo viên mở danh sách chấm sẽ tự gọi sang đó (lộ IP, lộ thời điểm xem, và chủ
-    # host đổi được nội dung ảnh sau lưng).
+    # Avatars are uploaded by the CLIENT itself to its own storage (currently Firebase Storage) and only a URL
+    # string is sent here -- the backend receives no file, so this string is the only thing it can check. If left empty
+    # the only remaining constraint is "must be an https URL", which means a user can point the image at any
+    # server, and every teacher opening a grading list then calls that server automatically (leaking IP and view time,
+    # and the host owner can change the image behind our back).
     #
-    # Để trống là chấp nhận đánh đổi đó -- tiện lúc dev, KHÔNG nên giữ ở môi trường thật. Với
-    # Firebase Storage, host cần điền là firebasestorage.googleapis.com.
+    # Leaving it empty accepts that trade-off -- convenient in dev, should NOT be kept in a real environment. For
+    # Firebase Storage, the host to fill in is firebasestorage.googleapis.com.
     allowed-hosts: ${AVATAR_ALLOWED_HOSTS:}
   admin:
-    # Tài khoản HTTP Basic cho /admin/** (trang Spring Boot Admin + endpoint đăng ký).
-    # KHÔNG đặt giá trị mặc định: sau cửa này là actuator của mọi instance đã đăng ký, kèm
-    # đường proxy ghi xuống chúng. Thiếu biến là app dừng ngay lúc khởi động kèm lời nhắn,
-    # xem SecurityConfig#requireConfigured.
+    # HTTP Basic account for /admin/** (the Spring Boot Admin page + registration endpoint).
+    # NO default value: behind this gate sit the actuators of every registered instance, plus a
+    # write proxy to them. If a variable is missing the app stops right at startup with a message,
+    # see SecurityConfig#requireConfigured.
     username: ${SBA_ADMIN_USERNAME:}
     password: ${SBA_ADMIN_PASSWORD:}
   mail:
-    # Địa chỉ người gửi. BẮT BUỘC phải có: thiếu nó thì JavaMail tự suy địa chỉ local bằng
-    # user.name + hostname của máy chạy, và khi không suy được sẽ ném
-    # "can't determine local email address" -- toàn bộ mail không gửi được.
+    # Sender address. REQUIRED: without it JavaMail derives a local address from
+    # user.name + the hostname of the machine, and when it cannot derive one it throws
+    # "can't determine local email address" -- no mail can be sent at all.
     #
-    # Mặc định lấy chính tài khoản SMTP đang xác thực. Với Gmail thì gần như bắt buộc phải để
-    # vậy: đặt from khác tài khoản đăng nhập thì Gmail hoặc ghi đè lại, hoặc từ chối gửi.
+    # Defaults to the SMTP account being authenticated. For Gmail this is almost mandatory: setting a from address
+    # different from the login account makes Gmail either overwrite it or refuse to send.
     from: ${MAIL_FROM:${spring.mail.username}}
-    # Tên hiển thị trong hộp thư người nhận, không ảnh hưởng việc gửi.
+    # Display name in the recipient's mailbox, does not affect sending.
     from-display-name: ${MAIL_FROM_DISPLAY_NAME:VOX}
   grpc:
-    # Bí mật dùng chung gắn vào mọi lời gọi gRPC sang vox-streaming (xem
-    # StreamingServiceTokenInterceptor). Phải trùng GRPC_SERVICE_TOKEN bên vox-streaming.
-    # Rỗng thì interceptor KHÔNG gắn header, và vox-streaming trả UNAUTHENTICATED với lý do
-    # đọc được -- hơn là gắn "Bearer " cụt rồi nhận PERMISSION_DENIED, hai lỗi đó dẫn người
-    # đọc log đi hai hướng khác nhau.
+    # Shared secret attached to every gRPC call to vox-streaming (see
+    # StreamingServiceTokenInterceptor). Must match GRPC_SERVICE_TOKEN on the vox-streaming side.
+    # If empty the interceptor does NOT attach the header, and vox-streaming returns UNAUTHENTICATED with a
+    # readable reason -- better than attaching a truncated "Bearer " and getting PERMISSION_DENIED, since those two errors send the
+    # log reader in two different directions.
     streaming-token: ${GRPC_SERVICE_TOKEN:}
   cors:
-    # Chỉ những origin liệt kê ở đây gọi được API. Mặc định là các cổng dev quen thuộc
-    # để clone repo về là chạy được ngay; mỗi môi trường triển khai phải tự đặt
-    # CORS_ALLOWED_ORIGINS (phân tách bằng dấu phẩy), KHÔNG sửa dòng này.
-    # Ghi đúng dạng scheme://host[:port] -- thừa '/' ở cuối hay kèm path là app không
-    # khởi động, xem SecurityConfig#validatedAllowedOrigins.
+    # Only the origins listed here may call the API. The default is the usual dev ports
+    # so that a fresh clone runs right away; every deployment environment must set
+    # CORS_ALLOWED_ORIGINS itself (comma separated), do NOT edit this line.
+    # Write them exactly as scheme://host[:port] -- a trailing '/' or a path stops the app from
+    # starting, see SecurityConfig#validatedAllowedOrigins.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   cookie:
     secure: ${COOKIE_SECURE:false} # Local dev use false
     same-site: ${COOKIE_SAME_SITE:Lax} # If using domain forward, make this as None
-    # Domain của cookie XSRF-TOKEN (SecurityConfig#apiCsrfTokenRepository).
+    # Domain of the XSRF-TOKEN cookie (SecurityConfig#apiCsrfTokenRepository).
     #
-    # RỖNG khi chạy local: cookie host-only là đủ vì frontend (localhost:5173) và backend
-    # (localhost:8081) chung host "localhost" -- cookie không phân biệt cổng.
+    # EMPTY when running locally: a host-only cookie is enough because the frontend (localhost:5173) and the backend
+    # (localhost:8081) share the host "localhost" -- cookies do not distinguish ports.
     #
-    # Trên deployment PHẢI đặt ".voxenta.net": backend trả cookie từ api.voxenta.net, còn JS
-    # đọc nó lại chạy trên voxenta.net, mà cookie host-only thì document.cookie bên kia không
-    # thấy. Thiếu dòng này là axios không gắn được header X-XSRF-TOKEN và mọi lần gọi
-    # /api/v1/auth/refresh trả 403 -- người dùng bị đá ra đăng nhập lại mỗi khi access token hết hạn.
+    # On a deployment it MUST be set to ".voxenta.net": the backend returns the cookie from api.voxenta.net, while the JS
+    # that reads it runs on voxenta.net, and with a host-only cookie document.cookie on the other side
+    # cannot see it. Without this line axios cannot attach the X-XSRF-TOKEN header and every call to
+    # /api/v1/auth/refresh returns 403 -- users are kicked back to login every time the access token expires.
     domain: ${COOKIE_DOMAIN:}
   data-initializer:
     enabled: ${DATA_INITIALIZER:true}
@@ -337,25 +337,25 @@ app:
       paper-target-question-count: ${PERSONALIZATION_PAPER_TARGET_QUESTION_COUNT:4}
       online-candidate-count: ${PERSONALIZATION_ONLINE_CANDIDATE_COUNT:2}
       online-budget: ${PERSONALIZATION_ONLINE_GENERATION_BUDGET:45s}
-  # Kiểm chứng ID token Google do ứng dụng NATIVE (Flutter, WPF) nộp lên
-  # POST /api/v1/auth/oauth2/google/token. KHÔNG liên quan tới luồng redirect của web ở
-  # spring.security.oauth2 phía trên -- luồng đó do Spring Security tự kiểm token.
+  # Verifies Google ID tokens submitted by NATIVE apps (Flutter, WPF) to
+  # POST /api/v1/auth/oauth2/google/token. NOT related to the web redirect flow in
+  # spring.security.oauth2 above -- that flow is verified by Spring Security itself.
   oauth2:
     google:
-      # Danh sách client ID CỦA MÌNH được chấp nhận trong claim `aud`. Bỏ trống thì mọi lần
-      # đăng nhập Google từ native bị từ chối (web không ảnh hưởng).
+      # List of OUR OWN client IDs accepted in the `aud` claim. If empty, every native Google
+      # login is rejected (web is not affected).
       #
-      # Phải liệt kê ĐỦ vì mỗi client gửi một `aud` khác nhau:
-      #   - Flutter (Android/iOS) gửi client ID WEB -- đó là việc mà serverClientId của
-      #     google_sign_in làm, nên giá trị này TRÙNG với GOOGLE_CLIENT_ID ở trên;
-      #   - WPF gửi client ID DESKTOP riêng của nó.
-      # Đặt đúng một giá trị là một trong hai client luôn bị từ chối.
+      # It must be COMPLETE because each client sends a different `aud`:
+      #   - Flutter (Android/iOS) sends the WEB client ID -- that is what serverClientId of
+      #     google_sign_in does, so this value is the SAME as GOOGLE_CLIENT_ID above;
+      #   - WPF sends its own separate DESKTOP client ID.
+      # Setting exactly one value means one of the two clients is always rejected.
       allowed-audiences: ${GOOGLE_ALLOWED_AUDIENCES:}
   frontend:
     password-setup-url: ${PASSWORD_SETUP_URL}
     oauth2-url: ${OAUTH2_URL}
-    # Tiền tố của route chuyển hướng thông báo (/n/{id}). Bỏ trống thì push web vẫn gửi
-    # bình thường, chỉ là bấm vào không mở được đúng mục -- xem FcmNotificationService.
+    # Prefix of the notification redirect route (/n/{id}). If empty, web push is still sent
+    # normally, but clicking it does not open the right item -- see FcmNotificationService.
     notification-url: ${NOTIFICATION_URL:}
   external-event:
     kafka:
@@ -388,7 +388,7 @@ app:
           topic:
             ai-usage-recorded: ${KAFKA_AI_USAGE_TOPIC:assessment-ai-usage-recorded}
           group-id: ${KAFKA_AI_USAGE_GROUP_ID:vox-ai-usage}
-        # Cảnh báo giám sát thi do vox-streaming phát (domain.TopicAlertRaised bên đó).
+        # Exam-monitoring alert emitted by vox-streaming (domain.TopicAlertRaised over there).
         proctoring-alert:
           topic:
             alert-raised: ${KAFKA_PROCTORING_ALERT_TOPIC:assessment.alert.raised}
@@ -405,43 +405,43 @@ app:
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
             school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
-            # Hai topic OTP chỉ email đọc. Payload của chúng KHÔNG chứa mã OTP -- mã được
-            # sinh tại consumer ngay trước lúc gửi mail, xem EventTypeConstant.
+            # The two OTP topics are read by email only. Their payload does NOT contain the OTP code -- the code is
+            # generated in the consumer right before the mail is sent, see EventTypeConstant.
             reset-password-otp: ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
             register-verification-otp: ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
           group-id: ${KAFKA_EMAIL_GROUP_ID:vox-email}
-        # Cố tình dùng LẠI biến môi trường topic của email: hai nhóm phải luôn đọc cùng
-        # một topic, tách biến ra là có ngày đổi một bên rồi lệch nhau trong im lặng.
-        # Vắng register-form-rejected và user-created là có chủ ý: người nhận chưa có tài
-        # khoản / chưa từng đăng nhập nên không có thiết bị nào để đẩy.
+        # Deliberately REUSES the email topic environment variables: the two groups must always read the same
+        # topic, and splitting the variables means one side gets changed one day and they silently diverge.
+        # register-form-rejected and user-created are missing on purpose: the recipient has no
+        # account yet / has never logged in, so there is no device to push to.
         notification:
           topic:
             assessment-appeal: ${KAFKA_ASSESSMENT_APPEAL_TOPIC:vox.assessment-appeal.v1}
             assessment-result-lifecycle: ${KAFKA_ASSESSMENT_RESULT_LIFECYCLE_TOPIC:vox.assessment-result-lifecycle.v1}
             grading-assignment: ${KAFKA_GRADING_ASSIGNMENT_TOPIC:vox.grading-assignment.v1}
             assessment-blueprint-version: ${KAFKA_ASSESSMENT_BLUEPRINT_VERSION_TOPIC:vox.assessment-blueprint-version.v1}
-            # CỐ TÌNH không có bản sao dưới nhóm email: nhắc chấm tay chỉ hiện trong app, không
-            # gửi mail. Đây cũng là lý do nó không đi chung topic grading-assignment --
-            # GradingAssignmentEmailConsumer ném với eventType lạ, nên dùng chung là đẩy mọi
-            # message loại này vào DLT.
+            # DELIBERATELY no copy under the email group: the manual-grading reminder only shows in the app and is not
+            # emailed. This is also why it does not share the grading-assignment topic --
+            # GradingAssignmentEmailConsumer throws on an unknown eventType, so sharing would push every
+            # message of this kind into the DLT.
             assessment-grading-review: ${KAFKA_ASSESSMENT_GRADING_REVIEW_TOPIC:vox.assessment-grading-review.v1}
             invoice: ${KAFKA_INVOICE_TOPIC:vox.invoice.v1}
             school-debt: ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
-          # Ngược lại, group-id BẮT BUỘC phải là biến riêng. Dùng chung KAFKA_EMAIL_GROUP_ID
-          # thì khi biến đó được set, hai listener rơi vào cùng một consumer group và Kafka
-          # chỉ giao mỗi message cho MỘT trong hai -- mail hoặc notification, ngẫu nhiên.
+          # Conversely, the group-id MUST be its own variable. Sharing KAFKA_EMAIL_GROUP_ID means that when that variable is set,
+          # the two listeners fall into the same consumer group and Kafka delivers each message to only ONE of the two --
+          # mail or notification, at random.
           group-id: ${KAFKA_NOTIFICATION_GROUP_ID:vox-notification}
   notification:
-    # Thiết bị biến mất lặng lẽ (gỡ app mà không đăng xuất, xoá dữ liệu trình duyệt) sẽ
-    # không bao giờ nhận được UNREGISTERED từ FCM, nên đây là đường dọn duy nhất của chúng.
-    # Đặt 0 để tắt job.
+    # A device that disappears silently (app removed without logging out, browser data cleared) will
+    # never receive UNREGISTERED from FCM, so this is the only cleanup path for it.
+    # Set to 0 to disable the job.
     device-retention-days: ${NOTIFICATION_DEVICE_RETENTION_DAYS:90}
   recording:
     bucket: ${RECORDING_S3_BUCKET:}
   outbox:
-    # Nhiều eventType trỏ chung một topic là có chủ ý: consumer phân nhánh bằng header
-    # eventType, nên gom theo nhóm nghiệp vụ mà mỗi loại vẫn giữ payload riêng.
-    # Thiếu một key ở đây so với EventTypeConstant.all() là app không khởi động được.
+    # Several eventTypes sharing one topic is intentional: the consumer branches on the
+    # eventType header, so they are grouped by business area while each type keeps its own payload.
+    # A key missing here compared to EventTypeConstant.all() stops the app from starting.
     topics:
       "[RegisterFormRejected]": ${KAFKA_REGISTER_FORM_REJECTED_TOPIC:vox.register-form-rejected.v1}
       "[UserCreated]": ${KAFKA_USER_CREATED_TOPIC:vox.user-created.v1}
@@ -474,7 +474,7 @@ app:
       "[SchoolSubscriptionSuspended]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
       "[SchoolSubscriptionUnsuspended]": ${KAFKA_SCHOOL_DEBT_TOPIC:vox.school-debt.v1}
 
-      # Hai event OTP: payload chỉ mang địa chỉ nhận, mã sinh ở consumer.
+      # The two OTP events: the payload carries only the recipient address, the code is generated in the consumer.
       "[ResetPasswordOtpRequested]": ${KAFKA_RESET_PASSWORD_OTP_TOPIC:vox.reset-password-otp.v1}
       "[RegisterVerificationOtpRequested]": ${KAFKA_REGISTER_VERIFICATION_OTP_TOPIC:vox.register-verification-otp.v1}
     
@@ -497,15 +497,15 @@ payos:
 
 vox:
   quota:
-    # PLACEHOLDER: dùng để ước lượng worst-case chi phí AI (USD) trước khi cho phép
-    # lên lịch kỳ thi -- xem ClassTestTokenQuotaGuardService. Đây KHÔNG phải chi phí
-    # thật (chi phí thật lấy từ ai_usage_record.cost_usd sau khi Agentic AI xử lý
-    # xong), chỉ là hệ số quy đổi tạm để chặn sớm khi trường rõ ràng không đủ hạn
-    # mức. Cần thay bằng số đo thực tế (trung bình cost_usd / audio_duration_seconds
-    # trên một khoảng thời gian đủ dài) trước khi dùng ở production..
+    # PLACEHOLDER: used to estimate the worst-case AI cost (USD) before allowing
+    # an exam to be scheduled -- see ClassTestTokenQuotaGuardService. This is NOT the
+    # real cost (the real cost comes from ai_usage_record.cost_usd after the Agentic AI has
+    # finished processing), only a temporary conversion factor used to block early when a school clearly lacks the
+    # quota. It must be replaced with measured numbers (average cost_usd / audio_duration_seconds
+    # over a long enough period) before use in production..
     estimated-cost-per-assessment-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_ASSESSMENT_SECOND_USD:}
-    # Cùng vai trò như dòng trên nhưng riêng cho PRACTICE -- tự tính lại độc lập qua
-    # QuotaPricingCalibrationJob.runPractice(), xem QuotaPricingCalibrationService/QuotaPricingSource.
+    # Same role as the line above but for PRACTICE only -- recomputed independently through
+    # QuotaPricingCalibrationJob.runPractice(), see QuotaPricingCalibrationService/QuotaPricingSource.
     estimated-cost-per-practice-second-usd: ${VOX_QUOTA_ESTIMATED_COST_PER_PRACTICE_SECOND_USD:}
     calibration:
       # QuotaPricingCalibrationJob uses these values to recompute estimated-cost-per-assessment-second-usd
@@ -517,60 +517,60 @@ vox:
       min-rate-bound: ${VOX_QUOTA_CALIBRATION_MIN_RATE_BOUND:}
       max-rate-bound: ${VOX_QUOTA_CALIBRATION_MAX_RATE_BOUND:}
     debt:
-      # Trần cảnh báo (KHÔNG chặn) khi nợ (usedQuantity - totalAllocated) vượt tỉ lệ này so với
-      # totalAllocated -- xem QuotaDebtProperties/SchoolSubscriptionDebtGuardService.
+      # Warning threshold (does NOT block) when the debt (usedQuantity - totalAllocated) exceeds this ratio of
+      # totalAllocated -- see QuotaDebtProperties/SchoolSubscriptionDebtGuardService.
       cap-ratio: ${VOX_QUOTA_DEBT_CAP_RATIO:}
     usage-warning:
-      # Cảnh báo SỚM (KHÔNG chặn) khi used/totalAllocated vượt tỉ lệ này -- xem
+      # EARLY warning (does NOT block) when used/totalAllocated exceeds this ratio -- see
       # QuotaUsageWarningProperties/ConsumeQuotaService.checkUsageWarningTransition.
       warning-ratio: ${VOX_QUOTA_USAGE_WARNING_RATIO:}
     selling-price:
-      # Fallback tĩnh khi chưa có snapshot nào từ ExchangeRateRefreshJob (mới deploy) -- xem
+      # Static fallback when there is no snapshot yet from ExchangeRateRefreshJob (just deployed) -- see
       # QuotaSellingPriceProperties/QuotaPricingService.
       usd-to-vnd-rate: ${VOX_QUOTA_USD_TO_VND_RATE:}
-      # Phí dịch vụ cộng vào phần tiền hạn mức trên ĐƠN HÀNG (0.20 = 20%). Cố ý KHÔNG nhân sẵn vào
-      # tỷ giá: gộp thì trường thấy "1 USD = 31.200đ" không khớp tỷ giá thật nào -- xem
+      # Service fee added to the quota amount on the ORDER (0.20 = 20%). Deliberately NOT pre-multiplied into
+      # the exchange rate: combined, the school would see "1 USD = 31.200đ", which matches no real exchange rate -- see
       # QuotaPricingPort.serviceFeeRatio.
       service-fee-ratio: ${VOX_QUOTA_SERVICE_FEE_RATIO:}
     exchange-rate-api:
-      # API tỷ giá USD->VND thật, miễn phí, không cần key -- ExchangeRateRefreshJob gọi định kỳ để
-      # lưu snapshot mới, xem ExchangeRateApiProperties/ExchangeRateApiClient.
+      # Real, free USD->VND exchange rate API, no key needed -- ExchangeRateRefreshJob calls it periodically to
+      # store a new snapshot, see ExchangeRateApiProperties/ExchangeRateApiClient.
       base-url: ${VOX_EXCHANGE_RATE_API_BASE_URL:}
-      # Chặn an toàn: fetch bị coi là thất bại (không lưu snapshot) nếu tỷ giá trả về nằm ngoài
-      # khoảng này -- tránh 1 lần API trả rác làm hỏng giá bán quota thật.
+      # Safety guard: a fetch is treated as failed (no snapshot stored) if the returned rate falls outside
+      # this range -- prevents one garbage API response from corrupting the real quota selling price.
       min-rate-bound: ${VOX_EXCHANGE_RATE_MIN_RATE_BOUND:}
       max-rate-bound: ${VOX_EXCHANGE_RATE_MAX_RATE_BOUND:}
 
 sepay:
   pg:
-    # SANDBOX | PRODUCTION. URL của trang checkout và của Open API được suy ra từ đây (xem
-    # SePayPaymentProperties.SePayEnvironment) — hai URL đó luôn phải cùng môi trường, khai rời
-    # từng cái là mở đường cho việc deploy quên đổi một dòng.
+    # SANDBOX | PRODUCTION. The URL of the checkout page and of the Open API are derived from this (see
+    # SePayPaymentProperties.SePayEnvironment) — the two URLs must always be in the same environment, and declaring
+    # each separately opens the way for a deploy that forgets to change one line.
     env: ${SEPAY_ENV:SANDBOX}
     merchant-id: ${SEPAY_MERCHANT_ID:}
-    # Khóa ký HMAC của form checkout, đồng thời là password Basic auth khi gọi Open API.
+    # HMAC signing key of the checkout form, also the Basic auth password when calling the Open API.
     secret-key: ${SEPAY_SECRET_KEY:}
-    # Giá trị header X-Secret-Key trên IPN, đặt riêng ở dashboard (Payment Gateway -> Cấu hình ->
-    # IPN). KHÔNG dùng lại secret-key: làm vậy là gửi khóa ký qua mạng ở mọi lần SePay gọi IPN.
+    # Value of the X-Secret-Key header on the IPN, set separately in the dashboard (Payment Gateway -> Configuration ->
+    # IPN). Do NOT reuse secret-key: that would send the signing key over the network on every IPN call from SePay.
     ipn-secret-key: ${SEPAY_IPN_SECRET_KEY:}
     # BANK_TRANSFER (VietQR) | NAPAS_BANK_TRANSFER | CARD
     payment-method: ${SEPAY_PAYMENT_METHOD:BANK_TRANSFER}
-    # Gốc của các route FE /payment/success|error|cancel mà SePay redirect người dùng về.
+    # Root of the FE routes /payment/success|error|cancel that SePay redirects the user back to.
     return-base-url: ${SEPAY_RETURN_BASE_URL:${BASE_URL:}}
 
 firebase:
-  # Tắt mặc định: bean FirebaseApp ném lỗi khi không có service account, nên nếu bật
-  # sẵn thì mọi máy chưa cấu hình credentials sẽ không khởi động được app lẫn test.
-  # Khi tắt, NoOpPushNotificationService đứng thay PushNotificationPort.
+  # Disabled by default: the FirebaseApp bean throws when there is no service account, so if it were
+  # enabled by default every machine without configured credentials could not start the app or the tests.
+  # When disabled, NoOpPushNotificationService stands in for PushNotificationPort.
   enabled: ${FIREBASE_ENABLED:false}
   credentials:
-    # Đường dẫn tới file service account .json. Chấp nhận đường dẫn tuyệt đối trần
-    # (C:\... hoặc /etc/...) -- FirebaseConfig tự thêm scheme file: -- và cả dạng có
-    # sẵn scheme như classpath:firebase/service-account.json.
-    # Lưu ý phải trỏ tới CHÍNH FILE .json, không phải thư mục chứa nó.
+    # Path to the service account .json file. Accepts a bare absolute path
+    # (C:\... or /etc/...) -- FirebaseConfig adds the file: scheme itself -- and also a form that already has
+    # a scheme such as classpath:firebase/service-account.json.
+    # Note that it must point at the .json FILE itself, not the directory containing it.
     path: ${FIREBASE_CREDENTIALS_PATH:}
-    # Thay thế cho path khi deploy bằng container không mount được file: dán thẳng
-    # nội dung service account, dạng JSON thô hoặc base64.
+    # Alternative to path for container deployments that cannot mount a file: paste the
+    # service account content directly, as raw JSON or base64.
     json: ${FIREBASE_CREDENTIALS_JSON:}
 
 demo-data: 

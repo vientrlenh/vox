@@ -9,15 +9,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 
 public record CreateFrameworkCriteriaRequest(
-        @NotEmpty(message = "Phải gửi lên ít nhất 1 tiêu chí")
+        @NotEmpty(message = "At least 1 criterion must be submitted")
         @Valid
         List<CriterionItemRequest> criteria
 ) {
     public record CriterionItemRequest(
-            @NotBlank(message = "Mã tiêu chí không được để trống")
+            @NotBlank(message = "Criterion code must not be blank")
             String code,
 
-            @NotBlank(message = "Tên tiêu chí không được để trống")
+            @NotBlank(message = "Criterion name must not be blank")
             String name,
 
             String description,

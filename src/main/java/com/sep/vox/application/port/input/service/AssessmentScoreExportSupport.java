@@ -14,11 +14,11 @@ import com.sep.vox.application.query.repository.AssessmentGradingQueryRepository
 import com.sep.vox.domain.service.assessment.GradingScopeKind;
 
 /**
- * Phần dùng chung của mọi định dạng xuất bảng điểm: phân quyền, chốt phạm vi, nạp dòng.
+ * The shared part of every score-export format: authorization, fixing the scope, loading rows.
  *
- * <p>Có hai use case xuất (CSV và Excel) và chúng chỉ khác nhau ở cách ghi file. Nếu mỗi
- * bên tự gọi phân quyền thì sớm muộn một bên được siết còn bên kia bị bỏ quên — mà bên bị
- * bỏ quên là một đường vòng để lấy nguyên bảng điểm của trường.
+ * <p>There are two export use cases (CSV and Excel) and they only differ in how the file is written. If each
+ * called authorization on its own, sooner or later one would be tightened while the other is forgotten — and the
+ * forgotten one is a back door to get a school's whole score table.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,19 +36,19 @@ public class AssessmentScoreExportSupport {
         assessmentGradingAccessService.authorizeSchoolAdminOrClassTestChair(
             schoolId, input.assessmentId(), currentUserId);
 
-        // Không phạm vi = xuất mọi kỳ thi của cả trường: hàng chục nghìn dòng dựng
-        // trong RAM, kèm ba query không phân trang với mệnh đề IN khổng lồ. Bắt chọn
-        // phạm vi, cùng khuôn với AutoAssignGradingUseCase.
+        // No scope = export every assessment of the whole school: tens of thousands of rows built
+        // in RAM, with three unpaged queries using a huge IN clause. Require choosing a
+        // scope, same mould as AutoAssignGradingUseCase.
         if (input.assessmentId() == null && input.scheduleId() == null) {
-            throw new IllegalArgumentException("Phải chọn kỳ thi hoặc ca thi để xuất bảng điểm.");
+            throw new IllegalArgumentException("An assessment or schedule must be chosen to export the score table.");
         }
 
         return assessmentGradingQueryRepository.findScoreRows(toFilter(input, schoolId));
     }
 
     /**
-     * {@code schoolId} lấy từ phiên đăng nhập chứ không từ query — đây là chốt chặn duy
-     * nhất giữ file xuất nằm trong trường của người gọi.
+     * {@code schoolId} comes from the login session, not from the query — this is the only guard that
+     * keeps the exported file inside the caller's school.
      */
     private GradingAssignmentFilter toFilter(ExportAssessmentScoresQuery input, UUID schoolId) {
         return new GradingAssignmentFilter(
@@ -67,8 +67,8 @@ public class AssessmentScoreExportSupport {
     }
 
     /**
-     * Chuỗi rỗng từ query string là "không lọc", không phải "lọc theo giá trị rỗng".
-     * Không quy về null thì {@code cr.status = ''} khớp đúng 0 dòng và file xuất ra trống.
+     * An empty string from the query string means "no filter", not "filter by an empty value".
+     * Without normalizing it to null, {@code cr.status = ''} matches exactly 0 rows and the export file comes out empty.
      */
     private String nameOrNull(Enum<?> value) {
         return value == null ? null : value.name();

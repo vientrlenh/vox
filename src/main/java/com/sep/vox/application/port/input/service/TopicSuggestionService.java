@@ -28,9 +28,9 @@ import com.sep.vox.domain.repository.PracticeTopicRepository;
 import com.sep.vox.domain.repository.TopicSuggestionRepository;
 
 /**
- * Đề xuất / tạo / khớp chủ đề luyện tập -- gộp từ TopicSuggestionRepositoryImpl vì đây là thuật
- * toán nghiệp vụ (khớp mờ, gọi LLM, chống trùng, lọc theo phạm vi trường) chạm nhiều aggregate
- * (TopicSuggestion, PracticeTopic, LearnerProfile), không phải việc của 1 adapter CRUD.
+ * Suggests / creates / matches practice topics -- merged from TopicSuggestionRepositoryImpl because this is a
+ * business algorithm (fuzzy matching, calling the LLM, de-duplication, filtering by school scope) touching many aggregates
+ * (TopicSuggestion, PracticeTopic, LearnerProfile), not the job of 1 CRUD adapter.
  */
 @Service
 @RequiredArgsConstructor
@@ -50,9 +50,9 @@ public class TopicSuggestionService {
     private final KeywordTopicPersistenceService keywordTopicPersistenceService;
     private final InterestDimensionRepository interestDimensionRepository;
 
-    // GỠ 2026-08-06: respond(studentId, suggestionId, accept) -- nhận/bỏ một gợi ý chủ đề.
-    // Không còn nguồn nào tạo dòng PENDING sau khi bỏ đường suy chủ đề từ lời học sinh nói,
-    // nên không còn gì để duyệt. Giao diện, GraphQL và use case đi kèm đã xoá cùng lúc.
+    // REMOVED 2026-08-06: respond(studentId, suggestionId, accept) -- accept/skip a topic suggestion.
+    // No source creates PENDING rows any more after the path that inferred topics from what the student said was removed,
+    // so there is nothing left to review. The interface, GraphQL and the accompanying use case were deleted at the same time.
 
     // Not @Transactional -- generationClient.propose() is a slow synchronous LLM call to the
     // Python agents service; see PracticeQuestionGenerationService.generateAndStore for the
@@ -155,21 +155,21 @@ public class TopicSuggestionService {
         );
     }
 
-    // GỠ 2026-08-06 -- refreshSuggestions / studentsDueForSuggestionRefresh.
+    // REMOVED 2026-08-06 -- refreshSuggestions / studentsDueForSuggestionRefresh.
     //
-    // Đường cũ: đọc transcript 30 ngày gần nhất, đếm từ nội dung theo số buổi có nhắc, lấy 30 từ
-    // đứng đầu làm bằng chứng rồi nhờ LLM đề xuất chủ đề mới -- "AI nghe thấy em hay nhắc tới X".
-    // Bỏ theo yêu cầu: hệ thống không suy diễn chủ đề từ lời học sinh nói nữa.
+    // The old path: read the last 30 days of transcripts, count content words by number of sessions that mentioned them, take the 30
+    // top words as evidence and ask the LLM to propose new topics -- "the AI heard you often mention X".
+    // Removed on request: the system no longer infers topics from what students say.
     //
-    // Hai đường sinh chủ đề CÒN LẠI đều không đọc transcript, nên không đụng tới:
-    //   - generateFromKeyword  : học sinh tự gõ từ khoá, bằng chứng là chính từ khoá đó
-    //   - synchronousOffers    : truyền evidence rỗng, chỉ dựa điểm sở thích
+    // The two REMAINING topic-generation paths do not read transcripts, so they are untouched:
+    //   - generateFromKeyword  : the student types a keyword, the evidence is that keyword itself
+    //   - synchronousOffers    : passes empty evidence, relies only on interest scores
     //
-    // Cả luồng duyệt gợi ý đã xoá theo (pendingSuggestions / respond / GraphQL / thẻ bên Flutter):
-    // không còn nguồn tạo dòng PENDING thì không còn gì để duyệt.
+    // The whole suggestion-review flow was deleted too (pendingSuggestions / respond / GraphQL / the Flutter card):
+    // with no source creating PENDING rows there is nothing left to review.
     //
-    // Bảng topic_suggestions VẪN CÒN, nhưng nay chỉ là nhật ký yêu cầu theo từ khoá
-    // (recordKeywordRequest) -- ghi để xem lại học sinh đã tìm gì, không chi phối gì cả.
+    // The topic_suggestions table STILL EXISTS, but is now only a log of keyword requests
+    // (recordKeywordRequest) -- written so you can review what students searched, and governs nothing.
 
     // Not @Transactional -- same reason as generateFromKeyword above. This one is the hottest
     // path (called synchronously from practiceTopicOffers whenever ranked offers are thin), so
@@ -274,10 +274,10 @@ public class TopicSuggestionService {
             UUID studentId, int requestedCount, int proposalCount, List<String> collidedWith,
             int skippedOverQuota, int createdCount) {
         log.info(
-            "[topic-gen] học sinh={} xin={} python_trả={} java_chặn_trùng={} vượt_hạn_mức={} tạo_được={}{}",
+            "[topic-gen] student={} requested={} python_returned={} java_blocked_duplicates={} over_quota={} created={}{}",
             studentId, requestedCount, proposalCount, collidedWith.size(),
             skippedOverQuota, createdCount,
-            collidedWith.isEmpty() ? "" : " | va chạm: " + String.join(" ; ", collidedWith)
+            collidedWith.isEmpty() ? "" : " | collisions: " + String.join(" ; ", collidedWith)
         );
     }
 
@@ -292,11 +292,11 @@ public class TopicSuggestionService {
             .toList();
     }
 
-    // KHÔNG thêm lại confidenceForSessionCount ở đây. Trần độ tự tin theo lượng bằng chứng
-    // (≤1 buổi → 0,5; 2 → 0,7; ≥3 → 0,85) sống ở PHÍA PYTHON, trong
-    // TopicProposalNode/topic_proposal_node_config.py -- nơi nó được áp cùng lúc với các trần
-    // khác (ungrounded 0,4; INTEREST 0,6; EXHAUSTED 0,7; SEARCH 0,95). Bản Java cũ ở đây là
-    // bản sao không nơi nào gọi, và hai bản sẽ trôi lệch ngay lần sửa đầu tiên.
+    // Do NOT add confidenceForSessionCount back here. The confidence cap by amount of evidence
+    // (≤1 session → 0.5; 2 → 0.7; ≥3 → 0.85) lives on the PYTHON SIDE, in
+    // TopicProposalNode/topic_proposal_node_config.py -- where it is applied together with the other
+    // caps (ungrounded 0.4; INTEREST 0.6; EXHAUSTED 0.7; SEARCH 0.95). The old Java version here was
+    // a copy that nobody called, and two copies would drift apart on the very first edit.
 
     public static String normalize(String value) {
         if (value == null) {
@@ -325,17 +325,17 @@ public class TopicSuggestionService {
         return (double) intersection.size() / union.size();
     }
 
-    /** Nạp ứng viên rồi so -- cho hai chỗ gọi ĐƠN LẺ (không nằm trong vòng lặp). */
+    /** Loads the candidates and then compares -- for the two SINGLE call sites (not inside a loop). */
     private TopicNameCard findNearExistingTopic(String normalized) {
         return findNearExistingTopic(normalized, activeNameCards());
     }
 
     /**
-     * Bản thuần: so với danh sách ứng viên truyền vào, KHÔNG chạm DB.
+     * The pure version: compares against the candidate list passed in, does NOT touch the DB.
      *
-     * <p>Tách ra để {@code synchronousOffers} nạp ứng viên MỘT lần trước vòng lặp thay vì mỗi
-     * vòng một lần. Bản cũ gọi trực tiếp trong vòng lặp qua tối đa {@code MAX_PROPOSALS_PER_RUN}
-     * đề xuất, nên mỗi lượt sinh nạp lại toàn bộ bảng 8 lần và tokenize lại mọi tên chủ đề.
+     * <p>Split out so {@code synchronousOffers} loads the candidates ONCE before the loop instead of once per
+     * iteration. The old version called directly inside the loop over up to {@code MAX_PROPOSALS_PER_RUN}
+     * proposals, so each generation run reloaded the whole table 8 times and re-tokenized every topic name.
      */
     private TopicNameCard findNearExistingTopic(String normalized, List<TopicNameCard> candidates) {
         return candidates.stream()
@@ -351,7 +351,7 @@ public class TopicSuggestionService {
             .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
     }
 
-    /** Bản ghi rời để {@code synchronousOffers} nối thêm chủ đề VỪA tạo vào danh sách ứng viên. */
+    /** A detached record so {@code synchronousOffers} can append the JUST-created topic to the candidate list. */
     private record TopicNameCard(UUID id, String name, String interestDimension) {
     }
 
@@ -392,13 +392,13 @@ public class TopicSuggestionService {
         topicSuggestionRepository.save(TopicSuggestion.keywordRequested(studentId, keyword, outcome, Instant.now()));
     }
 
-    // GỠ 2026-08-11: topicNames(). Nó nạp toàn bộ chủ đề đang hoạt động chỉ để lấy tên, rồi gửi
-    // cả danh sách xuống prompt. Xem chú thích tại lời gọi propose() để biết vì sao bỏ.
+    // REMOVED 2026-08-11: topicNames(). It loaded every active topic just to get the names, then sent
+    // the whole list down into the prompt. See the comment at the propose() call for why it was dropped.
 
-    // GỠ 2026-08-06: rejectedTopicNames + nearRejected. Cả hai đọc dòng status='REJECTED', mà
-    // nơi duy nhất ghi trạng thái đó là respond() -- đã xoá. Giữ lại thì mỗi lượt gọi LLM phải
-    // chạy thêm hai truy vấn chắc chắn rỗng. Tham số tương ứng của propose() vẫn giữ nguyên
-    // (truyền List.of()) để không phải đổi hợp đồng với Python.
+    // REMOVED 2026-08-06: rejectedTopicNames + nearRejected. Both read rows with status='REJECTED', and
+    // the only place that wrote that status was respond() -- deleted. Keeping them means every LLM call has to
+    // run two extra queries that are certain to be empty. The corresponding parameter of propose() stays unchanged
+    // (pass List.of()) so the contract with Python does not change.
 
     private Map<String, Double> interestScores(UUID studentId) {
         return practiceTopicRepository.findInterestScoresByDimension(studentId);

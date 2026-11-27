@@ -37,8 +37,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class UserCreatedEventConsumer {
 
     private static final String CONSUMER_GROUP = "user-created-email";
-    private static final String SUBJECT = "Thiết lập mật khẩu tài khoản VOX";
-    private static final String EXPIRES_IN = "48 giờ";
+    private static final String SUBJECT = "VOX account password setup";
+    private static final String EXPIRES_IN = "48 hours";
 
     private final MailSendingPort mailSendingPort;
     private final MailTemplatePort mailTemplatePort;
@@ -89,7 +89,7 @@ public class UserCreatedEventConsumer {
             return jsonMapper.readValue(value, UserCreatedPayloadV1.class);
         } catch (Exception e) {
             log.error("Invalid payload: eventId={}, value={}", eventId, value, e);
-            throw new IllegalStateException("Payload user-created không hợp lệ, eventId=" + eventId, e);
+            throw new IllegalStateException("Payload user-created is invalid, eventId=" + eventId, e);
         }
     }
 
@@ -109,7 +109,7 @@ public class UserCreatedEventConsumer {
             log.error("Generate password set up token failed: eventId={}, userId={}",
                 eventId, payload.userId(), e);
             throw new IllegalStateException(
-                "Sinh token đặt mật khẩu thất bại: eventId=" + eventId, e);
+                "Failed to generate the password-setting token: eventId=" + eventId, e);
         }
     }
 
@@ -120,7 +120,7 @@ public class UserCreatedEventConsumer {
             mailSendingPort.sendHtml(payload.to(), SUBJECT, html);
         } catch (Exception e) {
             log.error("Send mail error: eventId={}, to={}", eventId, payload.to(), e);
-            throw new IllegalStateException("Gửi mail thiết lập mật khẩu thất bại: eventId=" + eventId, e);
+            throw new IllegalStateException("Failed to send the password setup email: eventId=" + eventId, e);
         }
     }
 
@@ -131,7 +131,7 @@ public class UserCreatedEventConsumer {
             case UserTypeConstant.SCHOOL_USER -> mailTemplatePort.renderSchoolUserPasswordSetUpEmail(
                 payload.fullName(), payload.schoolName(), setupUrl, EXPIRES_IN);
             case null, default -> throw new IllegalStateException(
-                "userType không hợp lệ: " + payload.userType());
+                "Invalid userType: " + payload.userType());
         };
     }
 

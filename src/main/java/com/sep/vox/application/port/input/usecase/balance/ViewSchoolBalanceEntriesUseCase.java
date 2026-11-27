@@ -15,7 +15,7 @@ import com.sep.vox.domain.dto.SchoolBalanceEntryDto;
 import com.sep.vox.domain.model.school.SchoolBalanceEntryType;
 import com.sep.vox.domain.repository.SchoolBalanceEntryRepository;
 
-/** Sao kê ví của một trường, mới nhất trước. */
+/** Statement of a school's balance, newest first. */
 @Service
 @RequiredArgsConstructor
 public class ViewSchoolBalanceEntriesUseCase
@@ -32,8 +32,8 @@ public class ViewSchoolBalanceEntriesUseCase
         PageResult<SchoolBalanceEntry> page = schoolBalanceEntryRepository.findBySchoolId(
             input.schoolId(),
             parseEntryType(input.entryType()),
-            // Repository đòi hai mốc khác null (xem javadoc của nó). "Không chặn đầu nào" quy về cả
-            // dải lịch sử ở đây, thay vì đẩy một tham số null xuống JPQL.
+            // The repository needs two non-null bounds (see its Javadoc). "No bound on either end" is turned into the
+            // whole history range here, instead of pushing a null parameter down into the JPQL.
             input.from() == null ? Instant.EPOCH : input.from(),
             input.to() == null ? Instant.now() : input.to(),
             input.page(),
@@ -50,9 +50,9 @@ public class ViewSchoolBalanceEntriesUseCase
     }
 
     /**
-     * GraphQL đã chặn giá trị lạ ở tầng schema (enum SchoolBalanceEntryType), nên tới đây chỉ còn
-     * null hoặc một tên hợp lệ. Vẫn bắt IllegalArgumentException để đường gọi khác -- test, hay một
-     * adapter REST sau này -- không nổ ra một lỗi khó đọc từ tận trong enum.
+     * GraphQL already rejects unknown values at the schema layer (enum SchoolBalanceEntryType), so only null or a
+     * valid name reaches this point. IllegalArgumentException is still caught so that other callers -- tests, or a
+     * REST adapter added later -- do not blow up with a hard-to-read error from deep inside the enum.
      */
     private static SchoolBalanceEntryType parseEntryType(String entryType) {
         if (entryType == null || entryType.isBlank()) {
@@ -61,7 +61,7 @@ public class ViewSchoolBalanceEntriesUseCase
         try {
             return SchoolBalanceEntryType.valueOf(entryType);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Loại bút toán không hợp lệ: " + entryType);
+            throw new IllegalArgumentException("Invalid balance entry type: " + entryType);
         }
     }
 }

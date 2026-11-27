@@ -16,12 +16,12 @@ import com.sep.vox.domain.model.outbox.Outbox;
 import com.sep.vox.domain.repository.OutboxRepository;
 
 /**
- * Bơm outbox ra Kafka.
+ * Pumps the outbox out to Kafka.
  *
- * <p>Tắt được bằng {@code app.outbox.scheduler.enabled=false}, và chỗ duy nhất tắt nó là
- * môi trường test: job này chạy mỗi giây, nên với broker thật của máy dev thì chỉ cần một
- * test ghi được hàng outbox là một event giả lọt vào topic production. Mặc định vẫn bật để
- * mọi môi trường chạy thật không phải khai thêm gì.
+ * <p>Can be turned off with {@code app.outbox.scheduler.enabled=false}, and the only place that turns it off is the
+ * test environment: this job runs every second, so with a developer machine's real broker a single
+ * test that writes an outbox row lets a fake event into the production topic. It stays on by default so that
+ * every environment running for real has nothing extra to declare.
  */
 @Component
 @ConditionalOnProperty(name = "app.outbox.scheduler.enabled", havingValue = "true", matchIfMissing = true)

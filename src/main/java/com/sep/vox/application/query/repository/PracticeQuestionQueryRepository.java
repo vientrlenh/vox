@@ -7,6 +7,6 @@ import com.sep.vox.application.query.dto.QuestionEvaluationInfo;
 
 public interface PracticeQuestionQueryRepository {
 
-    /** Câu hỏi kèm tên/mô tả chủ đề của nó -- đủ để dựng payload chấm, không cần aggregate. */
+    /** A question with the name/description of its topic -- enough to build the grading payload, no aggregate needed. */
     Optional<QuestionEvaluationInfo> findQuestionWithTopic(UUID questionId);
 }

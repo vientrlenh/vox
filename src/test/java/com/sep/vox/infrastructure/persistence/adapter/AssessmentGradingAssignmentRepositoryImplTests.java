@@ -54,8 +54,8 @@ class AssessmentGradingAssignmentRepositoryImplTests {
     private AssessmentGradingAssignment givenOpenRound(GradingRoundType roundType) {
         repository.save(AssessmentGradingAssignment.open(
             candidateResultId, teacherId, roundType, null, null, now, teacherId, null));
-        // Đẩy dòng đầu xuống DB rồi quên đi: transaction thật của use case bắt đầu với
-        // một persistence context rỗng và đọc dòng này lên từ DB.
+        // Push the first row down to the DB and forget it: the real transaction of the use case starts with
+        // an empty persistence context and reads this row up from the DB.
         entityManager.flush();
         entityManager.clear();
         return repository.findOpenByCandidateResultId(candidateResultId).orElseThrow();

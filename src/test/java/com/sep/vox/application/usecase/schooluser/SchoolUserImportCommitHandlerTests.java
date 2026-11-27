@@ -256,7 +256,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.updated()).isZero();
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.INVALID);
-        assertThat(rows.get(0).getErrorsJson()).contains("trường khác");
+        assertThat(rows.get(0).getErrorsJson()).contains("another school");
         verify(userRepository, never()).save(any());
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
         assertThat(otherSchoolUser.getStartDate()).isEqualTo(Instant.parse("2024-09-01T00:00:00Z"));
@@ -346,7 +346,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
         assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.INVALID);
-        assertThat(rows.get(1).getErrorsJson()).contains("trùng");
+        assertThat(rows.get(1).getErrorsJson()).contains("duplicated");
     }
 
     @Test
@@ -373,7 +373,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.created()).isZero();
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.INVALID);
-        assertThat(rows.get(0).getErrorsJson()).contains("không hợp lệ");
+        assertThat(rows.get(0).getErrorsJson()).contains("is invalid");
         verify(userRepository, never()).save(any());
         verify(userRoleRepository, never()).save(any(UserRole.class));
         verify(schoolUserRepository, never()).save(any(SchoolUser.class));
@@ -408,7 +408,7 @@ class SchoolUserImportCommitHandlerTests {
         assertThat(result.invalid()).isEqualTo(1L);
         assertThat(rows.get(0).getStatus()).isEqualTo(ImportRowStatus.FAILED);
         assertThat(rows.get(1).getStatus()).isEqualTo(ImportRowStatus.IMPORTED);
-        assertThat(rows.get(0).getErrorsJson()).contains("tồn tại");
+        assertThat(rows.get(0).getErrorsJson()).contains("already exists");
     }
 
     @Test

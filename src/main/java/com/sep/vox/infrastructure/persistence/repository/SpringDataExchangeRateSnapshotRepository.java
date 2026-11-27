@@ -10,10 +10,10 @@ import com.sep.vox.infrastructure.persistence.entity.financial.ExchangeRateSnaps
 public interface SpringDataExchangeRateSnapshotRepository
         extends JpaRepository<ExchangeRateSnapshotJpaEntity, UUID> {
     /**
-     * Sắp thêm theo id DESC để thứ tự CHỐT HẲN: hai snapshot cùng currency_code có thể trùng
-     * fetched_at (job chạy lại trong cùng một tick, hoặc backfill ghi hàng loạt), khi đó chỉ sắp theo
-     * fetched_at là Postgres trả về bản nào tùy ý -- giá bán quota nhảy qua lại giữa hai lần gọi.
-     * id là uuidv7 nên "id DESC" chính là "mới nhất trước", và vì id duy nhất nên không còn hòa.
+     * Additionally ordered by id DESC so the order is DEFINITIVE: two snapshots with the same currency_code can have the same
+     * fetched_at (the job re-runs in the same tick, or a backfill writes in bulk), and then ordering by
+     * fetched_at alone lets Postgres return either one -- the quota selling price flips between calls.
+     * id is a uuidv7, so "id DESC" is "newest first", and since id is unique there are no ties left.
      */
     Optional<ExchangeRateSnapshotJpaEntity> findFirstByCurrencyCodeOrderByFetchedAtDescIdDesc(String currencyCode);
 }

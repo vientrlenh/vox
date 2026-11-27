@@ -33,19 +33,19 @@ public class UpdateQuestionBankStatusUseCase implements IUseCase<UpdateQuestionB
         UUID currentUserId = userContextPort.getCurrentAuthenticatedUserId();
 
         QuestionBank questionBank = questionBankRepository.findById(command.id())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngân hàng câu hỏi"));
+            .orElseThrow(() -> new ResourceNotFoundException("Question bank not found"));
 
         questionBankManageAccessService.requireManageAccess(questionBank, currentUserId);
 
         switch (command.action()) {
             case "PUBLISH" -> {
                 if (questionBank.getStatus() != QuestionBankStatus.DRAFT) {
-                    throw new IllegalArgumentException("Chỉ được publish ngân hàng câu hỏi đang ở trạng thái DRAFT");
+                    throw new IllegalArgumentException("Only a question bank in DRAFT status can be published");
                 }
                 questionBank.setStatus(QuestionBankStatus.PUBLISHED);
             }
             case "ARCHIVE" -> questionBank.setStatus(QuestionBankStatus.ARCHIVED);
-            default -> throw new IllegalArgumentException("Action không hợp lệ");
+            default -> throw new IllegalArgumentException("Invalid action");
         }
 
 

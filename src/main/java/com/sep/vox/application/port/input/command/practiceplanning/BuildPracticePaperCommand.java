@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * @param targetFrameworkBandId bậc học sinh CHỌN cho phiên này. Trước đây hệ thống tự suy ra
- *     bậc rồi ép học sinh luyện theo; giờ đây là lựa chọn của người học, và bậc chỉ còn nghĩa
- *     "độ khó tôi muốn hôm nay". Bắt buộc -- không có mặc định nào đúng thay cho học sinh.
+ * @param targetFrameworkBandId the band the student CHOOSES for this session. Before, the system derived the
+ *     band itself and forced the student to practice at it; now it is the learner's choice, and the band only means
+ *     "the difficulty I want today". Required -- no default is right on the student's behalf.
  */
 public record BuildPracticePaperCommand(
     UUID topicId,

@@ -107,13 +107,13 @@ public class AnswerTurnsRecordedConsumer {
 
     private UUID parseUuid(String value, String fieldName) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(fieldName + " không được để trống");
+            throw new IllegalArgumentException(fieldName + " must not be blank");
         }
 
         try {
             return UUID.fromString(value.trim());
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(fieldName + " không đúng định dạng UUID");
+            throw new IllegalArgumentException(fieldName + " is not a valid UUID");
         }
     }
 
@@ -125,7 +125,7 @@ public class AnswerTurnsRecordedConsumer {
         try {
             return UUID.fromString(value.trim());
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(fieldName + " không đúng định dạng UUID");
+            throw new IllegalArgumentException(fieldName + " is not a valid UUID");
         }
     }
 
@@ -137,7 +137,7 @@ public class AnswerTurnsRecordedConsumer {
         try {
             return Instant.parse(value.trim());
         } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("answeredAt không đúng định dạng ISO-8601");
+            throw new IllegalArgumentException("answeredAt is not in ISO-8601 format");
         }
     }
 }

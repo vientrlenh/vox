@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.sep.vox.infrastructure.persistence.entity.personalization.TopicSuggestionJpaEntity;
 
 /**
- * Chỉ còn findById/save kế thừa từ JpaRepository.
+ * Only the inherited findById/save from JpaRepository remain.
  *
- * <p>GỠ 2026-08-07: {@code countWeeklyKeywordRequests} -- truy vấn đếm số lượt gõ từ khoá trong
- * tuần lịch, nuôi hạn mức 3 lượt/tuần đã bỏ ở {@code TopicSuggestionService.generateFromKeyword}.
- * Không còn ai gọi. Bảng {@code topic_suggestions} giữ nguyên, nay thuần là nhật ký.
+ * <p>REMOVED 2026-08-07: {@code countWeeklyKeywordRequests} -- the query counting keyword typing requests in
+ * the calendar week, which fed the 3-requests/week quota that was dropped in {@code TopicSuggestionService.generateFromKeyword}.
+ * Nobody calls it any more. The {@code topic_suggestions} table is kept as is and is now purely a log.
  */
 public interface SpringDataTopicSuggestionRepository
         extends JpaRepository<TopicSuggestionJpaEntity, UUID> {

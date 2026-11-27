@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Translate Vietnamese messages and comments to English</title>
+<style>
+  :root {
+    --bg: #fafaf8; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #e2e1dc;
+    --accent: #1f5fbf; --accent-soft: #e8f0fc; --warn: #8a5a00; --warn-soft: #fdf3dc;
+    --ok: #17673a; --ok-soft: #e3f4ea; --bad: #9b1c1c; --bad-soft: #fbe6e6; --code-bg: #f3f2ee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+      --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+      --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1d1d1b; --text: #ecebe6; --muted: #a2a19a; --border: #33332f;
+    --accent: #7fb0f5; --accent-soft: #1b2a40; --warn: #f0c36a; --warn-soft: #3a2f14;
+    --ok: #7fd3a0; --ok-soft: #14301f; --bad: #f19a9a; --bad-soft: #3d1b1b; --code-bg: #262623;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 16px 96px; }
+  h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 16px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 28px 0 8px; }
+  p, li { max-width: 72ch; }
+  .meta { color: var(--muted); font-size: .92rem; margin-bottom: 20px; }
+  .status { display: inline-block; border-radius: 999px; padding: 2px 12px; font-size: .8rem;
+    font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .status.draft, .status.open { background: var(--warn-soft); color: var(--warn); }
+  .status.approved, .status.progress { background: var(--accent-soft); color: var(--accent); }
+  .status.done, .status.answered { background: var(--ok-soft); color: var(--ok); }
+  .status.blocked { background: var(--bad-soft); color: var(--bad); }
+  nav { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 18px; margin: 20px 0; }
+  nav ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav a, td a { color: var(--accent); text-decoration: none; }
+  code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px;
+    font: .88em ui-monospace, "SF Mono", Menlo, monospace; }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font: .85rem/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+  pre code { background: none; padding: 0; }
+  .table-scroll { overflow-x: auto; margin: 12px 0; }
+  table { border-collapse: collapse; width: 100%; background: var(--surface);
+    border: 1px solid var(--border); font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--code-bg); font-weight: 600; white-space: nowrap; }
+  td.indent { padding-left: 32px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft);
+    padding: 10px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.ok { border-color: var(--ok); background: var(--ok-soft); }
+  .callout p { margin: 4px 0; }
+  .decision, .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 4px 18px 14px; margin: 14px 0; }
+  .decision h3, .phase h3 { margin-top: 14px; }
+  .rec { color: var(--ok); font-weight: 600; }
+  .answer { background: var(--code-bg); border-radius: 8px; padding: 8px 12px; margin: 10px 0 0; color: var(--muted); }
+  .decision[data-decision-state="answered"] .answer { background: var(--ok-soft); color: var(--text); }
+  .tag { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .jobs { list-style: none; padding: 0; margin: 10px 0; }
+  .job { border-top: 1px solid var(--border); padding: 10px 0; }
+  .job > .title { font-weight: 600; }
+  .status-log { font-size: .85rem; color: var(--muted); margin: 8px 0 0; padding-left: 20px; }
+  .status-log:empty { display: none; }
+  @media (max-width: 600px) { nav ol { columns: 1; } h1 { font-size: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Translate Vietnamese messages and comments to English</h1>
+<div class="meta">
+  Repository: <code>vox</code> &middot; Branch: <code>default</code> &middot; Written 2026-11-27 &middot;
+  Plan status: <span class="status approved" id="plan-status" data-plan-status="approved">Approved</span>
+</div>
+
+<p>1,518 Java files (plus configuration, GraphQL schemas and resources) still contain Vietnamese: about 6,700 comment
+lines and 6,300 string-literal lines. This plan moves the code to English in 12 phases, each of which leaves the build
+green and can be reviewed (and merged) on its own. <strong>Messages:</strong> the texts the code writes to logs and
+returns to API clients become English; texts that are data (seed content, import column aliases, test fixtures) stay,
+and what exactly counts as a &ldquo;message&rdquo; is decision D1. <strong>Comments:</strong> a comment that breaks
+the <code>AGENTS.md</code> &ldquo;Self-explaining code&rdquo; rule is deleted, every other comment is translated
+faithfully (decision D2, already made).</p>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#progress">Progress</a></li>
+    <li><a href="#current">Current state</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#phases">Phases</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#scope">Out of scope</a></li>
+    <li><a href="#verify">Verification</a></li>
+    <li><a href="#changelog">Change log</a></li>
+    <li><a href="#notes">Implementation notes</a></li>
+  </ol>
+</nav>
+
+<h2 id="progress">Progress</h2>
+<p id="overview-summary" class="meta"></p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Phase / job</th><th>Status</th></tr></thead>
+  <tbody id="overview-body"></tbody>
+</table></div>
+
+<h2 id="current">1. Current state (measured 2026-11-27)</h2>
+
+<p>Method: the set of tracked files with a Vietnamese diacritic was found with
+<code>git ls-files</code> and <code>grep -qP '[&agrave;&aacute;&#7841;&hellip;&#273;]'</code> (the full Vietnamese letter class,
+upper and lower case). Every Java file was then split by a small tokenizer (written in the session scratchpad, not in the
+repo) into line comments, Javadoc, string literals, text blocks and the remaining code, so comments and strings are counted
+separately. Lines are counted per physical line that holds a Vietnamese letter.</p>
+
+<div class="table-scroll"><table>
+  <thead><tr><th>What</th><th class="num">Count</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td>Java files with Vietnamese</td><td class="num">1,518</td><td>1,266 in <code>src/main</code>, 252 in <code>src/test</code>. 1,512 have diacritics; 6 hold only unaccented Vietnamese.</td></tr>
+    <tr><td>Comment lines</td><td class="num">6,659</td><td>5,574 main + 1,085 test. 1,183 are <code>//</code> lines, 5,476 are Javadoc lines, none are <code>/* */</code>. They form 3,068 runs of consecutive lines (1,292 runs are a single line).</td></tr>
+    <tr><td>String-literal lines</td><td class="num">6,324</td><td>5,064 main (34 inside text blocks) + 1,260 test, in 1,034 files.</td></tr>
+    <tr><td>Vietnamese in code outside comments and strings</td><td class="num">3</td><td>Only the char literals <code>'&#273;'</code> in <code>VnSearchKey</code> and <code>TopicSuggestionService</code> (search normalisation, so data).</td></tr>
+    <tr><td>Unaccented Vietnamese (strict word-list scan)</td><td class="num">70</td><td>In 20 files, for example <code>"Khong tim thay ..."</code> in <code>AssessmentSessionResultCalculator</code>, <code>"Tao cau hoi thanh cong"</code> in <code>RestQuestionController</code>, and <code>S3BucketInitializer</code>. A diacritic scan misses these; the true number is higher than 70.</td></tr>
+    <tr><td>SQL migrations <code>V1</code>&ndash;<code>V13</code></td><td class="num">600</td><td>13 files: 594 <code>--</code> comment lines, 3 <code>COMMENT ON</code> statements (<code>V10</code> x2, <code>V11</code> x1), and the <code>translate()</code> letter list in <code>V7</code>. <code>V14</code>&ndash;<code>V23</code> have none.</td></tr>
+    <tr><td>Configuration</td><td class="num">161</td><td><code>application.yaml</code> 129 comment lines, <code>application-test.yaml</code> 29, <code>Dockerfile</code> 3. All are comments.</td></tr>
+    <tr><td>GraphQL schemas</td><td class="num">351</td><td>6 files, mostly <code>"""</code> descriptions; 9 lines are <code>#</code> comments (<code>assessment.graphqls</code>, <code>topic-suggestion.graphqls</code>).</td></tr>
+    <tr><td>Email templates</td><td class="num">71</td><td>9 files in <code>src/main/resources/templates/email/</code>.</td></tr>
+    <tr><td>Seed JSON</td><td class="num">304</td><td><code>school-directory-seed.json</code> 284, <code>interest-quiz-seed.json</code> 20.</td></tr>
+    <tr><td><code>docs/</code> and README</td><td class="num">10</td><td>4 older plans quote Vietnamese words; <code>README.md</code> has none. Not touched.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>What the string literals are</h3>
+<p>Classified by the statement they sit in (regular expressions over the preceding lines, so the numbers are approximate; each job
+confirms the kind of every literal it edits). Main sources only:</p>
+<div class="table-scroll"><table>
+  <thead><tr><th>Kind</th><th class="num">Lines</th><th class="num">Files</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Exception messages</td><td class="num">~2,780</td><td class="num">584</td><td><code>IllegalArgumentException</code> 1,172, <code>ResourceNotFoundException</code> 777, <code>ForbiddenException</code> 415, <code>UnauthorizedException</code> 229, <code>IllegalStateException</code> 86, <code>ResourceDuplicatedException</code> 70, <code>BusinessRuleViolationException</code> 22, others 7.</td></tr>
+    <tr><td>Bean Validation <code>message =</code></td><td class="num">515</td><td class="num">136</td><td>Request records in <code>interfaces/rest/dto</code> and a few commands.</td></tr>
+    <tr><td>Response messages and import row errors</td><td class="num">347</td><td class="num">45</td><td><code>ApiResponse</code> success texts in controllers, and the row errors that import handlers store as JSON.</td></tr>
+    <tr><td>Log messages</td><td class="num">214</td><td class="num">74</td><td><code>log.info/warn/error(...)</code>; more log text sits in the &ldquo;other&rdquo; row.</td></tr>
+    <tr><td>Email and push text</td><td class="num">117</td><td class="num">19</td><td><code>SmtpEmailTemplateRenderService</code> (67), <code>NotificationPushedEventConsumer</code> titles and bodies.</td></tr>
+    <tr><td>OpenAPI annotation text</td><td class="num">110</td><td class="num">7</td><td><code>@Operation</code>, <code>@Schema</code>, <code>@Parameter</code>.</td></tr>
+    <tr><td>Excel headers and sheet names</td><td class="num">37</td><td class="num">4</td><td><code>QuestionSpreadsheetService</code> and similar.</td></tr>
+    <tr><td>Other</td><td class="num">942</td><td class="num">85</td><td>Includes seed data (<code>FrameworkInitializer</code> 412 lines, <code>SystemRubricTemplateInitializer</code> 33), import header aliases (<code>FileProcessingService</code> 174), and some messages the expressions did not recognise.</td></tr>
+  </tbody>
+</table></div>
+<p>Test sources hold 1,260 more string lines in 212 files: about 578 are assertions or expected values, 526 are
+fixtures (Vietnamese names, speech transcripts, SQL <code>INSERT</code> values), and 5 are <code>@DisplayName</code> values.</p>
+
+<h3>Facts that shape the plan</h3>
+<ol>
+  <li><strong>Exception text is part of the API.</strong> <code>GlobalExceptionHandler</code> passes <code>e.getMessage()</code> into
+      <code>ErrorResponse</code> for duplicated, not-found, illegal-argument, unauthorized, forbidden, business-rule,
+      service-unavailable and disabled-user errors (lines 75&ndash;246), and <code>GlobalExceptionResolver</code> does the same for GraphQL
+      (line 38). <code>GlobalGrpcExceptionHandler</code> has 2 Vietnamese status texts. Who reads these texts outside this repo
+      (frontend, desktop app, AI grading service) is <em>not checked</em>.</li>
+  <li><strong>Some Vietnamese literals are input, not output.</strong> <code>FileProcessingService</code> from line 269 on maps column
+      headers in uploaded Excel files (<code>"m&atilde; l&#7899;p"</code>, <code>"ho ten"</code>, ...) to fields, and
+      <code>RubricCriterionImportCommitHandler:344</code> accepts <code>"c&oacute;"</code> as &ldquo;yes&rdquo;. Translating them would make real
+      uploaded files fail.</li>
+  <li><strong>Some are seed data.</strong> 10 initializers (<code>infrastructure/initializer</code>, 506 string lines) write
+      Vietnamese names and descriptors into the database. Whether they upsert by that text was not checked.</li>
+  <li><strong>Migrations are frozen.</strong> <code>AGENTS.md</code> says never edit a merged migration, and
+      <code>application.yaml</code> lines 71&ndash;75 record that Flyway then refuses to start with &ldquo;Migration checksum mismatch&rdquo;.</li>
+  <li><strong>Method size counts comment lines.</strong> <code>MethodLengthScanner</code> measures from the return type to the closing brace,
+      so a longer English comment inside a method body can push a 25-line method over the limit; and a method on
+      <code>method-size-exemptions.txt</code> (6 entries) that gets short enough fails <code>MethodSizeConventionTests</code> until its
+      entry is removed.</li>
+  <li><strong>Comment shapes</strong> (counted with regular expressions over comment runs): 43 runs start with a step number (the
+      <code>// 1. Validate the user</code> pattern <code>AGENTS.md</code> forbids), 48 are banner lines (<code>// ---- ... ----</code>), 7 contain a fully
+      qualified <code>{@link ...}</code>, and none looks like commented-out code. In a hand-read random sample of 45 runs, 1 clearly restated the
+      code (<code>// X&oacute;a Assessment Policy c&#7911;a m&#7897;t tr&#432;&#7901;ng h&#7885;c (School Admin)</code> above <code>deleteSchoolAssessmentPolicy</code>), 2 were borderline,
+      and 42 recorded a reason, a contract or an invariant. So most comments are translated and deletions are a minority; the exact
+      ratio is <em>not measured</em>.</li>
+  <li><strong>Files <code>AGENTS.md</code> puts under &ldquo;Ask first&rdquo;.</strong> Security, JWT and OAuth code: 18 main files
+      (<code>SecurityConfig</code>, <code>infrastructure/security/*</code> 5, <code>infrastructure/filter/*</code> 2, <code>GoogleIdTokenProperties</code>,
+      <code>GoogleIdTokenVerifierPort</code>, <code>VerifiedGoogleIdentity</code>, <code>StreamingServiceTokenInterceptor</code>,
+      <code>OAuth2AuthenticationSuccessHandler</code>, and the use cases <code>GoogleTokenLogin</code>, <code>Login</code>, <code>Logout</code>,
+      <code>OAuth2Login</code>, <code>Refresh</code>). Money code (orders, payments, quota, school balance): 177 files by file-name match
+      (158 main, 19 test), holding 1,476 comment lines, 22% of all Vietnamese comment lines. The match is by name, so it
+      is approximate.</li>
+  <li><strong>Baseline is green.</strong> <code>./gradlew compileJava compileTestJava</code> succeeds (15 s); <code>./gradlew test</code> runs
+      2,823 tests in 479 classes with 0 failures, 0 errors (1 min 22 s). Docker is <em>not running</em> on this machine, so
+      <code>integrationTest</code> was not run and cannot be run here.</li>
+  <li><strong>Other work in flight.</strong> <code>test-restructuring-plan</code> has phases 4 and 5 in progress (they edit tests under
+      <code>application/usecase</code>). Four local <code>refactor/*</code> branches are not merged into <code>default</code>; whether they
+      have open pull requests was not checked (it needs a call to GitHub).</li>
+  <li><strong>No formatter or linter</strong> (no Spotless, Checkstyle, PMD) is configured in <code>build.gradle</code>, and 5,129 lines in
+      <code>src/main/java</code> already exceed 120 characters, so line wrapping is free except for the method-size rule above.</li>
+</ol>
+
+<h2 id="decisions">2. Decisions</h2>
+
+<div class="callout warn">
+  <p><strong>Where this task goes against <code>AGENTS.md</code></strong> (refactoring-stage notice: ask before continuing).</p>
+  <p>(1) Language: &ldquo;Leave string literals that are user-facing text (messages, email templates) as they are&rdquo;. Translating messages
+     contradicts it &rarr; D1, and the bullet is rewritten under D4.</p>
+  <p>(2) Language: Vietnamese comments in code being changed are translated &ldquo;do not shorten or delete it&rdquo;. The request to delete rule-breaking
+     comments narrows that sentence &rarr; D2 (answered).</p>
+  <p>(3) Database: &ldquo;Never edit a migration that has been merged&rdquo; &rarr; D3.</p>
+  <p>(4) Ask first: changing text that REST, GraphQL and gRPC clients receive (D1); touching security/JWT/OAuth code and money logic (D5); a new
+     file outside the usual patterns and a change to <code>AGENTS.md</code> itself (D4).</p>
+</div>
+
+<div class="decision" id="d1" data-decision-state="answered">
+  <h3>D1. Which Vietnamese string literals are translated? <span class="status answered">Answered</span></h3>
+  <p>Four kinds of literal exist. <strong>A, developer-facing:</strong> log messages and <code>IllegalStateException</code> texts.
+     <strong>B, API-visible:</strong> exception messages returned by the REST, GraphQL and gRPC handlers, Bean Validation messages,
+     <code>ApiResponse</code> success messages, import row errors, OpenAPI annotation text, GraphQL schema descriptions.
+     <strong>C, rendered content:</strong> email subjects and bodies (<code>SmtpEmailTemplateRenderService</code> and 9 templates), push notification
+     titles and bodies, Excel export/template headers and sheet names.
+     <strong>D, data (always stays Vietnamese):</strong> seed data, import header aliases and accepted values, the <code>'&#273;'</code> char literals,
+     Vietnamese names and transcripts in test fixtures.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Translate A and B; keep C and D. The code speaks English to developers and API clients,
+     while what end users read in emails, pushes and spreadsheets stays Vietnamese until someone decides how to localise it. Cost: any client that
+     shows or matches an error <code>message</code> now sees English; the frontend, desktop app and AI grading service are outside this repo and
+     were not checked, so the final report lists the changed channels (REST <code>ErrorResponse.message</code>, validation maps, <code>ApiResponse.message</code>,
+     GraphQL errors, gRPC status text).</p>
+  <p><strong>B.</strong> Translate A only. Nothing a client receives changes, so there is no cross-system impact and the <code>AGENTS.md</code> Language bullet
+     stays correct as written. About 3,750 of the 5,064 main-source string lines (kind B: exception, validation, response and OpenAPI text) stay Vietnamese, which is most of what you called &ldquo;messages&rdquo;.</p>
+  <p><strong>C.</strong> Translate A, B and C; keep only D. The backend is English everywhere except data. Vietnamese school users then receive English
+     emails, pushes and spreadsheets, and the Excel header change needs a per-sheet check that the importer accepts the English header (the alias maps
+     list English names first, but each sheet is checked). Adds phase 11.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> A &ndash; translate A and B; keep C and D. Phase 11 is therefore deferred.</div>
+</div>
+
+<div class="decision" id="d2" data-decision-state="answered">
+  <h3>D2. What happens to Vietnamese comments? <span class="status answered">Answered</span></h3>
+  <p>Decided by you on 2026-11-27: &ldquo;if the comments are violating the rules in AGENTS.md, remove it, otherwise translate them&rdquo;. The plan reads this as follows
+     (say so in chat before approving if a line is wrong):</p>
+  <p><strong>Delete</strong> when the comment breaks <em>Self-explaining code</em>: it narrates the next statement (<code>// 1. Validate the user</code>, <code>// Save to the database</code>);
+     it is a doc comment that only restates the name or signature of the class, method or field it sits on, with no contract, side effect or failure case;
+     an <code>@param</code> or <code>@return</code> tag that repeats the parameter or type in words; a banner or divider that only names what the next member's name already says.</p>
+  <p><strong>Translate, faithfully, keeping the &ldquo;why&rdquo;</strong> when the comment records a reason (a race, a security rule, a workaround, a lock or transaction order),
+     states a contract (nullability, units, time zone, ordering, idempotency, failure cases, side effects), or documents a business rule or invariant.
+     When in doubt, translate: a wrong deletion loses information that a wrong translation does not.</p>
+  <p><strong>Also:</strong> a translated comment that contains a fully qualified <code>{@link}</code> gets an import and a simple name (<code>AGENTS.md</code> &ldquo;Import types&rdquo;). No
+     commented-out code was found, so no rule is needed for it. The deletion rule applies to every file in the plan, not only to methods being edited, because the task is
+     the translation itself (<code>AGENTS.md</code> Language: &ldquo;unless the task is the translation itself&rdquo;).</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> Delete comments that violate <code>AGENTS.md</code>, translate the rest &ndash; the user's words as quoted above.</div>
+</div>
+
+<div class="decision" id="d3" data-decision-state="answered">
+  <h3>D3. What happens to the Vietnamese in SQL migrations <code>V1</code>&ndash;<code>V13</code>? <span class="status answered">Answered</span></h3>
+  <p>600 lines in 13 merged files. Editing any of them changes the Flyway checksum, and <code>application.yaml</code> itself documents that Flyway then refuses to start
+     on every existing database, so rewriting them is not offered.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Leave all 13 untouched. Zero risk; 594 comment lines and 3 <code>COMMENT ON</code> texts stay Vietnamese in the repository
+     (they are recorded in the keep register; the guard test under D4 scans Java sources only).</p>
+  <p><strong>B.</strong> Leave the 13 files, and add <code>V24__english_comment_on_statements.sql</code> that re-issues the 3 Vietnamese <code>COMMENT ON</code> statements in English. This fixes
+     what a person sees in the live database metadata; the <code>--</code> comments stay. It needs <code>integrationTest</code> (Docker) to prove the migration applies, and Docker is not running here.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> A &ndash; leave all 13 migrations untouched. Job 10.3 is therefore deferred.</div>
+</div>
+
+<div class="decision" id="d4" data-decision-state="answered">
+  <h3>D4. How is the result locked in? <span class="status answered">Answered</span></h3>
+  <p>Without a guard, Vietnamese comments and messages return with the next feature. <code>AGENTS.md</code> also needs its Language bullet rewritten to match D1 and D2, and changing
+     <code>AGENTS.md</code> needs your confirmation.</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Add <code>LanguageConventionTests</code> in <code>src/test/java/com/sep/vox/architecture</code> with <code>src/test/resources/architecture/language-keep-list.txt</code>,
+     and rewrite the <code>AGENTS.md</code> Language bullet. The test fails on a Vietnamese diacritic in any comment under <code>src/main/java</code> or <code>src/test/java</code>, and in any
+     string literal outside the files on the keep list; the list may only shrink; it has a self-test with a violating snippet, like the other convention tests. Cost: one new test class and one
+     resource file, neither of which fits an existing file pattern.</p>
+  <p><strong>B.</strong> Rewrite the <code>AGENTS.md</code> Language bullet only; the final check is a one-time scan. No new files, no protection against regression.</p>
+  <p><strong>C.</strong> Neither. <code>AGENTS.md</code> would still say literals stay as they are while the code says otherwise. Not recommended.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> A &ndash; add <code>LanguageConventionTests</code> with the keep list and rewrite the <code>AGENTS.md</code> Language bullet. The exact bullet wording is still confirmed in chat in job 12.3.</div>
+</div>
+
+<div class="decision" id="d5" data-decision-state="answered">
+  <h3>D5. May the plan make text-only edits in security and money code? <span class="status answered">Answered</span></h3>
+  <p><code>AGENTS.md</code> &ldquo;Ask first&rdquo; lists touching security config or JWT/OAuth code and changing anything that moves money. Here only comments and string literals
+     change, and the verifier (jobs 1.2 and every job after it) proves that every token outside comments and strings is identical. The sets are
+     <strong>security:</strong> 18 main files named in section 1 plus their tests, and <strong>money:</strong> 177 files matched by name (orders, payments, quota, school balance).</p>
+  <p><strong>A.</strong> (<span class="rec">recommended</span>) Include both sets in their normal jobs. The money files hold 22% of all Vietnamese comment lines and the richest
+     &ldquo;why&rdquo; text, so leaving them out leaves the worst of the problem. Each phase's notes list the security and money files it touched, so you can read those diffs first;
+     the related tests (<code>*Quota*</code>, <code>*Order*</code>, <code>*Payment*</code>, <code>*Balance*</code>, <code>*Login*</code>, <code>*Jwt*</code>) run in the job.</p>
+  <p><strong>B.</strong> Include money, exclude security. The 18 security files and their tests stay Vietnamese for a later, security-specific task; they go on the keep list.</p>
+  <p><strong>C.</strong> Exclude both. About 195 files stay Vietnamese, and the keep list (D4) carries them until a later task.</p>
+  <div class="answer"><strong>Answer (2026-11-27):</strong> A &ndash; include both the security and the money sets in their normal jobs.</div>
+</div>
+
+<h2 id="phases">3. Phases</h2>
+<p>Each phase is independently reviewable and leaves the build green. Phases 2&ndash;9 follow the layers inside out (domain, application, infrastructure, interfaces); the tests
+of a package are translated in the same job as the package, because tests assert messages and must change with them.</p>
+
+<h3>Rules that every job follows</h3>
+<ol>
+  <li><strong>Comments</strong> follow D2. The per-phase notes record how many comments were translated, deleted and left, and list the borderline ones, so deletions can be reviewed in the diff.</li>
+  <li><strong>Strings</strong> follow D1. A literal of a kept kind (C or D: emails, push text, Excel headers, seed data, import aliases, test fixtures) is left alone and recorded in the keep register (Implementation notes) with its file, line range and reason.
+      A job never decides a kind silently: the register is how you review it.</li>
+  <li><strong>Terminology</strong> comes from the glossary built in job 1.3, so the same Vietnamese term is translated the same way everywhere, using the identifier the code already has.</li>
+  <li><strong>Structure is preserved.</strong> Placeholders (<code>{}</code>, <code>%s</code>, <code>%d</code>, <code>{0}</code>, <code>{min}</code> in validation messages), escapes and argument order stay; a concatenation keeps its operands in the
+      same order (rephrase around them); no messages are merged or split. SQL <code>--</code> comments inside text blocks are comments: translated, with the SQL itself unchanged.</li>
+  <li><strong>Method size.</strong> A translated comment inside a method body never takes more lines than the original (rewrap it; if it cannot fit without shortening, move it into the method's Javadoc). If deletions make
+      a method on <code>method-size-exemptions.txt</code> short enough, remove its entry (the list may only shrink).</li>
+  <li><strong>Tests</strong> that assert a translated message change in the same job. Vietnamese fixtures (names, transcripts, <code>INSERT</code> values) stay. <code>@DisplayName</code> values and test comments are translated.
+      Hand-written mocks are not converted to <code>@Mock</code> (that belongs to <code>test-restructuring-plan</code>).</li>
+  <li><strong>Unused code.</strong> A deleted comment can leave an import that only a <code>{@link}</code> used; remove such imports in the files the job edits.</li>
+  <li><strong>Standard check S</strong>, run at the end of every job: (a) the scanner reports 0 Vietnamese lines under the job's paths except sites on the keep register, including the unaccented word list;
+      (b) the verifier reports no difference outside comments and string literals, equal literal counts and order, and equal placeholders; (c) <code>./gradlew compileJava compileTestJava</code>;
+      (d) the phase's test filter; (e) <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.
+      After the scan, the job reads 20 random remaining comment or string lines of its paths to catch Vietnamese the word list missed, and reports the result.</li>
+</ol>
+
+<div class="phase" id="phase-1" data-status="todo">
+  <h3><span class="title">Phase 1 &ndash; Tooling and glossary</span>
+    <span class="tag">small &middot; mechanical</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> measuring and checking tools exist and one glossary fixes the terminology before any file changes. No file under <code>src/</code> changes in this phase.
+     <strong>Depends on:</strong> nothing (the plan being approved).</p>
+  <ul class="jobs">
+    <li class="job" id="job-1-1" data-status="todo">
+      <span class="title">1.1 Scanner for Vietnamese in comments and strings</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> run on the untouched tree it prints 1,518 files, 6,659 comment lines, 6,324 string lines and the 70 unaccented lines, by file and by kind (line comment, Javadoc, string, text block),
+         and it also reads <code>.yaml</code>, <code>Dockerfile</code>, <code>.graphqls</code>, <code>.html</code>. A first version (<code>scan_java.py</code>, <code>scan_ascii_vn.py</code>) was written while planning in the session
+         scratchpad; it stays outside the repo, so re-create it from this description if the scratchpad was cleared.
+         <strong>Files:</strong> scratchpad only.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-2" data-status="todo">
+      <span class="title">1.2 Verifier that a diff only touched comments and strings</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> for every Java file that differs from <code>HEAD</code> it tokenizes the old and new text, and reports any difference in the code outside comments and string literals, a different number or order of
+         literals, different placeholders or escapes, a changed kept literal, and (for SQL text blocks) any change outside <code>--</code> comments. Self-test: on a scratch copy with one identifier renamed and one <code>{}</code>
+         removed it reports both; on an untouched file it reports nothing. <strong>Files:</strong> scratchpad only.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-1-3" data-status="todo">
+      <span class="title">1.3 Glossary of domain terms</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the Implementation notes hold a table &ldquo;Vietnamese term &rarr; English term&rdquo; for every term that appears at least 10 times in message strings and comments, and each English term is
+         taken from an identifier, GraphQL type or enum already in the code (found with <code>grep</code>; for example the term for the appeal of a result follows <code>AssessmentAppeal</code>). No term is invented where the code has one.
+         <strong>Files:</strong> this plan's notes only.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>git status --short -- src</code> prints nothing; <code>./gradlew compileJava</code> still succeeds.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-2" data-status="todo">
+  <h3><span class="title">Phase 2 &ndash; Domain layer</span>
+    <span class="tag">medium &middot; mechanical &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 174 files (164 main, 10 test) are English: 918 comment lines and 189 string lines. Value-object and domain-service messages are exception messages (kind B).
+     <strong>Depends on:</strong> phase 1, D1, D5.</p>
+  <ul class="jobs">
+    <li class="job" id="job-2-1" data-status="todo">
+      <span class="title">2.1 <code>domain/{common,dto,model,valueobject}</code> and their tests</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 94 files (88 main, 6 test; 329 comment lines, 79 string lines). <strong>Files:</strong> <code>src/main/java/com/sep/vox/domain/{common,dto,model,valueobject}</code>,
+         <code>src/test/java/com/sep/vox/domain/{model,valueobject}</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-2-2" data-status="todo">
+      <span class="title">2.2 <code>domain/{repository,service}</code> and their tests</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 80 files (76 main, 4 test; 589 comment lines, 110 string lines), including <code>QuestionStatusTransition</code> (32 string lines) and
+         <code>AssessmentScheduleWindowMessages</code>. <strong>Files:</strong> <code>domain/repository</code>, <code>domain/service</code>, <code>src/test/java/com/sep/vox/domain/service</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.domain.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>
+     (<code>LayeredArchitectureTests</code>, <code>MethodSizeConventionTests</code>).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-3" data-status="todo">
+  <h3><span class="title">Phase 3 &ndash; Application contracts (ports, queries, responses, commands)</span>
+    <span class="tag">medium &middot; mechanical &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 198 files (189 main, 9 test) are English: 1,298 comment lines and 56 string lines. This phase is almost all Javadoc on records and ports. Event payload classes get comment changes only;
+     no payload field, version or topic changes. <strong>Depends on:</strong> phase 2.</p>
+  <ul class="jobs">
+    <li class="job" id="job-3-1" data-status="todo">
+      <span class="title">3.1 <code>application/{common,event,mapper}</code>, <code>port/output</code> and their tests</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 44 files (35 main, 9 test; 296 comment lines, 56 string lines). <strong>Files:</strong> <code>application/common</code>, <code>application/event</code>,
+         <code>application/mapper</code>, <code>application/port/output</code>, <code>src/test/java/com/sep/vox/application/{common,port,support}</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-2" data-status="todo">
+      <span class="title">3.2 <code>application/{query,response}</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 90 files (all main; 772 comment lines, no strings). <strong>Files:</strong> <code>application/query</code>, <code>application/response</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-3-3" data-status="todo">
+      <span class="title">3.3 <code>application/port/input/{command,query}</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 64 files (all main; 230 comment lines, no strings). <strong>Files:</strong> <code>application/port/input/command</code>,
+         <code>application/port/input/query</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-4" data-status="todo">
+  <h3><span class="title">Phase 4 &ndash; Use cases: assessments</span>
+    <span class="tag">large &middot; judgement (messages) &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 221 files (155 main, 66 test) are English: 619 comment lines and 1,135 string lines (6 unaccented). Most strings are exception messages and the
+     tests that assert them. <strong>Depends on:</strong> phase 3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-4-1" data-status="todo">
+      <span class="title">4.1 <code>assessment</code>, <code>assessmentappeal</code>, <code>assessmentblueprint</code>, <code>assessmentcandidate</code>, <code>assessmentdirectory</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 99 files (74 main, 25 test; 176 comment lines, 472 string lines). <strong>Files:</strong> <code>application/port/input/usecase/&lt;those features&gt;</code> and
+         <code>src/test/java/com/sep/vox/application/usecase/&lt;those features&gt;</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-2" data-status="todo">
+      <span class="title">4.2 <code>assessmentevaluation</code>, <code>assessmentgrading</code>, <code>assessmentitemresponse</code>, <code>assessmentpaper</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 61 files (36 main, 25 test; 316 comment lines, 307 string lines, 5 unaccented lines such as <code>"Khong tim thay evaluation ..."</code> in
+         <code>AssessmentSessionResultCalculator</code>). <strong>Files:</strong> the same two roots, those features.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-4-3" data-status="todo">
+      <span class="title">4.3 <code>assessmentpolicyschool</code>, <code>assessmentpolicysystem</code>, <code>assessmentpolicyteacher</code>, <code>assessmentschedule</code>, <code>assessmentsession</code>, <code>assessmentturn</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 61 files (45 main, 16 test; 127 comment lines, 356 string lines). <strong>Files:</strong> the same two roots, those features.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-5" data-status="todo">
+  <h3><span class="title">Phase 5 &ndash; Use cases: frameworks, questions, rubrics</span>
+    <span class="tag">large &middot; judgement (messages) &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 198 files (165 main, 33 test) are English: 212 comment lines and 1,058 string lines, almost all exception messages (<code>rubricschool</code> and <code>rubricsystem</code> alone hold 542, with the
+     <code>B&#7842;O M&#7852;T:</code> prefix on security-rule messages). <strong>Depends on:</strong> phase 4 (the same message vocabulary is reused).</p>
+  <ul class="jobs">
+    <li class="job" id="job-5-1" data-status="todo">
+      <span class="title">5.1 <code>framework</code>, <code>gradelevel</code>, <code>importfile</code>, <code>interestdimension</code>, <code>supportedlanguage</code>, <code>topicsuggestion</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 57 files (43 main, 14 test; 49 comment lines, 226 string lines). <strong>Files:</strong> <code>application/port/input/usecase/&lt;those features&gt;</code> and the mirrored test packages.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-2" data-status="todo">
+      <span class="title">5.2 <code>question</code>, <code>questionbank</code>, <code>questiontopic</code>, <code>scoringrule</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 60 files (55 main, 5 test; 105 comment lines, 257 string lines). <strong>Files:</strong> the same two roots, those features.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-5-3" data-status="todo">
+      <span class="title">5.3 <code>rubricschool</code>, <code>rubricsystem</code>, <code>rubricteacher</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 81 files (67 main, 14 test; 58 comment lines, 575 string lines). <strong>Files:</strong> the same two roots, those features.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-6" data-status="todo">
+  <h3><span class="title">Phase 6 &ndash; Use cases: schools, billing, practice, other</span>
+    <span class="tag">large &middot; judgement (messages) &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 185 files (141 main, 44 test) are English: 781 comment lines and 896 string lines. Job 6.1 contains the five JWT/OAuth use cases (security set); job 6.2 is money code.
+     <strong>Depends on:</strong> phase 5.</p>
+  <ul class="jobs">
+    <li class="job" id="job-6-1" data-status="todo">
+      <span class="title">6.1 <code>auth</code>, <code>registration</code>, <code>role</code>, <code>user</code>, <code>school</code>, <code>schooldirectory</code>, <code>schoolclass</code>, <code>schoolclassuser</code>, <code>schoolgrade</code>, <code>schoolroom</code>, <code>schooluser</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 96 files (69 main, 27 test; 161 comment lines, 690 string lines), plus <code>./gradlew test --tests '*Login*' --tests '*Refresh*' --tests '*OAuth2*'</code>.
+         <strong>Files:</strong> the use-case and test roots for those features.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-2" data-status="todo">
+      <span class="title">6.2 <code>balance</code>, <code>order</code>, <code>payment</code>, <code>subscription</code>, <code>metering</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 41 files (33 main, 8 test; 285 comment lines, 136 string lines), plus <code>./gradlew test --tests '*Order*' --tests '*Payment*' --tests '*Balance*' --tests '*Subscription*'</code>.
+         <strong>Files:</strong> the use-case and test roots for those features.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-6-3" data-status="todo">
+      <span class="title">6.3 <code>dashboard</code>, <code>learnerprofile</code>, <code>notification</code>, <code>practiceevaluation</code>, <code>practiceplanning</code>, <code>practicesession</code>, <code>proctoring</code>, <code>recording</code>, <code>stream</code></span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 48 files (39 main, 9 test; 335 comment lines, 70 string lines). <strong>Files:</strong> the use-case and test roots for those features.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.usecase.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-7" data-status="todo">
+  <h3><span class="title">Phase 7 &ndash; Application services</span>
+    <span class="tag">large &middot; judgement &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 117 files (97 main, 20 test) in <code>application/port/input/service</code> are English: 1,137 comment lines (the densest &ldquo;why&rdquo; comments in the repo, for example in
+     <code>OrderSettlementService</code> and <code>ConsumeQuotaService</code>) and 611 string lines. <strong>Depends on:</strong> phase 6.</p>
+  <ul class="jobs">
+    <li class="job" id="job-7-1" data-status="todo">
+      <span class="title">7.1 Import commit handlers and spreadsheet services</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 16 main files (39 comment lines, 245 string lines). Import row errors are translated (kind B); accepted input values such as <code>"c&oacute;"</code> in
+         <code>RubricCriterionImportCommitHandler</code> and Excel headers in <code>QuestionSpreadsheetService</code> are recorded in the keep register (kind D, or C until phase 11).
+         <strong>Files:</strong> <code>application/port/input/service/*Import*</code>, <code>*Spreadsheet*</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-2" data-status="todo">
+      <span class="title">7.2 Quota, order, billing and settlement services</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 25 files (18 main, 7 test; 445 comment lines, 122 string lines), plus <code>./gradlew test --tests '*Quota*' --tests '*Settlement*'</code>.
+         <strong>Files:</strong> the services matched by name (<code>*Quota*</code>, <code>*Order*</code>, <code>*Payment*</code>, <code>*Balance*</code>, <code>*Settlement*</code>, <code>*Debt*</code>, <code>*Pricing*</code>, <code>*Spend*</code>) and their tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-7-3" data-status="todo">
+      <span class="title">7.3 All other application services</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for the remaining 76 files (63 main, 13 test; 653 comment lines, 244 string lines). <strong>Files:</strong>
+         <code>application/port/input/service</code> and <code>src/test/java/com/sep/vox/application/service</code>, excluding jobs 7.1 and 7.2.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.application.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-8" data-status="todo">
+  <h3><span class="title">Phase 8 &ndash; Infrastructure layer</span>
+    <span class="tag">large &middot; judgement &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 200 files (154 main, 46 test) are English except recorded data: 1,402 comment lines and 1,404 string lines (33 unaccented, for example <code>S3BucketInitializer</code> and <code>AwsS3StorageService</code>).
+     Job 8.3 includes the security set (<code>SecurityConfig</code>, <code>infrastructure/security</code>, <code>infrastructure/filter</code>). <strong>Depends on:</strong> phase 7.</p>
+  <ul class="jobs">
+    <li class="job" id="job-8-1" data-status="todo">
+      <span class="title">8.1 Persistence adapters, entities, mappers, query repositories</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 106 files (79 main, 27 test; 742 comment lines, 252 string lines, including 35 SQL <code>--</code> comment lines inside <code>@Query</code> text blocks in 8 files).
+         <strong>Files:</strong> <code>infrastructure/persistence</code>, <code>src/test/java/com/sep/vox/infrastructure/persistence</code> (those tests need Docker to run, so here they are compiled only).</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-2" data-status="todo">
+      <span class="title">8.2 Events, workers, clients, filters, repository</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 39 files (32 main, 7 test; 194 comment lines, 266 string lines). In <code>NotificationPushedEventConsumer</code> the log texts are translated; the push titles and bodies go on the
+         keep register (kind C). <strong>Files:</strong> <code>infrastructure/{event,worker,client,filter,repository}</code> and their tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-3" data-status="todo">
+      <span class="title">8.3 Services, security, config, properties</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 41 files (32 main, 9 test; 342 comment lines, 336 string lines), plus <code>./gradlew test --tests '*Jwt*' --tests '*GoogleIdToken*'</code>.
+         <code>FileProcessingService</code> header aliases and <code>SmtpEmailTemplateRenderService</code> text go on the keep register (kinds D and C); its comments are translated.
+         <strong>Files:</strong> <code>infrastructure/{service,security,config,properties}</code> and their tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-8-4" data-status="todo">
+      <span class="title">8.4 Initializers</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 14 files (11 main, 3 test; 124 comment lines, 550 string lines). Comments, log texts and error texts are translated; the seed names and descriptors
+         (<code>FrameworkInitializer</code> 412 lines, <code>SystemRubricTemplateInitializer</code>, <code>SubscriptionPlanInitializer</code>, ...) are recorded as kind D, per file. <strong>Files:</strong>
+         <code>infrastructure/initializer</code> and <code>src/test/java/com/sep/vox/infrastructure/initializer</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.infrastructure.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.
+     <code>integrationTest</code> is not run (no Docker).</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-9" data-status="todo">
+  <h3><span class="title">Phase 9 &ndash; Interfaces layer</span>
+    <span class="tag">large &middot; judgement &middot; needs D1, D5</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> 222 files (201 main, 21 test) are English: 286 comment lines and 970 string lines (23 unaccented, mostly the <code>ApiResponse</code> success messages in <code>RestQuestionController</code>).
+     This is where kind B reaches clients directly. <strong>Depends on:</strong> phase 8.</p>
+  <ul class="jobs">
+    <li class="job" id="job-9-1" data-status="todo">
+      <span class="title">9.1 REST controllers</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 39 files (32 main, 7 test; 175 comment lines, 375 string lines, 20 unaccented): success messages and <code>@Operation</code> / <code>@Parameter</code> text are English and
+         <code>./gradlew test --tests 'com.sep.vox.interfaces.rest.*'</code> passes. <strong>Files:</strong> <code>interfaces/rest/controller</code>, <code>src/test/java/com/sep/vox/interfaces/rest</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-2" data-status="todo">
+      <span class="title">9.2 REST request records, exception handler, other REST classes</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 143 files (142 main, 1 test; 27 comment lines, 537 string lines): Bean Validation messages keep their <code>{...}</code> placeholders, and
+         <code>GlobalExceptionHandler</code> texts such as the unsupported-media-type message are English. <strong>Files:</strong> <code>interfaces/rest/dto</code>, <code>interfaces/rest/exception</code>, remaining <code>interfaces/rest</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-9-3" data-status="todo">
+      <span class="title">9.3 GraphQL, Kafka, gRPC, handler, shared</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> check S passes for 40 files (27 main, 13 test; 84 comment lines, 58 string lines): <code>GlobalExceptionResolver</code> and <code>GlobalGrpcExceptionHandler</code> texts and the Kafka consumer
+         validation messages are English, and <code>./gradlew test --tests 'com.sep.vox.interfaces.*'</code> passes. <code>StreamingServiceTokenInterceptor</code> and <code>OAuth2AuthenticationSuccessHandler</code> are in the security set (D5).
+         <strong>Files:</strong> <code>interfaces/{graphql,kafka,grpc,handler,shared}</code> and their tests.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test --tests 'com.sep.vox.interfaces.*'</code>, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-10" data-status="todo">
+  <h3><span class="title">Phase 10 &ndash; Resources and configuration</span>
+    <span class="tag">medium &middot; mechanical &middot; needs D1, D3</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> configuration comments, GraphQL schema text and (if D3 = B) database comment metadata are English. <strong>Depends on:</strong> phase 9 (the GraphQL schema text must match the
+     controllers' English messages), D1, D3.</p>
+  <ul class="jobs">
+    <li class="job" id="job-10-1" data-status="todo">
+      <span class="title">10.1 <code>application.yaml</code>, <code>application-test.yaml</code>, <code>Dockerfile</code> comments</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 161 comment lines (129 + 29 + 3) are English, and the files differ from <code>HEAD</code> only inside comments: <code>diff</code> of old and new with everything from <code>#</code> to the end of each line removed prints nothing (a <code>#</code> inside a quoted value is checked by hand).
+         The <code>application.yaml</code> Flyway comment keeps every instruction (the two <code>FLYWAY_*</code> variables and the <code>docker compose down -v</code> alternative). <strong>Files:</strong>
+         <code>src/main/resources/application.yaml</code>, <code>src/test/resources/application-test.yaml</code>, <code>Dockerfile</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-10-2" data-status="todo">
+      <span class="title">10.2 GraphQL schema descriptions and comments</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the 351 lines in 6 <code>.graphqls</code> files are English (the descriptions are kind B and the 9 <code>#</code> comment lines are comments, so all 351 are translated), no field, type or argument changes, and
+         <code>./gradlew test --tests '*GraphQL*'</code> passes (the slice tests load the real schema without Docker). <strong>Files:</strong> <code>src/main/resources/graphql/{assessment-appeal,assessment-grading,assessment,dashboard,practice-planning,topic-suggestion}.graphqls</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-10-3" data-status="skipped">
+      <span class="title">10.3 <code>V24</code> migration for the Vietnamese <code>COMMENT ON</code> texts (only if D3 = B)</span> <span class="status skipped">Deferred</span>
+      <p><strong>Done when:</strong> <code>V24__english_comment_on_statements.sql</code> re-issues the 3 statements (from <code>V10</code> x2 and <code>V11</code> x1, using the table and column names as they are after <code>V14</code>) in English, no existing migration is
+         modified (<code>git diff --stat -- src/main/resources/db/migration</code> lists only the new file), and the migration applies in <code>integrationTest</code> where Docker is available. Skipped if D3 = A.
+         <strong>Files:</strong> <code>src/main/resources/db/migration/V24__english_comment_on_statements.sql</code>.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D3 answered A: migrations stay untouched</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava</code>, <code>./gradlew test --tests '*GraphQL*'</code>, <code>git diff --stat -- src/main/resources/db/migration</code>.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<div class="phase" id="phase-11" data-status="skipped">
+  <h3><span class="title">Phase 11 &ndash; Rendered content (only if D1 = C)</span>
+    <span class="tag">medium &middot; needs D1 = C</span>
+    <span class="status skipped">Deferred</span></h3>
+  <p><strong>Goal:</strong> emails, push notifications and generated spreadsheets are English. The whole phase is skipped when D1 is A or B. <strong>Depends on:</strong> phases 7 and 8, D1 = C.</p>
+  <ul class="jobs">
+    <li class="job" id="job-11-1" data-status="skipped">
+      <span class="title">11.1 Email subjects, bodies and the 9 templates</span> <span class="status skipped">Deferred</span>
+      <p><strong>Done when:</strong> <code>SmtpEmailTemplateRenderService</code> (67 string lines) and the 9 files in <code>src/main/resources/templates/email/</code> (71 lines) are English, no placeholder name changes (the
+         verifier compares them), and <code>./gradlew test --tests '*EmailConsumer*'</code> passes. No test class exists for <code>SmtpEmailTemplateRenderService</code> itself (checked with <code>git ls-files src/test</code>), so the placeholder comparison
+         and the consumer tests are the evidence; the job adds no test. <strong>Files:</strong> the service, the 9 templates and the consumer tests that assert email text.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+    </li>
+    <li class="job" id="job-11-2" data-status="skipped">
+      <span class="title">11.2 Push notification titles and bodies</span> <span class="status skipped">Deferred</span>
+      <p><strong>Done when:</strong> the roughly 40 title and body literals of <code>NotificationPushedEventConsumer</code> (and the labels in the same file) are English, and
+         <code>./gradlew test --tests '*Notification*'</code> passes. <strong>Files:</strong> <code>infrastructure/event/internal/consumer/NotificationPushedEventConsumer.java</code> and its tests.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+    </li>
+    <li class="job" id="job-11-3" data-status="skipped">
+      <span class="title">11.3 Excel export and template headers and sheet names</span> <span class="status skipped">Deferred</span>
+      <p><strong>Done when:</strong> for each spreadsheet, a test or <code>grep</code> shows the importer still accepts the English header (via the <code>FileProcessingService</code> alias maps) before the header is changed; the 37 header lines in 4
+         files are English; <code>./gradlew test --tests '*Spreadsheet*'</code> passes. Import aliases themselves are never changed. <strong>Files:</strong> <code>QuestionSpreadsheetService</code> and the other
+         spreadsheet and export classes found by the scanner, and their tests.</p>
+      <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, the test filters above, <code>./gradlew test --tests 'com.sep.vox.architecture.*'</code>.</p>
+  <ul class="status-log"><li>2026-11-27 &middot; Deferred &middot; D1 answered A: rendered content stays Vietnamese</li></ul>
+</div>
+
+<div class="phase" id="phase-12" data-status="todo">
+  <h3><span class="title">Phase 12 &ndash; Lock-in and final scan</span>
+    <span class="tag">small &middot; needs D4</span>
+    <span class="status todo">Not started</span></h3>
+  <p><strong>Goal:</strong> the result is checked end to end and protected. <strong>Depends on:</strong> phases 2&ndash;10 (and 11 if D1 = C), D4.</p>
+  <ul class="jobs">
+    <li class="job" id="job-12-1" data-status="todo">
+      <span class="title">12.1 Final scan and keep-register reconciliation</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> the scanner over <code>src</code> and <code>Dockerfile</code> reports Vietnamese only in the files of the keep register (seed initializers, <code>FileProcessingService</code>,
+         the <code>'&#273;'</code> char literals, test fixtures, SQL migrations <code>V1</code>&ndash;<code>V13</code>, and the rendered-content files kept by D1 = A: <code>SmtpEmailTemplateRenderService</code>, the push text in <code>NotificationPushedEventConsumer</code>, the Excel headers, and the 9 email templates), and
+         <code>git grep -lP '&lt;Vietnamese letter class&gt;' -- src Dockerfile</code> prints exactly those files. Every register row has a file, a line range and a reason.
+         <strong>Files:</strong> this plan's notes only.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-12-2" data-status="todo">
+      <span class="title">12.2 <code>LanguageConventionTests</code> and keep list (D4 = A)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> <code>./gradlew test --tests '*LanguageConventionTests'</code> passes on the tree, fails on a snippet with a Vietnamese comment and on one with a Vietnamese string in a file not on the keep list (the
+         test's own self-tests), and <code>language-keep-list.txt</code> holds exactly the Java files of the register (the test scans <code>src/main/java</code> and <code>src/test/java</code> only; migrations, seed JSON and templates stay in the register alone). Skipped if D4 is B or C. <strong>Files:</strong>
+         <code>src/test/java/com/sep/vox/architecture/LanguageConventionTests.java</code>, <code>src/test/resources/architecture/language-keep-list.txt</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+    <li class="job" id="job-12-3" data-status="todo">
+      <span class="title">12.3 <code>AGENTS.md</code> Language bullet and testing list (D4 = A or B)</span> <span class="status todo">Not started</span>
+      <p><strong>Done when:</strong> you confirmed the proposed wording in chat, the bullet at <code>AGENTS.md</code> line 148 states which strings are English and which stay Vietnamese (matching D1, D2 and D5), and, if
+         12.2 ran, the Testing section lists <code>LanguageConventionTests</code>. Skipped if D4 = C. <strong>Files:</strong> <code>AGENTS.md</code>.</p>
+      <ul class="status-log"></ul>
+    </li>
+  </ul>
+  <p><strong>Verify:</strong> <code>./gradlew compileJava compileTestJava</code>, <code>./gradlew test</code> (all green), then the <code>verify-plan</code> skill.</p>
+  <ul class="status-log"></ul>
+</div>
+
+<h2 id="risks">4. Risks</h2>
+<ul>
+  <li><strong>A translation changes the meaning</strong> of an invariant or a business rule (most likely in the money and quota comments). The glossary fixes terms; translations are faithful, not shortened; each phase's notes list the
+      security and money files for you to read first; when unsure a comment is translated, never deleted.</li>
+  <li><strong>Code changes by accident</strong> while editing 1,518 files. The verifier (job 1.2) proves that everything outside comments and string literals is identical, and runs in every job.</li>
+  <li><strong>Client-visible text changes</strong> (D1 = A). REST <code>message</code>, validation maps, <code>ApiResponse.message</code>, GraphQL error messages and gRPC status text change language. The frontend, desktop app and AI grading service
+      are outside this repo and were not checked; the final report lists every changed channel and the places that may match on text.</li>
+  <li><strong>Data translated by mistake.</strong> Translating import aliases or seed values would reject real uploaded files or create duplicate seed rows. They are kind D and recorded in the keep register; the guard test (D4 = A) keeps them listed.</li>
+  <li><strong>Method-size and architecture tests fail</strong> because a comment got longer or shorter. Rule 5 and the <code>architecture.*</code> run in every job catch it; stale exemption entries are removed, never added.</li>
+  <li><strong>Merge conflicts.</strong> The diff touches about 1,500 files while <code>test-restructuring-plan</code> phases 4&ndash;5 are still editing <code>application/usecase</code> tests and four <code>refactor/*</code> branches exist. Land and merge one phase at a time
+      (one pull request per phase is the natural cut; nothing is committed unless you ask), and check open pull requests before phase 1 starts. <em>Not checked here: it needs a call to GitHub.</em></li>
+  <li><strong>Integration tests cannot run locally</strong> (Docker is not running). Persistence tests are compiled but not run; text-only edits make a failure unlikely, but CI or a machine with Docker must run <code>integrationTest</code> before merge.</li>
+  <li><strong>Unaccented Vietnamese is missed.</strong> The word-list scan finds only 70 lines and is a lower bound. Each job reads 20 random remaining lines of its paths; anything found is fixed and counted in the notes.</li>
+  <li><strong>Deleted comments cannot be recovered from the file</strong>, only from git. Deletions are therefore counted per phase and the borderline ones are listed in the notes.</li>
+</ul>
+
+<h2 id="scope">5. Out of scope</h2>
+<ul>
+  <li>SQL migrations <code>V1</code>&ndash;<code>V13</code> and their three <code>COMMENT ON</code> texts (D3 = A); no new migration is added.</li>
+  <li>Data in Vietnamese: seed content in the 10 initializers and the 2 seed JSON files, import header aliases and accepted values in <code>FileProcessingService</code> and the import handlers, the <code>'&#273;'</code> char literals, Vietnamese names and transcripts in test fixtures.</li>
+  <li>Emails, push notification text and Excel export/template headers (kind C, D1 = A); phase 11 stays deferred and can be reopened as its own plan if a localisation decision is made.</li>
+  <li>Any localisation mechanism (message bundles, <code>Accept-Language</code>, <code>MessageSource</code>): messages become English constants, not keys.</li>
+  <li>Renaming identifiers, changing exception types, error codes, HTTP status mapping, events, topics or schema fields; reformatting; converting hand-written mocks; fixing problems noticed on the way (they are reported in the notes).</li>
+  <li>Plans under <code>docs/</code> that quote Vietnamese words; <code>README.md</code> (no Vietnamese).</li>
+  <li>New dependencies: none are needed.</li>
+</ul>
+
+<h2 id="verify">6. Verification</h2>
+<p>The plan is finished when all of these hold on the final tree:</p>
+<ul>
+  <li>The scanner and <code>git grep -lP</code> with the Vietnamese letter class over <code>src</code> and <code>Dockerfile</code> list only the files of the keep register, and <code>language-keep-list.txt</code> matches the register (D4 = A).</li>
+  <li>The verifier over the whole diff against the starting commit (<code>8760ecc8</code>) reports no change outside comments and string literals, apart from the files of jobs 10.3, 12.2 and 12.3 and the removed method-size exemption entries.</li>
+  <li><code>./gradlew compileJava compileTestJava</code> succeeds and <code>./gradlew test</code> passes (2,823 tests at baseline, plus those the new test class adds).</li>
+  <li><code>./gradlew integrationTest</code> and <code>./gradlew clean build --no-daemon</code> (the CI command) pass on a machine with Docker. Not run during planning.</li>
+  <li><code>git diff --stat -- src/main/resources/db/migration</code> prints nothing: no migration is modified or added (D3 = A).</li>
+  <li>The final report lists the changed client-facing channels (D1), the security and money files touched (D5), and the counts of comments translated, deleted and left.</li>
+</ul>
+<p>Run the <code>verify-plan</code> skill after the last phase.</p>
+
+<h2 id="changelog">7. Change log</h2>
+<div class="table-scroll"><table>
+  <thead><tr><th>Date</th><th>Change</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>2026-11-27</td><td>Plan written (Draft)</td><td>First version: translate Vietnamese messages and comments to English; comments that break <code>AGENTS.md</code> are deleted (D2 answered), the rest translated.</td></tr>
+    <tr><td>2026-11-27</td><td>D1, D3, D4, D5 answered (all the recommended option); phase 11 (3 jobs) and job 10.3 marked Deferred; conditional wording in the rules, jobs 10.2 and 12.1, risks, scope and verification tightened</td><td>D1 = A keeps rendered content (emails, push, Excel headers) Vietnamese, and D3 = A leaves the migrations untouched, so the work for D1 = C and D3 = B does not apply.</td></tr>
+    <tr><td>2026-11-27</td><td>Approved</td><td>You approved the plan as written, including the D2 rubric reading.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="notes">8. Implementation notes</h2>
+<p>Filled in by <code>implement-plan</code>: deviations from the plan, results of <code>verify-plan</code>, and
+problems noticed but not fixed.</p>
+<ul id="notes-list"></ul>
+
+<h3>Glossary (job 1.3)</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Vietnamese term</th><th>English term</th><th>Taken from</th></tr></thead>
+  <tbody></tbody>
+</table></div>
+
+<h3>Keep register (jobs 2.1&ndash;12.1)</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>File</th><th>Lines</th><th>Kind</th><th>Reason</th></tr></thead>
+  <tbody></tbody>
+</table></div>
+
+<h3>Per-phase counts (comments translated, deleted, left; borderline cases)</h3>
+<div class="table-scroll"><table>
+  <thead><tr><th>Job</th><th class="num">Translated</th><th class="num">Deleted</th><th class="num">Left</th><th>Borderline cases and security/money files touched</th></tr></thead>
+  <tbody></tbody>
+</table></div>
+
+</div>
+<script>
+  (function () {
+    var labels = { todo: "Not started", progress: "In progress", done: "Done", blocked: "Blocked", skipped: "Deferred" };
+    var body = document.getElementById("overview-body");
+    var summary = document.getElementById("overview-summary");
+    var phaseCounts = {};
+    document.querySelectorAll(".phase[data-status], .job[data-status]").forEach(function (element) {
+      var status = element.getAttribute("data-status");
+      if (element.classList.contains("phase")) { phaseCounts[status] = (phaseCounts[status] || 0) + 1; }
+      var row = body.insertRow();
+      var nameCell = row.insertCell();
+      if (element.classList.contains("job")) { nameCell.className = "indent"; }
+      var link = document.createElement("a");
+      link.href = "#" + element.id;
+      link.textContent = element.querySelector(".title").textContent;
+      nameCell.appendChild(link);
+      var pill = document.createElement("span");
+      pill.className = "status " + status;
+      pill.textContent = labels[status] || status;
+      row.insertCell().appendChild(pill);
+    });
+    var parts = Object.keys(labels).filter(function (key) { return phaseCounts[key]; })
+      .map(function (key) { return phaseCounts[key] + " " + labels[key].toLowerCase(); });
+    summary.textContent = parts.length ? "Phases: " + parts.join(" · ") : "";
+  })();
+</script>
+</body>
+</html>

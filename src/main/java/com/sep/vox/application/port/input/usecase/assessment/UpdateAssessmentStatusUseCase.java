@@ -26,6 +26,7 @@ import com.sep.vox.application.port.input.service.AssessmentCandidateResultFinal
 import com.sep.vox.application.port.input.service.AssessmentScheduleClosureService;
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.AssessmentHumanGradingNotificationService;
+import com.sep.vox.application.port.input.service.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.service.ClassTestTokenQuotaGuardService;
 import com.sep.vox.application.port.input.service.ZeroScoreAssessmentResultService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

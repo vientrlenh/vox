@@ -264,7 +264,10 @@ server:
   shutdown: graceful
   # Needed when the app runs behind ngrok (and any TLS proxy): the OAuth2 redirect_uri is built from
   # X-Forwarded-Proto/Host. Safe only while the proxy in front overwrites client-sent X-Forwarded-* headers.
-  forward-headers-strategy: framework
+  request:
+    header:
+      forwarded:
+        strategy: framework
   ssl: 
     enabled: ${SSL_ENABLED:false}
     certificate: ${SSL_CERT_PATH:}

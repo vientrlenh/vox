@@ -22,8 +22,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import com.sep.vox.application.port.input.command.assessment.DeleteAssessmentCommand;
+import com.sep.vox.application.port.input.service.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.assessment.DeleteAssessmentUseCase;
-import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.output.UserContextPort;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.application.response.input.assessment.DeleteAssessmentResponse;

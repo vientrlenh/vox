@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.assessment.CreateClassTestSectionCommand;
+import com.sep.vox.application.port.input.service.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.service.ClassTestDirectEditGuard;
 import com.sep.vox.application.port.input.service.ClassTestPaperResolver;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;

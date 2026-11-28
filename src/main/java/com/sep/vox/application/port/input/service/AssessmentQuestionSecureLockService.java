@@ -1,4 +1,4 @@
-package com.sep.vox.application.port.input.usecase.assessment;
+package com.sep.vox.application.port.input.service;
 
 import com.sep.vox.domain.model.assessment.AssessmentSecurePool;
 import com.sep.vox.domain.model.question.Question;

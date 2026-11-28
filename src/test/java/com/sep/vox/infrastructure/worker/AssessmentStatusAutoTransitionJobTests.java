@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Test;
 
 import com.sep.vox.application.port.input.service.ClassTestGradingAssignmentService;
 import com.sep.vox.application.port.input.service.AssessmentHumanGradingNotificationService;
+import com.sep.vox.application.port.input.service.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.service.AssessmentScheduleClosureService;
 import com.sep.vox.application.port.input.service.ZeroScoreAssessmentResultService;
-import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;
 import com.sep.vox.domain.model.assessment.Assessment;
 import com.sep.vox.domain.model.assessment.AssessmentKind;
 import com.sep.vox.domain.model.assessment.AssessmentSchedule;

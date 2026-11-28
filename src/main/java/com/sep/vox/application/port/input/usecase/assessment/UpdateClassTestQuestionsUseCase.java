@@ -18,6 +18,7 @@ import com.sep.vox.application.port.input.command.assessment.ClassTestSectionCom
 import com.sep.vox.application.port.input.command.assessment.UpdateClassTestQuestionsCommand;
 import com.sep.vox.application.port.input.service.ClassTestDirectEditGuard;
 import com.sep.vox.application.port.input.service.ClassTestPaperResolver;
+import com.sep.vox.application.port.input.service.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

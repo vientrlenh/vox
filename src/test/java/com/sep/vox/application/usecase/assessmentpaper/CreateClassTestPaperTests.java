@@ -25,9 +25,9 @@ import com.sep.vox.application.port.input.command.assessment.ClassTestSectionCom
 import com.sep.vox.application.port.input.command.assessmentpaper.CreateAssessmentPaperCommand;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
-import com.sep.vox.application.port.input.usecase.assessment.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.usecase.assessmentpaper.CreateAssessmentPaperUseCase;
 import com.sep.vox.application.port.input.service.AssessmentPaperAuthoringAccessService;
+import com.sep.vox.application.port.input.service.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.query.repository.UserRoleQueryRepository;
 import com.sep.vox.domain.model.assessment.AssessmentMember;
 import com.sep.vox.domain.repository.SchoolUserRepository;

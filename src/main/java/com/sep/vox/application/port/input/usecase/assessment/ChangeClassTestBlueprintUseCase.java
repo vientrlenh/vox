@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sep.vox.application.exception.ForbiddenException;
 import com.sep.vox.application.exception.ResourceNotFoundException;
 import com.sep.vox.application.port.input.command.assessment.ChangeClassTestBlueprintCommand;
+import com.sep.vox.application.port.input.service.AssessmentQuestionSecureLockService;
 import com.sep.vox.application.port.input.service.AssessmentTimeQuotaGuardService;
 import com.sep.vox.application.port.input.service.RecalculateAssessmentTimeDurationService;
 import com.sep.vox.application.port.input.usecase.IUseCase;

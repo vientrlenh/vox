@@ -76,8 +76,8 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 
 # Auth
-JWT_SECRET=replace-with-a-long-secret
-JWT_STREAM_SECRET=replace-with-another-long-secret
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_STREAM_SECRET=replace-with-another-long-random-secret
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 OAUTH2_URL=http://localhost:3000
@@ -115,11 +115,13 @@ Optional integrations stay off until you configure them:
 
 | Integration | Variables |
 |---|---|
-| Object storage | `STORAGE_PROVIDER`, `AWS_S3_*`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `RECORDING_S3_BUCKET` |
-| Payments | `PAYOS_*`, `SEPAY_*` |
+| Object storage | `STORAGE_PROVIDER`, `AWS_REGION`, `AWS_S3_*`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `RECORDING_S3_BUCKET` |
+| Payments | `PAYOS_*`, `SEPAY_*`, `BASE_URL` |
 | Push notifications | `FIREBASE_ENABLED`, `FIREBASE_CREDENTIALS_PATH` or `FIREBASE_CREDENTIALS_JSON` |
 | `vox-streaming` link | `VOX_STREAMING_GRPC_TARGET`, `GRPC_SERVICE_TOKEN` |
-| Demo data | `DEMO_DATA_ENABLED`, `DEMO_DATA_PASSWORD` |
+| Demo data | `DATA_INITIALIZER`, `DEMO_DATA_ENABLED`, `DEMO_DATA_PASSWORD` |
+| HTTPS | `SSL_ENABLED`, `SSL_CERT_PATH`, `SSL_KEY_PATH` |
+| Quota and exchange rate tuning | `VOX_QUOTA_*`, `VOX_EXCHANGE_RATE_*` |
 
 ### 2. Start the infrastructure
 

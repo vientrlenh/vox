@@ -1,7 +1,8 @@
 # Background paths: trace every thread path to its end
 
-The thread map built here gives the background path rows (`B1`, `B2`, ...) of the matrix. It settles NSP4 and
-supports TRU5 (how background work fails), NSP2 (races) and SPD3 (where a wait's time goes).
+The thread map built here gives the background path rows (`B1`, `B2`, ...) of the matrix. It settles NSP4 and NSP8,
+supports SPD8 and TRU6 (work that crosses a transaction), and is the walk behind the crash, duplicate and
+second-instance counter-scenarios of DEC3 (`references/decisions.md`, section 5).
 
 ## When the target is multi-threaded
 
@@ -19,7 +20,8 @@ Any one of these makes the thread map mandatory:
 - Its correctness depends on concurrent requests touching the same rows or keys. This covers check-then-act on
   quota, balance, counters or status, "only one active X" rules, unique business keys, Redis keys, and queries with
   `@Version`, `@Lock`, `FOR UPDATE` or `SKIP LOCKED`.
-- It runs on every app instance at once. Schedulers and consumers do when the app is scaled out.
+- It runs on every app instance at once. Schedulers and consumers do when the app is scaled out (Step 1 says
+  whether it is).
 
 Money, quota and billing paths are always in this track.
 
@@ -134,11 +136,11 @@ Money, quota and billing paths are always in this track.
 ## Dynamic proof
 
 When a suspected race is reachable over HTTP, run the k6 race probe (`racingRequests`,
-`references/performance-k6.md`, section I): many VUs fire the same operation at the same resource at once, then SQL
-checks the invariant. A failing probe confirms the race (NSP2 FAIL). A passing probe does not prove there is none, so
-the cell also needs the `Static` mechanism, and the report says so.
+`.claude/skills/review-feature/references/performance-k6.md`, section I): many VUs fire the same operation at the same
+resource at once, then SQL checks the invariant. A failing probe confirms the race (NSP8 FAIL). A passing probe does
+not prove there is none, so the cell also needs the `Static` mechanism, and the report says so.
 
 ## In the report
 
-Put the full thread map in the report, one row per path, with both success and failure ends and the cells settled
-for each path. A row whose end is outside the repository says so.
+Put the full thread map in the report, one row per path, with its mechanism, both success and failure ends, and the
+cells settled for each path. A row whose end is outside the repository says so.

@@ -1,14 +1,14 @@
-// k6 v2 template for the review-feature skill, written against grafana/k6:2.4.0.
+// k6 v2 template shared by the review-feature and review-technical skills, written against grafana/k6:2.4.0.
 // Copy it into the review folder as review.js and fill in every TODO. Never commit a filled-in copy.
-// Delete the helpers the feature does not need. Run one scenario group at a time with --scenario
-// (references/performance-k6.md, section E):
+// Delete the helpers the review does not need. Run one scenario group at a time with --scenario
+// (references/performance-k6.md, section E). Cells per scenario, review-feature first, then review-technical:
 //   journeyWalk        J1, J5, SPD1, SPD3, TRU4, NSP3, NSP7: one actor walks each path; step and wait times
-//   statementCount     SPD5: the same walk with markers around every action, for the SQL statement count
-//   probes             SAF1-SAF5, SAF7, TRU1-TRU3, NSP1, J4: one check per matrix cell, named with the cell id
-//   warmUp,steadyLoad  SPD2, SPD4: one action (LOAD_STEP) at a steady rate
-//   burst              SPD2, SPD4: the crowd (CROWD) doing one action at the same moment
-//   racingRequests     NSP2, TRU2: the same write on the same resource at once; the invariant is checked in SQL
-//   sessionContinuity  SAF8: a path with an expired token, a refresh and a logout
+//   statementCount     technical SPD5: the same walk with markers around every action, for the SQL statement count
+//   probes             SAF1-SAF3, SAF5, TRU1-TRU3, NSP1, J4; technical SAF4, SAF7, SAF9, TRU6: one check per cell
+//   warmUp,steadyLoad  SPD2; technical SPD4: one action (LOAD_STEP) at a steady rate
+//   burst              SPD2; technical SPD4: the crowd (CROWD) doing one action at the same moment
+//   racingRequests     NSP2, TRU2; supports technical NSP8: the same write on the same resource at once, invariant in SQL
+//   sessionContinuity  SAF8; supports technical SAF13: a path with an expired token, a refresh and a logout
 import http from 'k6/http';
 import exec from 'k6/execution';
 import { check, fail, sleep } from 'k6';
@@ -178,11 +178,13 @@ export function probes(data) {
       }
     }
   }
-  // TODO: one expectOutcome per remaining probe cell, named with its cell id: TRU1 (fail at the last write, then count
-  // rows in SQL afterwards), TRU2 (the same request twice), TRU3 (each bad value), NSP1 (each wrong state), SAF4 (each
-  // hostile input), SAF3 for student A2 on student A1's data, and J4 (the step at which each refusal fires).
-  // Call checkExposure(cellId, response, data) on every response that returns data (SAF5), and
-  // checkErrorDetails(cellId, response) on every error response (SAF7).
+  // TODO: one expectOutcome per remaining probe cell of this review's matrix, named with its cell id.
+  // review-feature: TRU1 (fail at the last write, then count rows in SQL afterwards), TRU2 (the same request twice),
+  // TRU3 (each bad value), NSP1 (each wrong state), SAF3 for student A2 on student A1's data, and J4 (the step at which
+  // each refusal fires); call checkExposure(cellId, response, data) on every response that returns data (SAF5).
+  // review-technical: SAF4 (each hostile input), SAF9 (20 requests in 10 s from one actor) and TRU6 (the failing
+  // write, then count outbox rows in SQL afterwards); call checkErrorDetails(cellId, response) on every error
+  // response (SAF7).
 }
 
 export function loadStep(data) {

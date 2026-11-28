@@ -34,6 +34,12 @@ import com.sep.vox.infrastructure.properties.GoogleIdTokenProperties;
  * nothing more needs to be done here. The decoder is built ONCE in the constructor and not on each call:
  * rebuilding on every request means reloading the JWK set on every login, turning every button press into
  * a network round trip out to the internet.
+ *
+ * <p>{@code verify} is called inside the transaction of {@code GoogleTokenLoginUseCase}, so a key-set fetch can
+ * hold a database connection. That is accepted because the fetch is rare and bounded: with no Spring
+ * {@code Cache} given, the decoder keeps Nimbus's own key-set cache, and its default RestTemplate uses Nimbus's
+ * default connect and read timeouts (Spring Security 7.1 {@code NimbusJwtDecoder}). Injecting a custom cache or
+ * RestOperations without timeouts would break that assumption.
  */
 @Component
 @Slf4j

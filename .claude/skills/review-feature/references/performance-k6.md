@@ -1,23 +1,30 @@
 # Runs: k6, sample data and probes
 
-Everything here runs only after the owner approved it in Step 3 of SKILL.md, against the local machine only. All
-files go into the review folder, `<scratchpad>/review/<run id>/`, and nothing goes into the repository.
+This file is shared by `review-feature` and `review-technical`. Everything here runs only after the owner approved it
+in the review's runs question (Step 3 of either SKILL.md), against the local machine only. Every question this file
+mentions (ask, confirm) goes through `AskUserQuestion` in the chat, as the SKILL.md of the review says. All files go
+into the review folder, `<scratchpad>/review/<run id>/`, and nothing goes into the repository.
 
 ## A. Runs and the cells they settle
 
-| Run | How | Cells it settles |
-|---|---|---|
-| `journeyWalk` | k6, 1 actor, `WALK_ITERATIONS` iterations (20 by default, 5 when a wait is over 60 s), fresh data each iteration, each path in turn | J1, J5, SPD1, SPD3, TRU4, NSP3, NSP7 |
-| `probes` | k6, one iteration, one check per cell, named with the cell id | SAF1 to SAF5, SAF7, TRU1 to TRU3, NSP1, J4 |
-| `statementCount` | k6 walk with markers, at 1x and at 2x volume, plus the counting snippet (section F) | SPD5 |
-| `EXPLAIN` | psql in the Postgres container (section G) | SPD6 |
-| `warmUp,steadyLoad` or `burst` | k6, one action at a time at the expected concurrency, with pool sampling (section H) | SPD2, SPD4, SPD7 (response size) |
-| `racingRequests` | k6, many VUs and one iteration each, then the invariant in SQL (section I) | NSP2, TRU2 (at the same moment) |
-| `sessionContinuity` | k6 against an app with a short token lifetime (section J) | SAF8 |
-| Restart probe | kill and restart the app during a wait (section K) | TRU5 |
-| Log count | PowerShell over the app logs (section L) | SAF6 |
+| Run | How | `review-feature` cells | `review-technical` cells |
+|---|---|---|---|
+| `journeyWalk` | k6, 1 actor, `WALK_ITERATIONS` iterations (20 by default, 5 when a wait is over 60 s), fresh data each iteration, each path in turn | J1, J5, SPD1, SPD3, TRU4, NSP3, NSP7 | none |
+| `probes` | k6, one iteration, one check per cell, named with the cell id | SAF1 to SAF3, SAF5, TRU1 to TRU3, NSP1, J4 | SAF4, SAF7, SAF9, TRU6 (the failing write) |
+| `statementCount` | k6 walk with markers, at 1x and at 2x volume, plus the counting snippet (section F) | none | SPD5 |
+| `EXPLAIN` | psql in the Postgres container (section G) | none | SPD6 |
+| `warmUp,steadyLoad` or `burst` | k6, one action at a time at the expected concurrency | SPD2, SPD7 (response size) | SPD4, with pool sampling (section H) |
+| `racingRequests` | k6, many VUs and one iteration each, then the invariant in SQL (section I) | NSP2, TRU2 (at the same moment) | supports NSP8 |
+| `sessionContinuity` | k6 against an app with a short token lifetime (section J) | SAF8 | supports SAF13 |
+| Restart probe | kill and restart the app during a wait (section K) | TRU5 | none |
+| Log count | PowerShell over the app logs (section L) | none | SAF6 |
 
-## B. What the Step 3 "Runs" question must state
+Read only the checks whose cell id is in your review's matrix. The `probes` scenario always emits the SAF1 to SAF3
+checks, which belong to `review-feature`.
+
+## B. What the runs question must state
+
+In `review-feature`, say it in plain words in the question and put this list in the first option's `preview`.
 
 - What gets started: `docker compose up -d postgres redis kafka` for the containers that are not running, and the
   app with `./gradlew bootRun` from the current working tree. Reuse an app already on port 8081 only if the owner
@@ -219,7 +226,7 @@ docker run --rm -i --add-host=host.docker.internal:host-gateway `
 - Each run seeds and cleans its own data. Run `cleanup.sql` and the zero-rows check after every run, whatever its
   result.
 
-## F. SQL statements per request (SPD5)
+## F. SQL statements per request (SPD5, review-technical)
 
 The app runs with `org.hibernate.SQL` at DEBUG (section C), so each statement is a timestamped line in
 `logs/vox.log`. `statementCount` walks the paths with markers around every action:
@@ -260,25 +267,26 @@ Save it as `<review folder>/count-statements.ps1` and run it with
 passes when the 2x figure is at most the 1x figure plus 2 for the step. Remember that SQL logging slows the app a
 little, so say so next to the load numbers.
 
-## G. Query plans (SPD6)
+## G. Query plans (SPD6, review-technical)
 
 Take the step's main statements from `logs/vox.log` (they hold `?` placeholders, not values), fill in seeded ids, and
 run `EXPLAIN (ANALYZE, BUFFERS)` through the container at the reference volume. `EXPLAIN ANALYZE` executes the
 statement, so wrap anything that writes in `BEGIN; ... ROLLBACK;`.
 
-## H. Pool and executor sampling (SPD4)
+## H. Pool and executor sampling (SPD4, review-technical)
 
 During a load run, sample `GET /actuator/metrics/hikaricp.connections.pending` and
 `GET /actuator/metrics/hikaricp.connections.active` every 5 s from PowerShell into `<review folder>/pool.csv`. Use
 Monitor for the loop, never a sleep in the foreground. Afterwards, count `RejectedExecutionException`, `Could not
 submit` and HikariCP timeout lines in `app.log` (counts only).
 
-## I. Race probe (NSP2)
+## I. Race probe (NSP2, and NSP8 in review-technical)
 
 Run `racingRequests` on its own: `RACE_VUS` VUs, one iteration each, all hitting the same resource at once. Before
 cleanup, check the invariant with SQL: no negative balance or quota, exactly one active row, a counter equal to the
 number of successful responses, and so on. A broken invariant confirms the race. A holding one does not prove there
-is no race, so the cell also needs the `Static` mechanism (lock, version, conditional update, unique constraint).
+is no race: `review-feature` says so in its report, and `review-technical` names the `Static` mechanism (lock,
+version, conditional update, unique constraint) in NSP8.
 
 ## J. Session continuity (SAF8)
 
@@ -289,7 +297,7 @@ expire before `REFRESH_BEFORE`, checks that the expired token is refused, refres
 with the `refresh_token` cookie and the `X-XSRF-TOKEN` header), finishes the path with the new token, then logs out and
 checks that the refresh is refused. Restart the app with the normal settings afterwards if more runs follow.
 
-## K. Restart probe (TRU5)
+## K. Restart probe (TRU5, review-feature's switch-off test)
 
 Only when approved, and only on the skill's own app. Start the path up to the wait, and while the work is in progress
 (the status shows it), kill the app process to simulate a crash:
@@ -302,7 +310,7 @@ Get-NetTCPConnection -LocalPort 8081 -State Listen | Select-Object -ExpandProper
 Then stop the background `bootRun` task, start the app again as in section C, and poll the status until it reaches a
 terminal state or the worst case from config has passed. Record the time and the final status.
 
-## L. Log privacy count (SAF6)
+## L. Log privacy count (SAF6, review-technical)
 
 After the last run, count over the app output of this review only (`app-*.log` holds every log line of each start,
 and `logs/vox.log` also holds older runs), without printing any line:
@@ -328,7 +336,9 @@ seeded personal data.
 ## M. What goes in the report
 
 - One row per scenario: profile, requests, RPS, p50, p95, p99, error rate and the threshold result.
-- The per-step times for the Journey table, and the statements per request at 1x and 2x.
+  `review-feature` gives them in plain words ("With a crowd"): typical time for p50, slow time for p95.
+- The per-step times for the Journey table (`review-feature`), and the statements per request at 1x and 2x
+  (`review-technical`).
 - The invariants checked and their values.
 - Cleanup proof: the remaining-row counts (all zero), or exactly what was left and why.
 - Caveat: a single local instance on Docker Desktop with SQL logging on, so the numbers compare runs and are not

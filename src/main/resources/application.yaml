@@ -34,6 +34,8 @@ spring:
       enabled: true
   graphql:
     graphiql:
+      # On in every environment on purpose: the frontend and desktop teams browse the schema and try queries
+      # against deployed environments. The operations themselves stay behind @PreAuthorize.
       enabled: true
 
   grpc:
@@ -41,6 +43,7 @@ spring:
       port: 9090
       health:
         enabled: true
+      # On for the same reason as GraphiQL: client developers list the services against deployed environments.
       reflection:
         enabled: true
           
@@ -238,6 +241,7 @@ jwt:
 
 logging:
   file: 
+    # Written to a file so the logs survive restarts and can be read on the host without the container console.
     name: logs/vox.log
   logback: 
     rollingpolicy:
@@ -258,6 +262,8 @@ logging:
 server:
   port: 8081
   shutdown: graceful
+  # Needed when the app runs behind ngrok (and any TLS proxy): the OAuth2 redirect_uri is built from
+  # X-Forwarded-Proto/Host. Safe only while the proxy in front overwrites client-sent X-Forwarded-* headers.
   forward-headers-strategy: framework
   ssl: 
     enabled: ${SSL_ENABLED:false}

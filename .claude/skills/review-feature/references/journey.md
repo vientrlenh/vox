@@ -6,26 +6,27 @@ of the same feature look at the same steps.
 
 ## 1. Intent record
 
-Fill it in from the answers to the two questions (SKILL.md, Step 1). Keep the owner's words.
+Fill it in from the answers in SKILL.md, Step 1. Keep the owner's words.
 
 | Field | Value |
 |---|---|
-| Wants to | Answer 1, verbatim |
-| Target | Answer 2, verbatim |
+| Wants to | Answer 2, verbatim |
+| Target | Answer 3, verbatim |
 | Success signal | The observable state that proves the target, for example "every student in the file can log in, and `myClass` returns their class". J1 checks this |
-| Actors | The roles that act: `SYSTEM_ADMIN`, `SCHOOL_ADMIN`, `TEACHER`, `STUDENT` |
+| Actors | Answer 1, the roles that act: `SYSTEM_ADMIN`, `SCHOOL_ADMIN`, `TEACHER`, `STUDENT` |
 | Start state | What exists before the first step ("the school exists, the admin is logged in, an Excel file with 450 students") |
 | Time expectation | The owner's words, or "default budgets" (section 5) |
 | Expected concurrency | The owner's figure, or the default (section 6) |
 | Reference input | The realistic size of what the actor brings (rows, MB, answers per test): the owner's figure, or the default (section 6) |
 
-If the success signal can be read from the target in two ways, ask the owner which one. Do not pick.
+If the success signal can be read from the target in two ways, ask the owner which one with `AskUserQuestion`. Do not
+pick.
 
 ## 2. Entry point inventory
 
 Find every entry point of the feature, for all of its use cases at once. Search by the names the feature uses (use
 case, model, table, endpoint path, GraphQL type, topic, config key). The search is for finding things, not for
-judging them.
+judging them. `review-technical` builds its inventory from this section too, and adds what it needs on top.
 
 - REST: `interfaces/rest/controller/**`, including `internal/` (`@GetMapping`, `@PostMapping`, ...)
 - GraphQL: `src/main/resources/graphql/*.graphqls` (queries, mutations, type fields) and `interfaces/graphql/**`
@@ -35,9 +36,9 @@ judging them.
   feature publishes through the outbox (`@ExternalEventTopic`)
 - Background: `infrastructure/worker/**` (`@Scheduled`), executors in `infrastructure/config/AsyncConfig`, `@Async`,
   `@EventListener` and `@TransactionalEventListener`
-- Config keys that set a budget, limit, lifetime or interval for any of the above (`application.yaml`, and the
-  classes that read them with `@Value` or `@ConfigurationProperties`)
-- Tests of all of the above
+- Config values that set a pick-up delay, limit, lifetime or interval for any of the above (`application.yaml`, and
+  the classes that read them with `@Value` or `@ConfigurationProperties`). This review only reads them to work out the
+  worst-case waits (section 4); whether they are right is `review-technical`'s question
 
 One row per entry point:
 
@@ -69,7 +70,8 @@ I/O. Bugs usually live where the feature meets the code around it.
   after a refusal (invalid input, a rule limit), cancel, reject or undo, expiry (something left too long), resume
   after leaving, and every variant of a step (other import types, other assessment kinds). Number them `P1`, `P2`,
   and so on.
-- Paths do not include attacks. The Safety checks cover every entry point, on a path or not.
+- Paths do not include attacks; hostile input is `review-technical`'s (SAF4). The Safety checks of this skill cover
+  every entry point a user reaches, on a path or not.
 - Every entry point in the inventory is on at least one path, or on the off-path list with the reason (J6).
 
 ### Counting
@@ -138,14 +140,21 @@ Use these only when the owner gave no figure, and state them in the Step 3 quest
   of them within 10 s: the `burst` scenario. Other steps arrive at a steady rate of the crowd size per minute: the
   `steadyLoad` scenario.
 - Reference input: 500 rows for an import (one grade with some margin), and the largest file the multipart limit
-  allows (`spring.servlet.multipart.max-file-size`, 5 MB at the time of writing) for SAF4.
+  allows (`spring.servlet.multipart.max-file-size`, 5 MB at the time of writing) for the hostile-input probes of
+  `review-technical` (SAF4).
 
 ## 7. Journey table
 
-Show it to the owner in Step 3 and put it in the report:
+Keep the full table in `matrix.md`:
 
 | Step | Kind | Actor action or system work, in plain words | Requests (entry point ids) | Next step possible when | Budget | Worst case from config |
 |---|---|---|---|---|---|---|
+
+The owner sees it in plain words, in the Step 3 preview and in the report. Drop the Requests column, write the kind as
+"does" or "waits", and give the times in seconds or minutes:
+
+| Step | Does or waits | What the user does, or what the system is doing | Can go on when | Allowed time | Longest it can take |
+|---|---|---|---|---|---|
 
 ## 8. Example: school user import
 

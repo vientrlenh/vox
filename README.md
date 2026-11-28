@@ -110,6 +110,8 @@ KAFKA_UI_PORT=8089
 Every `${...}` placeholder in `src/main/resources/application.yaml` without a default value must be set, otherwise the
 application will not start. The ones above are the required set. Placeholders with a default (Redis host, Kafka
 bootstrap servers, CORS origins, cookie settings, quota tuning and so on) can be overridden when needed.
+`COOKIE_SECURE` defaults to `false` only so the `refresh_token` cookie works over plain HTTP locally; every deployment
+must set it to `true`.
 
 Optional integrations stay off until you configure them:
 

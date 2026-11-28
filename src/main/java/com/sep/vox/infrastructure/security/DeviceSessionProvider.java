@@ -22,6 +22,11 @@ public class DeviceSessionProvider implements SessionManagerPort {
     private final DeviceSessionRepository deviceSessionRepository;
     private final EventPublisherPort eventPublisherPort;
 
+    /**
+     * Runs in its own transaction (REQUIRES_NEW) so the revoke survives the caller's rollback: RefreshUseCase
+     * revokes the session on a reused refresh token or a mismatched device id and then throws
+     * UnauthorizedException, which rolls back its own transaction. Joining that transaction would undo the revoke.
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void revoke(UUID sessionId, Instant now) {
